@@ -21,7 +21,7 @@ export const devices = {
 
 const GlobalStyles = createGlobalStyle`:root {
 
- --color-brand-50: yellow:
+
   /* Indigo */
   --color-brand-50: #eef2ff;
   --color-brand-100: #e0e7ff;
