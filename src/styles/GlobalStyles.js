@@ -49,11 +49,10 @@ const GlobalStyles = createGlobalStyle`:root {
   --color-primary-900: #0d3aa2;
   --color-primary-950: #08205e;
 
-
+  --color-orange-0: orange;
   /* Grey */
   //used
   --color-white-0: #fff;
-  --color-grey-50: #f9fafb;
   --color-grey-100: #f3f4f6;
   --color-grey-200: #e5e7eb;
   --color-grey-300: #d1d5db;
