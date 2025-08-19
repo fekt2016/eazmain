@@ -1,11 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import authApi from "../service/authApi";
 import { useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
 
 const useAuth = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-
+  // const getTokenCookie = () => {
+  //   return Cookies.get("token");
+  // };
   // Auth state management
   const {
     data: userData,
@@ -16,11 +19,14 @@ const useAuth = () => {
     queryKey: ["auth"],
     queryFn: async () => {
       const token = localStorage.getItem("token");
+
+      console.log("token", token);
       if (!token) return null;
 
       try {
         const response = await authApi.getCurrentUser();
-        return response.data?.data || null;
+        console.log("response", response);
+        return response;
       } catch (error) {
         if (error.response?.status === 401) {
           localStorage.removeItem("token");
@@ -43,21 +49,16 @@ const useAuth = () => {
   } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
-      const response = await authApi.getProfile();
-      console.log("response", response);
-      return response;
-      //   if (!userData?.id) return null;
-      //   try {
-      //     const response = await authApi.getProfile();
-      //     // Response now contains: { status, userInfo, securitySettings... }
-      //     return response;
-      //   } catch (error) {
-      //     console.error("Error fetching profile:", error);
-      //     throw error; // Propagate error to React Query
-      //   }
+      try {
+        const response = await authApi.getProfile();
+        return response?.data?.data;
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        throw error; // Propagate error to React Query
+      }
     },
-    enabled: !!userData?.id,
-    staleTime: 1000 * 60 * 5,
+    // enabled: !!userData?.id,
+    // staleTime: 1000 * 60 * 5,
   });
 
   // Common auth success handler
@@ -256,6 +257,26 @@ const useAuth = () => {
       }));
     },
   });
+  const uploadAvatar = useMutation({
+    mutationFn: async (avatar) => {
+      console.log("avatar", avatar);
+      const response = await authApi.uploadAvatar(avatar);
+      return response;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(["auth"], (old) => ({
+        ...old,
+        avatar: data.data?.data,
+      }));
+      queryClient.setQueryData(["profile", userData.id], (old) => ({
+        ...old,
+        userInfo: {
+          ...old.userInfo,
+          avatar: data.data?.data,
+        },
+      }));
+    },
+  });
 
   return {
     // Auth state
@@ -263,6 +284,7 @@ const useAuth = () => {
     profileData,
     authError,
     profileError,
+    uploadAvatar,
     isAuthenticated: !!userData,
     isAdmin: userData?.role === "admin",
     isSeller: userData?.role === "seller",

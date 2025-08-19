@@ -6,7 +6,6 @@ export function useNotificationSettings() {
     queryKey: ["notification-settings"],
     queryFn: async () => {
       const response = await notificationApi.getUserSettings();
-      console.log("response", response);
       return response;
     },
     onSuccess: () => {

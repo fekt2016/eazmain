@@ -10,10 +10,10 @@ const addressApi = {
       throw error;
     }
   },
-  getUserAddress: async (id) => {
-    console.log("id", id);
+  getUserAddress: async () => {
     try {
-      const response = await api.get(`/address/${id}`);
+      const response = await api.get(`/address`);
+      console.log("address response", response);
       return response;
     } catch (error) {
       console.error("Error fetching user addresses:", error);

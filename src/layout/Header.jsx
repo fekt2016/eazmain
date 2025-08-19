@@ -26,6 +26,7 @@ export default function Header() {
   const buttonRef = useRef(null);
 
   const { logout, userData, isLoading: isUserLoading } = useAuth();
+  console.log("user data", userData);
   const { count: cartCount } = useCartTotals();
 
   const { getParentCategories } = useCategory();
@@ -36,7 +37,8 @@ export default function Header() {
     return categoriesData?.data?.categories || [];
   }, [categoriesData]);
 
-  const user = userData?.user || userData?.data || null;
+  const user = userData?.user || userData?.data?.data || null;
+  console.log("user", user);
   // const { data: wishlistData } = useWishlist();
   // const wishlist = useMemo(() => {
   //   return wishlistData?.data || [];
@@ -196,7 +198,7 @@ export default function Header() {
                     <DropdownItem as={Link} to="/notifications">
                       Notifications
                     </DropdownItem>
-                    <DropdownItem as={Link} to="/account-settings">
+                    <DropdownItem as={Link} to="/profile">
                       Account Settings
                     </DropdownItem>
                     <DropdownItem as={Link} to="/coupons">

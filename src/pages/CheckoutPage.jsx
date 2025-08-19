@@ -17,6 +17,7 @@ const CheckoutPage = () => {
   const queryClient = useQueryClient();
   const { data: addressData, isLoading: isAddressLoading } =
     useGetUserAddress();
+  console.log("addres", addressData);
   const { mutate: createAddress, isLoading: isAddressCreating } =
     useCreateAddress();
   const { data: cartData, isLoading: isCartLoading } = useGetCart();
@@ -26,7 +27,7 @@ const CheckoutPage = () => {
   // States
   const [couponCode, setCouponCode] = useState("");
   const [discount, setDiscount] = useState(0);
-  console.log(discount);
+
   const [couponMessage, setCouponMessage] = useState("");
   const [activeTab, setActiveTab] = useState("existing");
   const [selectedAddressId, setSelectedAddressId] = useState(null);
@@ -34,6 +35,7 @@ const CheckoutPage = () => {
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState("");
   const [couponData, setCouponData] = useState(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   // Address states
   const [newAddress, setNewAddress] = useState({
@@ -58,6 +60,7 @@ const CheckoutPage = () => {
       addressData?.data?.addresses || addressData?.data?.data?.addresses || []
     );
   }, [addressData]);
+  console.log("address", address);
 
   const defaultAddress = useMemo(() => {
     return address.find((addr) => addr.isDefault);
@@ -267,6 +270,33 @@ const CheckoutPage = () => {
         },
       }
     );
+  };
+  const handleMobileMoneyPayment = () => {
+    if (!mobileMoneyDetails.number || !mobileMoneyDetails.name) {
+      setFormError("Please fill in all mobile money details");
+      return;
+    }
+
+    setIsProcessingPayment(true);
+
+    // In a real implementation, you would call your payment API here
+    // For demonstration, we'll simulate an API call
+    setTimeout(() => {
+      // This would be the response from your payment gateway
+      const paymentResponse = {
+        success: true,
+        paymentUrl: "https://api.mobilemoneyprovider.com/pay",
+        transactionId: "TX123456789",
+      };
+
+      if (paymentResponse.success) {
+        // Redirect to the payment gateway
+        window.location.href = paymentResponse.paymentUrl;
+      } else {
+        setFormError("Failed to initialize payment. Please try again.");
+        setIsProcessingPayment(false);
+      }
+    }, 2000);
   };
 
   const handlePlaceOrder = (e) => {
@@ -597,6 +627,12 @@ const CheckoutPage = () => {
                         placeholder="Name on mobile account"
                       />
                     </FormGroup>
+                    <PaymentButton
+                      onClick={handleMobileMoneyPayment}
+                      disabled={isProcessingPayment}
+                    >
+                      Submit momo
+                    </PaymentButton>
                   </MobileMoneyForm>
                 )}
               </PaymentLabel>
@@ -1177,6 +1213,28 @@ const BankInfo = styled.div`
   font-size: 0.95rem;
   margin-bottom: 4px;
   color: #333;
+`;
+const PaymentButton = styled.button`
+  width: 100%;
+  padding: 12px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 15px;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #218838;
+  }
+
+  &:disabled {
+    background: #94d3a2;
+    cursor: not-allowed;
+  }
 `;
 
 export default CheckoutPage;

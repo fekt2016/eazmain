@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ThemeProvider } from "styled-components";
 import GlobalStyles from "./styles/GlobalStyles";
-import { theme } from "./styles/theme";
+import theme from "./styles/theme";
 
 import MainRoutes from "./routes/MainRoutes";
 

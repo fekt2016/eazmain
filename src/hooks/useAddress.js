@@ -11,13 +11,13 @@ export const useGetUserAddresses = () => {
     },
   });
 };
-export const useGetUserAddress = (id) => {
+export const useGetUserAddress = () => {
   return useQuery({
     queryKey: ["address"],
     queryFn: async () => {
-      const res = await addressApi.getUserAddress(id);
-      console.log("address", res);
-      return res;
+      const response = await addressApi.getUserAddress();
+      console.log("address", response);
+      return response;
     },
   });
 };

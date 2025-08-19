@@ -23,6 +23,7 @@ const authApi = {
 
   getCurrentUser: async () => {
     const response = await api.get("/users/me");
+    console.log("response", response);
     return response;
   },
 
@@ -45,7 +46,7 @@ const authApi = {
   getProfile: async () => {
     try {
       const response = await api.get("/users/profile");
-      return response.data; // Return only the data payload
+      return response; // Return only the data payload
     } catch (err) {
       console.log("API getProfile error", err);
       throw err; // Important for React Query error handling
@@ -84,6 +85,14 @@ const authApi = {
   disableTwoFactor: async () => {
     const response = await api.post("/users/two-factor/disable");
 
+    return response;
+  },
+  uploadAvatar: async (formData) => {
+    const response = await api.post("/users/avatar", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
     return response;
   },
 };

@@ -42,7 +42,7 @@ const AddressManagementPage = () => {
     () => addressData?.data?.data?.addresses || [],
     [addressData]
   );
-  console.log("saved", savedAddresses);
+
   const createMutation = useCreateAddress();
   const updateMutation = useUpdateAddress();
   const deleteMutation = useDeleteAddress();
