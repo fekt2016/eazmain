@@ -45,7 +45,7 @@ const SideBar = () => {
     },
     { path: "/permissions", icon: <FaUserShield />, label: "Permissions" },
     { path: "/notifications", icon: <FaBell />, label: "Notifications" },
-    { path: "/profile", icon: <FaUserCog />, label: "Account Settings" },
+    { path: "/profile", icon: <FaUserCog />, label: " Settings" },
   ];
 
   return (

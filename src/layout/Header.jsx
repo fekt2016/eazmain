@@ -197,7 +197,7 @@ export default function Header() {
                       Notifications
                     </DropdownItem>
                     <DropdownItem as={Link} to="/profile">
-                      Account Settings
+                      Settings
                     </DropdownItem>
                     <DropdownItem as={Link} to="/coupons">
                       Coupons
