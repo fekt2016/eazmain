@@ -37,10 +37,10 @@ export default function Header() {
   }, [categoriesData]);
 
   const user = userData?.user || userData?.data || null;
-  // const { data: wishlistData } = useWishlist();
-  // const wishlist = useMemo(() => {
-  //   return wishlistData?.data || [];
-  // }, [wishlistData]);
+  const { data: wishlistData } = useWishlist();
+  const wishlist = useMemo(() => {
+    return wishlistData?.data || [];
+  }, [wishlistData]);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
