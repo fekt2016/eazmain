@@ -13,7 +13,7 @@ import {
 import styled from "styled-components";
 import useAuth from "../hooks/useAuth";
 import { Link } from "react-router-dom";
-// import { useWishlist } from "../hooks/useWishlist";
+import { useWishlist } from "../hooks/useWishlist";
 import { useCartTotals } from "../hooks/useCart";
 import useCategory from "../hooks/useCategory";
 
@@ -26,7 +26,7 @@ export default function Header() {
   const buttonRef = useRef(null);
 
   const { logout, userData, isLoading: isUserLoading } = useAuth();
-  console.log("user data", userData);
+
   const { count: cartCount } = useCartTotals();
 
   const { getParentCategories } = useCategory();
@@ -38,11 +38,11 @@ export default function Header() {
   }, [categoriesData]);
 
   const user = userData?.user || userData?.data?.data || null;
-  console.log("user", user);
-  // const { data: wishlistData } = useWishlist();
-  // const wishlist = useMemo(() => {
-  //   return wishlistData?.data || [];
-  // }, [wishlistData]);
+
+  const { data: wishlistData } = useWishlist();
+  const wishlist = useMemo(() => {
+    return wishlistData?.data || [];
+  }, [wishlistData]);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -228,9 +228,9 @@ export default function Header() {
             <BottomLink to="/wishlist">
               <ActionIcon>
                 <FaHeart />
-                {/* {wishlist?.products?.length > 0 && (
+                {wishlist?.products?.length > 0 && (
                   <ActionBadge>{wishlist.products.length}</ActionBadge>
-                )} */}
+                )}
               </ActionIcon>
               <ActionText>Wishlist</ActionText>
             </BottomLink>

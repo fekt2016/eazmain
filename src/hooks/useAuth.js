@@ -20,12 +20,11 @@ const useAuth = () => {
     queryFn: async () => {
       const token = localStorage.getItem("token");
 
-      console.log("token", token);
       if (!token) return null;
 
       try {
         const response = await authApi.getCurrentUser();
-        console.log("response", response);
+
         return response;
       } catch (error) {
         if (error.response?.status === 401) {
