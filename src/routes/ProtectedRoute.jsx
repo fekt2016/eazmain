@@ -6,7 +6,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 const ProtectedRoutes = ({ children }) => {
   const { userData, isLoading, error } = useAuth();
   const user = useMemo(() => {
-    return userData?.data?.data || userData?.user || null;
+    return userData?.data || userData?.user || null;
   }, [userData]);
   console.log("routes user", user);
   const [localAuthCheck, setLocalAuthCheck] = useState(() => {
@@ -37,7 +37,7 @@ const ProtectedRoutes = ({ children }) => {
       />
     );
   }
-
+  console.log;
   if (!user || user.role !== "user") {
     return <Navigate to="/login" replace />;
   }

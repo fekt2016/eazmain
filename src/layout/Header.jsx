@@ -26,7 +26,6 @@ export default function Header() {
   const buttonRef = useRef(null);
 
   const { logout, userData, isLoading: isUserLoading } = useAuth();
-
   const { count: cartCount } = useCartTotals();
 
   const { getParentCategories } = useCategory();
@@ -37,12 +36,11 @@ export default function Header() {
     return categoriesData?.data?.categories || [];
   }, [categoriesData]);
 
-  const user = userData?.user || userData?.data?.data || null;
-
-  const { data: wishlistData } = useWishlist();
-  const wishlist = useMemo(() => {
-    return wishlistData?.data || [];
-  }, [wishlistData]);
+  const user = userData?.user || userData?.data || null;
+  // const { data: wishlistData } = useWishlist();
+  // const wishlist = useMemo(() => {
+  //   return wishlistData?.data || [];
+  // }, [wishlistData]);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
