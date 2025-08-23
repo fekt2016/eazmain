@@ -2,13 +2,11 @@ import styled from "styled-components";
 import { Link } from "react-router-dom";
 import { FaHeart, FaRegHeart, FaShoppingCart, FaTimes } from "react-icons/fa";
 import { useCartActions } from "../hooks/useCart";
-import {
-  useWishlist,
-  useGuestWishlistActions,
-  useAuthenticatedWishlistActions,
-} from "../hooks/useWishlist";
-import useAuth from "../hooks/useAuth";
-import { useMemo } from "react";
+
+import { useToggleWishlist, useRemoveFromWishlist } from "../hooks/useWishlist";
+
+// import useAuth from "../hooks/useAuth";
+// import { useMemo } from "react";
 import StarRating from "./StarRating";
 // import RatingStar from "./RatingStar";
 
@@ -18,22 +16,16 @@ export default function ProductCard({
   showAddToCart = false,
   showRemoveButton = false,
   layout = "vertical", // 'vertical' or 'horizontal'
-  onRemove,
 }) {
-  const { isAuthenticated } = useAuth();
+  const productId = product.id || product._id;
 
+  // const { isAuthenticated } = useAuth();
+  const { toggleWishlist, isAdding, isRemoving, isInWishlist } =
+    useToggleWishlist(product._id);
+  console.log("ProductCard isInWishlist:", isInWishlist);
+  const { mutate: removeWishlist } = useRemoveFromWishlist();
   const { addToCart } = useCartActions();
-  const { data: wishlistData } = useWishlist();
-  const guestActions = useGuestWishlistActions();
-  const authActions = useAuthenticatedWishlistActions();
-  const isInWishlist = useMemo(() => {
-    if (!wishlistData?.data?.products) return false;
-    return wishlistData.data.products.some(
-      (wishlistProduct) => wishlistProduct._id === product._id
-    );
-  }, [wishlistData, product._id]);
 
-  const actions = isAuthenticated ? authActions : guestActions;
   const handleAddToCart = (product) => {
     addToCart({
       product,
@@ -41,11 +33,7 @@ export default function ProductCard({
     });
   };
   const handleToggleWishlist = () => {
-    if (isInWishlist) {
-      actions.remove(product._id);
-    } else {
-      actions.add(product._id);
-    }
+    toggleWishlist(product._id);
   };
   return (
     <CardContainer $layout={layout}>
@@ -53,7 +41,7 @@ export default function ProductCard({
         <RemoveButton
           onClick={(e) => {
             e.preventDefault();
-            onRemove(product.id || product._id);
+            removeWishlist(productId);
           }}
           aria-label="Remove product"
         >
@@ -63,7 +51,7 @@ export default function ProductCard({
       {showWishlistButton && (
         <WishlistButton
           onClick={handleToggleWishlist}
-          disabled={actions.isAdding || actions.isRemoving}
+          disabled={isAdding || isRemoving}
           aria-label={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
         >
           {isInWishlist ? (
@@ -73,7 +61,7 @@ export default function ProductCard({
           )}
         </WishlistButton>
       )}
-      <ProductLink to={`/product/${product.id}`}>
+      <ProductLink to={`/product/${product._id}`}>
         <ProductImage $layout={layout}>
           <img src={product.imageCover} alt={product.name} />
         </ProductImage>

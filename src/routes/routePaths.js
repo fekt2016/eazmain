@@ -24,4 +24,5 @@ export const PATHS = {
   CREDIT: "/credit-balance",
   SELLER: "/seller/:id",
   PAYMENT: "/payment-method",
+  VERIFY: "/verify-email",
 };

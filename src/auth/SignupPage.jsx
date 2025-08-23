@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { FaFacebook, FaApple, FaCheck } from "react-icons/fa";
+import { FaFacebook, FaApple, FaCheck, FaEnvelope } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import useAuth from "../hooks/useAuth";
 import { validateGhanaPhoneNumberOnly } from "../utils/helpers";
@@ -19,8 +19,8 @@ export default function SignupPage() {
 
   const [error, setError] = useState(null);
   const [phoneError, setPhoneError] = useState("");
-  const { register } = useAuth();
-  // Ghana phone validation function
+  const [verificationSent, setVerificationSent] = useState(false);
+  const { register, resendVerification } = useAuth();
 
   // Validate phone when it changes
   useEffect(() => {
@@ -31,26 +31,33 @@ export default function SignupPage() {
       setPhoneError("");
     }
   }, [state.phone]);
-  // Inside SignupPage component
+
   const handleFacebookSignup = () => {
-    // Replace with your Facebook app ID and callback URL
     const facebookAuthUrl = `https://www.facebook.com/v17.0/dialog/oauth?client_id=1046655936440828&redirect_uri=${window.location.origin}/facebook-callback&scope=email,public_profile`;
     window.location.href = facebookAuthUrl;
   };
 
   const handleGoogleSignup = () => {
-    // Replace with your Google client ID and callback URL
     const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=YOUR_GOOGLE_CLIENT_ID&redirect_uri=${window.location.origin}/google-callback&response_type=code&scope=openid%20email%20profile`;
     window.location.href = googleAuthUrl;
   };
 
   const handleAppleSignup = () => {
-    // Replace with your Apple service ID and callback URL
     const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=YOUR_APPLE_SERVICE_ID&redirect_uri=${window.location.origin}/apple-callback&response_type=code%20id_token&scope=email%20name&response_mode=web_message`;
     window.location.href = appleAuthUrl;
   };
 
-  const submitHandler = async (e) => {
+  const handleResendVerification = async () => {
+    try {
+      await resendVerification.mutateAsync({ email: state.email });
+      alert("Verification email sent successfully!");
+    } catch (error) {
+      console.error("Error resending verification:", error);
+      setError(error.message || "An error occurred. Please try again.");
+    }
+  };
+
+  const submitHandler = (e) => {
     e.preventDefault();
     setError(null);
 
@@ -59,20 +66,18 @@ export default function SignupPage() {
       const phoneValidation = validateGhanaPhoneNumberOnly(state.phone);
       if (phoneValidation) {
         setError(phoneValidation);
-
         return;
       }
     }
 
-    // Validation
-    if (!state.email && !state.phone) {
-      setError("Please provide either email or phone number");
+    // Validation - email is required for verification
+    if (!state.email) {
+      setError("Email is required for account verification");
       return;
     }
 
     if (state.password !== state.passwordConfirm) {
       setError("Passwords do not match");
-
       return;
     }
 
@@ -86,30 +91,75 @@ export default function SignupPage() {
       const registrationData = {
         name: state.name,
         email: state.email,
-        phone: state.phone ? state.phone.replace(/\D/g, "") : "", // Store digits only
+        phone: state.phone ? state.phone.replace(/\D/g, "") : "",
         password: state.password,
         passwordConfirm: state.passwordConfirm,
       };
 
-      // Simulate API call
+      // Use the register mutation
       register.mutate(registrationData, {
-        onSuccess: () => {
-          setState({
-            name: "",
-            email: "",
-            phone: "",
-            password: "",
-            passwordConfirm: "",
-            check: false,
-          });
-          navigate("/");
+        onSuccess: (data) => {
+          console.log("Registration successful:", data);
+          // If verification is required, set the flag
+          if (data?.data?.requiresVerification || data.status === "success") {
+            setVerificationSent(true);
+          } else {
+            // If no verification needed, redirect to home
+            navigate("/");
+          }
+        },
+        onError: (error) => {
+          console.error("Registration error:", error);
+          setError(error.message || "Registration failed. Please try again.");
         },
       });
+
+      // Check if verification is required
+      // if (result.requiresVerification || result.status === "success") {
+      //   setVerificationSent(true);
+      // } else {
+      //   // If no verification needed, redirect to home
+      //   navigate("/");
+      // }
     } catch (err) {
       console.error("Registration error:", err);
-      setError("Registration failed. Please try again.");
+      setError(err.message || "Registration failed. Please try again.");
     }
   };
+
+  if (verificationSent) {
+    return (
+      <RegisterContainer>
+        <RegisterCard>
+          <VerificationSent>
+            <EnvelopeIcon>
+              <FaEnvelope size={48} color="#4e73df" />
+            </EnvelopeIcon>
+            <h2>Verify Your Email Address</h2>
+            <VerificationText>
+              We've sent a verification email to <strong>{state.email}</strong>.
+              Please check your inbox and click the verification link to
+              activate your account.
+            </VerificationText>
+            <VerificationNote>
+              Didn't receive the email? Check your spam folder or{" "}
+              <ResendLink
+                onClick={handleResendVerification}
+                disabled={resendVerification.isLoading}
+              >
+                {resendVerification.isLoading
+                  ? "Sending..."
+                  : "resend verification email"}
+              </ResendLink>
+            </VerificationNote>
+            <BackToLogin onClick={() => navigate("/login")}>
+              Back to Login
+            </BackToLogin>
+          </VerificationSent>
+        </RegisterCard>
+      </RegisterContainer>
+    );
+  }
 
   return (
     <RegisterContainer>
@@ -125,7 +175,7 @@ export default function SignupPage() {
         <RegisterForm onSubmit={submitHandler}>
           <FormRow>
             <FormGroup style={{ flex: 1 }}>
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="name">Full Name *</Label>
               <Input
                 type="text"
                 id="name"
@@ -140,7 +190,7 @@ export default function SignupPage() {
 
           <FormRow>
             <FormGroup style={{ flex: 1 }}>
-              <Label htmlFor="email">Email Address</Label>
+              <Label htmlFor="email">Email Address *</Label>
               <Input
                 type="email"
                 id="email"
@@ -148,13 +198,15 @@ export default function SignupPage() {
                 value={state.email}
                 onChange={(e) => setState({ ...state, email: e.target.value })}
                 placeholder="your.email@example.com"
+                required
               />
+              <EmailNote>Required for account verification</EmailNote>
             </FormGroup>
           </FormRow>
 
           <FormRow>
             <FormGroup style={{ flex: 1 }}>
-              <Label htmlFor="phone">Phone Number</Label>
+              <Label htmlFor="phone">Phone Number (Optional)</Label>
               <Input
                 type="tel"
                 id="phone"
@@ -176,7 +228,7 @@ export default function SignupPage() {
 
           <FormRow>
             <FormGroup style={{ flex: 1 }}>
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Password *</Label>
               <Input
                 type="password"
                 id="password"
@@ -195,7 +247,7 @@ export default function SignupPage() {
 
           <FormRow>
             <FormGroup style={{ flex: 1 }}>
-              <Label htmlFor="passwordConfirm">Confirm Password</Label>
+              <Label htmlFor="passwordConfirm">Confirm Password *</Label>
               <Input
                 type="password"
                 id="passwordConfirm"
@@ -275,7 +327,7 @@ export default function SignupPage() {
   );
 }
 
-// Styled Components
+// Styled Components (same as before, with minor additions)
 const RegisterContainer = styled.div`
   display: flex;
   justify-content: center;
@@ -375,6 +427,10 @@ const PhoneNote = styled.p`
 `;
 
 const PasswordNote = styled(PhoneNote)`
+  margin-top: 5px;
+`;
+
+const EmailNote = styled(PhoneNote)`
   margin-top: 5px;
 `;
 
@@ -558,5 +614,60 @@ const LoginLink = styled(Link)`
 
   &:hover {
     text-decoration: underline;
+  }
+`;
+
+const VerificationSent = styled.div`
+  text-align: center;
+  padding: 20px;
+`;
+
+const EnvelopeIcon = styled.div`
+  margin: 20px auto;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f0f5ff;
+  border-radius: 50%;
+`;
+
+const VerificationText = styled.p`
+  color: #6c757d;
+  margin: 20px 0;
+  line-height: 1.6;
+`;
+
+const VerificationNote = styled.p`
+  color: #6c757d;
+  font-size: 14px;
+  margin: 20px 0;
+`;
+
+const ResendLink = styled.span`
+  color: ${(props) => (props.disabled ? "#a0aec0" : "#4e73df")};
+  cursor: ${(props) => (props.disabled ? "not-allowed" : "pointer")};
+  margin-left: 5px;
+
+  &:hover {
+    text-decoration: ${(props) => (props.disabled ? "none" : "underline")};
+  }
+`;
+
+const BackToLogin = styled.button`
+  background: #4e73df;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-top: 20px;
+
+  &:hover {
+    background: #2e59d9;
   }
 `;

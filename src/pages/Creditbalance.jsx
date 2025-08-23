@@ -7,32 +7,15 @@ import { formatDate } from "../utils/helpers";
 
 const CreditBalance = () => {
   const { data, isLoading } = useCreditBalance();
-  console.log("creditData", data);
 
   const creditBalance = useMemo(() => {
     return data?.data?.creditbalance;
   }, [data]);
 
-  console.log("creditBalance", creditBalance);
-  // Mock data - replace with actual data from your API
-  // const creditBalance = 1250.75;
-  // const transactions = [
-  //   {
-  //     id: 1,
-  //     date: "2023-11-15",
-  //     description: "Product Purchase",
-  //     amount: -50.25,
-  //   },
-  //   { id: 2, date: "2023-11-10", description: "Credit Top-up", amount: +500 },
-  //   { id: 3, date: "2023-11-05", description: "Service Fee", amount: -25.5 },
-  //   { id: 4, date: "2023-10-28", description: "Referral Bonus", amount: +100 },
-  //   { id: 5, date: "2023-10-20", description: "Order Refund", amount: +75.5 },
-  // ];
-
   if (isLoading) {
     return <div>Loading...</div>;
   }
-  console.log("data", data);
+
   return (
     <PageContainer>
       <Header>
@@ -40,9 +23,6 @@ const CreditBalance = () => {
           <FaCoins />
           <h1>Credit Balance</h1>
         </Title>
-        {/* <AddCreditButton>
-          <FaPlus /> Add Credit
-        </AddCreditButton>*/}
       </Header>
       <BalanceCard>
         <BalanceLabel>Available Balance</BalanceLabel>

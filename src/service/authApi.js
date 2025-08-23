@@ -11,8 +11,12 @@ const authApi = {
     return response;
   },
 
-  register: async (userData) => {
-    const response = await api.post("/users/signup", userData);
+  register: async (registerData) => {
+    const response = await api.post("/users/signup", registerData);
+    return response;
+  },
+  emailVerification: async (email) => {
+    const response = await api.post("/users/email-verification", { email });
     return response;
   },
 
@@ -39,7 +43,7 @@ const authApi = {
   },
 
   changePassword: async (passwords) => {
-    const response = await api.post("/users/change-password", passwords);
+    const response = await api.patch("/users/updatePassword", passwords);
     return response;
   },
   getProfile: async () => {
@@ -52,12 +56,13 @@ const authApi = {
     }
   },
   updateProfile: async (profileData) => {
-    const response = await api.put("/users/profile", profileData);
+    const response = await api.patch("/users/updateMe", profileData);
     return response;
   },
 
   deactivateAccount: async () => {
-    const response = await api.post("/users/deactivate");
+    console.log("deactivateAccount");
+    const response = await api.delete("/users/deleteMe");
     return response;
   },
 
@@ -73,21 +78,9 @@ const authApi = {
     const response = await api.delete(`/users/sessions/${sessionId}`);
     return response;
   },
-  enableTwoFactor: async () => {
-    const response = await api.post("/users/two-factor/enable");
-    return response;
-  },
-  verifyTwoFactor: async (token) => {
-    const response = await api.post("/users/two-factor/verify", { token });
-    return response;
-  },
-  disableTwoFactor: async () => {
-    const response = await api.post("/users/two-factor/disable");
 
-    return response;
-  },
   uploadAvatar: async (formData) => {
-    const response = await api.post("/users/avatar", formData, {
+    const response = await api.patch("/users/avatar", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },

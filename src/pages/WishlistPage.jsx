@@ -3,32 +3,17 @@ import { useMemo } from "react";
 import styled from "styled-components";
 
 import { Link } from "react-router-dom";
-import {
-  useWishlist,
-  useGuestWishlistActions,
-  useAuthenticatedWishlistActions,
-} from "../../hooks/useWishlist";
-import useAuth from "../../hooks/auth/useAuth";
+import { useWishlist } from "../hooks/useWishlist";
+
 import ProductCard from "../components/ProductCard";
 
 const WishlistPage = () => {
   const { data: wishlistData } = useWishlist();
-  const { isAuthenticated } = useAuth();
-  const guestActions = useGuestWishlistActions();
-  const authActions = useAuthenticatedWishlistActions();
+
   const wishlist = useMemo(() => {
     return wishlistData?.data?.products || [];
   }, [wishlistData]);
-  console.log("wishlist", wishlist);
 
-  const handleRemove = (productId) => {
-    console.log("productId", productId);
-    if (isAuthenticated) {
-      authActions.remove(productId);
-    } else {
-      guestActions.remove(productId);
-    }
-  };
   return (
     <PageContainer>
       <MainContent>
@@ -53,13 +38,11 @@ const WishlistPage = () => {
           <>
             <WishlistGrid>
               {wishlist.map((product) => {
-                console.log("product", product);
                 return (
                   <ProductCard
                     key={product._id}
                     product={product}
                     showWishlistButton={false}
-                    onRemove={handleRemove}
                     showRemoveButton={true}
                   />
                 );

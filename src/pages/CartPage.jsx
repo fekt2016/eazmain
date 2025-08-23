@@ -13,41 +13,25 @@ import useAuth from "../hooks/useAuth";
 
 const CartPage = () => {
   const { data, isLoading: isCartLoading, isError } = useGetCart();
-  // console.log("cart data:", data);
-  // const cart = useMemo(() => {
-  //   return data?.data?.data.cart || {};
-  // }, [data]);
-  // console.log(cart);
+  console.log("Cart data:", data);
   const { total: subTotal } = useCartTotals();
-  console.log("subTotal:", subTotal);
 
   const { updateCartItem, removeCartItem, addToCart } = useCartActions();
   useAutoSyncCart();
   const { isAuthenticated } = useAuth();
   const products = getCartStructure(data);
 
-  // console.log("cart data:", data);
-  // console.log("cart products:", products);
   const navigate = useNavigate();
-  // Calculate order totals
-  // const shipping = subTotal > 0 ? 9.99 : 0;
-  // const taxRate = 0.08;
-  // const tax = subTotal * taxRate;
-  // const total = subTotal;
-  // console.log(shipping, tax, total);
-
   const handleAddToCart = (product) => {
     addToCart({ product, quantity: 1 });
   };
 
   const handleQuantityChange = (itemId, newQuantity) => {
-    console.log("Updating quantity for item:", itemId, "to:", newQuantity);
     if (newQuantity < 1) return;
     updateCartItem({ itemId, quantity: newQuantity });
   };
 
   const handleRemoveItem = (itemId) => {
-    console.log("Removing item:", itemId);
     removeCartItem(itemId);
   };
   const handleCheckout = () => {

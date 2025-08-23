@@ -1,157 +1,133 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { wishlistApi } from "../service/wishlistApi";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import wishlistApi from "../service/wishlistApi";
 import useAuth from "../hooks/useAuth";
-
-// Helper to get fresh wishlist from localStorage
-const getGuestWishlist = () => {
-  const data = localStorage.getItem("guestWishlist");
-  return data ? JSON.parse(data) : [];
-};
-const setGuestWishlist = (wishlist) => {
-  localStorage.setItem("guestWishlist", JSON.stringify(wishlist));
-};
-const formatGuestWishlist = (wishlist) => ({
-  data: { products: wishlist.map((id) => ({ _id: id })) },
-});
+import { getSessionId, clearSessionId } from "../utils/guestWishlist";
 
 export const useWishlist = () => {
-  const { isAuthenticated } = useAuth();
+  const { userData } = useAuth();
+
+  const user = userData?.data?.data || {};
+
+  const sessionId = getSessionId();
 
   return useQuery({
-    queryKey: ["wishlist"],
+    queryKey: ["wishlist", user ? user.id : sessionId],
     queryFn: async () => {
-      if (!isAuthenticated) return formatGuestWishlist(getGuestWishlist());
       try {
-        return await wishlistApi.getWishlist();
+        if (user) {
+          const response = await wishlistApi.getWishlist();
+
+          return response;
+        } else if (sessionId) {
+          const response = await wishlistApi.getOrCreateGuestWishlist();
+          console.log("Guest Wishlist data:", response);
+          return response;
+        } else {
+          // Create a new session and wishlist
+          return { data: { wishlist: { products: [] } } };
+        }
       } catch (error) {
-        console.error("Failed to fetch wishlist:", error);
-        throw error;
+        console.error("Error fetching wishlist:", error);
+        return { data: { wishlist: { products: [] } } };
       }
     },
-
-    staleTime: 300000,
-    retry: 2,
+    enabled: !!user || !!sessionId,
   });
 };
-// Hook for guest wishlist actions
-export const useGuestWishlistActions = () => {
+
+export const useAddToWishlist = () => {
   const queryClient = useQueryClient();
+  const { userData: user } = useAuth();
 
-  const add = (productId) => {
-    const current = getGuestWishlist();
-    if (current.includes(productId)) return;
-
-    const newWishlist = [...current, productId];
-    setGuestWishlist(newWishlist);
-    queryClient.setQueryData(["wishlist"], formatGuestWishlist(newWishlist));
-  };
-
-  const remove = (productId) => {
-    const current = getGuestWishlist();
-    if (!current.includes(productId)) return;
-
-    const newWishlist = current.filter((id) => id !== productId);
-    setGuestWishlist(newWishlist);
-    queryClient.setQueryData(["wishlist"], formatGuestWishlist(newWishlist));
-  };
-
-  return { add, remove };
+  return useMutation({
+    mutationFn: (productId) => {
+      if (user) {
+        return wishlistApi.addToWishlist(productId);
+      } else {
+        return wishlistApi.addToGuestWishlist(productId);
+      }
+    },
+    onSuccess: () => {
+      // Invalidate and refetch wishlist data
+      queryClient.invalidateQueries(["wishlist"]);
+    },
+  });
 };
-// Hook for authenticated wishlist actions
-export const useAuthenticatedWishlistActions = () => {
+
+export const useRemoveFromWishlist = () => {
   const queryClient = useQueryClient();
-  const { logout } = useAuth();
 
-  const addMutation = useMutation({
-    mutationFn: wishlistApi.addToWishlist,
+  return useMutation({
+    mutationFn: (productId) => wishlistApi.removeFromWishlist(productId),
     onSuccess: () => {
+      // Invalidate and refetch wishlist data
       queryClient.invalidateQueries(["wishlist"]);
     },
-    onError: (error) => {
-      if (error.response?.status === 401) logout();
-    },
   });
+};
 
-  const removeMutation = useMutation({
-    mutationFn: wishlistApi.removeFromWishlist,
+export const useCheckInWishlist = (productId) => {
+  const { user } = useAuth();
+  const sessionId = getSessionId();
+
+  return useQuery({
+    queryKey: ["wishlist", "check", productId, user ? user.id : sessionId],
+    queryFn: async () => await wishlistApi.checkInWishlist(productId),
+    enabled: !!productId && (!!user || !!sessionId),
+  });
+};
+
+export const useMergeWishlists = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const response = await wishlistApi.mergeWishlists();
+      return response;
+    },
     onSuccess: () => {
+      console.log("Wishlist merged successfully");
+      // Clear guest session ID
+      clearSessionId();
+      // Invalidate and refetch wishlist data
       queryClient.invalidateQueries(["wishlist"]);
     },
-    onError: (error) => {
-      if (error.response?.status === 401) logout();
-    },
   });
+};
+
+// Combined toggle hook that works for both guest and authenticated users
+export const useToggleWishlist = (productId) => {
+  // const queryClient = useQueryClient();
+  const { data: wishlist } = useWishlist();
+  console.log("useToggleWishlist wishlist:", wishlist);
+  // const { userData } = useAuth();
+  // console.log("useToggleWishlist userData:", userData);
+
+  const addMutation = useAddToWishlist();
+  const removeMutation = useRemoveFromWishlist();
+
+  const isInWishlist = (
+    wishlist?.data?.wishlist?.products ||
+    wishlist?.data?.products ||
+    []
+  ).some(
+    (item) => item.product._id === productId || item.product === productId
+  );
+  console.log("isInWishlist", isInWishlist);
+  const toggleWishlist = async () => {
+    // Check if product is in wishlist
+
+    if (isInWishlist) {
+      await removeMutation.mutateAsync(productId);
+    } else {
+      await addMutation.mutateAsync(productId);
+    }
+  };
 
   return {
-    add: addMutation.mutate,
-    remove: removeMutation.mutate,
+    toggleWishlist,
+    isInWishlist,
     isAdding: addMutation.isLoading,
     isRemoving: removeMutation.isLoading,
-  };
-};
-
-// Hook to sync guest wishlist to server
-export const useSyncWishlist = () => {
-  console.log("Syncing wishlist");
-  const queryClient = useQueryClient();
-  const { isAuthenticated } = useAuth();
-  const { clear } = useClearWishlist();
-  const guestWishlist = localStorage.getItem("guestWishlist");
-  console.log("GuestWishlist sync", guestWishlist);
-  const syncMutation = useMutation({
-    mutationFn: wishlistApi.syncWishlist(guestWishlist),
-    onSuccess: () => {
-      clear();
-      queryClient.invalidateQueries(["wishlist"]);
-    },
-    onError: (error) => {
-      if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-      }
-    },
-  });
-
-  const sync = () => {
-    if (!isAuthenticated) return;
-
-    const guestWishlist = getGuestWishlist();
-    if (guestWishlist.length > 0) {
-      syncMutation.mutate(guestWishlist);
-    }
-  };
-
-  return {
-    sync,
-    isSyncing: syncMutation.isLoading,
-  };
-};
-export const useClearWishlist = () => {
-  const queryClient = useQueryClient();
-  const { isAuthenticated } = useAuth();
-
-  // The actual clear function
-  const clear = () => {
-    console.log("clearing wishlist");
-    if (!isAuthenticated) {
-      // Clear guest wishlist
-      console.log(localStorage.getItem("guestWishlist"));
-      localStorage.removeItem("guestWishlist");
-      console.log(localStorage.getItem("guestWishlist"));
-      // Update cache to empty guest wishlist
-      queryClient.setQueryData(["wishlist"], formatGuestWishlist([]));
-    } else {
-      // For authenticated users: clear cache
-      queryClient.setQueryData(["wishlist"], {
-        data: { products: [] },
-      });
-    }
-  };
-
-  // Return a mutation-like object
-  return {
-    mutate: clear,
-    isLoading: false, // Since it's synchronous
-    isError: false,
   };
 };

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import useAuth from "../hooks/useAuth";
-// import { useSyncWishlist, useClearWishlist } from "../hooks/useWishlist";
+import { useMergeWishlists } from "../hooks/useWishlist";
 import { useCartActions } from "../hooks/useCart";
 import { ButtonSpinner, LoadingButton } from "../components/ButtonSpinner";
 
@@ -17,7 +17,7 @@ export default function LoginPage() {
   const [step, setStep] = useState("credentials");
   const [otp, setOtp] = useState("");
   const [otpCountdown, setOtpCountdown] = useState(0);
-
+  const { mutate: merge } = useMergeWishlists();
   // const { sync, isSyncing } = useSyncWishlist();
   // const { clear } = useClearWishlist();
   const { syncCart } = useCartActions();
@@ -38,7 +38,6 @@ export default function LoginPage() {
     e.preventDefault();
 
     if (step === "credentials") {
-      console.log(state);
       try {
         await sendOtp.mutateAsync(state.loginId);
         setStep("otp");
@@ -56,6 +55,8 @@ export default function LoginPage() {
           },
           {
             onSuccess: () => {
+              console.log("OTP verified successfully");
+              merge();
               navigate("/");
             },
           }
@@ -63,11 +64,8 @@ export default function LoginPage() {
 
         setState({ loginId: "", password: "" });
         setOtp("");
-
-        // sync.sync();
-        // clear();
         syncCart();
-        navigate("/");
+        // navigate("/");
       } catch (err) {
         console.error("OTP verification failed:", err.message);
       }

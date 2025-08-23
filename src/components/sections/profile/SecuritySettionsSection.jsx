@@ -1,17 +1,11 @@
 import styled from "styled-components";
-import TwoFactorSetup from "../../TwoFactorSetup";
-import SessionManager from "../../SessionManager";
 
 const SecuritySettingsSection = ({
-  security,
   onPasswordChange,
   onPasswordSubmit,
   passwordForm,
   isLoading,
   error,
-  enableTwoFactor,
-  verifyTwoFactor,
-  disableTwoFactor,
 }) => (
   <NotificationSection>
     <SectionHeader>
@@ -31,8 +25,8 @@ const SecuritySettingsSection = ({
               <Label>Current Password</Label>
               <Input
                 type="password"
-                name="currentPassword"
-                value={passwordForm.currentPassword}
+                name="passwordCurrent"
+                value={passwordForm.passwordCurrent}
                 onChange={onPasswordChange}
                 required
               />
@@ -69,21 +63,6 @@ const SecuritySettingsSection = ({
           </FormRow>
         </FormGroup>
       </PasswordForm>
-
-      <TwoFactorSection>
-        <SectionSubtitle>Two-Factor Authentication</SectionSubtitle>
-        <TwoFactorSetup
-          isEnabled={security?.twoFactorEnabled}
-          enableTwoFactor={enableTwoFactor}
-          verifyTwoFactor={verifyTwoFactor}
-          disableTwoFactor={disableTwoFactor}
-        />
-      </TwoFactorSection>
-
-      <SessionSection>
-        <SectionSubtitle>Active Sessions</SectionSubtitle>
-        <SessionManager />
-      </SessionSection>
     </SectionContent>
   </NotificationSection>
 );
@@ -181,16 +160,8 @@ const Input = styled.input`
 const PasswordForm = styled.form`
   margin-bottom: 2rem;
   padding-bottom: 1.5rem;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.gray[200]};
+  /* border-bottom: 1px solid ${({ theme }) => theme.colors.gray[200]}; */
 `;
-
-const TwoFactorSection = styled.div`
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.gray[200]};
-`;
-
-const SessionSection = styled.div``;
 
 const SectionSubtitle = styled.h3`
   font-size: 1rem;

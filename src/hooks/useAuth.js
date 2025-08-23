@@ -86,10 +86,38 @@ const useAuth = () => {
   });
 
   const register = useMutation({
-    mutationFn: authApi.register,
+    mutationFn: async (registerData) => {
+      const response = await authApi.register(registerData);
+      console.log("Register response:", response);
+      return response;
+    },
     onSuccess: handleAuthSuccess,
   });
-
+  const emailVerification = useMutation({
+    mutationFn: async (email) => {
+      const response = await authApi.emailVerification(email);
+      return response;
+    },
+    onSuccess: (data) => {
+      console.log("Email verification sent:", data);
+      // Optionally, you can handle UI updates or state changes here
+    },
+    onError: (error) => {
+      console.error("Error sending email verification:", error);
+      // Optionally, you can handle UI updates or state changes here
+    },
+  });
+  const resendVerification = useMutation({
+    mutationFn: (email) => authApi.resendVerification(email),
+    onSuccess: (data) => {
+      console.log("Email verification sent:", data);
+      // Optionally, you can handle UI updates or state changes here
+    },
+    onError: (error) => {
+      console.error("Error sending email verification:", error);
+      // Optionally, you can handle UI updates or state changes here
+    },
+  });
   const logout = useMutation({
     mutationFn: authApi.logout,
     onSuccess: () => {
@@ -111,27 +139,35 @@ const useAuth = () => {
   const updateProfile = useMutation({
     mutationFn: (profileData) => authApi.updateProfile(profileData),
     onSuccess: (data) => {
-      // Update both auth and profile queries
-      queryClient.setQueryData(["auth"], (old) => ({
-        ...old,
-        ...data.data?.data,
-      }));
-      queryClient.setQueryData(["profile", userData.id], (old) => ({
-        ...old,
-        userInfo: {
-          ...old.userInfo,
-          ...data.data?.data,
-        },
-      }));
+      console.log("Profile updated:", data);
     },
   });
 
   const changePassword = useMutation({
-    mutationFn: (passwords) => authApi.changePassword(passwords),
+    mutationFn: async (passwords) => {
+      try {
+        const response = await authApi.changePassword(passwords);
+        return response;
+      } catch (error) {
+        console.error("Error changing password:", error);
+        throw error; // Propagate error to React Query
+      }
+    },
+    onSuccess: () => {
+      console.log("Password changed successfully");
+    },
   });
 
   const deactivateAccount = useMutation({
-    mutationFn: () => authApi.deactivateAccount(),
+    mutationFn: async () => {
+      try {
+        const response = await authApi.deactivateAccount();
+        return response;
+      } catch (error) {
+        console.error("Error deactivating account:", error);
+        throw error; // Propagate error to React Query
+      }
+    },
     onSuccess: () => {
       queryClient.removeQueries(["auth"]);
       queryClient.removeQueries(["profile"]);
@@ -258,22 +294,11 @@ const useAuth = () => {
   });
   const uploadAvatar = useMutation({
     mutationFn: async (avatar) => {
-      console.log("avatar", avatar);
       const response = await authApi.uploadAvatar(avatar);
       return response;
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(["auth"], (old) => ({
-        ...old,
-        avatar: data.data?.data,
-      }));
-      queryClient.setQueryData(["profile", userData.id], (old) => ({
-        ...old,
-        userInfo: {
-          ...old.userInfo,
-          avatar: data.data?.data,
-        },
-      }));
+      console.log("photo successfully uploaded", data);
     },
   });
 
@@ -281,6 +306,7 @@ const useAuth = () => {
     // Auth state
     userData,
     profileData,
+
     authError,
     profileError,
     uploadAvatar,
@@ -293,6 +319,8 @@ const useAuth = () => {
     sendOtp,
     verifyOtp,
     register,
+    emailVerification,
+    resendVerification,
     logout,
     refetchAuth,
     // refetchProfile,

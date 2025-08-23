@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import styled from "styled-components";
 
 import useAuth from "../hooks/useAuth";
@@ -9,6 +9,7 @@ import AccountManagementSection from "../components/sections/profile/AccountMana
 import ConnectedAccountsSection from "../components/sections/profile/ConnectedAccountsSection";
 import SecuritySettingsSection from "../components/sections/profile/SecuritySettionsSection";
 import ErrorDisplay from "../components/ErrorDisplay";
+import { compressImage } from "../utils/imageCompressor";
 
 const ProfilePage = () => {
   const {
@@ -29,10 +30,13 @@ const ProfilePage = () => {
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [avatarFile, setAvatarFile] = useState(null);
   const [passwordForm, setPasswordForm] = useState({
-    currentPassword: "",
+    passwordCurrent: "",
     newPassword: "",
     confirmPassword: "",
   });
+
+  // Create a ref for the file input
+  const fileInputRef = useRef(null);
 
   // Initialize data when profileData is available
   useEffect(() => {
@@ -77,11 +81,11 @@ const ProfilePage = () => {
       return;
     }
     changePassword.mutate({
-      currentPassword: passwordForm.currentPassword,
+      passwordCurrent: passwordForm.passwordCurrent,
       newPassword: passwordForm.newPassword,
     });
     setPasswordForm({
-      currentPassword: "",
+      passwordCurrentd: "",
       newPassword: "",
       confirmPassword: "",
     });
@@ -94,8 +98,8 @@ const ProfilePage = () => {
     }
   };
 
-  // Handle avatar selection
-  const handleAvatarChange = (e) => {
+  // Handle avatar selection and immediate upload
+  const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -118,25 +122,46 @@ const ProfilePage = () => {
     reader.readAsDataURL(file);
 
     setAvatarFile(file);
+
+    // Immediately upload the file after selection
+    await handleAvatarUpload(file);
   };
 
   // Handle avatar upload
-  const handleAvatarUpload = async () => {
-    if (!avatarFile) {
+  const handleAvatarUpload = async (file = null) => {
+    const uploadFile = file || avatarFile;
+
+    if (!uploadFile) {
       alert("Please select an image first");
       return;
     }
 
-    const formData = new FormData();
-    formData.append("photo", avatarFile);
-
     try {
+      const compressedCover = await compressImage(uploadFile, {
+        quality: 0.7,
+        maxWidth: 1024,
+      });
+
+      const formData = new FormData();
+      formData.append("photo", compressedCover);
+
       await uploadAvatar.mutateAsync(formData);
       setAvatarFile(null);
+      // Reset the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
       alert("Avatar uploaded successfully!");
     } catch (error) {
       console.error("Error uploading avatar:", error);
       alert("Error uploading avatar. Please try again.");
+    }
+  };
+
+  // Trigger file input click
+  const triggerFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
     }
   };
 
@@ -164,11 +189,13 @@ const ProfilePage = () => {
           newProfileData={newProfileData}
           avatarPreview={avatarPreview}
           onAvatarChange={handleAvatarChange}
-          onAvatarUpload={handleAvatarUpload}
+          onAvatarUpload={triggerFileInput} // Pass the trigger function
           onChange={handleInputChange}
+          onSavePersonalInfo={savePreferences}
           avatarFile={avatarFile}
           isUploading={uploadAvatar.isLoading}
           error={updateProfile.error}
+          fileInputRef={fileInputRef} // Pass the ref
         />
 
         <SecuritySettingsSection
@@ -184,7 +211,6 @@ const ProfilePage = () => {
         />
 
         <ConnectedAccountsSection accounts={profileData.connectedAccounts} />
-
         <AccountManagementSection
           onDeactivate={handleDeactivateAccount}
           isLoading={deactivateAccount.isLoading}

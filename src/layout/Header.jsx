@@ -26,6 +26,7 @@ export default function Header() {
   const buttonRef = useRef(null);
 
   const { logout, userData, isLoading: isUserLoading } = useAuth();
+
   const { count: cartCount } = useCartTotals();
 
   const { getParentCategories } = useCategory();
@@ -36,10 +37,16 @@ export default function Header() {
     return categoriesData?.data?.categories || [];
   }, [categoriesData]);
 
-  const user = userData?.user || userData?.data || null;
+  const user = useMemo(() => {
+    return (
+      userData?.data?.data || userData?.data?.user || userData?.user || null
+    );
+  }, [userData]);
+
   const { data: wishlistData } = useWishlist();
+
   const wishlist = useMemo(() => {
-    return wishlistData?.data || [];
+    return wishlistData?.data?.wishlist || wishlistData?.data || [];
   }, [wishlistData]);
 
   const toggleMobileMenu = () => {
@@ -226,8 +233,8 @@ export default function Header() {
             <BottomLink to="/wishlist">
               <ActionIcon>
                 <FaHeart />
-                {wishlist?.products?.length > 0 && (
-                  <ActionBadge>{wishlist.products.length}</ActionBadge>
+                {wishlist?.productCount > 0 && (
+                  <ActionBadge>{wishlist.productCount}</ActionBadge>
                 )}
               </ActionIcon>
               <ActionText>Wishlist</ActionText>

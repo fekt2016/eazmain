@@ -30,6 +30,7 @@ const SellerPage = lazy(() => import("../pages/SellerPage"));
 const CouponPage = lazy(() => import("../pages/CouponPage"));
 const BrowserhistoryPage = lazy(() => import("../pages/BrowserhistoryPage"));
 const PaymentMethodPage = lazy(() => import("../pages/PaymentMethodPage"));
+const WishListPage = lazy(() => import("../pages/WishlistPage"));
 const MainRoutes = () => (
   <Routes>
     <Route element={<MainLayout />}>
@@ -55,6 +56,14 @@ const MainRoutes = () => (
         element={
           <Suspense fallback={<LoadingSpinner />}>
             <ProductDetail />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.WISHLIST}
+        element={
+          <Suspense fallback={<LoadingSpinner />}>
+            <WishListPage />
           </Suspense>
         }
       />

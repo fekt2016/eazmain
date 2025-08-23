@@ -50,6 +50,7 @@ export const getCartStructure = (cartData) => {
 // Helper to save guest cart to localStorage
 
 const saveGuestCart = (cartData) => {
+  console.log("Saving guest cart:", cartData);
   try {
     localStorage.setItem("guestCart", JSON.stringify(cartData));
   } catch (error) {
@@ -130,6 +131,7 @@ export const useCartActions = () => {
         return response;
       }
       const guestCart = getGuestCart();
+
       const products = guestCart?.cart?.products || [];
       const existingItem = products?.find(
         (item) => item.product._id === productId
@@ -142,7 +144,7 @@ export const useCartActions = () => {
           product: {
             _id: productId,
             name: product?.name,
-            price: product?.price,
+            defaultPrice: product?.defaultPrice,
             imageCover: product?.imageCover,
           },
           quantity,
@@ -227,8 +229,12 @@ export const useCartActions = () => {
   });
   const syncCartMutation = useMutation({
     mutationFn: async () => {
+      console.log("Syncing guest cart to server...");
       const guestCart = getGuestCart();
-      const products = guestCart?.data?.cart?.products;
+      console.log("GuestCart sync", guestCart);
+      const products =
+        guestCart?.data?.cart?.products || guestCart.cart.products || [];
+      console.log("Products to sync:", products);
       const results = await Promise.allSettled(
         products.map((item) =>
           cartApi.addToCart(item.product._id, item.quantity)
