@@ -301,6 +301,61 @@ const useAuth = () => {
       console.log("photo successfully uploaded", data);
     },
   });
+  const sendPasswordResetOtp = useMutation({
+    mutationFn: async (loginId) => {
+      const response = await authApi.sendPasswordResetOtp(loginId);
+      return response;
+    },
+    onSuccess: (data) => {
+      console.log("Password reset OTP sent:", data);
+      // You can handle UI updates or state changes here
+    },
+    onError: (error) => {
+      console.error("Error sending password reset OTP:", error);
+      // Handle error UI updates
+    },
+  });
+  const verifyPasswordResetOtp = useMutation({
+    mutationFn: async ({ loginId, otp }) => {
+      const response = await authApi.verifyPasswordResetOtp(loginId, otp);
+      return response;
+    },
+    onSuccess: (data) => {
+      console.log("Password reset OTP verified:", data);
+      // Store reset token if provided by the API
+      if (data.data?.resetToken) {
+        localStorage.setItem("resetToken", data.data.resetToken);
+      }
+    },
+    onError: (error) => {
+      console.error("Error verifying password reset OTP:", error);
+    },
+  });
+  const resetPassword = useMutation({
+    mutationFn: async ({ loginId, newPassword, resetToken }) => {
+      const response = await authApi.resetPassword(
+        loginId,
+        newPassword,
+        resetToken
+      );
+      return response;
+    },
+    onSuccess: (data) => {
+      console.log("Password reset successful:", data);
+      // Clear reset token from storage
+      localStorage.removeItem("resetToken");
+      // Navigate to login page with success message
+      navigate("/login", {
+        state: {
+          message:
+            "Password reset successfully. Please login with your new password.",
+        },
+      });
+    },
+    onError: (error) => {
+      console.error("Error resetting password:", error);
+    },
+  });
 
   return {
     // Auth state
@@ -324,6 +379,11 @@ const useAuth = () => {
     logout,
     refetchAuth,
     // refetchProfile,
+
+    //password reset
+    sendPasswordResetOtp,
+    resetPassword,
+    verifyPasswordResetOtp,
 
     // Profile operations
     updateProfile,

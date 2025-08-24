@@ -30,16 +30,26 @@ const authApi = {
     return response;
   },
 
-  forgotPassword: async (email) => {
-    const response = await api.post("/users/forgot-password", { email });
-    return response;
+  sendPasswordResetOtp: async (loginId) => {
+    const response = await api.post("/users/forgot-password", { loginId });
+    return response.data;
+  },
+  verifyPasswordResetOtp: async (loginId, otp) => {
+    const response = await api.post("/users/verify-reset-otp", {
+      loginId,
+      otp,
+    });
+    return response.data;
   },
 
-  resetPassword: async ({ token, password }) => {
-    const response = await api.post(`/users/reset-password/${token}`, {
-      password,
-    });
-    return response;
+  resetPassword: async (loginId, newPassword, resetToken = null) => {
+    const payload = { loginId, newPassword };
+    if (resetToken) {
+      payload.resetToken = resetToken;
+    }
+
+    const response = await api.post("/users/reset-password", payload);
+    return response.data;
   },
 
   changePassword: async (passwords) => {

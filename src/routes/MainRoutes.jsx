@@ -20,6 +20,8 @@ const CheckoutPage = lazy(() => import("../pages/CheckoutPage"));
 const OrderConfirmationPage = lazy(() =>
   import("../pages/OrderConfirmationPage")
 );
+// const ForgetPasswordPage = lazy(() => import("../auth/ForgotPasswordPage"));
+
 const ProfilePage = lazy(() => import("../pages/profilePage"));
 const SupportPage = lazy(() => import("../pages/SupportPage"));
 const OrderList = lazy(() => import("../pages/OrderList"));
@@ -31,6 +33,7 @@ const CouponPage = lazy(() => import("../pages/CouponPage"));
 const BrowserhistoryPage = lazy(() => import("../pages/BrowserhistoryPage"));
 const PaymentMethodPage = lazy(() => import("../pages/PaymentMethodPage"));
 const WishListPage = lazy(() => import("../pages/WishlistPage"));
+const ForgotPasswordPage = lazy(() => import("../auth/ForgotPasswordPage"));
 const MainRoutes = () => (
   <Routes>
     <Route element={<MainLayout />}>
@@ -88,6 +91,14 @@ const MainRoutes = () => (
         element={
           <Suspense fallback={<LoadingSpinner />}>
             <LoginPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.FORGOT}
+        element={
+          <Suspense fallback={<LoadingSpinner />}>
+            <ForgotPasswordPage />
           </Suspense>
         }
       />
