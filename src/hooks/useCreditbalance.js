@@ -6,7 +6,6 @@ export const useCreditBalance = () => {
     queryKey: ["creditbalance"],
     queryFn: async () => {
       const response = await creditBalanceApi.getCreditBalance();
-      console.log("hook creditbalance", response);
       return response;
     },
   });

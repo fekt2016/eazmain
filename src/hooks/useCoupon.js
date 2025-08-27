@@ -10,3 +10,13 @@ export const useApplyCoupon = () => {
     },
   });
 };
+export const useApplyUserCoupon = () => {
+  console.log("useApplyUserCoupon called");
+  return useMutation({
+    mutationFn: async (couponCode) => {
+      console.log("Hook Applying coupon code:", couponCode);
+      const response = await couponApi.applyUserCoupon(couponCode);
+      return response;
+    },
+  });
+};

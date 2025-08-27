@@ -10,6 +10,13 @@ const couponApi = {
     });
     return response.data;
   },
+  applyUserCoupon: async (couponCode) => {
+    console.log("api user coupon data", couponCode);
+    const response = await api.post("/coupon/apply-user-coupon", {
+      couponCode,
+    });
+    return response.data;
+  },
 };
 
 export default couponApi;

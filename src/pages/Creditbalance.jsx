@@ -1,18 +1,95 @@
 import styled from "styled-components";
-import { FaCoins, FaHistory, FaPlus, FaArrowRight } from "react-icons/fa";
+import {
+  FaCoins,
+  FaHistory,
+  FaPlus,
+  FaArrowRight,
+  FaSort,
+  FaSortUp,
+  FaSortDown,
+} from "react-icons/fa";
 import { devicesMax } from "../styles/breakpoint";
 import { useCreditBalance } from "../hooks/useCreditbalance";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { formatDate } from "../utils/helpers";
+import { useApplyUserCoupon } from "../hooks/useCoupon";
 
 const CreditBalance = () => {
   const { data, isLoading } = useCreditBalance();
-
-  console.log("data", data);
+  const [couponCode, setCouponCode] = useState("");
+  const [sortConfig, setSortConfig] = useState({
+    key: "date",
+    direction: "desc",
+  });
+  const { mutate: applyCouponMutate, isLoading: isApplying } =
+    useApplyUserCoupon();
 
   const creditBalance = useMemo(() => {
     return data?.data?.creditbalance || {};
   }, [data]);
+  const lastTransaction = useMemo(() => {
+    if (!creditBalance.transactions || creditBalance.transactions.length === 0)
+      return null;
+    return creditBalance.transactions.reduce((latest, transaction) =>
+      new Date(transaction.date) > new Date(latest.date) ? transaction : latest
+    );
+  }, [creditBalance.transactions]);
+
+  // Sort transactions based on sort configuration
+  const sortedTransactions = useMemo(() => {
+    if (!creditBalance.transactions) return [];
+
+    let sortableItems = [...creditBalance.transactions];
+    return sortableItems.sort((a, b) => {
+      if (sortConfig.key === "date") {
+        // Sort by date
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        if (sortConfig.direction === "desc") {
+          return dateB - dateA; // Newest first
+        } else {
+          return dateA - dateB; // Oldest first
+        }
+      } else if (sortConfig.key === "amount") {
+        // Sort by amount
+        if (sortConfig.direction === "desc") {
+          return b.amount - a.amount; // Highest first
+        } else {
+          return a.amount - b.amount; // Lowest first
+        }
+      } else if (sortConfig.key === "description") {
+        // Sort by description
+        if (a.description < b.description) {
+          return sortConfig.direction === "desc" ? 1 : -1;
+        }
+        if (a.description > b.description) {
+          return sortConfig.direction === "desc" ? -1 : 1;
+        }
+        return 0;
+      }
+      return 0;
+    });
+  }, [creditBalance.transactions, sortConfig]);
+
+  // Function to handle sorting
+  const requestSort = (key) => {
+    let direction = "desc";
+    if (sortConfig.key === key && sortConfig.direction === "desc") {
+      direction = "asc";
+    }
+    setSortConfig({ key, direction });
+  };
+
+  // Function to handle coupon application
+  const applyCoupon = async () => {
+    applyCouponMutate(couponCode);
+  };
+
+  // Get sort icon for a column
+  const getSortIcon = (key) => {
+    if (sortConfig.key !== key) return <FaSort />;
+    return sortConfig.direction === "desc" ? <FaSortDown /> : <FaSortUp />;
+  };
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -26,37 +103,50 @@ const CreditBalance = () => {
           <h1>Credit Balance</h1>
         </Title>
       </Header>
+
       <BalanceCard>
+        <BalanceLabel>Actual Balance</BalanceLabel>
+        <BalanceAmount>
+          GH&#x20B5;{creditBalance.balance?.toFixed(2) || "0.00"}
+        </BalanceAmount>
         <BalanceLabel>Available Balance</BalanceLabel>
         <BalanceAmount>
-          GH&#x20B5;{creditBalance.balance.toFixed(2)}
+          GH&#x20B5;{creditBalance.balance?.toFixed(2) || "0.00"}
         </BalanceAmount>
         <BalanceInfo>
           <InfoItem>
             <span>Last Top-up</span>
-            <strong>$500.00</strong>
+            <strong>${lastTransaction?.amount || "0.00"}</strong>
           </InfoItem>
-          <InfoItem>
+          {/* <InfoItem>
             <span>Expires</span>
             <strong>Dec 31, 2024</strong>
-          </InfoItem>
+          </InfoItem> */}
         </BalanceInfo>
       </BalanceCard>
 
-      <ActionCards>
-        {/* <ActionCard>
-           <ActionIcon $color="var(--color-primary-500)">
-            <FaPlus />
-          </ActionIcon>
-          <ActionContent>
-            <h3>Add Credit</h3>
-            <p>Top up your balance</p>
-          </ActionContent>
-          <ActionArrow>
-            <FaArrowRight />
-          </ActionArrow>
-        </ActionCard> */}
+      {/* Coupon Application Section */}
+      <CouponSection>
+        <SectionHeader>
+          <FaPlus />
+          <h2>Apply Coupon</h2>
+        </SectionHeader>
 
+        <CouponForm>
+          <CouponInput
+            type="text"
+            placeholder="Enter coupon code"
+            value={couponCode}
+            onChange={(e) => setCouponCode(e.target.value)}
+            disabled={isApplying}
+          />
+          <ApplyButton onClick={applyCoupon} disabled={isApplying}>
+            {isApplying ? "Applying..." : "Apply Coupon"}
+          </ApplyButton>
+        </CouponForm>
+      </CouponSection>
+
+      <ActionCards>
         <ActionCard>
           <ActionIcon $color="var(--color-green-700)">
             <FaHistory />
@@ -80,13 +170,26 @@ const CreditBalance = () => {
         <TransactionTable>
           <thead>
             <tr>
-              <TableHeader>Date</TableHeader>
-              <TableHeader>Description</TableHeader>
-              <TableHeader $align="right">Amount</TableHeader>
+              <TableHeader onClick={() => requestSort("date")} $clickable>
+                Date {getSortIcon("date")}
+              </TableHeader>
+              <TableHeader
+                onClick={() => requestSort("description")}
+                $clickable
+              >
+                Description {getSortIcon("description")}
+              </TableHeader>
+              <TableHeader
+                $align="right"
+                onClick={() => requestSort("amount")}
+                $clickable
+              >
+                Amount {getSortIcon("amount")}
+              </TableHeader>
             </tr>
           </thead>
           <tbody>
-            {creditBalance.transactions.map((transaction) => (
+            {sortedTransactions.map((transaction) => (
               <TableRow key={transaction._id}>
                 <TableCell>{formatDate(transaction.date)}</TableCell>
                 <TableCell>{transaction.description}</TableCell>
@@ -116,7 +219,7 @@ const CreditBalance = () => {
 
 export default CreditBalance;
 
-// Styled Components
+// Styled Components - Updated with new styles for sorting
 const PageContainer = styled.div`
   max-width: 1200px;
   margin: 0 auto;
@@ -146,33 +249,6 @@ const Title = styled.div`
   svg {
     color: var(--color-bitcoin-900);
     font-size: 2.4rem;
-  }
-`;
-
-const AddCreditButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--color-primary-600);
-  color: white;
-  border: none;
-  border-radius: var(--border-radius-lg);
-  padding: 12px 24px;
-  font-size: 1.6rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: var(--shadow-md);
-
-  &:hover {
-    background: var(--color-primary-700);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
-  }
-
-  @media ${devicesMax.sm} {
-    padding: 10px 18px;
-    font-size: 1.4rem;
   }
 `;
 
@@ -332,6 +408,20 @@ const TableHeader = styled.th`
   color: var(--color-grey-600);
   font-weight: 600;
   font-size: 1.4rem;
+  cursor: ${(props) => (props.$clickable ? "pointer" : "default")};
+  user-select: none;
+  position: relative;
+
+  &:hover {
+    background-color: ${(props) =>
+      props.$clickable ? "var(--color-grey-100)" : "transparent"};
+  }
+
+  svg {
+    margin-left: 5px;
+    font-size: 1.2rem;
+    vertical-align: middle;
+  }
 `;
 
 const TableRow = styled.tr`
@@ -382,5 +472,62 @@ const ViewAllButton = styled.button`
   svg {
     transition: transform 0.3s;
     font-size: 1.2rem;
+  }
+`;
+
+const CouponSection = styled.div`
+  background: white;
+  border-radius: var(--border-radius-lg);
+  padding: 25px;
+  box-shadow: var(--shadow-md);
+  margin-bottom: 30px;
+`;
+
+const CouponForm = styled.div`
+  display: flex;
+  gap: 15px;
+  margin-top: 15px;
+
+  @media ${devicesMax.sm} {
+    flex-direction: column;
+  }
+`;
+
+const CouponInput = styled.input`
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid var(--color-grey-300);
+  border-radius: var(--border-radius-md);
+  font-size: 1.5rem;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+  }
+`;
+
+const ApplyButton = styled.button`
+  padding: 12px 24px;
+  background: var(--color-primary-600);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+
+  &:hover:not(:disabled) {
+    background: var(--color-primary-700);
+  }
+
+  &:disabled {
+    background: var(--color-grey-400);
+    cursor: not-allowed;
+  }
+
+  @media ${devicesMax.sm} {
+    width: 100%;
   }
 `;
