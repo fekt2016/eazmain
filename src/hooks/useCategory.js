@@ -9,9 +9,13 @@ const useCategory = () => {
   const getCategories = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
+      console.log("hook get cate service ");
       try {
-        const data = await categoryService.getAllCategories({ limit: 1000 }); // Set a high limit to get all categories
-        return data;
+        const response = await categoryService.getAllCategories({
+          limit: 1000,
+        });
+        console.log("hook get all categories", response); // Set a high limit to get all categories
+        return response;
       } catch (error) {
         console.error("Failed to fetch categories:", error);
         return [];

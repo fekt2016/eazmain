@@ -56,14 +56,6 @@ const HomePage = () => {
       bgColor: "#ffecd2",
     },
   ];
-  const categories = [
-    { id: 1, name: "Electronics", icon: "📱", count: 24 },
-    { id: 2, name: "Fashion", icon: "👕", count: 36 },
-    { id: 3, name: "Home & Kitchen", icon: "🏠", count: 18 },
-    { id: 4, name: "Beauty", icon: "💄", count: 15 },
-    { id: 5, name: "Sports", icon: "⚽", count: 22 },
-    { id: 6, name: "Books", icon: "📚", count: 31 },
-  ];
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -98,22 +90,6 @@ const HomePage = () => {
   return (
     <PageContainer>
       <HeroSlider items={sliderItems} />
-      <Section>
-        <SectionHeader>
-          <SectionTitle>Shop by Category</SectionTitle>
-          <SectionSubtitle>Browse our popular categories</SectionSubtitle>
-        </SectionHeader>
-
-        <CategoriesGrid>
-          {categories.map((category) => (
-            <CategoryCard key={category.id}>
-              <CategoryIcon>{category.icon}</CategoryIcon>
-              <CategoryName>{category.name}</CategoryName>
-              <CategoryCount>{category.count} items</CategoryCount>
-            </CategoryCard>
-          ))}
-        </CategoriesGrid>
-      </Section>
       <Section>
         <ProductsGrid>
           {products.map((product) => {

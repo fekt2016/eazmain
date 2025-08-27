@@ -56,8 +56,8 @@ const useAuth = () => {
         throw error; // Propagate error to React Query
       }
     },
-    // enabled: !!userData?.id,
-    // staleTime: 1000 * 60 * 5,
+    enabled: !!userData?.id,
+    staleTime: 1000 * 60 * 5,
   });
 
   // Common auth success handler

@@ -22,7 +22,7 @@ export default function ProductCard({
   // const { isAuthenticated } = useAuth();
   const { toggleWishlist, isAdding, isRemoving, isInWishlist } =
     useToggleWishlist(product._id);
-  console.log("ProductCard isInWishlist:", isInWishlist);
+
   const { mutate: removeWishlist } = useRemoveFromWishlist();
   const { addToCart } = useCartActions();
 

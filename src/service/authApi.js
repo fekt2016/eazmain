@@ -7,7 +7,12 @@ const authApi = {
   },
 
   verifyOtp: async (loginId, otp, password) => {
-    const response = api.post("/users/verify-otp", { loginId, otp, password });
+    const response = await api.post("/users/verify-otp", {
+      loginId,
+      otp,
+      password,
+    });
+    console.log("verifyOtp response:", response);
     return response;
   },
 
@@ -47,7 +52,6 @@ const authApi = {
     if (resetToken) {
       payload.resetToken = resetToken;
     }
-
     const response = await api.post("/users/reset-password", payload);
     return response.data;
   },

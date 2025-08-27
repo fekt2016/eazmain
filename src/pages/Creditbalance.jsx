@@ -8,8 +8,10 @@ import { formatDate } from "../utils/helpers";
 const CreditBalance = () => {
   const { data, isLoading } = useCreditBalance();
 
+  console.log("data", data);
+
   const creditBalance = useMemo(() => {
-    return data?.data?.creditbalance;
+    return data?.data?.creditbalance || {};
   }, [data]);
 
   if (isLoading) {

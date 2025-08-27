@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import {
   FaBars,
   FaHeart,
@@ -7,8 +7,11 @@ import {
   FaThList,
   FaUser,
   FaHeadset,
-  FaStore, // Seller domain icon
-  FaMobile, // Mobile app icon
+  FaStore,
+  FaMobile,
+  FaChevronRight,
+  FaChevronDown,
+  FaChevronUp,
 } from "react-icons/fa";
 import styled from "styled-components";
 import useAuth from "../hooks/useAuth";
@@ -20,22 +23,32 @@ import useCategory from "../hooks/useCategory";
 export default function Header() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [showCategoriesModal, setShowCategoriesModal] = useState(false);
+  const [showCategoriesDropdown, setShowCategoriesDropdown] = useState(false);
+  const [hoveredCategory, setHoveredCategory] = useState(null);
   const dropdownRef = useRef(null);
-  const modalRef = useRef(null);
-  const buttonRef = useRef(null);
+  const categoriesDropdownRef = useRef(null);
 
   const { logout, userData, isLoading: isUserLoading } = useAuth();
-
   const { count: cartCount } = useCartTotals();
-
   const { getParentCategories } = useCategory();
   const { data: categoriesData, isLoading: isCategoriesLoading } =
     getParentCategories;
 
-  const categories = useMemo(() => {
+  // Get parent categories with subcategories (already populated from backend)
+  const parentCategories = useMemo(() => {
     return categoriesData?.data?.categories || [];
   }, [categoriesData]);
+
+  // Set first category as default when dropdown opens
+  useEffect(() => {
+    if (
+      showCategoriesDropdown &&
+      parentCategories.length > 0 &&
+      !hoveredCategory
+    ) {
+      setHoveredCategory(parentCategories[0]);
+    }
+  }, [showCategoriesDropdown, parentCategories, hoveredCategory]);
 
   const user = useMemo(() => {
     return (
@@ -53,35 +66,32 @@ export default function Header() {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
+  // Handle clicks outside dropdowns
+  const handleClickOutside = useCallback((event) => {
+    if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      setShowDropdown(false);
+    }
+    if (
+      categoriesDropdownRef.current &&
+      !categoriesDropdownRef.current.contains(event.target)
+    ) {
+      setShowCategoriesDropdown(false);
+      setHoveredCategory(null);
+    }
+  }, []);
+
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      // Close dropdown if clicked outside
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowDropdown(false);
-      }
-
-      // Close modal if clicked outside
-      if (
-        showCategoriesModal &&
-        modalRef.current &&
-        !modalRef.current.contains(event.target) &&
-        !buttonRef.current.contains(event.target)
-      ) {
-        setShowCategoriesModal(false);
-      }
-    };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [showCategoriesModal]);
+  }, [handleClickOutside]);
 
   const logoutHandler = () => {
     logout.mutate();
   };
 
-  if (isUserLoading || isCategoriesLoading) return <div>Loading...</div>;
+  if (isUserLoading) return <div>Loading...</div>;
 
   return (
     <StyledHeader>
@@ -92,19 +102,16 @@ export default function Header() {
         </Logo>
 
         <TopLinks>
-          {/* Seller Portal Button */}
           <TopButton href="https://seller.eazshop.com" target="_blank">
             <FaStore />
             <span>Seller Portal</span>
           </TopButton>
 
-          {/* Mobile App Button */}
           <TopButton href="https://app.eazshop.com/download" target="_blank">
             <FaMobile />
             <span>Get App</span>
           </TopButton>
 
-          {/* Support Link */}
           <SupportLink to="/support">
             <FaHeadset />
             <span>Support</span>
@@ -113,50 +120,112 @@ export default function Header() {
       </HeaderTop>
 
       <BottomHeader>
-        <CategoriesContainer>
+        <CategoriesContainer ref={categoriesDropdownRef}>
           <CategoriesButton
-            ref={buttonRef}
-            onClick={() => setShowCategoriesModal(!showCategoriesModal)}
+            onClick={() => setShowCategoriesDropdown(!showCategoriesDropdown)}
           >
             <FaThList />
             <span>Categories</span>
+            {showCategoriesDropdown ? (
+              <FaChevronUp size={12} />
+            ) : (
+              <FaChevronDown size={12} />
+            )}
           </CategoriesButton>
 
-          {showCategoriesModal && (
-            <CategoriesModal ref={modalRef}>
-              <ModalContent>
-                <ModalHeader>
+          {showCategoriesDropdown && (
+            <CategoriesDropdown>
+              <DropdownContent>
+                <DropdownHeader>
                   <h3>All Categories</h3>
-                  <CloseButton onClick={() => setShowCategoriesModal(false)}>
-                    &times;
-                  </CloseButton>
-                </ModalHeader>
-                <CategoriesGrid>
-                  {categories?.length === 0 ? (
-                    <NoCategories>No categories available</NoCategories>
-                  ) : (
-                    categories?.map((category) => (
-                      <CategoryCard
-                        key={category._id}
-                        to={`/category/${category._id}`}
-                        onClick={() => setShowCategoriesModal(false)}
-                      >
-                        <CategoryImage
-                          src={category.image}
-                          alt={category.name}
-                          onError={(e) => {
-                            e.target.src =
-                              "https://via.placeholder.com/150?text=No+Image";
-                            e.target.onerror = null;
-                          }}
-                        />
-                        <CategoryName>{category.name}</CategoryName>
-                      </CategoryCard>
-                    ))
-                  )}
-                </CategoriesGrid>
-              </ModalContent>
-            </CategoriesModal>
+                </DropdownHeader>
+                <CategoryPanels>
+                  <ParentCategoriesPanel>
+                    <PanelTitle>Categories</PanelTitle>
+                    <CategoriesList>
+                      {isCategoriesLoading ? (
+                        <LoadingMessage>Loading categories...</LoadingMessage>
+                      ) : parentCategories.length === 0 ? (
+                        <NoCategories>No categories available</NoCategories>
+                      ) : (
+                        parentCategories.map((category) => (
+                          <CategoryItem
+                            key={category._id}
+                            onMouseEnter={() => setHoveredCategory(category)}
+                            className={
+                              hoveredCategory?._id === category._id
+                                ? "active"
+                                : ""
+                            }
+                          >
+                            <CategoryLink
+                              to={`/category/${category._id}`}
+                              onClick={() => setShowCategoriesDropdown(false)}
+                            >
+                              <CategoryImage
+                                src={category.image}
+                                alt={category.name}
+                                onError={(e) => {
+                                  e.target.src =
+                                    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3E%3Crect width='30' height='30' fill='%23ccc'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='8px' fill='%23fff' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
+                                  e.target.onerror = null;
+                                }}
+                              />
+                              <CategoryName>{category.name}</CategoryName>
+                              {category.subcategories &&
+                                category.subcategories.length > 0 && (
+                                  <FaChevronRight size={10} />
+                                )}
+                            </CategoryLink>
+                          </CategoryItem>
+                        ))
+                      )}
+                    </CategoriesList>
+                  </ParentCategoriesPanel>
+
+                  <SubCategoriesPanel>
+                    <PanelTitle>
+                      {hoveredCategory
+                        ? `${hoveredCategory.name} Subcategories`
+                        : "Subcategories"}
+                    </PanelTitle>
+                    <SubCategoriesGrid>
+                      {hoveredCategory &&
+                      hoveredCategory.subcategories &&
+                      hoveredCategory.subcategories.length > 0 ? (
+                        hoveredCategory.subcategories.map((subCategory) => (
+                          <SubCategoryGridItem key={subCategory._id}>
+                            <SubCategoryGridLink
+                              to={`/category/${subCategory._id}`}
+                              onClick={() => setShowCategoriesDropdown(false)}
+                            >
+                              <SubCategoryCircleImage
+                                src={subCategory.image}
+                                alt={subCategory.name}
+                                onError={(e) => {
+                                  e.target.src =
+                                    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Ccircle cx='30' cy='30' r='30' fill='%23ccc'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='10px' fill='%23fff' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
+                                  e.target.onerror = null;
+                                }}
+                              />
+                              <SubCategoryGridName>
+                                {subCategory.name}
+                              </SubCategoryGridName>
+                            </SubCategoryGridLink>
+                          </SubCategoryGridItem>
+                        ))
+                      ) : (
+                        <NoSubCategories>
+                          {hoveredCategory
+                            ? "No subcategories available"
+                            : "Hover over a category to see subcategories"}
+                        </NoSubCategories>
+                      )}
+                    </SubCategoriesGrid>
+                  </SubCategoriesPanel>
+                </CategoryPanels>
+              </DropdownContent>
+            </CategoriesDropdown>
           )}
         </CategoriesContainer>
 
@@ -295,7 +364,6 @@ const TopLinks = styled.div`
   }
 `;
 
-// New button style for top links
 const TopButton = styled.a`
   display: flex;
   align-items: center;
@@ -354,6 +422,7 @@ const BottomHeader = styled.div`
 
   @media (max-width: 992px) {
     flex-wrap: wrap;
+    gap: 15px;
   }
 `;
 
@@ -392,6 +461,10 @@ const LogoText = styled(Link)`
 const CategoriesContainer = styled.div`
   position: relative;
   display: inline-block;
+
+  @media (max-width: 992px) {
+    order: 1;
+  }
 `;
 
 const CategoriesButton = styled.button`
@@ -420,93 +493,202 @@ const CategoriesButton = styled.button`
   }
 `;
 
-const CategoriesModal = styled.div`
+const CategoriesDropdown = styled.div`
   position: absolute;
   top: 100%;
   left: 0;
   width: 800px;
-  max-width: 90vw;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
   z-index: 1000;
   margin-top: 10px;
+  overflow: hidden;
 
-  @media (max-width: 768px) {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 90%;
-    max-height: 80vh;
+  @media (max-width: 900px) {
+    width: 600px;
+  }
+
+  @media (max-width: 700px) {
+    width: 90vw;
+    left: -50px;
   }
 `;
 
-const ModalContent = styled.div`
-  background-color: white;
-  border-radius: 10px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
+const DropdownContent = styled.div`
+  padding: 0;
 `;
 
-const ModalHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+const DropdownHeader = styled.div`
   padding: 15px 20px;
   background-color: #4e73df;
   color: white;
-`;
 
-const CloseButton = styled.button`
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: white;
-`;
-
-const CategoriesGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 20px;
-  padding: 20px;
-
-  @media (max-width: 480px) {
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  h3 {
+    margin: 0;
+    font-size: 16px;
   }
 `;
 
-const NoCategories = styled.div`
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: 20px;
-  color: #6c757d;
+const CategoryPanels = styled.div`
+  display: flex;
+  height: 400px;
+
+  @media (max-width: 700px) {
+    flex-direction: column;
+    height: auto;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
 `;
 
-const CategoryCard = styled(Link)`
-  text-align: center;
-  cursor: pointer;
-  transition: transform 0.2s;
+const ParentCategoriesPanel = styled.div`
+  width: 40%;
+  border-right: 1px solid #eaecf4;
+  overflow-y: auto;
+
+  @media (max-width: 700px) {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #eaecf4;
+  }
+`;
+
+const SubCategoriesPanel = styled.div`
+  width: 60%;
+  overflow-y: auto;
+  padding: 10px;
+
+  @media (max-width: 700px) {
+    width: 100%;
+  }
+`;
+
+const PanelTitle = styled.div`
+  padding: 12px 20px;
+  font-weight: 600;
+  background-color: #f8f9fc;
+  border-bottom: 1px solid #eaecf4;
+`;
+
+const CategoriesList = styled.ul`
+  list-style: none;
+  margin: 0;
+  padding: 0;
+`;
+
+const CategoryItem = styled.li`
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.2s;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover,
+  &.active {
+    background: #f8f9fc;
+  }
+`;
+
+const CategoryLink = styled(Link)`
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
   text-decoration: none;
-  color: inherit;
+  color: #333;
 
   &:hover {
-    transform: translateY(-5px);
+    color: #4e73df;
   }
 `;
 
 const CategoryImage = styled.img`
-  width: 100%;
-  height: 120px;
+  width: 30px;
+  height: 30px;
   object-fit: cover;
-  border-radius: 8px;
-  margin-bottom: 10px;
+  border-radius: 4px;
+  margin-right: 12px;
   background: #f8f9fc;
   border: 1px solid #eaecf4;
 `;
 
-const CategoryName = styled.div`
+const CategoryName = styled.span`
+  flex: 1;
   font-weight: 500;
-  color: #333;
   font-size: 14px;
+`;
+
+const SubCategoriesGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  padding: 15px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 500px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 10px;
+  }
+`;
+
+const SubCategoryGridItem = styled.div`
+  text-align: center;
+`;
+
+const SubCategoryGridLink = styled(Link)`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  color: #333;
+  transition: transform 0.2s;
+
+  &:hover {
+    color: #4e73df;
+    transform: translateY(-3px);
+  }
+`;
+
+const SubCategoryCircleImage = styled.img`
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 50%;
+  margin-bottom: 8px;
+  background: #f8f9fc;
+  border: 1px solid #eaecf4;
+`;
+
+const SubCategoryGridName = styled.span`
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.3;
+`;
+
+const NoSubCategories = styled.div`
+  padding: 20px;
+  text-align: center;
+  color: #6c757d;
+  font-style: italic;
+  grid-column: 1 / -1;
+`;
+
+const LoadingMessage = styled.div`
+  padding: 20px;
+  text-align: center;
+  color: #6c757d;
+`;
+
+const NoCategories = styled.div`
+  padding: 20px;
+  text-align: center;
+  color: #6c757d;
 `;
 
 const SearchBar = styled.div`
@@ -516,10 +698,10 @@ const SearchBar = styled.div`
   margin: 0 20px;
 
   @media (max-width: 992px) {
-    order: 3;
+    order: 2;
     width: 100%;
     max-width: 100%;
-    margin-top: 15px;
+    margin: 0;
   }
 `;
 
@@ -565,6 +747,7 @@ const HeaderActions = styled.div`
   }
 
   @media (max-width: 992px) {
+    order: 3;
     margin-left: auto;
   }
 `;
@@ -657,17 +840,17 @@ const DropdownMenu = styled.div`
   border: 1px solid #eaecf4;
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(46, 58, 89, 0.08);
-  min-width: 180px;
+  min-width: 200px;
   z-index: 1000;
-  padding: 2px 0;
+  padding: 5px 0;
   margin-top: 10px;
 `;
 
 const DropdownItem = styled.div`
-  padding: 8px 20px;
+  padding: 10px 20px;
   color: #2e3a59;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 14px;
   transition: background 0.2s, color 0.2s;
   text-decoration: none;
   display: block;

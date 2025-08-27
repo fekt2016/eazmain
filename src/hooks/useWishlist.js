@@ -97,11 +97,7 @@ export const useMergeWishlists = () => {
 
 // Combined toggle hook that works for both guest and authenticated users
 export const useToggleWishlist = (productId) => {
-  // const queryClient = useQueryClient();
   const { data: wishlist } = useWishlist();
-  console.log("useToggleWishlist wishlist:", wishlist);
-  // const { userData } = useAuth();
-  // console.log("useToggleWishlist userData:", userData);
 
   const addMutation = useAddToWishlist();
   const removeMutation = useRemoveFromWishlist();
@@ -113,7 +109,7 @@ export const useToggleWishlist = (productId) => {
   ).some(
     (item) => item.product._id === productId || item.product === productId
   );
-  console.log("isInWishlist", isInWishlist);
+
   const toggleWishlist = async () => {
     // Check if product is in wishlist
 

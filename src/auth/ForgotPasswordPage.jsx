@@ -17,6 +17,7 @@ export default function ForgotPasswordPage() {
   const [otp, setOtp] = useState("");
   const [otpCountdown, setOtpCountdown] = useState(0);
   const [passwordError, setPasswordError] = useState("");
+  const [resetToken, setResetToken] = useState("");
 
   const {
     sendPasswordResetOtp,
@@ -56,7 +57,7 @@ export default function ForgotPasswordPage() {
 
     if (step === "credentials") {
       try {
-        await sendPasswordResetOtp.mutate(state.loginId);
+        await sendPasswordResetOtp.mutateAsync(state.loginId);
         setStep("otp");
         setOtpCountdown(120);
       } catch (err) {
@@ -64,13 +65,15 @@ export default function ForgotPasswordPage() {
       }
     } else if (step === "otp") {
       try {
-        await verifyPasswordResetOtp.mutate({
+        const response = await verifyPasswordResetOtp.mutateAsync({
           loginId: state.loginId,
           otp,
         });
+        console.log("OTP verified, response:", response);
+        setResetToken(response.resetToken);
         setStep("reset");
       } catch (err) {
-        console.error("OTP verification failed:", err.message);
+        console.error("OTP verification failed:", err);
       }
     } else if (step === "reset") {
       if (!validatePasswords()) return;
@@ -79,6 +82,7 @@ export default function ForgotPasswordPage() {
         await resetPassword.mutateAsync({
           loginId: state.loginId,
           newPassword: state.newPassword,
+          resetToken,
         });
         navigate("/login", {
           state: {
