@@ -34,25 +34,11 @@ export const useAddHistoryItem = () => {
   });
 };
 
-// Delete single history item
-// export const useDeleteHistoryItem = () => {
-//   const queryClient = useQueryClient();
-//   return useMutation({
-//     mutationFn: async (id) => {
-//       return await browswerHistoryApi.deleteHistoryItem(id);
-//     },
-//     onSuccess: () => {
-//       queryClient.invalidateQueries("browserHistory");
-//     },
-//   });
-// };
-
 // Delete multiple history items
 export const useDeleteMultipleHistoryItems = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (ids) => {
-      console.log("Deleting IDs:", ids);
       // Pass IDs directly to the API function
       await browswerHistoryApi.deleteMultipleItems(ids);
     },
