@@ -6,7 +6,7 @@ import {
   useClearHistory,
   useDeleteMultipleHistoryItems,
 } from "../hooks/useBrowserhistory";
-import DeleteModal from "../components/Modal/deleteModal";
+import DeleteModal from "../components/Modal/DeleteModal";
 import RatingStars from "../components/RatingStars";
 
 const BrowserHistoryPage = () => {
