@@ -6,10 +6,7 @@ import Cookies from "js-cookie";
 const useAuth = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  // const getTokenCookie = () => {
-  //   return Cookies.get("token");
-  // };
-  // Auth state management
+
   const {
     data: userData,
     isLoading: isUserLoading,

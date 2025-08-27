@@ -6,7 +6,6 @@ export const useGetUserAddresses = () => {
     queryKey: ["address"],
     queryFn: async () => {
       const res = await addressApi.getUserAddresses();
-
       return res;
     },
   });
@@ -16,7 +15,6 @@ export const useGetUserAddress = () => {
     queryKey: ["address"],
     queryFn: async () => {
       const response = await addressApi.getUserAddress();
-
       return response;
     },
   });
