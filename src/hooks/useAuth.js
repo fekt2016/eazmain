@@ -85,7 +85,6 @@ const useAuth = () => {
   const register = useMutation({
     mutationFn: async (registerData) => {
       const response = await authApi.register(registerData);
-      console.log("Register response:", response);
       return response;
     },
     onSuccess: handleAuthSuccess,
