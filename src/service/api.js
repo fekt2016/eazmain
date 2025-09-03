@@ -45,73 +45,26 @@ const TOKEN_KEYS = {
 
 // Helper functions
 const getBaseURL = () => {
+  // Debug environment variables
+  console.log("Environment mode:", import.meta.env.MODE);
+  console.log("VITE_API_URL:", import.meta.env.VITE_API_URL);
+  console.log("PROD:", import.meta.env.PROD);
+  console.log("DEV:", import.meta.env.DEV);
+
   // Use environment variable if available (highest priority)
   if (import.meta.env.VITE_API_URL) {
+    console.log("Using VITE_API_URL from environment");
     return import.meta.env.VITE_API_URL;
   }
-  console.log("getBaseURL called");
-  // Try to detect environment using multiple methods
-  try {
-    console.log(
-      "testing",
-      typeof window !== "undefined" &&
-        window.location &&
-        window.location.hostname
-    );
-    // Method 1: Check if we're in a browser environment with access to window
-    if (
-      typeof window !== "undefined" &&
-      window.location &&
-      window.location.hostname
-    ) {
-      console.log("Detected browser environment");
-      const { hostname } = window.location;
-      console.log("Detected hostname:", hostname);
 
-      // Development environment (localhost or local IP)
-      if (
-        hostname === "localhost" ||
-        hostname.startsWith("192.168.") ||
-        hostname.startsWith("10.") ||
-        hostname === "127.0.0.1" ||
-        hostname.endsWith(".local")
-      ) {
-        console.log("Development environment detected");
-        return API_CONFIG.DEVELOPMENT;
-      }
-
-      // Check if we're on eazworld.com domain
-      if (hostname === "eazworld.com" || hostname.endsWith(".eazworld.com")) {
-        console.log("Eazworld domain detected, using production API");
-        return API_CONFIG.PRODUCTION;
-      }
-
-      // For all other domains, assume production
-      console.log("Other domain detected, assuming production");
-      return API_CONFIG.PRODUCTION;
-    }
-
-    // Method 2: Check build mode (Vite-specific)
-    if (import.meta.env.MODE === "production") {
-      console.log("Production build mode detected");
-      return API_CONFIG.PRODUCTION;
-    }
-
-    // Method 3: Check if we're in a Node.js environment
-    if (
-      typeof process !== "undefined" &&
-      process.env &&
-      process.env.NODE_ENV === "production"
-    ) {
-      console.log("Node.js production environment detected");
-      return API_CONFIG.PRODUCTION;
-    }
-  } catch (error) {
-    console.warn("Error detecting environment:", error);
+  // Use production API for production builds
+  if (import.meta.env.PROD) {
+    console.log("Production build detected, using production API");
+    return API_CONFIG.PRODUCTION;
   }
 
-  // Default fallback - assume development
-  console.log("Could not detect environment, defaulting to development");
+  // Default to development API
+  console.log("Development mode detected, using development API");
   return API_CONFIG.DEVELOPMENT;
 };
 
@@ -180,26 +133,14 @@ const getAuthToken = () => {
 };
 
 // Create axios instance with a baseURL that might be updated later
-let baseURL = API_CONFIG.DEVELOPMENT; // Default value
-
-// Function to initialize the API with the correct base URL
-const initializeAPI = () => {
-  baseURL = getBaseURL();
-  console.log("API Base URL:", baseURL);
-  console.log("API Config:", window);
-
-  // Update the axios instance with the correct base URL
-  api.defaults.baseURL = baseURL;
-};
+let baseURL = getBaseURL();
+console.log("API Base URL:", baseURL);
 
 const api = axios.create({
-  baseURL, // This will be updated by initializeAPI
+  baseURL,
   withCredentials: true,
   timeout: API_CONFIG.TIMEOUT,
 });
-
-// Initialize the API when this module is loaded
-initializeAPI();
 
 // Request interceptor
 api.interceptors.request.use((config) => {
@@ -234,10 +175,5 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-// Export a function to reinitialize the API if needed
-export const reinitializeAPI = () => {
-  initializeAPI();
-};
 
 export default api;
