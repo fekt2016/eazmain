@@ -175,305 +175,309 @@ export default function Header() {
 
   return (
     <StyledHeader>
-      <HeaderTop>
-        <Logo>
-          <LogoIcon>🛒</LogoIcon>
-          <LogoText to="/">Eaz Shop</LogoText>
-        </Logo>
+      <Logo>
+        <LogoIcon>🛒</LogoIcon>
+        <LogoText to="/">Eaz Shop</LogoText>
+      </Logo>
+      <RightHeader>
+        <HeaderTop>
+          <TopLinks>
+            <TopButton href="https://seller.eazshop.com" target="_blank">
+              <FaStore />
+              <span>Seller Portal</span>
+            </TopButton>
+          </TopLinks>
+          <MiddleLinks>
+            <SupportLink to="/support">
+              <span>Support</span>
+              <FaHeadset />
+            </SupportLink>
+          </MiddleLinks>
+          <RightLinks>
+            <SupportLink>Daily Deals</SupportLink>
+            <SupportLink>New Arrivals</SupportLink>
+            <SupportLink>Best selling Items</SupportLink>
+          </RightLinks>
+        </HeaderTop>
 
-        <TopLinks>
-          <TopButton href="https://seller.eazshop.com" target="_blank">
-            <FaStore />
-            <span>Seller Portal</span>
-          </TopButton>
-
-          <TopButton href="https://app.eazshop.com/download" target="_blank">
-            <FaMobile />
-            <span>Get App</span>
-          </TopButton>
-
-          <SupportLink to="/support">
-            <FaHeadset />
-            <span>Support</span>
-          </SupportLink>
-        </TopLinks>
-      </HeaderTop>
-
-      <BottomHeader>
-        <CategoriesContainer ref={categoriesDropdownRef}>
-          <CategoriesButton
-            onClick={() => setShowCategoriesDropdown(!showCategoriesDropdown)}
-          >
-            <FaThList />
-            <span>Categories</span>
-            {showCategoriesDropdown ? (
-              <FaChevronUp size={12} />
-            ) : (
-              <FaChevronDown size={12} />
-            )}
-          </CategoriesButton>
-
-          {showCategoriesDropdown && (
-            <CategoriesDropdown>
-              <DropdownContent>
-                <DropdownHeader>
-                  <h3>All Categories</h3>
-                </DropdownHeader>
-                <CategoryPanels>
-                  <ParentCategoriesPanel>
-                    <PanelTitle>Categories</PanelTitle>
-                    <CategoriesList>
-                      {isCategoriesLoading ? (
-                        <LoadingMessage>Loading categories...</LoadingMessage>
-                      ) : parentCategories.length === 0 ? (
-                        <NoCategories>No categories available</NoCategories>
-                      ) : (
-                        parentCategories.map((category) => (
-                          <CategoryItem
-                            key={category._id}
-                            onMouseEnter={() => setHoveredCategory(category)}
-                            className={
-                              hoveredCategory?._id === category._id
-                                ? "active"
-                                : ""
-                            }
-                          >
-                            <CategoryLink
-                              to={`/category/${category._id}`}
-                              onClick={() => setShowCategoriesDropdown(false)}
-                            >
-                              <CategoryImage
-                                src={category.image}
-                                alt={category.name}
-                                onError={(e) => {
-                                  e.target.src =
-                                    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3E%3Crect width='30' height='30' fill='%23ccc'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='8px' fill='%23fff' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
-                                  e.target.onerror = null;
-                                }}
-                              />
-                              <CategoryName>{category.name}</CategoryName>
-                              {category.subcategories &&
-                                category.subcategories.length > 0 && (
-                                  <FaChevronRight size={10} />
-                                )}
-                            </CategoryLink>
-                          </CategoryItem>
-                        ))
-                      )}
-                    </CategoriesList>
-                  </ParentCategoriesPanel>
-
-                  <SubCategoriesPanel>
-                    <PanelTitle>
-                      {hoveredCategory
-                        ? `${hoveredCategory.name} Subcategories`
-                        : "Subcategories"}
-                    </PanelTitle>
-                    <SubCategoriesGrid>
-                      {hoveredCategory &&
-                      hoveredCategory.subcategories &&
-                      hoveredCategory.subcategories.length > 0 ? (
-                        hoveredCategory.subcategories.map((subCategory) => (
-                          <SubCategoryGridItem key={subCategory._id}>
-                            <SubCategoryGridLink
-                              to={`/category/${subCategory._id}`}
-                              onClick={() => setShowCategoriesDropdown(false)}
-                            >
-                              <SubCategoryCircleImage
-                                src={subCategory.image}
-                                alt={subCategory.name}
-                                onError={(e) => {
-                                  e.target.src =
-                                    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Ccircle cx='30' cy='30' r='30' fill='%23ccc'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='10px' fill='%23fff' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
-                                  e.target.onerror = null;
-                                }}
-                              />
-                              <SubCategoryGridName>
-                                {subCategory.name}
-                              </SubCategoryGridName>
-                            </SubCategoryGridLink>
-                          </SubCategoryGridItem>
-                        ))
-                      ) : (
-                        <NoSubCategories>
-                          {hoveredCategory
-                            ? "No subcategories available"
-                            : "Hover over a category to see subcategories"}
-                        </NoSubCategories>
-                      )}
-                    </SubCategoriesGrid>
-                  </SubCategoriesPanel>
-                </CategoryPanels>
-              </DropdownContent>
-            </CategoriesDropdown>
-          )}
-        </CategoriesContainer>
-
-        <SearchContainer ref={searchRef}>
-          <SearchBar>
-            <SearchInput
-              type="text"
-              placeholder="Search for products..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setShowSearchSuggestions(true);
-                setActiveSuggestion(0);
-              }}
-              onFocus={() => setShowSearchSuggestions(true)}
-              onKeyDown={handleSearchKeyDown}
-            />
-            <SearchButton
-              onClick={() => {
-                if (searchTerm) {
-                  navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
-                  setShowSearchSuggestions(false);
-                }
-              }}
+        <BottomHeader>
+          <CategoriesContainer ref={categoriesDropdownRef}>
+            <CategoriesButton
+              onClick={() => setShowCategoriesDropdown(!showCategoriesDropdown)}
             >
-              {isSearchProductsLoading ? (
+              <FaThList />
+              <span>Categories</span>
+              {showCategoriesDropdown ? (
+                <FaChevronUp size={12} />
+              ) : (
+                <FaChevronDown size={12} />
+              )}
+            </CategoriesButton>
+
+            {showCategoriesDropdown && (
+              <CategoriesDropdown>
+                <DropdownContent>
+                  <DropdownHeader>
+                    <h3>All Categories</h3>
+                  </DropdownHeader>
+                  <CategoryPanels>
+                    <ParentCategoriesPanel>
+                      <PanelTitle>Categories</PanelTitle>
+                      <CategoriesList>
+                        {isCategoriesLoading ? (
+                          <LoadingMessage>Loading categories...</LoadingMessage>
+                        ) : parentCategories.length === 0 ? (
+                          <NoCategories>No categories available</NoCategories>
+                        ) : (
+                          parentCategories.map((category) => (
+                            <CategoryItem
+                              key={category._id}
+                              onMouseEnter={() => setHoveredCategory(category)}
+                              className={
+                                hoveredCategory?._id === category._id
+                                  ? "active"
+                                  : ""
+                              }
+                            >
+                              <CategoryLink
+                                to={`/category/${category._id}`}
+                                onClick={() => setShowCategoriesDropdown(false)}
+                              >
+                                <CategoryImage
+                                  src={category.image}
+                                  alt={category.name}
+                                  onError={(e) => {
+                                    e.target.src =
+                                      "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3E%3Crect width='30' height='30' fill='%23ccc'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='8px' fill='%23fff' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
+                                    e.target.onerror = null;
+                                  }}
+                                />
+                                <CategoryName>{category.name}</CategoryName>
+                                {category.subcategories &&
+                                  category.subcategories.length > 0 && (
+                                    <FaChevronRight size={10} />
+                                  )}
+                              </CategoryLink>
+                            </CategoryItem>
+                          ))
+                        )}
+                      </CategoriesList>
+                    </ParentCategoriesPanel>
+
+                    <SubCategoriesPanel>
+                      <PanelTitle>
+                        {hoveredCategory
+                          ? `${hoveredCategory.name} Subcategories`
+                          : "Subcategories"}
+                      </PanelTitle>
+                      <SubCategoriesGrid>
+                        {hoveredCategory &&
+                        hoveredCategory.subcategories &&
+                        hoveredCategory.subcategories.length > 0 ? (
+                          hoveredCategory.subcategories.map((subCategory) => (
+                            <SubCategoryGridItem key={subCategory._id}>
+                              <SubCategoryGridLink
+                                to={`/category/${subCategory._id}`}
+                                onClick={() => setShowCategoriesDropdown(false)}
+                              >
+                                <SubCategoryCircleImage
+                                  src={subCategory.image}
+                                  alt={subCategory.name}
+                                  onError={(e) => {
+                                    e.target.src =
+                                      "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Ccircle cx='30' cy='30' r='30' fill='%23ccc'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='10px' fill='%23fff' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
+                                    e.target.onerror = null;
+                                  }}
+                                />
+                                <SubCategoryGridName>
+                                  {subCategory.name}
+                                </SubCategoryGridName>
+                              </SubCategoryGridLink>
+                            </SubCategoryGridItem>
+                          ))
+                        ) : (
+                          <NoSubCategories>
+                            {hoveredCategory
+                              ? "No subcategories available"
+                              : "Hover over a category to see subcategories"}
+                          </NoSubCategories>
+                        )}
+                      </SubCategoriesGrid>
+                    </SubCategoriesPanel>
+                  </CategoryPanels>
+                </DropdownContent>
+              </CategoriesDropdown>
+            )}
+          </CategoriesContainer>
+
+          <SearchContainer ref={searchRef}>
+            <SearchBar>
+              <SearchInput
+                type="text"
+                placeholder="Search for products..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setShowSearchSuggestions(true);
+                  setActiveSuggestion(0);
+                }}
+                onFocus={() => setShowSearchSuggestions(true)}
+                onKeyDown={handleSearchKeyDown}
+              />
+              <SearchButton
+                onClick={() => {
+                  if (searchTerm) {
+                    navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
+                    setShowSearchSuggestions(false);
+                  }
+                }}
+              >
+                {isSearchProductsLoading ? (
+                  <SpinnerIcon>
+                    <FaSpinner />
+                  </SpinnerIcon>
+                ) : (
+                  <FaSearch />
+                )}
+              </SearchButton>
+            </SearchBar>
+
+            {showSearchSuggestions && searchSuggestions.length > 0 && (
+              <SearchSuggestions>
+                {searchSuggestions.map((suggestion, index) => {
+                  console.log("Rendering suggestion:", suggestion);
+                  return (
+                    <SuggestionItem
+                      key={`${suggestion.type}-${suggestion.id}`}
+                      active={index === activeSuggestion}
+                      onClick={() => handleSuggestionSelect(suggestion)}
+                    >
+                      <SuggestionImage>
+                        <img src={suggestion.image} alt={suggestion.name} />
+                      </SuggestionImage>
+                      <SuggestionText>
+                        <SuggestionName>{suggestion.name}</SuggestionName>
+                        <SuggestionDetails>
+                          <SuggestionCategory>
+                            {suggestion.category}
+                          </SuggestionCategory>
+                          <SuggestionPrice>${suggestion.price}</SuggestionPrice>
+                        </SuggestionDetails>
+                      </SuggestionText>
+                    </SuggestionItem>
+                  );
+                })}
+              </SearchSuggestions>
+            )}
+
+            {showSearchSuggestions &&
+              searchTerm &&
+              searchSuggestions.length === 0 &&
+              !isSearchProductsLoading && (
+                <NoSuggestions>
+                  No products found for "{searchTerm}"
+                </NoSuggestions>
+              )}
+
+            {isSearchProductsLoading && (
+              <LoadingSuggestions>
                 <SpinnerIcon>
                   <FaSpinner />
                 </SpinnerIcon>
-              ) : (
-                <FaSearch />
-              )}
-            </SearchButton>
-          </SearchBar>
-
-          {showSearchSuggestions && searchSuggestions.length > 0 && (
-            <SearchSuggestions>
-              {searchSuggestions.map((suggestion, index) => {
-                console.log("Rendering suggestion:", suggestion);
-                return (
-                  <SuggestionItem
-                    key={`${suggestion.type}-${suggestion.id}`}
-                    active={index === activeSuggestion}
-                    onClick={() => handleSuggestionSelect(suggestion)}
-                  >
-                    <SuggestionImage>
-                      <img src={suggestion.image} alt={suggestion.name} />
-                    </SuggestionImage>
-                    <SuggestionText>
-                      <SuggestionName>{suggestion.name}</SuggestionName>
-                      <SuggestionDetails>
-                        <SuggestionCategory>
-                          {suggestion.category}
-                        </SuggestionCategory>
-                        <SuggestionPrice>${suggestion.price}</SuggestionPrice>
-                      </SuggestionDetails>
-                    </SuggestionText>
-                  </SuggestionItem>
-                );
-              })}
-            </SearchSuggestions>
-          )}
-
-          {showSearchSuggestions &&
-            searchTerm &&
-            searchSuggestions.length === 0 &&
-            !isSearchProductsLoading && (
-              <NoSuggestions>
-                No products found for "{searchTerm}"
-              </NoSuggestions>
+                Searching products...
+              </LoadingSuggestions>
             )}
+          </SearchContainer>
 
-          {isSearchProductsLoading && (
-            <LoadingSuggestions>
-              <SpinnerIcon>
-                <FaSpinner />
-              </SpinnerIcon>
-              Searching products...
-            </LoadingSuggestions>
-          )}
-        </SearchContainer>
-
-        <HeaderActions>
-          <HeaderAction>
-            {userData ? (
-              <AccountDropdown ref={dropdownRef}>
-                <AccountButton onClick={() => setShowDropdown(!showDropdown)}>
+          <HeaderActions>
+            <HeaderAction>
+              {userData ? (
+                <AccountDropdown ref={dropdownRef}>
+                  <AccountButton onClick={() => setShowDropdown(!showDropdown)}>
+                    <ActionIcon>
+                      <FaUser />
+                    </ActionIcon>
+                    <ActionText>{user.name || user.email}</ActionText>
+                  </AccountButton>
+                  {showDropdown && (
+                    <DropdownMenu>
+                      <DropdownItem as={Link} to="/profile">
+                        My Profile
+                      </DropdownItem>
+                      <DropdownItem as={Link} to="/orders">
+                        My Orders
+                      </DropdownItem>
+                      <DropdownItem as={Link} to="/reviews">
+                        My Reviews
+                      </DropdownItem>
+                      <DropdownItem as={Link} to="/addresses">
+                        My Addresses
+                      </DropdownItem>
+                      <DropdownItem as={Link} to="/credit-balance">
+                        Balance
+                      </DropdownItem>
+                      <DropdownItem as={Link} to="/followed">
+                        Followed
+                      </DropdownItem>
+                      <DropdownItem as={Link} to="/notifications">
+                        Notifications
+                      </DropdownItem>
+                      <DropdownItem as={Link} to="/profile">
+                        Settings
+                      </DropdownItem>
+                      <DropdownItem as={Link} to="/coupons">
+                        Coupons
+                      </DropdownItem>
+                      <DropdownItem as={Link} to="/browser-history">
+                        Browser History
+                      </DropdownItem>
+                      <DropdownItem as={Link} to="/permissions">
+                        Permissions
+                      </DropdownItem>
+                      <DropdownItem onClick={logoutHandler}>
+                        Logout
+                      </DropdownItem>
+                    </DropdownMenu>
+                  )}
+                </AccountDropdown>
+              ) : (
+                <BottomLink to="/login">
                   <ActionIcon>
                     <FaUser />
                   </ActionIcon>
-                  <ActionText>{user.name || user.email}</ActionText>
-                </AccountButton>
-                {showDropdown && (
-                  <DropdownMenu>
-                    <DropdownItem as={Link} to="/profile">
-                      My Profile
-                    </DropdownItem>
-                    <DropdownItem as={Link} to="/orders">
-                      My Orders
-                    </DropdownItem>
-                    <DropdownItem as={Link} to="/reviews">
-                      My Reviews
-                    </DropdownItem>
-                    <DropdownItem as={Link} to="/addresses">
-                      My Addresses
-                    </DropdownItem>
-                    <DropdownItem as={Link} to="/credit-balance">
-                      Balance
-                    </DropdownItem>
-                    <DropdownItem as={Link} to="/followed">
-                      Followed
-                    </DropdownItem>
-                    <DropdownItem as={Link} to="/notifications">
-                      Notifications
-                    </DropdownItem>
-                    <DropdownItem as={Link} to="/profile">
-                      Settings
-                    </DropdownItem>
-                    <DropdownItem as={Link} to="/coupons">
-                      Coupons
-                    </DropdownItem>
-                    <DropdownItem as={Link} to="/browser-history">
-                      Browser History
-                    </DropdownItem>
-                    <DropdownItem as={Link} to="/permissions">
-                      Permissions
-                    </DropdownItem>
-                    <DropdownItem onClick={logoutHandler}>Logout</DropdownItem>
-                  </DropdownMenu>
-                )}
-              </AccountDropdown>
-            ) : (
-              <BottomLink to="/login">
+                  <ActionText>Account</ActionText>
+                </BottomLink>
+              )}
+            </HeaderAction>
+
+            <HeaderAction>
+              <BottomLink to="/wishlist">
                 <ActionIcon>
-                  <FaUser />
+                  <FaHeart />
+                  {wishlist?.productCount > 0 && (
+                    <ActionBadge>{wishlist.productCount}</ActionBadge>
+                  )}
                 </ActionIcon>
-                <ActionText>Account</ActionText>
+                <ActionText>Wishlist</ActionText>
               </BottomLink>
-            )}
-          </HeaderAction>
+            </HeaderAction>
 
-          <HeaderAction>
-            <BottomLink to="/wishlist">
-              <ActionIcon>
-                <FaHeart />
-                {wishlist?.productCount > 0 && (
-                  <ActionBadge>{wishlist.productCount}</ActionBadge>
-                )}
-              </ActionIcon>
-              <ActionText>Wishlist</ActionText>
-            </BottomLink>
-          </HeaderAction>
+            <HeaderAction>
+              <BottomLink to="/cart">
+                <ActionIcon>
+                  <FaShoppingCart />
+                  {cartCount > 0 && <ActionBadge>{cartCount}</ActionBadge>}
+                </ActionIcon>
+                <ActionText>Cart</ActionText>
+              </BottomLink>
+            </HeaderAction>
 
-          <HeaderAction>
-            <BottomLink to="/cart">
-              <ActionIcon>
-                <FaShoppingCart />
-                {cartCount > 0 && <ActionBadge>{cartCount}</ActionBadge>}
-              </ActionIcon>
-              <ActionText>Cart</ActionText>
-            </BottomLink>
-          </HeaderAction>
-
-          <MobileMenuButton onClick={toggleMobileMenu}>
-            <FaBars />
-          </MobileMenuButton>
-        </HeaderActions>
-      </BottomHeader>
+            <MobileMenuButton onClick={toggleMobileMenu}>
+              <FaBars />
+            </MobileMenuButton>
+          </HeaderActions>
+        </BottomHeader>
+      </RightHeader>
     </StyledHeader>
   );
 }
@@ -485,15 +489,19 @@ const StyledHeader = styled.header`
   position: sticky;
   top: 0;
   z-index: 100;
+  display: flex;
+`;
+const RightHeader = styled.div`
+  flex: 1;
 `;
 
 const HeaderTop = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 5%;
-  border-bottom: 1px solid #eaecf4;
-  background-color: #f8f9fc;
+  padding: 8px 5%;
+  border-bottom: 1px solid var(--color-grey-200);
+  /* background-color: #f8f9fc; */
 
   @media (max-width: 768px) {
     flex-wrap: wrap;
@@ -512,7 +520,10 @@ const TopLinks = styled.div`
     justify-content: flex-end;
   }
 `;
-
+const RightLinks = styled.div`
+  display: flex;
+  gap: 20px;
+`;
 const TopButton = styled.a`
   display: flex;
   align-items: center;
@@ -536,7 +547,11 @@ const TopButton = styled.a`
     }
   }
 `;
-
+const MiddleLinks = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
 const SupportLink = styled(Link)`
   display: flex;
   align-items: center;
@@ -547,7 +562,7 @@ const SupportLink = styled(Link)`
   transition: color 0.3s;
   padding: 6px 12px;
   border-radius: 4px;
-  background: rgba(78, 115, 223, 0.1);
+  /* background: rgba(78, 115, 223, 0.1); */
 
   &:hover {
     background: rgba(78, 115, 223, 0.2);
@@ -565,7 +580,7 @@ const BottomHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 5%;
+  padding: 6px 4%;
   background-color: #fff;
   position: relative;
 
@@ -577,10 +592,13 @@ const BottomHeader = styled.div`
 
 const Logo = styled.div`
   display: flex;
+  padding: 0 10px 0 20px;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  font-size: 24px;
+  font-size: 12px;
   font-weight: 700;
-  color: #4e73df;
+  color: var(--color-grey-700);
 `;
 
 const LogoIcon = styled.span`
@@ -610,6 +628,7 @@ const LogoText = styled(Link)`
 const CategoriesContainer = styled.div`
   position: relative;
   display: inline-block;
+  /* background-color: red; */
 
   @media (max-width: 992px) {
     order: 1;
@@ -621,8 +640,8 @@ const CategoriesButton = styled.button`
   align-items: center;
   gap: 8px;
   padding: 10px 20px;
-  background: #4e73df;
-  color: white;
+  /* background: #4e73df; */
+  /* color: white; */
   border: none;
   border-radius: 30px;
   cursor: pointer;
@@ -632,7 +651,7 @@ const CategoriesButton = styled.button`
   z-index: 10;
 
   &:hover {
-    background: #2e59d9;
+    background: var(--color-primary-500);
   }
 
   span {
@@ -670,8 +689,8 @@ const DropdownContent = styled.div`
 
 const DropdownHeader = styled.div`
   padding: 15px 20px;
-  background-color: #4e73df;
-  color: white;
+  background-color: var(--color-primary-500);
+  color: var(--color-white-0);
 
   h3 {
     margin: 0;
@@ -991,7 +1010,7 @@ const SearchSuggestions = styled.ul`
   overflow-y: auto;
   z-index: 1000;
   padding: 10px 0;
-  border: 2px solid #4e73df;
+  border: 2px solid var(--primary-500);
   border-top: none;
 `;
 
@@ -1040,7 +1059,7 @@ const SuggestionDetails = styled.div`
 
 const SuggestionCategory = styled.div`
   font-size: 12px;
-  color: #858796;
+  color: var(--color-grey-400);
 `;
 
 const SuggestionPrice = styled.div`
@@ -1057,12 +1076,12 @@ const NoSuggestions = styled.div`
   background: white;
   border-radius: 0 0 8px 8px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  margin-top: -2px;
+  margin-top: 2px;
   padding: 20px;
   text-align: center;
-  color: #858796;
+  color: var(--color-grey-400);
   z-index: 1000;
-  border: 2px solid #4e73df;
+  border: 2px solid var(--color-primary-50);
   border-top: none;
 `;
 
@@ -1073,20 +1092,20 @@ const SearchBar = styled.div`
 
 const SearchInput = styled.input`
   width: 100%;
-  padding: 12px 20px;
-  border: 2px solid #eaecf4;
+  padding: 8px 18px;
+  border: 2px solid var(--color-grey-200);
   border-radius: 30px 0 0 30px;
   font-size: 15px;
   outline: none;
   transition: all 0.3s;
 
   &:focus {
-    border-color: #4e73df;
+    border-color: var(--color-primary-500);
   }
 `;
 
 const SearchButton = styled.button`
-  background: #4e73df;
+  background-color: var(--color-primary-500);
   color: white;
   border: none;
   padding: 0 25px;
@@ -1099,7 +1118,7 @@ const SearchButton = styled.button`
   justify-content: center;
 
   &:hover {
-    background: #2e59d9;
+    background: var(--color-primary-500);
   }
 `;
 

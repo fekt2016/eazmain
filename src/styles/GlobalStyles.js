@@ -21,63 +21,68 @@ export const devices = {
 
 const GlobalStyles = createGlobalStyle`:root {
 
-
   /* Indigo */
-  --color-brand-50: #eef2ff;
-  --color-brand-100: #e0e7ff;
-  --color-brand-200: #c7d2fe;
-  --color-brand-500: #6366f1;
-  --color-brand-600: #4f46e5;
-  --color-brand-700: #4338ca;
-  --color-brand-800: #3730a3;
-  --color-brand-900: #312e81;
+  --color-brand-50:  #f0f8ff;
+  --color-brand-100: #dff0ff;
+  --color-brand-200: #b8e1ff;
+  --color-brand-300: #98d7ff;
+  --color-brand-400: #33b2fd;
+  --color-brand-500: #0078cc;
+  --color-brand-600: #005fa5;
+  --color-brand-700: #045188;
+  --color-brand-800: #0a4470;
+  --color-brand-900: #062a4b;
 
   --color-facebook: #4267B2;
   --color-twitter-900: #1DA1F2;
   --color-instagram: #FFDC80:
 
 
-  --color-primary-100: #d4efff;
-  --color-primary-200: #bbceff;
-  --color-primary-300: #83c9ff;
-  --color-primary-400: #52a2ff;
-  --color-primary-500: #2b7aff;
-  --color-primary-600: #084dff;
-  --color-primary-700: #0046ff;
-  --color-primary-800: #033ed3;
-  //used
-  --color-primary-900: #0d3aa2;
-  --color-primary-950: #08205e;
+   --color-primary-50: #ffffea; 
+  --color-primary-100: #fffcc5;
+  --color-primary-200: #fffa85;
+  --color-primary-300: #fff146;
+  --color-primary-400: #ffe31b;
+  --color-primary-500: #ffc400;
+  --color-primary-600: #e29800;
+  --color-primary-700: #bb6c02;
+  --color-primary-800: #985308;
+  --color-primary-900: #7c440b;
+ 
+  
 
   --color-orange-0: orange;
   /* Grey */
   //used
+
+
+    
+   
+
   --color-white-0: #fff;
+  --color-grey-50: #f9fafb;
   --color-grey-100: #f3f4f6;
   --color-grey-200: #e5e7eb;
   --color-grey-300: #d1d5db;
-  //used
+  
   --color-grey-400: #9ca3af;
   --color-grey-500: #6b7280;
   --color-grey-600: #4b5563;
-  --color-grey-700: #374151;
+  --color-grey-700: #374151; 
   --color-grey-800: #1f2937;
-  //used
+  
   --color-grey-900: #111827;
 
   --color-blue-100: #e0f2fe;
   --color-blue-700: #0369a1;
   --color-green-100: #dcfce7;
-  //used
+
   --color-green-700: #15803d;
 
-  //used
-  --color-sec-800:#b08f3a;
-  --color-sec-500:#d0b56f;
-  --color-sec-700: #ffc337;
 
 
-  //used
+
+
 
 
   --color-bitcoin-300: #fff6e1;
@@ -101,10 +106,7 @@ const GlobalStyles = createGlobalStyle`:root {
     --header-height: 64px;
     
     /* Existing variables */
-    --color-grey-50: #f9fafb;
-    --color-grey-100: #f3f4f6;
-    --color-grey-200: #e5e7eb;
-    --color-white-0: #fff;
+
   
   
 
@@ -222,7 +224,7 @@ input:focus,
 button:focus,
 textarea:focus,
 select:focus {
-  outline: 2px solid var(--color-black-950);
+  /* outline: 2px solid var(--color-black-950); */
   outline-offset: -1px;
 }
 

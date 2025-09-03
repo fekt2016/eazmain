@@ -81,10 +81,11 @@ const HeroSlider = ({ items }) => {
 
 // Styled Components
 const SliderContainer = styled.div`
+  /* background-color: red; */
   position: relative;
   height: 500px;
   overflow: hidden;
-  margin-bottom: 60px;
+  /* margin-bottom: 60px; */
   border-radius: 15px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 

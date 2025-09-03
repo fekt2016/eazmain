@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from "react";
 import styled from "styled-components";
 
-import HeroSlider from "../components/HeroSlider";
+import HeroSlider from "../components/sliders/HeroSlider";
 import useProduct from "../hooks/useProduct";
 import StarRating from "../components/StarRating";
 import ProductCard from "../components/ProductCard";
@@ -151,16 +151,17 @@ const HomePage = () => {
 
 // Styled Components
 const PageContainer = styled.div`
-  background-color: #f8f9fc;
+  /* background-color: #f8f9fc; */
   color: #2e3a59;
   min-height: 100vh;
   font-family: "Poppins", sans-serif;
 `;
 
 const Section = styled.section`
-  padding: 60px 5%;
+  padding: 2rem;
+  /* padding: 60px 5%; */
   background: white;
-  margin-bottom: 30px;
+  /* margin-bottom: 30px; */
   border-radius: 10px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
 
@@ -171,13 +172,13 @@ const Section = styled.section`
 
 const SectionHeader = styled.div`
   text-align: center;
-  margin-bottom: 40px;
+  /* margin-bottom: 40px; */
 `;
 
 const SectionTitle = styled.h2`
   font-size: 32px;
   font-weight: 700;
-  margin-bottom: 15px;
+  /* margin-bottom: 15px; */
   color: #2e3a59;
 
   @media (max-width: 768px) {
@@ -196,29 +197,29 @@ const SectionSubtitle = styled.p`
   }
 `;
 
-const CategoriesGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 25px;
-`;
+// const CategoriesGrid = styled.div`
+//   display: grid;
+//   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+//   gap: 25px;
+// `;
 
-const CategoryCard = styled.div`
-  background: white;
-  border-radius: 15px;
-  overflow: hidden;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-  text-align: center;
-  padding: 30px 20px;
-  transition: all 0.3s;
-  cursor: pointer;
-  border: 1px solid #eaecf4;
+// const CategoryCard = styled.div`
+//   background: white;
+//   border-radius: 15px;
+//   overflow: hidden;
+//   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+//   text-align: center;
+//   padding: 30px 20px;
+//   transition: all 0.3s;
+//   cursor: pointer;
+//   border: 1px solid #eaecf4;
 
-  &:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
-    border-color: #4e73df;
-  }
-`;
+//   &:hover {
+//     transform: translateY(-10px);
+//     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+//     border-color: #4e73df;
+//   }
+// `;
 
 const CategoryIcon = styled.div`
   font-size: 40px;
