@@ -11,7 +11,7 @@ export const categoryService = {
         limit,
       },
     });
-    console.log("service get all categories", response);
+
     return response;
   },
   getCategory: async (id) => {

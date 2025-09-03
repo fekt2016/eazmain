@@ -13,7 +13,7 @@ const useCategory = () => {
         const response = await categoryService.getAllCategories({
           limit: 1000,
         });
-        console.log("hook get all categories", response); // Set a high limit to get all categories
+        // Set a high limit to get all categories
         return response;
       } catch (error) {
         console.error("Failed to fetch categories:", error);
@@ -84,7 +84,6 @@ const useCategory = () => {
   // Delete category mutation
   const deleteCategory = useMutation({
     mutationFn: async (id) => {
-      console.log(id);
       await api.delete(`/categories/${id}`);
       return id;
     },

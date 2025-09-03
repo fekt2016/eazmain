@@ -21,7 +21,7 @@ const TopSellers = () => {
   const topSellers = useMemo(() => {
     return data?.slice(0, 8);
   }, [data]);
-  console.log(topSellers);
+
   useEffect(() => {
     if (swiperRef.current && swiperRef.current.swiper) {
       const swiper = swiperRef.current.swiper;

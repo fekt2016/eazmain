@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import searchApi from "../service/seachApi";
 
 export const useSearchProducts = (searchTerm) => {
-  console.log("useSearchProducts called with searchTerm:", searchTerm);
   return useQuery({
     queryKey: ["searchProducts", searchTerm],
     queryFn: async () => {
