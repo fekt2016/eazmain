@@ -45,7 +45,6 @@ export default function Header() {
   // Search hook for products only
   const { data: searchProductsData, isLoading: isSearchProductsLoading } =
     useSearchProducts(debouncedSearchTerm);
-  console.log("searchProductsData", searchProductsData);
 
   // Get parent categories with subcategories
   const parentCategories = useMemo(() => {

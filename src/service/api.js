@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const baseURL =
-  import.meta.env.VITE_API_URL || "http://eazworld.com:4000/api/v1";
+  import.meta.env.VITE_API_URL || "http://eazworld.com:6000/api/v1";
 
 // 1. Public exact path matches (any HTTP method)
 const PUBLIC_ROUTES = [
@@ -38,6 +38,7 @@ const api = axios.create({
   withCredentials: true,
   timeout: 500000,
 });
+console.log("base url", baseURL);
 
 // Helper functions
 const getRelativePath = (url) => {
@@ -67,7 +68,7 @@ const normalizePath = (path) => {
 
 // Request interceptor
 api.interceptors.request.use((config) => {
-  // console.log("config", config);
+  console.log("config", config);
   const relativePath = getRelativePath(config.url);
   // console.log("relativePath", relativePath);
   const normalizedPath = normalizePath(relativePath);
