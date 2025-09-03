@@ -105,40 +105,40 @@ const TopSellers = () => {
                 >
                   <CardOverlay />
 
-                  {/* <CardContent> */}
-                  <SellerInfo>
-                    <SellerName>{seller?.shopName}</SellerName>
+                  <CardContent>
+                    <SellerInfo>
+                      <SellerName>{seller?.shopName}</SellerName>
 
-                    <SellerStats>
-                      <SellerRating>
-                        <StarRating rating={seller?.rating || 0} />
-                        <RatingValue>
-                          {seller?.rating?.toFixed(1) || "0.0"}
-                        </RatingValue>
-                      </SellerRating>
-                      <SellerProducts>
-                        {seller.productCount || 0} products
-                      </SellerProducts>
-                    </SellerStats>
-                    <ProductImagesContainer>
-                      {productImages.length > 0 ? (
-                        productImages.map((image, index) => (
-                          <ProductImage
-                            key={index}
-                            src={image}
-                            alt={`Product ${index + 1}`}
-                            onError={(e) => {
-                              e.target.src =
-                                "https://via.placeholder.com/80x80?text=Product";
-                            }}
-                          />
-                        ))
-                      ) : (
-                        <NoProductsText>No products available</NoProductsText>
-                      )}
-                    </ProductImagesContainer>
-                  </SellerInfo>
-                  {/* </CardContent> */}
+                      <SellerStats>
+                        <SellerRating>
+                          <StarRating rating={seller?.rating || 0} />
+                          <RatingValue>
+                            {seller?.rating?.toFixed(1) || "0.0"}
+                          </RatingValue>
+                        </SellerRating>
+                        <SellerProducts>
+                          {seller.productCount || 0} products
+                        </SellerProducts>
+                      </SellerStats>
+                      <ProductImagesContainer>
+                        {productImages.length > 0 ? (
+                          productImages.map((image, index) => (
+                            <ProductImage
+                              key={index}
+                              src={image}
+                              alt={`Product ${index + 1}`}
+                              onError={(e) => {
+                                e.target.src =
+                                  "https://via.placeholder.com/80x80?text=Product";
+                              }}
+                            />
+                          ))
+                        ) : (
+                          <NoProductsText>No products available</NoProductsText>
+                        )}
+                      </ProductImagesContainer>
+                    </SellerInfo>
+                  </CardContent>
                 </SellerCard>
               </SwiperSlide>
             );
@@ -245,6 +245,7 @@ const SellerInfo = styled.div`
   justify-content: space-around;
   align-items: center;
   text-align: center;
+  z-index: 100;
 `;
 
 const SellerName = styled.h3`
