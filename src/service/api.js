@@ -21,7 +21,7 @@ const getBaseURL = () => {
     }
 
     // Production environment - use api.eazworld.com
-    return "https://api.eazworld.com/api/v1";
+    return "https://eazworld.com:6000/api/v1";
   }
 
   // Default fallback for server-side rendering
