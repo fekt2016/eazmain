@@ -9,7 +9,6 @@ const useCategory = () => {
   const getCategories = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
-      console.log("hook get cate service ");
       try {
         const response = await categoryService.getAllCategories({
           limit: 1000,

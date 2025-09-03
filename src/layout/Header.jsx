@@ -36,7 +36,7 @@ export default function Header() {
   const categoriesDropdownRef = useRef(null);
   const searchRef = useRef(null);
 
-  const { logout, userData, isLoading: isUserLoading } = useAuth();
+  const { logout, userData } = useAuth();
   const { count: cartCount } = useCartTotals();
   const { getParentCategories } = useCategory();
   const { data: categoriesData, isLoading: isCategoriesLoading } =
@@ -170,8 +170,6 @@ export default function Header() {
   const logoutHandler = () => {
     logout.mutate();
   };
-
-  if (isUserLoading) return <div>Loading...</div>;
 
   return (
     <StyledHeader>

@@ -8,7 +8,6 @@ export const useSearchProducts = (searchTerm) => {
     queryFn: async () => {
       if (!searchTerm) return { results: [] };
       const response = await searchApi.searchProducts(searchTerm);
-      console.log("useSearchProducts response:", response);
       return response.data;
     },
     enabled: !!searchTerm, // Only run query when searchTerm is not empty

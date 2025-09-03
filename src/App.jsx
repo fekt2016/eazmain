@@ -6,6 +6,7 @@ import GlobalStyles from "./styles/GlobalStyles";
 import theme from "./styles/theme";
 
 import MainRoutes from "./routes/MainRoutes";
+import GlobalLoading from "./components/GlobalLoading";
 
 function App() {
   const queryClient = new QueryClient({
@@ -19,6 +20,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <GlobalStyles />
+      <GlobalLoading />
       <ThemeProvider theme={theme}>
         <BrowserRouter
           future={{
