@@ -50,10 +50,14 @@ const getBaseURL = () => {
     return import.meta.env.VITE_API_URL;
   }
 
-  // Check if we're in a browser environment
-  if (typeof window !== "undefined") {
+  // Check if we're in a browser environment with access to window
+  if (
+    typeof window !== "undefined" &&
+    window.location &&
+    window.location.hostname
+  ) {
     const { hostname } = window.location;
-    console.log("HOST".hostname);
+    console.log("Current hostname:", hostname);
 
     // Development environment (localhost or local IP)
     if (
@@ -62,15 +66,25 @@ const getBaseURL = () => {
       hostname.startsWith("10.") ||
       hostname === "127.0.0.1"
     ) {
-      console.log("API Base URL:", API_CONFIG.DEVELOPMENT);
+      console.log(
+        "Development environment detected, using:",
+        API_CONFIG.DEVELOPMENT
+      );
       return API_CONFIG.DEVELOPMENT;
     }
-    console.log("API Base URL:", API_CONFIG.PRODUCTION);
-    // Production environment
+
+    console.log(
+      "Production environment detected, using:",
+      API_CONFIG.PRODUCTION
+    );
     return API_CONFIG.PRODUCTION;
   }
 
-  // Default fallback for server-side rendering
+  // Default fallback for server-side rendering or non-browser environments
+  console.log(
+    "Non-browser environment detected, using default:",
+    API_CONFIG.DEVELOPMENT
+  );
   return API_CONFIG.DEVELOPMENT;
 };
 
@@ -119,6 +133,11 @@ const isPublicRoute = (normalizedPath, method) => {
 };
 
 const getAuthToken = () => {
+  // Check if we're in a browser environment before accessing localStorage
+  if (typeof window === "undefined" || typeof localStorage === "undefined") {
+    return { token: null, role: "user" };
+  }
+
   const role = localStorage.getItem("current_role") || "user";
   const tokenKey = TOKEN_KEYS[role] || "token";
 
@@ -130,7 +149,7 @@ const getAuthToken = () => {
 
 // Create axios instance
 const baseURL = getBaseURL();
-console.log("API Base URL:", baseURL);
+console.log("Final API Base URL:", baseURL);
 
 const api = axios.create({
   baseURL,
@@ -142,7 +161,7 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const relativePath = getRelativePath(config.url);
   const normalizedPath = normalizePath(relativePath);
-  const method = config.method.toLowerCase();
+  const method = config.method ? config.method.toLowerCase() : "get";
 
   console.debug(`[API] ${method.toUpperCase()} ${normalizedPath}`);
 
