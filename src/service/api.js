@@ -3,7 +3,7 @@ const baseURL =
   import.meta.env.VITE_API_URL ||
   (import.meta.env.MODE === "development"
     ? "http://localhost:4000/api/v1"
-    : "https://eazworld.com/api/v1");
+    : "https://eazworld.com:6000/api/v1");
 // 1. Public exact path matches (any HTTP method)
 const PUBLIC_ROUTES = [
   "/auth/login",
