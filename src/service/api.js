@@ -53,7 +53,7 @@ const getBaseURL = () => {
   // Check if we're in a browser environment
   if (typeof window !== "undefined") {
     const { hostname } = window.location;
-    console.log(hostname);
+    console.log("HOST".hostname);
 
     // Development environment (localhost or local IP)
     if (
