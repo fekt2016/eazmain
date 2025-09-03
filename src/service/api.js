@@ -1,10 +1,34 @@
 import axios from "axios";
-const baseURL =
-  import.meta.env.VITE_API_URL ||
-  (import.meta.env.MODE === "development"
-    ? "http://localhost:4000/api/v1"
-    : "https://eazworld.com:6000/api/v1");
-// 1. Public exact path matches (any HTTP method)
+
+const getBaseURL = () => {
+  // Use environment variable if available (highest priority)
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+
+  // Check if we're in a browser environment
+  if (typeof window !== "undefined") {
+    const hostname = window.location.hostname;
+
+    // Development environment (localhost or local IP)
+    if (
+      hostname === "localhost" ||
+      hostname.startsWith("192.168.") ||
+      hostname.startsWith("10.") ||
+      hostname === "127.0.0.1"
+    ) {
+      return "http://localhost:4000/api/v1";
+    }
+
+    // Production environment - use api.eazworld.com
+    return "https://api.eazworld.com/api/v1";
+  }
+
+  // Default fallback for server-side rendering
+  return "http://localhost:4000/api/v1";
+};
+const baseURL = getBaseURL();
+
 const PUBLIC_ROUTES = [
   "/auth/login",
   "/auth/register",
