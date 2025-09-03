@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const baseURL =
-  import.meta.env.VITE_API_URL || "http://eazworld.com:6000/api/v1";
+  import.meta.env.VITE_API_URL || `${window.location.origin}/api/v1`;
 
 // 1. Public exact path matches (any HTTP method)
 const PUBLIC_ROUTES = [
