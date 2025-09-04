@@ -50,22 +50,20 @@ const getBaseURL = () => {
   console.log("VITE_API_URL:", import.meta.env.VITE_API_URL);
   console.log("PROD:", import.meta.env.PROD);
   console.log("DEV:", import.meta.env.DEV);
+  console.log(window.location.hostname);
 
   // Use environment variable if available (highest priority)
-  if (import.meta.env.VITE_API_URL) {
+  if (
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1"
+  ) {
     console.log("Using VITE_API_URL from environment");
-    return import.meta.env.VITE_API_URL;
+    return API_CONFIG.DEVELOPMENT;
   }
 
   // Use production API for production builds
-  if (import.meta.env.PROD) {
-    console.log("Production build detected, using production API");
-    return API_CONFIG.PRODUCTION;
-  }
 
-  // Default to development API
-  console.log("Development mode detected, using development API");
-  return API_CONFIG.DEVELOPMENT;
+  return API_CONFIG.PRODUCTION;
 };
 
 const getRelativePath = (url) => {
