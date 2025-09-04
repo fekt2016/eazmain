@@ -3,7 +3,7 @@ import axios from "axios";
 // API configuration
 const API_CONFIG = {
   DEVELOPMENT: "http://localhost:4000/api/v1",
-  PRODUCTION: "https://eazworld.com",
+  PRODUCTION: "https://eazworld.com:6000",
   TIMEOUT: 500000,
 };
 
