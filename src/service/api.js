@@ -3,7 +3,7 @@ import axios from "axios";
 // API configuration
 const API_CONFIG = {
   DEVELOPMENT: "http://localhost:4000/api/v1",
-  PRODUCTION: "https://eazworld.com:6000/api/v1/",
+  PRODUCTION: "https://eazworld.com:/api/v1/",
   TIMEOUT: 500000,
 };
 
@@ -62,11 +62,12 @@ const getBaseURL = () => {
   }
 
   // Use production API for production builds
-
+  console.log("Using production API", API_CONFIG.PRODUCTION);
   return API_CONFIG.PRODUCTION;
 };
 
 const getRelativePath = (url) => {
+  console.log("checking url", url);
   if (url.startsWith("http")) {
     try {
       const parsedUrl = new URL(url);
