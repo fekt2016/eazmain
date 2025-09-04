@@ -20,27 +20,27 @@ export default RatingBar;
 const RatingBarContainer = styled.div`
   display: flex;
   align-items: center;
-  margin-bottom: 10px;
-  gap: 10px;
+  margin-bottom: 1rem;
+  gap: 1rem;
 `;
 
 const RatingLabel = styled.div`
-  width: 70px;
-  font-size: 14px;
-  color: #2e3a59;
+  width: 7rem;
+  font-size: 1.4rem;
+  color: var(--color-grey-800);
 `;
 
 const BarContainer = styled.div`
   flex: 1;
-  height: 8px;
+  height: 0.8rem;
   background: #eaecf4;
-  border-radius: 4px;
+  border-radius: var(--border-radius-tiny);
   overflow: hidden;
 `;
 
 const BarFill = styled.div`
   height: 100%;
-  background: #4e73df;
+  background-color: var(--color-brand-500);
   width: ${(props) => props.$width}%;
   transition: width 0.5s ease;
 `;
@@ -48,6 +48,6 @@ const BarFill = styled.div`
 const RatingCount = styled.div`
   width: 40px;
   text-align: right;
-  font-size: 14px;
-  color: #858796;
+  font-size: 1.4rem;
+  color: var(--color-grey-800);
 `;

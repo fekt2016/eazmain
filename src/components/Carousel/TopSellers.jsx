@@ -42,7 +42,6 @@ const TopSellers = () => {
   return (
     <Section>
       <SectionHeader>
-        <SectionTitle>Top Sellers</SectionTitle>
         <SectionSubtitle>Shop from our trusted sellers</SectionSubtitle>
       </SectionHeader>
 
@@ -164,7 +163,7 @@ const Section = styled.section`
 
 const SellersGrid = styled.div`
   position: relative;
-  padding: 0 40px;
+  padding: 0.5rem 5rem;
 `;
 
 const SellerCard = styled(Link)`
@@ -220,22 +219,22 @@ const CardContent = styled.div`
   color: white;
 `;
 
-const SellerAvatar = styled.div`
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  overflow: hidden;
-  margin-bottom: 15px;
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+// const SellerAvatar = styled.div`
+//   width: 80px;
+//   height: 80px;
+//   border-radius: 50%;
+//   overflow: hidden;
+//   margin-bottom: 15px;
+//   border: 3px solid rgba(255, 255, 255, 0.3);
+//   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    background: white;
-  }
-`;
+//   img {
+//     width: 100%;
+//     height: 100%;
+//     object-fit: cover;
+//     background: white;
+//   }
+// `;
 
 const SellerInfo = styled.div`
   width: 100%;
@@ -282,56 +281,56 @@ const SellerStats = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 1.5rem;
   width: 100%;
 `;
 
 const SellerRating = styled.div`
   display: flex;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 0.8rem;
 `;
 
 const RatingValue = styled.span`
-  font-size: 14px;
+  font-size: 1.4rem;
   font-weight: 600;
   margin-left: 8px;
   color: white;
 `;
 
 const SellerProducts = styled.p`
-  font-size: 14px;
+  font-size: 1.4rem;
   color: rgba(255, 255, 255, 0.8);
 `;
 
-const VisitStoreButton = styled.button`
-  background: rgba(255, 255, 255, 0.9);
-  color: #4e73df;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+// const VisitStoreButton = styled.button`
+//   background: rgba(255, 255, 255, 0.9);
+//   color: #4e73df;
+//   border: none;
+//   padding: 8px 16px;
+//   border-radius: 20px;
+//   font-weight: 600;
+//   cursor: pointer;
+//   transition: all 0.3s;
+//   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 
-  &:hover {
-    background: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  }
-`;
+//   &:hover {
+//     background: var(--color-white-0);
+//     transform: translateY(-2px);
+//     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+//   }
+// `;
 
 const NavigationButton = styled.button`
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 40px;
-  height: 40px;
-  background: white;
+  width: 4rem;
+  height: 4rem;
+  background: var(--color-white-0);
   border: none;
   border-radius: 50%;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -340,8 +339,8 @@ const NavigationButton = styled.button`
   transition: all 0.3s;
 
   &:hover {
-    background: #4e73df;
-    color: white;
+    background-color: var(--color-primary-500);
+    color: var(--color-white-0);
   }
 
   &:disabled {
@@ -361,47 +360,48 @@ const NextButton = styled(NavigationButton)`
 const PaginationContainer = styled.div`
   display: flex;
   justify-content: center;
-  margin-top: 20px;
+  margin-top: 2rem;
 
   .swiper-pagination-bullet {
-    width: 12px;
-    height: 12px;
+    width: 1.2rem;
+    height: 1.2rem;
     background: #ddd;
     opacity: 1;
-    margin: 0 5px;
+    margin: 0 0.5rem;
     border-radius: 50%;
     cursor: pointer;
     transition: all 0.3s;
   }
 
   .swiper-pagination-bullet-active {
-    background: #4e73df;
+    background-color: var(--color-primary-500);
     transform: scale(1.2);
   }
 `;
 
 const SectionHeader = styled.div`
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 1rem;
 `;
 
-const SectionTitle = styled.h2`
-  font-size: 32px;
-  font-weight: 700;
-  color: #2e3a59;
-  margin-bottom: 10px;
+// const SectionTitle = styled.h2`
+//   font-size: 3.2rem;
+//   font-weight: 700;
+//   color: #2e3a59;
+//   margin-bottom: 10px;
 
-  @media (max-width: 768px) {
-    font-size: 28px;
-  }
-`;
+//   @media (max-width: 76.8rem) {
+//     font-size: 2.8rem;
+//   }
+// `;
 
 const SectionSubtitle = styled.p`
-  font-size: 18px;
-  color: #858796;
+  font-size: 1.8rem;
+  text-align: start;
+  color: var(--color-grey-400);
 
   @media (max-width: 768px) {
-    font-size: 16px;
+    font-size: 1.6rem;
   }
 `;
 

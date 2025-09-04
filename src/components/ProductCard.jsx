@@ -17,6 +17,7 @@ export default function ProductCard({
   showRemoveButton = false,
   layout = "vertical", // 'vertical' or 'horizontal'
 }) {
+  console.log("product", product);
   const productId = product.id || product._id;
 
   // const { isAuthenticated } = useAuth();
@@ -71,10 +72,9 @@ export default function ProductCard({
           <ProductName>{product.name}</ProductName>
         </ProductLink>
         <ProductPrice>GH₵{product?.price || ""}</ProductPrice>
-        <DiscountPrice>GH₵{product?.discountPrice || ""}</DiscountPrice>
         <ProductRating>
           <Count>{product.ratingsQuantity}</Count>
-          <StarRating rating={product.rating} />
+          <StarRating rating={product.ratingsAverage} />
         </ProductRating>
         {showAddToCart && (
           <AddToCartButton
@@ -119,12 +119,12 @@ const ProductLink = styled(Link)`
 
 const ProductImage = styled.div`
   height: ${({ $layout }) => ($layout === "horizontal" ? "100%" : "200px")};
-  width: ${({ $layout }) => ($layout === "horizontal" ? "40%" : "100%")};
-  background: #f8f9fc;
+  width: ${({ $layout }) => ($layout === "horizontal" ? "10%" : "100%")};
+  background: var(--color-white-0);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 10px;
   border-bottom: ${({ $layout }) =>
     $layout === "vertical" ? "1px solid #eaecf4" : "none"};
   border-right: ${({ $layout }) =>
@@ -143,7 +143,7 @@ const ProductImage = styled.div`
 `;
 
 const ProductInfo = styled.div`
-  padding: 20px;
+  padding: 8px;
   flex: ${({ $layout }) => ($layout === "horizontal" ? "1" : "none")};
   display: flex;
   flex-direction: column;
@@ -151,21 +151,21 @@ const ProductInfo = styled.div`
 `;
 
 const ProductName = styled.h3`
-  font-size: 16px;
+  font-size: 12px;
   font-weight: 600;
-  margin-bottom: 10px;
-  color: #2e3a59;
+  margin-bottom: 5px;
+  color: var(--color-grey-800);
   transition: color 0.3s;
 
-  &:hover {
+  /* &:hover {
     color: #4e73df;
-  }
+  } */
 `;
 
 const ProductRating = styled.div`
   display: flex;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 5px;
   gap: 5px;
   justify-content: start;
   align-items: center;
@@ -174,20 +174,20 @@ const DiscountPrice = styled.span``;
 const Count = styled.span``;
 
 const ProductPrice = styled.div`
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
-  color: #4e73df;
-  margin-bottom: 15px;
+  color: var(--color-brand-500);
+  margin-bottom: 5px;
   margin-top: auto;
 `;
 
 const AddToCartButton = styled.button`
   width: 100%;
-  padding: 12px;
+  padding: 1.2rem;
   background: #4e73df;
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 0.5rem;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.3s;
@@ -206,20 +206,20 @@ const AddToCartButton = styled.button`
 
 const WishlistButton = styled.button`
   position: absolute;
-  top: 15px;
-  right: 15px;
-  background: rgba(255, 255, 255, 0.8);
+  top: 1.5rem;
+  right: 1.5rem;
+  background-color: rgba(255, 255, 255, 0.8);
   border: none;
   border-radius: 50%;
-  width: 36px;
-  height: 36px;
+  width: 3.6rem;
+  height: 3.6rem;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   z-index: 10;
   transition: all 0.3s;
-  font-size: 18px;
+  font-size: 1.8rem;
 
   &:hover {
     background: white;
@@ -233,20 +233,20 @@ const WishlistButton = styled.button`
 `;
 const RemoveButton = styled.button`
   position: absolute;
-  top: 15px;
-  left: 15px;
-  background: rgba(255, 255, 255, 0.8);
+  top: 1.5rem;
+  left: 1.5rem;
+  background-color: rgba(255, 255, 255, 0.8);
   border: none;
   border-radius: 50%;
-  width: 36px;
-  height: 36px;
+  width: 3.6rem;
+  height: 3.6rem;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   z-index: 10;
   transition: all 0.3s;
-  font-size: 18px;
+  font-size: 1.8rem;
 
   &:hover {
     background: white;

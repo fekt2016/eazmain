@@ -126,11 +126,9 @@ const PageContainer = styled.div`
 const Section = styled.section`
   padding: 2rem;
   /* padding: 60px 5%; */
-  background: white;
-  /* margin-bottom: 30px; */
-  border-radius: 10px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-
+  /* background-color: red; */
+  margin-bottom: 3rem;
+  box-shadow: var(--shadow-md);
   &:last-child {
     margin-bottom: 0;
   }
@@ -138,71 +136,71 @@ const Section = styled.section`
 
 const ProductsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
   gap: 30px;
 `;
 
 const NewsletterSection = styled.div`
   background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
-  border-radius: 15px;
-  padding: 70px 5%;
-  margin: 0 5% 60px;
-  color: white;
+  border-radius: var(--border-radius-lg);
+  padding: 7rem 5%;
+  margin: 0 5% 6rem;
+  color: var(--color-white-0);
   text-align: center;
 `;
 
 const NewsletterContent = styled.div`
-  max-width: 700px;
+  max-width: 70rem;
   margin: 0 auto;
 `;
 
 const NewsletterTitle = styled.h2`
-  font-size: 36px;
+  font-size: 3.6rem;
   font-weight: 700;
-  margin-bottom: 20px;
+  margin-bottom: 2rem;
 
   @media (max-width: 768px) {
-    font-size: 28px;
+    font-size: 2.8rem;
   }
 `;
 
 const NewsletterText = styled.p`
-  font-size: 18px;
+  font-size: 1.8rem;
   margin-bottom: 30px;
   opacity: 0.9;
 
-  @media (max-width: 768px) {
-    font-size: 16px;
+  @media (max-width: 76.8rem) {
+    font-size: 1.6rem;
   }
 `;
 
 const NewsletterForm = styled.div`
   display: flex;
-  max-width: 500px;
+  max-width: 50rem;
   margin: 0 auto;
 
-  @media (max-width: 576px) {
+  @media (max-width: 57.6rem) {
     flex-direction: column;
   }
 `;
 
 const NewsletterInput = styled.input`
   flex: 1;
-  padding: 15px 20px;
+  padding: 1.5rem 2rem;
   border: none;
-  border-radius: 50px 0 0 50px;
-  font-size: 16px;
+  border-radius: 5rem 0 0 5rem;
+  font-size: 1.6rem;
   outline: none;
 
-  @media (max-width: 576px) {
-    border-radius: 50px;
-    margin-bottom: 10px;
+  @media (max-width: 57.6rem) {
+    border-radius: 5rem;
+    margin-bottom: 1rem;
   }
 `;
 
 const NewsletterButton = styled.button`
-  background: #1cc88a;
-  color: white;
+  background-color: var(--color-primary-500);
+  color: var(--color-white-0);
   border: none;
   padding: 0 30px;
   border-radius: 0 50px 50px 0;
@@ -211,19 +209,19 @@ const NewsletterButton = styled.button`
   transition: background 0.3s;
 
   &:hover {
-    background: #17a673;
+    background: var(--color-primary-600);
   }
 
-  @media (max-width: 576px) {
-    border-radius: 50px;
-    padding: 15px;
+  @media (max-width: 57.6rem) {
+    border-radius: 5rem;
+    padding: 1.5rem;
   }
 `;
 
 const RatingValue = styled.span`
-  font-size: 16px;
+  font-size: 1.6rem;
   font-weight: 600;
-  color: #2e3a59;
+  color: var(--color-grey-800);
   margin-left: 8px;
 `;
 
