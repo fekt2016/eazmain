@@ -37,7 +37,7 @@ export default function ProductCard({
     toggleWishlist(product._id);
   };
   return (
-    <CardContainer $layout={layout}>
+    <CardContainer $layout={layout} to={`/product/${product._id}`}>
       {showRemoveButton && (
         <RemoveButton
           onClick={(e) => {
@@ -62,7 +62,7 @@ export default function ProductCard({
           )}
         </WishlistButton>
       )}
-      <ProductLink to={`/product/${product._id}`}>
+      <ProductLink>
         <ProductImage $layout={layout}>
           <img src={product.imageCover} alt={product.name} />
         </ProductImage>
@@ -95,7 +95,7 @@ export default function ProductCard({
 }
 
 // Styled Components
-const CardContainer = styled.div`
+const CardContainer = styled(Link)`
   position: relative;
   background: white;
   border-radius: 15px;
@@ -112,7 +112,7 @@ const CardContainer = styled.div`
   }
 `;
 
-const ProductLink = styled(Link)`
+const ProductLink = styled.div`
   text-decoration: none;
   color: inherit;
 `;

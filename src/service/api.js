@@ -24,6 +24,7 @@ const PUBLIC_ROUTES = [
   "/users/signup",
   "users/login",
   "/wishlist/sync",
+  "/discount",
 ];
 
 const PUBLIC_GET_ENDPOINTS = [

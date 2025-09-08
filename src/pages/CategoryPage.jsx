@@ -63,6 +63,7 @@ export default function CategoryPage() {
   const category = useMemo(() => {
     return categoryData?.data || {};
   }, [categoryData]);
+  console.log(category);
 
   const products = useMemo(() => {
     return productsData?.data?.products || [];
@@ -121,10 +122,7 @@ export default function CategoryPage() {
         ) : (
           <>
             <BannerImage
-              src={
-                category.image ||
-                "https://via.placeholder.com/1200x200?text=Category+Banner"
-              }
+              src={"https://via.placeholder.com/1200x200?text=Category+Banner"}
               alt={category.name}
             />
             <BannerContent>

@@ -7,11 +7,14 @@ import ProductCard from "../components/ProductCard";
 import { getOrCreateSessionId } from "../utils/sessionUtils";
 import useAnalytics from "../hooks/useAnalytics";
 import TopSellers from "../components/Carousel/TopSellers";
+import DealsSection from "../components/sections/DealsSection";
+import { UseGetDislayDiscount } from "../hooks/useDiscount";
 
 const HomePage = () => {
   const { getProducts } = useProduct();
   const { recordProductView } = useAnalytics();
-
+  const { data: discountData } = UseGetDislayDiscount();
+  console.log("discountData", discountData);
   const { data: productsData } = getProducts;
 
   const products = useMemo(() => {
@@ -48,11 +51,6 @@ const HomePage = () => {
       bgColor: "#ffecd2",
     },
   ];
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Submit logic
-  };
 
   const handleProductClick = useCallback(
     (productId) => {
@@ -93,40 +91,23 @@ const HomePage = () => {
           })}
         </ProductsGrid>
       </Section>
-
-      <NewsletterSection>
-        <NewsletterContent>
-          <NewsletterTitle>Subscribe to Our Newsletter</NewsletterTitle>
-          <NewsletterText>
-            Get the latest updates on new products and special promotions
-          </NewsletterText>
-          <NewsletterForm>
-            <NewsletterForm onSubmit={handleSubmit}>
-              <NewsletterInput
-                type="email"
-                placeholder="Enter your email address"
-              />
-              <NewsletterButton>Subscribe</NewsletterButton>
-            </NewsletterForm>
-          </NewsletterForm>
-        </NewsletterContent>
-      </NewsletterSection>
+      <DealsSection
+        products={products}
+        handleProductClick={handleProductClick}
+      />
     </PageContainer>
   );
 };
 
 // Styled Components
 const PageContainer = styled.div`
-  /* background-color: #f8f9fc; */
-  color: #2e3a59;
+  color: var(--color-grey-800);
   min-height: 100vh;
   font-family: "Poppins", sans-serif;
 `;
 
 const Section = styled.section`
   padding: 2rem;
-  /* padding: 60px 5%; */
-  /* background-color: red; */
   margin-bottom: 3rem;
   box-shadow: var(--shadow-md);
   &:last-child {
@@ -136,95 +117,12 @@ const Section = styled.section`
 
 const ProductsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
-  gap: 30px;
-`;
-
-const NewsletterSection = styled.div`
-  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
-  border-radius: var(--border-radius-lg);
-  padding: 7rem 5%;
-  margin: 0 5% 6rem;
-  color: var(--color-white-0);
-  text-align: center;
-`;
-
-const NewsletterContent = styled.div`
-  max-width: 70rem;
-  margin: 0 auto;
-`;
-
-const NewsletterTitle = styled.h2`
-  font-size: 3.6rem;
-  font-weight: 700;
-  margin-bottom: 2rem;
-
-  @media (max-width: 768px) {
-    font-size: 2.8rem;
-  }
-`;
-
-const NewsletterText = styled.p`
-  font-size: 1.8rem;
-  margin-bottom: 30px;
-  opacity: 0.9;
+  grid-template-columns: repeat(auto-fill, minmax(25rem, 1fr));
+  gap: 10px;
 
   @media (max-width: 76.8rem) {
-    font-size: 1.6rem;
+    grid-template-columns: 1fr 1fr;
   }
 `;
-
-const NewsletterForm = styled.div`
-  display: flex;
-  max-width: 50rem;
-  margin: 0 auto;
-
-  @media (max-width: 57.6rem) {
-    flex-direction: column;
-  }
-`;
-
-const NewsletterInput = styled.input`
-  flex: 1;
-  padding: 1.5rem 2rem;
-  border: none;
-  border-radius: 5rem 0 0 5rem;
-  font-size: 1.6rem;
-  outline: none;
-
-  @media (max-width: 57.6rem) {
-    border-radius: 5rem;
-    margin-bottom: 1rem;
-  }
-`;
-
-const NewsletterButton = styled.button`
-  background-color: var(--color-primary-500);
-  color: var(--color-white-0);
-  border: none;
-  padding: 0 30px;
-  border-radius: 0 50px 50px 0;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.3s;
-
-  &:hover {
-    background: var(--color-primary-600);
-  }
-
-  @media (max-width: 57.6rem) {
-    border-radius: 5rem;
-    padding: 1.5rem;
-  }
-`;
-
-const RatingValue = styled.span`
-  font-size: 1.6rem;
-  font-weight: 600;
-  color: var(--color-grey-800);
-  margin-left: 8px;
-`;
-
-// Add AccountDropdown styled component
 
 export default HomePage;
