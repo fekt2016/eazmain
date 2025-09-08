@@ -2,12 +2,12 @@ import { createGlobalStyle } from "styled-components";
 import { devicesMax } from "./breakpoint";
 
 const breakpoints = {
-  xs: "320px",
-  sm: "640px",
-  md: "768px",
-  lg: "1024px",
-  xl: "1280px",
-  "2xl": "1536px",
+  xs: "32rem",
+  sm: "64rem",
+  md: "76.8rem",
+  lg: "102.4rem",
+  xl: "128rem",
+  "2xl": "153.6rem",
 };
 
 export const devices = {

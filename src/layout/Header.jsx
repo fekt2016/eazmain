@@ -173,7 +173,7 @@ export default function Header() {
 
   return (
     <StyledHeader>
-      <Logo>
+      <Logo type="main">
         <LogoIcon>🛒</LogoIcon>
         <LogoText to="/">Eaz Shop</LogoText>
       </Logo>
@@ -307,8 +307,7 @@ export default function Header() {
               </CategoriesDropdown>
             )}
           </CategoriesContainer>
-
-          <SearchContainer ref={searchRef}>
+          <SearchContainer ref={searchRef} type="main">
             <SearchBar>
               <SearchInput
                 type="text"
@@ -386,93 +385,181 @@ export default function Header() {
               </LoadingSuggestions>
             )}
           </SearchContainer>
-
-          <HeaderActions>
-            <HeaderAction>
-              {userData ? (
-                <AccountDropdown ref={dropdownRef}>
-                  <AccountButton onClick={() => setShowDropdown(!showDropdown)}>
-                    <ActionIcon>
-                      <FaUser />
-                    </ActionIcon>
-                    <ActionText>{user.name || user.email}</ActionText>
-                  </AccountButton>
-                  {showDropdown && (
-                    <DropdownMenu>
-                      <DropdownItem as={Link} to="/profile">
-                        My Profile
-                      </DropdownItem>
-                      <DropdownItem as={Link} to="/orders">
-                        My Orders
-                      </DropdownItem>
-                      <DropdownItem as={Link} to="/reviews">
-                        My Reviews
-                      </DropdownItem>
-                      <DropdownItem as={Link} to="/addresses">
-                        My Addresses
-                      </DropdownItem>
-                      <DropdownItem as={Link} to="/credit-balance">
-                        Balance
-                      </DropdownItem>
-                      <DropdownItem as={Link} to="/followed">
-                        Followed
-                      </DropdownItem>
-                      <DropdownItem as={Link} to="/notifications">
-                        Notifications
-                      </DropdownItem>
-                      <DropdownItem as={Link} to="/profile">
-                        Settings
-                      </DropdownItem>
-                      <DropdownItem as={Link} to="/coupons">
-                        Coupons
-                      </DropdownItem>
-                      <DropdownItem as={Link} to="/browser-history">
-                        Browser History
-                      </DropdownItem>
-                      <DropdownItem as={Link} to="/permissions">
-                        Permissions
-                      </DropdownItem>
-                      <DropdownItem onClick={logoutHandler}>
-                        Logout
-                      </DropdownItem>
-                    </DropdownMenu>
-                  )}
-                </AccountDropdown>
-              ) : (
-                <BottomLink to="/login">
-                  <ActionIcon>
-                    <FaUser />
-                  </ActionIcon>
-                  <ActionText>Account</ActionText>
-                </BottomLink>
-              )}
-            </HeaderAction>
-
-            <HeaderAction>
-              <BottomLink to="/wishlist">
-                <ActionIcon>
-                  <FaHeart />
-                  {wishlist?.productCount > 0 && (
-                    <ActionBadge>{wishlist.productCount}</ActionBadge>
-                  )}
-                </ActionIcon>
-                <ActionText>Wishlist</ActionText>
-              </BottomLink>
-            </HeaderAction>
-
-            <HeaderAction>
-              <BottomLink to="/cart">
-                <ActionIcon>
-                  <FaShoppingCart />
-                  {cartCount > 0 && <ActionBadge>{cartCount}</ActionBadge>}
-                </ActionIcon>
-                <ActionText>Cart</ActionText>
-              </BottomLink>
-            </HeaderAction>
-
+          <SearchMo>
             <MobileMenuButton onClick={toggleMobileMenu}>
               <FaBars />
             </MobileMenuButton>
+            <SearchContainer ref={searchRef} type="mobile">
+              <SearchBar>
+                <SearchInput
+                  type="text"
+                  placeholder="Search for products..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setShowSearchSuggestions(true);
+                    setActiveSuggestion(0);
+                  }}
+                  onFocus={() => setShowSearchSuggestions(true)}
+                  onKeyDown={handleSearchKeyDown}
+                />
+                <SearchButton
+                  onClick={() => {
+                    if (searchTerm) {
+                      navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
+                      setShowSearchSuggestions(false);
+                    }
+                  }}
+                >
+                  {isSearchProductsLoading ? (
+                    <SpinnerIcon>
+                      <FaSpinner />
+                    </SpinnerIcon>
+                  ) : (
+                    <FaSearch />
+                  )}
+                </SearchButton>
+              </SearchBar>
+
+              {showSearchSuggestions && searchSuggestions.length > 0 && (
+                <SearchSuggestions>
+                  {searchSuggestions.map((suggestion, index) => {
+                    console.log("Rendering suggestion:", suggestion);
+                    return (
+                      <SuggestionItem
+                        key={`${suggestion.type}-${suggestion.id}`}
+                        active={index === activeSuggestion}
+                        onClick={() => handleSuggestionSelect(suggestion)}
+                      >
+                        <SuggestionImage>
+                          <img src={suggestion.image} alt={suggestion.name} />
+                        </SuggestionImage>
+                        <SuggestionText>
+                          <SuggestionName>{suggestion.name}</SuggestionName>
+                          <SuggestionDetails>
+                            <SuggestionCategory>
+                              {suggestion.category}
+                            </SuggestionCategory>
+                            <SuggestionPrice>
+                              ${suggestion.price}
+                            </SuggestionPrice>
+                          </SuggestionDetails>
+                        </SuggestionText>
+                      </SuggestionItem>
+                    );
+                  })}
+                </SearchSuggestions>
+              )}
+
+              {showSearchSuggestions &&
+                searchTerm &&
+                searchSuggestions.length === 0 &&
+                !isSearchProductsLoading && (
+                  <NoSuggestions>
+                    No products found for "{searchTerm}"
+                  </NoSuggestions>
+                )}
+
+              {isSearchProductsLoading && (
+                <LoadingSuggestions>
+                  <SpinnerIcon>
+                    <FaSpinner />
+                  </SpinnerIcon>
+                  Searching products...
+                </LoadingSuggestions>
+              )}
+            </SearchContainer>
+          </SearchMo>
+          <HeaderActions>
+            <Logo type="action">
+              <LogoIcon>🛒</LogoIcon>
+              <LogoText to="/">Eaz Shop</LogoText>
+            </Logo>
+            <ActionList>
+              <HeaderAction>
+                {userData ? (
+                  <AccountDropdown ref={dropdownRef}>
+                    <AccountButton
+                      onClick={() => setShowDropdown(!showDropdown)}
+                    >
+                      <ActionIcon>
+                        <FaUser />
+                      </ActionIcon>
+                      <ActionText>{user.name || user.email}</ActionText>
+                    </AccountButton>
+                    {showDropdown && (
+                      <DropdownMenu>
+                        <DropdownItem as={Link} to="/profile">
+                          My Profile
+                        </DropdownItem>
+                        <DropdownItem as={Link} to="/orders">
+                          My Orders
+                        </DropdownItem>
+                        <DropdownItem as={Link} to="/reviews">
+                          My Reviews
+                        </DropdownItem>
+                        <DropdownItem as={Link} to="/addresses">
+                          My Addresses
+                        </DropdownItem>
+                        <DropdownItem as={Link} to="/credit-balance">
+                          Balance
+                        </DropdownItem>
+                        <DropdownItem as={Link} to="/followed">
+                          Followed
+                        </DropdownItem>
+                        <DropdownItem as={Link} to="/notifications">
+                          Notifications
+                        </DropdownItem>
+                        <DropdownItem as={Link} to="/profile">
+                          Settings
+                        </DropdownItem>
+                        <DropdownItem as={Link} to="/coupons">
+                          Coupons
+                        </DropdownItem>
+                        <DropdownItem as={Link} to="/browser-history">
+                          Browser History
+                        </DropdownItem>
+                        <DropdownItem as={Link} to="/permissions">
+                          Permissions
+                        </DropdownItem>
+                        <DropdownItem onClick={logoutHandler}>
+                          Logout
+                        </DropdownItem>
+                      </DropdownMenu>
+                    )}
+                  </AccountDropdown>
+                ) : (
+                  <BottomLink to="/login">
+                    <ActionIcon>
+                      <FaUser />
+                    </ActionIcon>
+                    <ActionText>Account</ActionText>
+                  </BottomLink>
+                )}
+              </HeaderAction>
+
+              <HeaderAction>
+                <BottomLink to="/wishlist">
+                  <ActionIcon>
+                    <FaHeart />
+                    {wishlist?.productCount > 0 && (
+                      <ActionBadge>{wishlist.productCount}</ActionBadge>
+                    )}
+                  </ActionIcon>
+                  <ActionText>Wishlist</ActionText>
+                </BottomLink>
+              </HeaderAction>
+
+              <HeaderAction>
+                <BottomLink to="/cart">
+                  <ActionIcon>
+                    <FaShoppingCart />
+                    {cartCount > 0 && <ActionBadge>{cartCount}</ActionBadge>}
+                  </ActionIcon>
+                  <ActionText>Cart</ActionText>
+                </BottomLink>
+              </HeaderAction>
+            </ActionList>
           </HeaderActions>
         </BottomHeader>
       </RightHeader>
@@ -482,12 +569,16 @@ export default function Header() {
 
 // Styled Components
 const StyledHeader = styled.header`
-  background: white;
+  background: var(--color-white-0);
   box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
   position: sticky;
   top: 0;
   z-index: 100;
   display: flex;
+
+  @media (max-width: 76.8rem) {
+    width: 100vw;
+  }
 `;
 const RightHeader = styled.div`
   flex: 1;
@@ -499,48 +590,39 @@ const HeaderTop = styled.div`
   align-items: center;
   padding: 8px 5%;
   border-bottom: 1px solid var(--color-grey-200);
-  /* background-color: #f8f9fc; */
 
-  @media (max-width: 768px) {
-    flex-wrap: wrap;
-    padding: 15px;
+  @media (max-width: 76.8rem) {
+    display: none;
   }
 `;
 
 const TopLinks = styled.div`
   display: flex;
-  gap: 20px;
-
-  @media (max-width: 480px) {
-    gap: 15px;
-    margin-top: 10px;
-    width: 100%;
-    justify-content: flex-end;
-  }
+  gap: 2rem;
 `;
 const RightLinks = styled.div`
   display: flex;
-  gap: 20px;
+  gap: 2rem;
 `;
 const TopButton = styled.a`
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: #5a5c69;
+  gap: 0.8rem;
+  color: var(--color-grey-500);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 1%.4rem;
   transition: color 0.3s;
-  padding: 6px 12px;
+  padding: 0.6rem 1.2rem;
   border-radius: 4px;
   background: rgba(78, 115, 223, 0.1);
 
   &:hover {
     background: rgba(78, 115, 223, 0.2);
-    color: #4e73df;
+    color: var(--color-grey-500);
   }
 
   span {
-    @media (max-width: 480px) {
+    @media (max-width: 48rem) {
       display: none;
     }
   }
@@ -553,22 +635,22 @@ const MiddleLinks = styled.div`
 const SupportLink = styled(Link)`
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: 5a5c69;
+  gap: 0.8rem;
+  color: var(--color-grey-500);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 1.4rem;
   transition: color 0.3s;
-  padding: 6px 12px;
-  border-radius: 4px;
-  /* background: rgba(78, 115, 223, 0.1); */
+  padding: 6px 1%;
+  border-radius: 0.4rem;
+  background: rgba(78, 115, 223, 0.1);
 
   &:hover {
     background: rgba(78, 115, 223, 0.2);
-    color: #4e73df;
+    color: var(--color-primary-500);
   }
 
   span {
-    @media (max-width: 480px) {
+    @media (max-width: 48rem) {
       display: none;
     }
   }
@@ -579,29 +661,31 @@ const BottomHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   padding: 6px 4%;
-  background-color: #fff;
-  position: relative;
 
-  @media (max-width: 992px) {
-    flex-wrap: wrap;
-    gap: 15px;
+  @media (max-width: 76.8rem) {
+    flex-direction: column-reverse;
+    padding: 0 1rem;
   }
 `;
 
 const Logo = styled.div`
-  display: flex;
-  padding: 0 10px 0 20px;
-  flex-direction: column;
+  display: ${(props) => (props.type === "main" ? "flex" : "none")};
+  padding: 0 1rem 0 2rem;
+  flex-direction: ${(props) => (props.type === "action" ? "" : "column")};
   justify-content: center;
   align-items: center;
-  font-size: 12px;
+  font-size: 1.2rem;
   font-weight: 700;
   color: var(--color-grey-700);
+
+  @media (max-width: 76.8rem) {
+    display: ${(props) => (props.type === "action" ? "flex" : "none")};
+  }
 `;
 
 const LogoIcon = styled.span`
-  margin-right: 10px;
-  font-size: 28px;
+  margin-right: 1rem;
+  font-size: 2.8rem;
 `;
 
 const BottomLink = styled(Link)`
@@ -610,11 +694,11 @@ const BottomLink = styled(Link)`
   align-items: center;
   justify-content: center;
   text-decoration: none;
-  color: #5a5c69;
+  color: var(--color-grey-700);
   transition: color 0.3s;
 
   &:hover {
-    color: #4e73df;
+    color: var(--color-primary-500);
   }
 `;
 
@@ -626,10 +710,11 @@ const LogoText = styled(Link)`
 const CategoriesContainer = styled.div`
   position: relative;
   display: inline-block;
-  /* background-color: red; */
 
-  @media (max-width: 992px) {
-    order: 1;
+  @media (max-width: 76.8rem) {
+    display: none;
+    visibility: hidden;
+    opacity: 0;
   }
 `;
 
@@ -637,11 +722,9 @@ const CategoriesButton = styled.button`
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
-  /* background: #4e73df; */
-  /* color: white; */
+  padding: 1rem 2rem;
   border: none;
-  border-radius: 30px;
+  border-radius: 3rem;
   cursor: pointer;
   font-weight: 500;
   transition: background 0.3s;
@@ -653,7 +736,7 @@ const CategoriesButton = styled.button`
   }
 
   span {
-    @media (max-width: 480px) {
+    @media (max-width: 48rem) {
       display: none;
     }
   }
@@ -663,21 +746,21 @@ const CategoriesDropdown = styled.div`
   position: absolute;
   top: 100%;
   left: 0;
-  width: 800px;
-  background: white;
+  width: 80rem;
+  background: var(--color-white-0);
   border-radius: 8px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.2);
   z-index: 1000;
-  margin-top: 10px;
+  margin-top: 1rem;
   overflow: hidden;
 
-  @media (max-width: 900px) {
-    width: 600px;
+  @media (max-width: 90rem) {
+    width: 60rem;
   }
 
-  @media (max-width: 700px) {
+  @media (max-width: 70rem) {
     width: 90vw;
-    left: -50px;
+    left: -5rem;
   }
 `;
 
@@ -686,21 +769,21 @@ const DropdownContent = styled.div`
 `;
 
 const DropdownHeader = styled.div`
-  padding: 15px 20px;
+  padding: 1.5rem 2rem;
   background-color: var(--color-primary-500);
   color: var(--color-white-0);
 
   h3 {
     margin: 0;
-    font-size: 16px;
+    font-size: 1.6rem;
   }
 `;
 
 const CategoryPanels = styled.div`
   display: flex;
-  height: 400px;
+  height: 40rem;
 
-  @media (max-width: 700px) {
+  @media (max-width: 70rem) {
     flex-direction: column;
     height: auto;
     max-height: 70vh;
@@ -713,7 +796,7 @@ const ParentCategoriesPanel = styled.div`
   border-right: 1px solid #eaecf4;
   overflow-y: auto;
 
-  @media (max-width: 700px) {
+  @media (max-width: 70rem) {
     width: 100%;
     border-right: none;
     border-bottom: 1px solid #eaecf4;
@@ -725,16 +808,16 @@ const SubCategoriesPanel = styled.div`
   overflow-y: auto;
   padding: 10px;
 
-  @media (max-width: 700px) {
+  @media (max-width: 70rem) {
     width: 100%;
   }
 `;
 
 const PanelTitle = styled.div`
-  padding: 12px 20px;
+  padding: 1.2rem 2rem;
   font-weight: 600;
-  background-color: #f8f9fc;
-  border-bottom: 1px solid #eaecf4;
+  background-color: var(--color-white-0);
+  border-bottom: 1px solid var(--color-white-0);
 `;
 
 const CategoriesList = styled.ul`
@@ -744,7 +827,7 @@ const CategoriesList = styled.ul`
 `;
 
 const CategoryItem = styled.li`
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--color-white-0);
   transition: background 0.2s;
 
   &:last-child {
@@ -753,52 +836,52 @@ const CategoryItem = styled.li`
 
   &:hover,
   &.active {
-    background: #f8f9fc;
+    background: var(--color-white-0);
   }
 `;
 
 const CategoryLink = styled(Link)`
   display: flex;
   align-items: center;
-  padding: 12px 20px;
+  padding: 1.2rem 2rem;
   text-decoration: none;
-  color: #333;
+  color: var(--color-grey-700);
 
   &:hover {
-    color: #4e73df;
+    color: var(--color-primary-500);
   }
 `;
 
 const CategoryImage = styled.img`
-  width: 30px;
-  height: 30px;
+  width: 3rem;
+  height: 3rem;
   object-fit: cover;
   border-radius: 4px;
-  margin-right: 12px;
-  background: #f8f9fc;
-  border: 1px solid #eaecf4;
+  margin-right: 1.2rem;
+  background: var(--color-white-0);
+  border: 1px solid var(--color-white-0);
 `;
 
 const CategoryName = styled.span`
   flex: 1;
   font-weight: 500;
-  font-size: 14px;
+  font-size: 1.4rem;
 `;
 
 const SubCategoriesGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
-  padding: 15px;
+  gap: 1.5rem;
+  padding: 1.5rem;
 
-  @media (max-width: 900px) {
+  @media (max-width: 90rem) {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  @media (max-width: 500px) {
+  @media (max-width: 50rem) {
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    padding: 10px;
+    gap: 1rem;
+    padding: 1rem;
   }
 `;
 
@@ -811,64 +894,65 @@ const SubCategoryGridLink = styled(Link)`
   flex-direction: column;
   align-items: center;
   text-decoration: none;
-  color: #333;
+  color: var(--color-grey-800);
   transition: transform 0.2s;
 
   &:hover {
-    color: #4e73df;
+    color: var(--color-primary-500);
     transform: translateY(-3px);
   }
 `;
 
 const SubCategoryCircleImage = styled.img`
-  width: 60px;
-  height: 60px;
+  width: 6rem;
+  height: 6rem;
   object-fit: cover;
   border-radius: 50%;
   margin-bottom: 8px;
-  background: #f8f9fc;
-  border: 1px solid #eaecf4;
+  background: var(--color-white-0);
+  border: 1px solid var(--color-grey-200);
 `;
 
 const SubCategoryGridName = styled.span`
-  font-size: 12px;
+  font-size: 1.2rem;
   font-weight: 500;
   text-align: center;
   line-height: 1.3;
 `;
 
 const NoSubCategories = styled.div`
-  padding: 20px;
+  padding: 2rem;
   text-align: center;
-  color: #6c757d;
+  color: var(--color-grey-400);
   font-style: italic;
   grid-column: 1 / -1;
 `;
 
 const LoadingMessage = styled.div`
-  padding: 20px;
+  padding: 2rem;
   text-align: center;
-  color: #6c757d;
+  color: var(--color-grey-400);
 `;
 
 const NoCategories = styled.div`
-  padding: 20px;
+  padding: 2rem;
   text-align: center;
-  color: #6c757d;
+  color: var(--color-grey-400);
 `;
 
 const HeaderActions = styled.div`
   display: flex;
   align-items: center;
-  gap: 25px;
+  gap: 2.5rem;
 
-  @media (max-width: 768px) {
-    gap: 15px;
-  }
+  /* Desktop (default): gap-based */
+  justify-content: flex-end;
 
-  @media (max-width: 992px) {
-    order: 3;
-    margin-left: auto;
+  /* Tablet and below: spread items apart */
+  @media (max-width: 76.8rem) {
+    justify-content: space-between;
+    width: 100%;
+    gap: 1rem;
   }
 `;
 
@@ -879,21 +963,25 @@ const HeaderAction = styled.div`
   position: relative;
 
   &:hover {
-    color: #4e73df;
+    color: var(--color-primary-500);
   }
 `;
-
+const ActionList = styled.div`
+  display: flex;
+  gap: 1.5rem;
+  padding-right: 1.5rem;
+`;
 const ActionIcon = styled.div`
-  font-size: 22px;
+  font-size: 2.2rem;
   position: relative;
-  color: #5a5c69;
+  color: var(--color-grey-500);
 `;
 
 const ActionText = styled.span`
-  font-size: 12px;
-  color: #5a5c69;
+  font-size: 1.2rem;
+  color: var(--color-grey-500);
 
-  @media (max-width: 480px) {
+  @media (max-width: 48rem) {
     display: none;
   }
 `;
@@ -903,10 +991,10 @@ const ActionBadge = styled.span`
   top: -8px;
   right: -8px;
   background: #ff6b6b;
-  color: white;
-  font-size: 11px;
-  width: 20px;
-  height: 20px;
+  color: var(--color-white-0);
+  font-size: 1.1rem;
+  width: 2rem;
+  height: 2rem;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -918,11 +1006,11 @@ const MobileMenuButton = styled.button`
   display: none;
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: 2.4rem;
   cursor: pointer;
-  color: #4e73df;
+  color: var(--color-primary-500);
 
-  @media (max-width: 768px) {
+  @media (max-width: 99.2rem) {
     display: block;
   }
 `;
@@ -944,10 +1032,10 @@ const AccountButton = styled.button`
   padding: 0;
 
   &:hover {
-    color: #4e73df;
+    color: var(--color-primary-500);
 
     ${ActionIcon}, ${ActionText} {
-      color: #4e73df;
+      color: var(--color-primary-500);
     }
   }
 `;
@@ -956,42 +1044,71 @@ const DropdownMenu = styled.div`
   position: absolute;
   top: 100%;
   right: 0;
-  background: white;
-  border: 1px solid #eaecf4;
+  background: var(--color-white-0);
+  border: 1px solid var(--color-white-0);
   border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(46, 58, 89, 0.08);
-  min-width: 200px;
+  box-shadow: 0 8px 2.4rem rgba(46, 58, 89, 0.08);
+  min-width: 20rem;
   z-index: 1000;
   padding: 5px 0;
-  margin-top: 10px;
+  margin-top: 1rem;
 `;
 
 const DropdownItem = styled.div`
-  padding: 10px 20px;
-  color: #2e3a59;
+  padding: 1rem 2rem;
+  color: var(--color-grey-700);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 1.4rem;
   transition: background 0.2s, color 0.2s;
   text-decoration: none;
   display: block;
 
   &:hover {
-    background: #f8f9fc;
-    color: #4e73df;
+    background: var(--color-white-0);
+    color: var(--color-primary-500);
   }
 `;
 
 const SearchContainer = styled.div`
   position: relative;
-  flex: 1;
-  max-width: 600px;
-  margin: 0 20px;
+  width: 100%;
+  margin: 0 2rem;
 
-  @media (max-width: 992px) {
-    order: 2;
+  /* Desktop only */
+  ${(props) =>
+    props.type === "main" &&
+    `
+    @media (max-width: 76.8rem) {
+      display: none;
+    }
+  `}
+
+  /* Mobile & Tablet only */
+  ${(props) =>
+    props.type === "mobile" &&
+    `
+    display: none;
+    @media (max-width: 76.8rem) {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      margin: 0;
+    }
+  `}
+`;
+const SearchMo = styled.div`
+  display: none;
+  visibility: hidden;
+  opacity: 0;
+  @media (max-width: 76.8rem) {
     width: 100%;
-    max-width: 100%;
-    margin: 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 2px 1rem;
+    display: flex;
+    visibility: visible;
+    opacity: 1;
   }
 `;
 
@@ -1000,14 +1117,14 @@ const SearchSuggestions = styled.ul`
   top: 100%;
   left: 0;
   right: 0;
-  background: white;
+  background: var(--color-white-0);
   border-radius: 0 0 8px 8px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 5px 1.5rem rgba(0, 0, 0, 0.1);
   margin-top: -2px;
-  max-height: 300px;
+  max-height: 30rem;
   overflow-y: auto;
   z-index: 1000;
-  padding: 10px 0;
+  padding: 1rem 0;
   border: 2px solid var(--primary-500);
   border-top: none;
 `;
@@ -1015,22 +1132,22 @@ const SearchSuggestions = styled.ul`
 const SuggestionItem = styled.li`
   display: flex;
   align-items: center;
-  padding: 12px 15px;
+  padding: 1.2rem 1.5rem;
   cursor: pointer;
   transition: background-color 0.2s;
   background-color: ${(props) => (props.active ? "#f8f9fc" : "transparent")};
 
   &:hover {
-    background-color: #f8f9fc;
+    background-color: var(--color-white-0);
   }
 `;
 
 const SuggestionImage = styled.div`
-  width: 40px;
-  height: 40px;
+  width: 4rem;
+  height: 4rem;
   border-radius: 50%;
   overflow: hidden;
-  margin-right: 15px;
+  margin-right: 1.5rem;
   flex-shrink: 0;
 
   img {
@@ -1056,14 +1173,14 @@ const SuggestionDetails = styled.div`
 `;
 
 const SuggestionCategory = styled.div`
-  font-size: 12px;
+  font-size: 1.2rem;
   color: var(--color-grey-400);
 `;
 
 const SuggestionPrice = styled.div`
-  font-size: 14px;
+  font-size: 1.4rem;
   font-weight: 600;
-  color: #4e73df;
+  color: var(--color-primary-500);
 `;
 
 const NoSuggestions = styled.div`
@@ -1071,11 +1188,11 @@ const NoSuggestions = styled.div`
   top: 100%;
   left: 0;
   right: 0;
-  background: white;
+  background: var(--color-white-0);
   border-radius: 0 0 8px 8px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
   margin-top: 2px;
-  padding: 20px;
+  padding: 2rem;
   text-align: center;
   color: var(--color-grey-400);
   z-index: 1000;
@@ -1092,8 +1209,8 @@ const SearchInput = styled.input`
   width: 100%;
   padding: 8px 18px;
   border: 2px solid var(--color-grey-200);
-  border-radius: 30px 0 0 30px;
-  font-size: 15px;
+  border-radius: 3rem 0 0 3rem;
+  font-size: 1.5rem;
   outline: none;
   transition: all 0.3s;
 
@@ -1104,10 +1221,10 @@ const SearchInput = styled.input`
 
 const SearchButton = styled.button`
   background-color: var(--color-primary-500);
-  color: white;
+  color: var(--color-white-0);
   border: none;
-  padding: 0 25px;
-  border-radius: 0 30px 30px 0;
+  padding: 0 2.5rem;
+  border-radius: 0 3rem 3rem 0;
   cursor: pointer;
   font-weight: 500;
   transition: background 0.3s;
@@ -1137,15 +1254,15 @@ const LoadingSuggestions = styled.div`
   top: 100%;
   left: 0;
   right: 0;
-  background: white;
+  background: var(--color-white-0);
   border-radius: 0 0 8px 8px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
   margin-top: -2px;
-  padding: 20px;
+  padding: 2rem;
   text-align: center;
-  color: #858796;
+  color: var(--color-grey-400);
   z-index: 1000;
-  border: 2px solid #4e73df;
+  border: 2px solid var(--color-primary-500);
   border-top: none;
   display: flex;
   align-items: center;
