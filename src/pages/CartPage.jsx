@@ -13,13 +13,14 @@ import useAuth from "../hooks/useAuth";
 
 const CartPage = () => {
   const { data, isLoading: isCartLoading, isError } = useGetCart();
-  console.log("Cart data:", data);
+  console.log("cart data", data);
   const { total: subTotal } = useCartTotals();
 
   const { updateCartItem, removeCartItem, addToCart } = useCartActions();
   useAutoSyncCart();
   const { isAuthenticated } = useAuth();
   const products = getCartStructure(data);
+  console.log("products", products);
 
   const navigate = useNavigate();
   const handleAddToCart = (product) => {
@@ -66,6 +67,7 @@ const CartPage = () => {
             </EmptyCart>
           ) : (
             products.map((item) => {
+              console.log("Item:", item);
               return (
                 <CartItem key={item._id}>
                   <ItemImage

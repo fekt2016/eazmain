@@ -82,6 +82,7 @@ export const useGetCart = () => {
       if (isAuthenticated) {
         try {
           const response = await cartApi.getCart();
+
           return response;
         } catch (error) {
           console.error("Failed to fetch cart:", error);
@@ -91,7 +92,6 @@ export const useGetCart = () => {
       return getGuestCart();
     },
     onSuccess: (data) => {
-      console.log("success data:", data);
       if (!isAuthenticated) saveGuestCart(data);
     },
   });
@@ -118,6 +118,7 @@ export const useCartActions = () => {
   const { isAuthenticated, logout } = useAuth();
 
   const queryKey = getCartQueryKey(isAuthenticated);
+
   const mutationOptions = {
     onError: (error) => {
       if (error.response?.status === 401) logout();
@@ -125,6 +126,7 @@ export const useCartActions = () => {
   };
   const addToCartMutation = useMutation({
     mutationFn: async ({ product, quantity, variant }) => {
+      console.log("cart mutation", product, quantity, variant);
       const productId = product?.id;
       if (isAuthenticated) {
         const response = await cartApi.addToCart(productId, quantity, variant);

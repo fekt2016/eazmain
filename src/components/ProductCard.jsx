@@ -17,7 +17,6 @@ export default function ProductCard({
   showRemoveButton = false,
   layout = "vertical", // 'vertical' or 'horizontal'
 }) {
-  console.log("product", product);
   const productId = product.id || product._id;
 
   // const { isAuthenticated } = useAuth();
@@ -69,19 +68,25 @@ export default function ProductCard({
       </ProductLink>
       <ProductInfo $layout={layout}>
         <ProductLink to={`/product/${product.id}`}>
-          <ProductName>{product.name}</ProductName>
+          <ProductName>{product.name.slice(0, 25)}...</ProductName>
         </ProductLink>
         <ProductPrice>GH₵{product?.price || ""}</ProductPrice>
-        <ProductRating>
-          <Count>{product.ratingsQuantity}</Count>
-          <StarRating rating={product.ratingsAverage} />
-        </ProductRating>
+        {product.ratingsQuantity <= 0 ? null : (
+          <ProductRating>
+            <Count>{product.ratingsQuantity}</Count>
+            <StarRating rating={product.ratingsAverage} />
+          </ProductRating>
+        )}
+
+        <ProductStock inStock={product.totalStock}>
+          {product.totalStock ? "In Stock" : "Out of Stock"}
+        </ProductStock>
         {showAddToCart && (
           <AddToCartButton
             // disabled={isInCart}
             onClick={(e) => {
               e.preventDefault();
-              console.log("Added to cart");
+
               handleAddToCart(product);
             }}
           >
@@ -97,18 +102,18 @@ export default function ProductCard({
 // Styled Components
 const CardContainer = styled(Link)`
   position: relative;
-  background: white;
-  border-radius: 15px;
+  background: var(--color-white-0);
+  border-radius: 1.5rem;
   overflow: hidden;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 5px 1.5rem rgba(0, 0, 0, 0.05);
   transition: all 0.3s;
-  border: 1px solid #eaecf4;
+  border: 1px solid var(--color-white-0);
   display: ${({ $layout }) => ($layout === "horizontal" ? "flex" : "block")};
   height: 100%;
 
   &:hover {
     transform: translateY(-5px);
-    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.1);
   }
 `;
 
@@ -124,9 +129,9 @@ const ProductImage = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 10px;
-  border-bottom: ${({ $layout }) =>
-    $layout === "vertical" ? "1px solid #eaecf4" : "none"};
+  /* padding: 10px; */
+  /* border-bottom: ${({ $layout }) =>
+    $layout === "vertical" ? "1px solid #eaecf4" : "none"}; */
   border-right: ${({ $layout }) =>
     $layout === "horizontal" ? "1px solid #eaecf4" : "none"};
 
@@ -143,7 +148,7 @@ const ProductImage = styled.div`
 `;
 
 const ProductInfo = styled.div`
-  padding: 8px;
+  padding: 0 8px;
   flex: ${({ $layout }) => ($layout === "horizontal" ? "1" : "none")};
   display: flex;
   flex-direction: column;
@@ -151,9 +156,9 @@ const ProductInfo = styled.div`
 `;
 
 const ProductName = styled.h3`
-  font-size: 12px;
+  font-size: 1.2rem;
   font-weight: 600;
-  margin-bottom: 5px;
+  margin-bottom: 2px;
   color: var(--color-grey-800);
   transition: color 0.3s;
 
@@ -165,7 +170,7 @@ const ProductName = styled.h3`
 const ProductRating = styled.div`
   display: flex;
   align-items: center;
-  margin-bottom: 5px;
+  margin-bottom: 2px;
   gap: 5px;
   justify-content: start;
   align-items: center;
@@ -174,7 +179,7 @@ const DiscountPrice = styled.span``;
 const Count = styled.span``;
 
 const ProductPrice = styled.div`
-  font-size: 16px;
+  font-size: 1.6rem;
   font-weight: 700;
   color: var(--color-brand-500);
   margin-bottom: 5px;
@@ -184,8 +189,8 @@ const ProductPrice = styled.div`
 const AddToCartButton = styled.button`
   width: 100%;
   padding: 1.2rem;
-  background: #4e73df;
-  color: white;
+  background: var(--color-primary-500);
+  color: var(--color-white-0);
   border: none;
   border-radius: 0.5rem;
   font-weight: 600;
@@ -196,7 +201,7 @@ const AddToCartButton = styled.button`
   justify-content: center;
 
   &:hover {
-    background: #2e59d9;
+    background: var(--color-primary-700);
   }
 
   &:focus {
@@ -222,7 +227,7 @@ const WishlistButton = styled.button`
   font-size: 1.8rem;
 
   &:hover {
-    background: white;
+    background: var(--color-white-0);
     transform: scale(1.1);
   }
 
@@ -257,4 +262,10 @@ const RemoveButton = styled.button`
     outline: none;
     box-shadow: 0 0 0 3px rgba(255, 99, 71, 0.3);
   }
+`;
+const ProductStock = styled.p`
+  color: ${(props) =>
+    props.inStock ? "var(--color-green-500)" : "var(--color-red-600)"};
+  font-size: 1.2rem;
+  margin-bottom: 1.5rem;
 `;

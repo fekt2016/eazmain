@@ -1,7 +1,11 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import { PATHS } from "./routePaths";
+import ContactUs from "../pages/ContactUs";
 
+const SearchResult = lazy(() => import("../pages/SearchResult"));
+const Partners = lazy(() => import("../pages/Partners"));
+const Aboutus = lazy(() => import("../pages/Aboutus"));
 const NotificationPage = lazy(() => import("../pages/NotificationPage"));
 const PermissionPage = lazy(() => import("../pages/PermissionPage"));
 const FollowPage = lazy(() => import("../pages/FollowPage"));
@@ -42,6 +46,54 @@ const MainRoutes = () => (
         element={
           <Suspense fallback={<LoadingSpinner />}>
             <HomePage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.SEARCH}
+        element={
+          <Suspense fallback={<LoadingSpinner />}>
+            <SearchResult />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.ABOUT}
+        element={
+          <Suspense fallback={<LoadingSpinner />}>
+            <Aboutus />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.CONTACT}
+        element={
+          <Suspense fallback={<LoadingSpinner />}>
+            <ContactUs />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.SITEMAP}
+        element={
+          <Suspense fallback={<LoadingSpinner />}>
+            <ContactUs />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.PARTNERS}
+        element={
+          <Suspense fallback={<LoadingSpinner />}>
+            <Partners />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.PRESS}
+        element={
+          <Suspense fallback={<LoadingSpinner />}>
+            <ContactUs />
           </Suspense>
         }
       />

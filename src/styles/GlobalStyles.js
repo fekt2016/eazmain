@@ -116,6 +116,7 @@ const GlobalStyles = createGlobalStyle`:root {
   --color-blue-700: #0369a1;
   --color-green-100: #dcfce7;
   --color-green-700: #15803d;
+  --color-green-500: #38a169;
   --color-yellow-100: #fef9c3;
   --color-yellow-700: #a16207;
   --color-silver-100: #e5e7eb;
@@ -141,9 +142,11 @@ const GlobalStyles = createGlobalStyle`:root {
 
   --color-red-100: #fee2e2;
   //used
-  --color-red-500:#fcc;
+  --color-red-500: #fcc;
+  --color-red-600: #f87171;
   --color-red-700: #b91c1c;
   --color-red-800: #991b1b;
+  
   --color-green-700:#00b26b;
   --color-red-900:	#FF0000;
 

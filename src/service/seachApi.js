@@ -2,15 +2,19 @@ import api from "./api";
 
 const searchApi = {
   searchProducts: async (searchTerm) => {
-    console.log("searchProducts called with searchTerm:", searchTerm);
-    // Use route parameter instead of query parameter
-    console;
-    const response = await api.get(`/search/${encodeURIComponent(searchTerm)}`);
-    console.log("searchProducts response:", response);
+    const response = await api.get(
+      `/search/query/${encodeURIComponent(searchTerm)}`
+    );
     return response;
   },
-  searchSuggestions: (searchTerm) => {
-    return api.get(`/search/suggestions/${encodeURIComponent(searchTerm)}`);
+  searchSuggestions: async (searchTerm) => {
+    return await api.get(
+      `/search/suggestions/${encodeURIComponent(searchTerm)}`
+    );
+  },
+  searchResults: async (query) => {
+    const response = await api.get(`/search/results`, { params: query });
+    return response;
   },
 };
 

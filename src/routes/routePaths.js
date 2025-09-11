@@ -1,5 +1,11 @@
 export const PATHS = {
   HOME: "/",
+  ABOUT: "/about",
+  SEARCH: `/products/search`,
+  CONTACT: "/contact",
+  SITEMAP: "/sitemap",
+  PRESS: "/press",
+  PARTNERS: "/partners",
   FORGOT: "/forgot-password",
   PRODUCT: "/product/:id",
   CATEGORY: "/category/:id",

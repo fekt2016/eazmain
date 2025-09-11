@@ -16,6 +16,7 @@ const useProduct = () => {
         throw new Error("Failed to load products");
       }
     },
+    meta: { global: true },
     staleTime: 1000 * 60 * 5,
     retry: 2,
   });

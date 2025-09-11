@@ -25,6 +25,8 @@ const PUBLIC_ROUTES = [
   "users/login",
   "/wishlist/sync",
   "/discount",
+  "/newsletter",
+  "/search/results",
 ];
 
 const PUBLIC_GET_ENDPOINTS = [
@@ -47,28 +49,28 @@ const TOKEN_KEYS = {
 // Helper functions
 const getBaseURL = () => {
   // Debug environment variables
-  console.log("Environment mode:", import.meta.env.MODE);
-  console.log("VITE_API_URL:", import.meta.env.VITE_API_URL);
-  console.log("PROD:", import.meta.env.PROD);
-  console.log("DEV:", import.meta.env.DEV);
-  console.log(window.location.hostname);
+  // console.log("Environment mode:", import.meta.env.MODE);
+  // console.log("VITE_API_URL:", import.meta.env.VITE_API_URL);
+  // console.log("PROD:", import.meta.env.PROD);
+  // console.log("DEV:", import.meta.env.DEV);
+  // console.log(window.location.hostname);
 
   // Use environment variable if available (highest priority)
   if (
     window.location.hostname === "localhost" ||
     window.location.hostname === "127.0.0.1"
   ) {
-    console.log("Using VITE_API_URL from environment");
+    // console.log("Using VITE_API_URL from environment");
     return API_CONFIG.DEVELOPMENT;
   }
 
   // Use production API for production builds
-  console.log("Using production API", API_CONFIG.PRODUCTION);
+  // console.log("Using production API", API_CONFIG.PRODUCTION);
   return API_CONFIG.PRODUCTION;
 };
 
 const getRelativePath = (url) => {
-  console.log("checking url", url);
+  // console.log("checking url", url);
   if (url.startsWith("http")) {
     try {
       const parsedUrl = new URL(url);
@@ -134,7 +136,6 @@ const getAuthToken = () => {
 
 // Create axios instance with a baseURL that might be updated later
 let baseURL = getBaseURL();
-console.log("API Base URL:", baseURL);
 
 const api = axios.create({
   baseURL,

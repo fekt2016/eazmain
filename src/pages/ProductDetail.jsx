@@ -28,6 +28,7 @@ const ProductDetailPage = () => {
 
   const { useGetProductById } = useProduct();
   const { data: productData, isLoading, error } = useGetProductById(id);
+
   const { addToCart } = useCartActions();
   const hasRecordedView = useRef(false);
   const hasRecordedHistory = useRef(false);
@@ -35,7 +36,7 @@ const ProductDetailPage = () => {
   const { recordProductView } = useAnalytics();
 
   const product = useMemo(() => {
-    return productData?.data?.data;
+    return productData?.data?.data || productData?.data.product;
   }, [productData]);
 
   // Record browsing history (FIXED)
