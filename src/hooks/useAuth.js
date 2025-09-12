@@ -84,13 +84,18 @@ const useAuth = () => {
 
   const register = useMutation({
     mutationFn: async (registerData) => {
+      console.log("registerData:", registerData);
       const response = await authApi.register(registerData);
       return response;
     },
     onSuccess: handleAuthSuccess,
+    onError: (error) => {
+      console.log(error);
+    },
   });
   const emailVerification = useMutation({
     mutationFn: async (email) => {
+      console.log(email);
       const response = await authApi.emailVerification(email);
       return response;
     },
@@ -99,7 +104,7 @@ const useAuth = () => {
       // Optionally, you can handle UI updates or state changes here
     },
     onError: (error) => {
-      console.error("Error sending email verification:", error);
+      console.log("Error sending email verification:", error);
       // Optionally, you can handle UI updates or state changes here
     },
   });
