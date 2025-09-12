@@ -334,46 +334,45 @@ const RegisterContainer = styled.div`
   align-items: center;
   min-height: 100vh;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  padding: 20px;
 `;
 
 const RegisterCard = styled.div`
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  background: var(--color-white-0);
+  border-radius: 1.6rem;
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.1);
   width: 100%;
-  max-width: 500px;
-  padding: 40px;
+  max-width: 50rem;
+  padding: 2rem;
 `;
 
 const RegisterHeader = styled.div`
-  margin-bottom: 32px;
+  margin-bottom: 1rem;
   text-align: center;
 
   h1 {
-    font-size: 28px;
-    color: #333;
-    margin: 16px 0 8px;
+    font-size: 2.4rem;
+    color: var(--color-grey-600);
+    margin: 1.6rem 0 0.8rem;
   }
 `;
 
 const Logo = styled.div`
-  font-size: 32px;
+  font-size: 2.6rem;
   font-weight: 700;
   color: #4e73df;
-  margin-bottom: 10px;
+  margin-bottom: 1rem;
 `;
 
 const Subtitle = styled.p`
-  color: #6c757d;
-  font-size: 15px;
+  color: var(--color-grey-600);
+  font-size: 1.5rem;
   margin-top: 8px;
 `;
 
 const RegisterForm = styled.form`
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 1.5rem;
 `;
 
 const FormRow = styled.div`
@@ -393,15 +392,15 @@ const FormGroup = styled.div`
 
 const Label = styled.label`
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   font-weight: 500;
-  color: #495057;
-  font-size: 14px;
+  color: var(--color-grey-600);
+  font-size: 1.4rem;
 `;
 
 const Input = styled.input`
   width: 100%;
-  padding: 14px 16px;
+  padding: 1.2rem 1.6rem;
   border: 1px solid ${(props) => (props.$error ? "#ef4444" : "#e0e0e0")};
   border-radius: 8px;
   font-size: 16px;
@@ -416,13 +415,13 @@ const Input = styled.input`
   }
 
   &::placeholder {
-    color: #adb5bd;
+    color: var(--color-grey-400);
   }
 `;
 
 const PhoneNote = styled.p`
   font-size: 12px;
-  color: #6c757d;
+  color: var(--color-grey-600);
   margin-top: 5px;
 `;
 
@@ -437,14 +436,14 @@ const EmailNote = styled(PhoneNote)`
 const TermsGroup = styled.div`
   display: flex;
   align-items: flex-start;
-  margin: 10px 0 5px;
+  margin: 0.6rem 0 5px;
 `;
 
 const CheckboxContainer = styled.div`
   display: inline-block;
   vertical-align: middle;
   margin-right: 10px;
-  margin-top: 2px;
+  /* margin-top: 2px; */
 `;
 
 const HiddenCheckbox = styled.input.attrs({ type: "checkbox" })`
@@ -460,8 +459,8 @@ const HiddenCheckbox = styled.input.attrs({ type: "checkbox" })`
 `;
 
 const StyledCheckbox = styled.div`
-  width: 18px;
-  height: 18px;
+  width: 1.8rem;
+  height: 1.8rem;
   background: ${(props) => (props.$checked ? "#4e73df" : "white")};
   border: 1px solid ${(props) => (props.$checked ? "#4e73df" : "#e0e0e0")};
   border-radius: 4px;
@@ -478,7 +477,7 @@ const StyledCheckbox = styled.div`
 
 const TermsLabel = styled.label`
   font-size: 14px;
-  color: #495057;
+  color: var(--color-grey-600);
   cursor: pointer;
   flex: 1;
 `;
@@ -493,12 +492,12 @@ const TermsLink = styled(Link)`
 `;
 
 const SubmitButton = styled.button`
-  background: #4e73df;
-  color: white;
+  background: var(--color-primary-500);
+  color: var(--color-black-0);
   border: none;
   border-radius: 8px;
-  padding: 16px;
-  font-size: 16px;
+  padding: 1.6rem;
+  font-size: 1.6rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
@@ -508,7 +507,7 @@ const SubmitButton = styled.button`
   margin-top: 10px;
 
   &:hover {
-    background: #2e59d9;
+    background: var(--color-primary-400);
   }
 
   &:disabled {
@@ -521,8 +520,8 @@ const Spinner = styled.div`
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 50%;
   border-top: 2px solid white;
-  width: 20px;
-  height: 20px;
+  width: 2rem;
+  height: 2rem;
   animation: spin 1s linear infinite;
 
   @keyframes spin {
@@ -537,37 +536,37 @@ const Spinner = styled.div`
 
 const ErrorMessage = styled.div`
   background: #fee2e2;
-  color: #ef4444;
-  padding: 12px;
+  color: var(--color-red-500);
+  padding: 1.2rem;
   border-radius: 8px;
-  margin-bottom: 20px;
-  font-size: 14px;
+  margin-bottom: 1.2rem;
+  font-size: 1.4rem;
 `;
 
 const Divider = styled.div`
   display: flex;
   align-items: center;
-  margin: 25px 0;
+  margin: 2rem 0;
 `;
 
 const DividerLine = styled.div`
   flex: 1;
   height: 1px;
-  background-color: #eaeaea;
+  background-color: var(--color-grey-300);
 `;
 
 const DividerText = styled.span`
   padding: 0 15px;
-  color: #6c757d;
-  font-size: 14px;
+  color: var(--color-grey-600);
+  font-size: 1.4rem;
 `;
 
 const SocialButtons = styled.div`
   display: flex;
-  gap: 10px;
-  margin-bottom: 25px;
+  gap: 1rem;
+  margin-bottom: 2rem;
 
-  @media (max-width: 480px) {
+  @media (max-width: 48rem) {
     flex-direction: column;
   }
 `;
@@ -577,10 +576,10 @@ const SocialButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 12px;
+  gap: 1rem;
+  padding: 1.2rem;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 1.4rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s;
@@ -596,21 +595,21 @@ const SocialButton = styled.button`
 
 const LoginSection = styled.div`
   text-align: center;
-  padding-top: 20px;
-  border-top: 1px solid #eaeaea;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-grey-300);
 `;
 
 const LoginText = styled.span`
-  color: #6c757d;
-  font-size: 14px;
+  color: var(--color-grey-600);
+  font-size: 1.4rem;
   margin-right: 8px;
 `;
 
 const LoginLink = styled(Link)`
-  color: #4e73df;
+  color: var(--color-brand-500);
   font-weight: 500;
   text-decoration: none;
-  font-size: 14px;
+  font-size: 1.4rem;
 
   &:hover {
     text-decoration: underline;
@@ -619,30 +618,30 @@ const LoginLink = styled(Link)`
 
 const VerificationSent = styled.div`
   text-align: center;
-  padding: 20px;
+  padding: 2rem;
 `;
 
 const EnvelopeIcon = styled.div`
-  margin: 20px auto;
-  width: 80px;
-  height: 80px;
+  margin: 1.2rem auto;
+  width: 8rem;
+  height: 8rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #f0f5ff;
+  background-color: var(--color-grey-200);
   border-radius: 50%;
 `;
 
 const VerificationText = styled.p`
-  color: #6c757d;
-  margin: 20px 0;
+  color: var(--color-grey-600);
+  margin: 1.5rem 0;
   line-height: 1.6;
 `;
 
 const VerificationNote = styled.p`
-  color: #6c757d;
-  font-size: 14px;
-  margin: 20px 0;
+  color: var(--color-grey-600);
+  font-size: 1.4rem;
+  margin: 1.5rem 0;
 `;
 
 const ResendLink = styled.span`
@@ -657,15 +656,15 @@ const ResendLink = styled.span`
 
 const BackToLogin = styled.button`
   background: #4e73df;
-  color: white;
+  color: var(--color-white-0);
   border: none;
   border-radius: 8px;
-  padding: 12px 24px;
-  font-size: 16px;
+  padding: 1.2rem 2.4rem;
+  font-size: 1.6rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
-  margin-top: 20px;
+  margin-top: 2rem;
 
   &:hover {
     background: #2e59d9;

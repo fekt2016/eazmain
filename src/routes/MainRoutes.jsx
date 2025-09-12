@@ -40,6 +40,22 @@ const WishListPage = lazy(() => import("../pages/WishlistPage"));
 const ForgotPasswordPage = lazy(() => import("../auth/ForgotPasswordPage"));
 const MainRoutes = () => (
   <Routes>
+    <Route
+      path={PATHS.LOGIN}
+      element={
+        <Suspense fallback={<LoadingSpinner />}>
+          <LoginPage />
+        </Suspense>
+      }
+    />
+    <Route
+      path={PATHS.REGISTER}
+      element={
+        <Suspense fallback={<LoadingSpinner />}>
+          <SignupPage />
+        </Suspense>
+      }
+    />
     <Route element={<MainLayout />}>
       <Route
         path={PATHS.HOME}
@@ -139,26 +155,10 @@ const MainRoutes = () => (
         }
       />
       <Route
-        path={PATHS.LOGIN}
-        element={
-          <Suspense fallback={<LoadingSpinner />}>
-            <LoginPage />
-          </Suspense>
-        }
-      />
-      <Route
         path={PATHS.FORGOT}
         element={
           <Suspense fallback={<LoadingSpinner />}>
             <ForgotPasswordPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.REGISTER}
-        element={
-          <Suspense fallback={<LoadingSpinner />}>
-            <SignupPage />
           </Suspense>
         }
       />

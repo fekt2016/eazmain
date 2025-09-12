@@ -1,13 +1,7 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import styled from "styled-components";
-import {
-  // FaFilter,
-  // FaStar,
-  // FaHeart,
-  // FaShoppingCart,
-  FaChevronDown,
-} from "react-icons/fa";
+import { FaChevronDown } from "react-icons/fa";
 import { useSearchResults } from "../hooks/useSearch";
 import ProductCard from "../components/ProductCard";
 
@@ -94,7 +88,7 @@ export default function SearchResultsPage() {
       <SearchResultsContainer>
         <FiltersBar>
           <FilterSection>
-            <FilterLabel>Filters:</FilterLabel>
+            <FilterLabel>Filters</FilterLabel>
 
             <Dropdown>
               <DropdownToggle
