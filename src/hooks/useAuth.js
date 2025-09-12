@@ -109,7 +109,8 @@ const useAuth = () => {
     },
   });
   const resendVerification = useMutation({
-    mutationFn: (email) => authApi.resendVerification(email),
+    mutationFn: async ({ email }) =>
+      await authApi.resendVerification({ email }),
     onSuccess: (data) => {
       console.log("Email verification sent:", data);
       // Optionally, you can handle UI updates or state changes here
