@@ -8,25 +8,44 @@ jobs:
     name: 🎉 Deploy to Production
     runs-on: ubuntu-latest
     environment:
-      name: ftp_server
+      name: production
       url: https://eazworld.com
 
     steps:
       - name: 🚚 Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      # NEW STEPS ADDED HERE
       - name: ⎔ Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18.x # Use your project's Node version
+          node-version: 18.x
+          cache: "npm"
 
       - name: 📦 Install dependencies
-        run: npm install
+        run: |
+          npm ci
+          echo "Dependencies installed successfully"
 
       - name: 🏗️ Build project
-        run: npm run build # This creates the dist directory
-      # END OF NEW STEPS
+        run: |
+          npm run build
+          echo "Build completed"
+
+      - name: 📋 Verify build output
+        run: |
+          echo "Build directory contents:"
+          ls -la dist/
+          echo ""
+          echo "JavaScript files:"
+          find dist/ -name "*.js" | head -10
+          echo ""
+          echo "Directory structure:"
+          find dist/ -type d | sort
+          echo ""
+          echo "Total size:"
+          du -sh dist/
 
       - name: 🔒 Verify environment secrets
         run: |
@@ -43,30 +62,112 @@ jobs:
             echo "::error::FTP_PASSWORD secret is missing!"
             exit 1
           fi
-          echo "✅ All secrets verified successfully"
+          echo "✅ All FTP secrets verified successfully"
+          echo "FTP Server: ${{ secrets.FTP_SERVER }}"
+          echo "Username: ${{ secrets.FTP_USERNAME }}"
 
-      - name: 📤 Deploy to FTP server
+      - name: 📂 Create remote directory structure
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./dist/ # Now this directory exists
-          server-dir: /public_html/
+          server-dir: ./public_html/
+          local-dir: ./dist/
+          exclude: "*"
+          log-level: minimal
+          dangerous-clean-slate: false
+          security: loose
+          dry-run: false
+
+      - name: ⏳ Wait for directory creation
+        run: |
+          echo "Waiting 5 seconds for directory structure to stabilize..."
+          sleep 5
+
+      - name: 📤 Deploy application files
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./dist/
+          server-dir: ./public_html/
           exclude: |
-            .git/
-            .github/
-            .gitignore
-            README.md
-            node_modules/
-            *.log
-            .env*
-            *.md
+            **/.git/
+            **/.github/
+            **/.gitignore
+            **/README.md
+            **/node_modules/
+            **/*.log
+            **/.env*
+            **/*.md
+            **/package.json
+            **/package-lock.json
+            **/npm-debug.log*
+            **/yarn-debug.log*
+            **/yarn-error.log*
+            **/.nyc_output
+            **/coverage/
+            **/.env
+            **/.env.local
+            **/.env.development.local
+            **/.env.test.local
+            **/.env.production.local
+            **/npm-debug.log*
+            **/yarn-debug.log*
+            **/yarn-error.log*
+            **/lerna-debug.log*
+            **/.pnpm-debug.log*
+            **/report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+            **/pids
+            **/*.pid
+            **/*.pid.lock
+            **/logs
+            **/*.log
+            **/yarn-error.log*
+            **/yarn-debug.log*
+            **/lerna-debug.log*
+            **/.npm
+            **/.eslintcache
+            **/.stylelintcache
+            **/.rpt2_cache
+            **/.rts2_cache_cjs
+            **/.rts2_cache_es
+            **/.rts2_cache_umd
+            **/.node_repl_history
+            **/*.tgz
+            **/.yarn-integrity
+            **/.cache
+            **/.parcel-cache
+            **/.next
+            **/out
+            **/.nuxt
+            **/.vuepress/dist
+            **/.serverless
+            **/.fusebox
+            **/.dynamodb
+            **/.tern-port
+            **/.vscode
+            **/Thumbs.db
+            **/.DS_Store
           log-level: verbose
           dangerous-clean-slate: false
+          security: loose
+          state-name: ftp-deploy-state.json
+          dry-run: false
 
-      - name: 🌐 Verify deployment
+      - name: ✅ Verify deployment completion
         run: |
-          echo "Deployment completed successfully!"
-          echo "View site: https://eazworld.com"
-          echo "FTP directory:/public_html/"
+          echo "🚀 Deployment completed successfully!"
+          echo "🌐 Your site should be live at: https://eazworld.com"
+          echo "📁 Files deployed to: /public_html/"
+          echo "⏰ Deployment timestamp: $(date)"
+          echo "🎉 Congratulations! Your application is now live."
+
+      - name: 🔔 Notify success
+        if: success()
+        run: |
+          echo "✅ Production deployment completed successfully!"
+          echo "📊 Build: $GITHUB_SHA"
+          echo "👤 Deployed by: $GITHUB_ACTOR"
