@@ -33,7 +33,7 @@ jobs:
             echo "️❌ No build output directory found!"
             echo "📁 Creating fallback dist..."
             mkdir -p dist
-            echo "<!DOCTYPE html><html><head><title>BenzFlex</title></head><body><h1>Website Under Deployment</h1></body></html>" > dist/index.html
+            echo "<!DOCTYPE html><html><head><title>EazWorld</title></head><body><h1>Website Under Deployment</h1></body></html>" > dist/index.html
           fi
 
       - name: 📁 Determine build directory
@@ -90,5 +90,5 @@ jobs:
       - name: 🌐 Verify deployment
         run: |
           echo "✅ Deployment completed successfully!"
-          echo "🌍 View site: https://benzflex.com"
-          echo "📁 FTP directory: /benzflex.com/"
+          echo "🌍 View site: https://eazworld.com"
+          echo "📁 FTP directory: /public_html/eazworld.com/"
