@@ -20,7 +20,7 @@ export const devices = {
 };
 
 const GlobalStyles = createGlobalStyle`:root {
-
+//css styled component
   /* Indigo */
   --color-brand-50:  #f0f8ff;
   --color-brand-100: #dff0ff;
