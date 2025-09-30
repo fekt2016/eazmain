@@ -25,8 +25,22 @@ jobs:
         run: npm install
 
       - name: 🏗️ Build project
-        run: npm run build # This creates the dist directory
-      # END OF NEW STEPS
+        run: |
+          npm run build
+          echo "Build completed"
+      - name: 📋 Verify build output
+        run: |
+          echo "Build directory contents:"
+          ls -la dist/
+          echo ""
+          echo "JavaScript files:"
+          find dist/ -name "*.js" | head -10
+          echo ""
+          echo "Directory structure:"
+          find dist/ -type d | sort
+          echo ""
+          echo "Total size:"
+          du -sh dist/
 
       - name: 🔒 Verify environment secrets
         run: |
