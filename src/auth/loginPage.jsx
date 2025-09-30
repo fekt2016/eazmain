@@ -18,8 +18,7 @@ export default function LoginPage() {
   const [otp, setOtp] = useState("");
   const [otpCountdown, setOtpCountdown] = useState(0);
   const { mutate: merge } = useMergeWishlists();
-  // const { sync, isSyncing } = useSyncWishlist();
-  // const { clear } = useClearWishlist();
+
   const { syncCart } = useCartActions();
   const { sendOtp, verifyOtp, isSendingOtp, isVerifyingOtp, otpError } =
     useAuth();
