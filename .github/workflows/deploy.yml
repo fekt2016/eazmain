@@ -8,7 +8,7 @@ jobs:
     name: 🎉 Deploy to Production
     runs-on: ubuntu-latest
     environment:
-      name: production
+      name: ftp_server
       url: https://eazworld.com
 
     steps:
@@ -19,44 +19,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18.x
-          cache: "npm"
 
       - name: 📦 Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: 🏗️ Build project
         run: npm run build
 
-      - name: 📁 Verify and display dist directory structure
+      - name: 📁 Verify build output
         run: |
-          echo "🔍 Checking dist directory contents..."
-          if [ ! -d "dist" ]; then
-            echo "❌ ERROR: dist directory was not created by build process!"
-            echo "Current directory contents:"
-            ls -la
-            exit 1
-          fi
-
-          echo "✅ dist directory exists"
-          echo "📂 Full directory structure:"
-          find ./dist -type f | head -20
-          echo ""
-          echo "📊 Directory size:"
-          du -sh ./dist
-          echo ""
-          echo "📝 Key files:"
-          find ./dist -name "*.html" -o -name "*.js" -o -name "*.css" | head -10
-
-      - name: 📁 Create missing directories in dist
-        run: |
-          echo "Ensuring all required directories exist..."
-          # Create common directories that might be needed
-          mkdir -p dist/assets
-          mkdir -p dist/css
-          mkdir -p dist/js
-          mkdir -p dist/images
-          echo "Directory structure after ensuring directories:"
-          find ./dist -type d | sort
+          echo "Contents of dist directory:"
+          ls -la dist/
+          echo "If assets directory exists:"
+          ls -la dist/assets/ || echo "No assets directory"
 
       - name: 🔒 Verify environment secrets
         run: |
@@ -82,28 +57,21 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/
-          server-dir: ./public_html/
-          protocol: ftps
-          security: explicit
-          create-empty-dirs: true
+          server-dir: public_html/ # 👈 Changed from /public_html/
           exclude: |
-            **/.git*
-            **/.github/*
-            **/.gitignore
-            **/README.md
-            **/node_modules/*
-            **/*.log
-            **/.env*
-            **/*.md
-            **/package.json
-            **/package-lock.json
-            **/node_modules/
+            .git/
+            .github/
+            .gitignore
+            README.md
+            node_modules/
+            *.log
+            .env*
+            *.md
           log-level: verbose
           dangerous-clean-slate: false
 
       - name: 🌐 Verify deployment
         run: |
-          echo "🎉 Deployment completed successfully!"
-          echo "🌍 View your site: https://eazworld.com"
-          echo "📁 FTP directory: ./public_html/"
-          echo "⏰ Deployment time: $(date)"
+          echo "Deployment completed successfully!"
+          echo "View site: https://eazworld.com"
+          echo "FTP directory: public_html/"
