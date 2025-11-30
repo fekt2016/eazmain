@@ -1,49 +1,61 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { PATHS } from "./routePaths";
-import ContactUs from "../pages/ContactUs";
+import ContactUs from '../features/profile/ContactUs';
+import { PageSpinner, SpinnerContainer } from "../components/loading";
+// Import OrderConfirmationPage directly (not lazy) to ensure it loads immediately
+import OrderConfirmationPage from "../features/orders/OrderConfirmationPage";
 
-const SearchResult = lazy(() => import("../pages/SearchResult"));
-const Partners = lazy(() => import("../pages/Partners"));
-const Aboutus = lazy(() => import("../pages/Aboutus"));
-const NotificationPage = lazy(() => import("../pages/NotificationPage"));
-const PermissionPage = lazy(() => import("../pages/PermissionPage"));
-const FollowPage = lazy(() => import("../pages/FollowPage"));
-const Creditbalance = lazy(() => import("../pages/Creditbalance"));
-const AddressPage = lazy(() => import("../pages/AddressPage"));
-const SignupPage = lazy(() => import("../auth/SignupPage"));
-const LoginPage = lazy(() => import("../auth/loginPage"));
+const SearchResult = lazy(() => import("../features/search/SearchResult"));
+const Partners = lazy(() => import("../features/Partners"));
+const Aboutus = lazy(() => import("../features/profile/Aboutus"));
+const NotificationPage = lazy(() => import("../features/profile/NotificationPage"));
+const PermissionPage = lazy(() => import("../features/profile/PermissionPage"));
+const FollowPage = lazy(() => import("../features/profile/FollowPage"));
+const Creditbalance = lazy(() => import("../features/profile/Creditbalance"));
+const AddressPage = lazy(() => import("../features/profile/AddressPage"));
+const SignupPage = lazy(() => import("../features/auth/SignupPage"));
+const LoginPage = lazy(() => import("../features/auth/loginPage"));
 const ProtectedRoute = lazy(() => import("../routes/ProtectedRoute"));
-const MainLayout = lazy(() => import("../layout/MainLayout"));
-const LoadingSpinner = lazy(() => import("../components/LoadingSpinner"));
-const HomePage = lazy(() => import("../pages/HomePage"));
-const ProductDetail = lazy(() => import("../pages/ProductDetail"));
-const CategoryPage = lazy(() => import("../pages/CategoryPage"));
-const CartPage = lazy(() => import("../pages/CartPage"));
-const CheckoutPage = lazy(() => import("../pages/CheckoutPage"));
-const OrderConfirmationPage = lazy(() =>
-  import("../pages/OrderConfirmationPage")
-);
-// const ForgetPasswordPage = lazy(() => import("../auth/ForgotPasswordPage"));
+const MainLayout = lazy(() => import("../shared/layout/MainLayout"));
+const HomePage = lazy(() => import("../features/products/HomePage"));
+const ProductDetail = lazy(() => import("../features/products/ProductDetail"));
+const ProductsPage = lazy(() => import("../features/products/ProductsPage"));
+const CategoryPage = lazy(() => import("../features/categories/CategoryPage"));
+const CategoriesListPage = lazy(() => import("../features/categories/CategoriesListPage"));
+const CartPage = lazy(() => import("../features/cart/CartPage"));
+const CheckoutPage = lazy(() => import("../features/orders/CheckoutPage"));
+// const ForgetPasswordPage = lazy(() => import("../features/auth/ForgotPasswordPage"));
 
-const ProfilePage = lazy(() => import("../pages/profilePage"));
-const SupportPage = lazy(() => import("../pages/SupportPage"));
-const OrderList = lazy(() => import("../pages/OrderList"));
-const OrderDetail = lazy(() => import("../pages/OrderDetail"));
-const ReviewPage = lazy(() => import("../pages/ReviewPage"));
-const Dashboard = lazy(() => import("../layout/Dashboard"));
-const SellerPage = lazy(() => import("../pages/SellerPage"));
-const CouponPage = lazy(() => import("../pages/CouponPage"));
-const BrowserhistoryPage = lazy(() => import("../pages/BrowserhistoryPage"));
-const PaymentMethodPage = lazy(() => import("../pages/PaymentMethodPage"));
-const WishListPage = lazy(() => import("../pages/WishlistPage"));
-const ForgotPasswordPage = lazy(() => import("../auth/ForgotPasswordPage"));
-const MainRoutes = () => (
-  <Routes>
+const ProfilePage = lazy(() => import("../features/profile/profilePage"));
+const SupportPage = lazy(() => import("../features/SupportPage"));
+const OrderList = lazy(() => import("../features/orders/OrderList"));
+const OrderDetail = lazy(() => import("../features/orders/OrderDetail"));
+const TrackingPage = lazy(() => import("../features/orders/TrackingPage"));
+const ReviewPage = lazy(() => import("../features/products/ReviewPage"));
+const Dashboard = lazy(() => import("../shared/layout/Dashboard"));
+const SellerPage = lazy(() => import("../features/products/SellerPage"));
+const SellersListPage = lazy(() => import("../features/sellers/SellersListPage"));
+const CouponPage = lazy(() => import("../features/products/CouponPage"));
+const BrowserhistoryPage = lazy(() => import("../features/profile/BrowserhistoryPage"));
+const PaymentMethodPage = lazy(() => import("../features/profile/PaymentMethodPage"));
+const WishListPage = lazy(() => import("../features/wishlist/WishlistPage"));
+const ForgotPasswordPage = lazy(() => import("../features/auth/ForgotPasswordPage"));
+const MainRoutes = () => {
+  // Debug: Log route matching on mount and when pathname changes
+  
+
+  return (
+    <Routes>
+
+      <Route
+        path="/order-confirmation"
+        element={<OrderConfirmationPage />}
+      />
     <Route
       path={PATHS.LOGIN}
       element={
-        <Suspense fallback={<LoadingSpinner />}>
+        <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
           <LoginPage />
         </Suspense>
       }
@@ -51,7 +63,7 @@ const MainRoutes = () => (
     <Route
       path={PATHS.REGISTER}
       element={
-        <Suspense fallback={<LoadingSpinner />}>
+        <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
           <SignupPage />
         </Suspense>
       }
@@ -60,15 +72,23 @@ const MainRoutes = () => (
       <Route
         path={PATHS.HOME}
         element={
-          <Suspense fallback={<LoadingSpinner />}>
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
             <HomePage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.PRODUCTS}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <ProductsPage />
           </Suspense>
         }
       />
       <Route
         path={PATHS.SEARCH}
         element={
-          <Suspense fallback={<LoadingSpinner />}>
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
             <SearchResult />
           </Suspense>
         }
@@ -76,7 +96,7 @@ const MainRoutes = () => (
       <Route
         path={PATHS.ABOUT}
         element={
-          <Suspense fallback={<LoadingSpinner />}>
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
             <Aboutus />
           </Suspense>
         }
@@ -84,7 +104,7 @@ const MainRoutes = () => (
       <Route
         path={PATHS.CONTACT}
         element={
-          <Suspense fallback={<LoadingSpinner />}>
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
             <ContactUs />
           </Suspense>
         }
@@ -92,7 +112,7 @@ const MainRoutes = () => (
       <Route
         path={PATHS.SITEMAP}
         element={
-          <Suspense fallback={<LoadingSpinner />}>
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
             <ContactUs />
           </Suspense>
         }
@@ -100,7 +120,7 @@ const MainRoutes = () => (
       <Route
         path={PATHS.PARTNERS}
         element={
-          <Suspense fallback={<LoadingSpinner />}>
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
             <Partners />
           </Suspense>
         }
@@ -108,16 +128,39 @@ const MainRoutes = () => (
       <Route
         path={PATHS.PRESS}
         element={
-          <Suspense fallback={<LoadingSpinner />}>
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
             <ContactUs />
           </Suspense>
         }
       />
-      ROUTES
+      <Route
+        path={PATHS.PRODUCTREVIEWS}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <ReviewPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.PRODUCTREVIEWS_SINGULAR}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <ReviewPage />
+          </Suspense>
+        }
+      />
       <Route
         path={PATHS.PRODUCT}
         element={
-          <Suspense fallback={<LoadingSpinner />}>
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <ProductDetail />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.PRODUCT_PLURAL}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
             <ProductDetail />
           </Suspense>
         }
@@ -125,7 +168,7 @@ const MainRoutes = () => (
       <Route
         path={PATHS.EDITPRODUCT}
         element={
-          <Suspense fallback={<LoadingSpinner />}>
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
             <ProductDetail />
           </Suspense>
         }
@@ -133,15 +176,31 @@ const MainRoutes = () => (
       <Route
         path={PATHS.WISHLIST}
         element={
-          <Suspense fallback={<LoadingSpinner />}>
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
             <WishListPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.CATEGORIES}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <CategoriesListPage />
           </Suspense>
         }
       />
       <Route
         path={PATHS.CATEGORY}
         element={
-          <Suspense fallback={<LoadingSpinner />}>
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <CategoryPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.CATEGORY_SINGULAR}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
             <CategoryPage />
           </Suspense>
         }
@@ -149,7 +208,7 @@ const MainRoutes = () => (
       <Route
         path={PATHS.CART}
         element={
-          <Suspense fallback={<LoadingSpinner />}>
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
             <CartPage />
           </Suspense>
         }
@@ -157,7 +216,7 @@ const MainRoutes = () => (
       <Route
         path={PATHS.FORGOT}
         element={
-          <Suspense fallback={<LoadingSpinner />}>
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
             <ForgotPasswordPage />
           </Suspense>
         }
@@ -165,15 +224,31 @@ const MainRoutes = () => (
       <Route
         path={PATHS.SUPPORT}
         element={
-          <Suspense fallback={<LoadingSpinner />}>
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
             <SupportPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.SELLERS}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <SellersListPage />
           </Suspense>
         }
       />
       <Route
         path={PATHS.SELLER}
         element={
-          <Suspense fallback={<LoadingSpinner />}>
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <SellerPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.SELLER_SINGULAR}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
             <SellerPage />
           </Suspense>
         }
@@ -183,39 +258,29 @@ const MainRoutes = () => (
         path={PATHS.CHECKOUT}
         element={
           <ProtectedRoute allowedStatuses={["active", "verified"]}>
-            <Suspense fallback={<LoadingSpinner />}>
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
               <CheckoutPage />
-            </Suspense>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={PATHS.ORDER_CONFIRMATION}
-        element={
-          <ProtectedRoute>
-            <Suspense fallback={<LoadingSpinner />}>
-              <OrderConfirmationPage />
             </Suspense>
           </ProtectedRoute>
         }
       />
       <Route element={<Dashboard />}>
         <Route
-          path={PATHS.PROFILE}
+          path={PATHS.ORDERS}
           element={
             <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<LoadingSpinner />}>
-                <ProfilePage />
+              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                <OrderList />
               </Suspense>
             </ProtectedRoute>
           }
         />
         <Route
-          path={PATHS.ORDER}
+          path={PATHS.PROFILE}
           element={
             <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<LoadingSpinner />}>
-                <OrderList />
+              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                <ProfilePage />
               </Suspense>
             </ProtectedRoute>
           }
@@ -224,7 +289,18 @@ const MainRoutes = () => (
           path={PATHS.ADDRESS}
           element={
             <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<LoadingSpinner />}>
+              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                <AddressPage />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+        {/* Short alias routes for backward compatibility */}
+        <Route
+          path={PATHS.ADDRESSES_SHORT}
+          element={
+            <ProtectedRoute allowedStatuses={["active", "verified"]}>
+              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
                 <AddressPage />
               </Suspense>
             </ProtectedRoute>
@@ -234,17 +310,25 @@ const MainRoutes = () => (
           path={PATHS.ORDER_DETAILS}
           element={
             <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<LoadingSpinner />}>
+              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
                 <OrderDetail />
               </Suspense>
             </ProtectedRoute>
           }
         />
         <Route
+          path={PATHS.TRACKING}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <TrackingPage />
+            </Suspense>
+          }
+        />
+        <Route
           path={PATHS.REVIEW}
           element={
             <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<LoadingSpinner />}>
+              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
                 <ReviewPage />
               </Suspense>
             </ProtectedRoute>
@@ -254,7 +338,17 @@ const MainRoutes = () => (
           path={PATHS.CREDIT}
           element={
             <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<LoadingSpinner />}>
+              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                <Creditbalance />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={PATHS.CREDIT_SHORT}
+          element={
+            <ProtectedRoute allowedStatuses={["active", "verified"]}>
+              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
                 <Creditbalance />
               </Suspense>
             </ProtectedRoute>
@@ -264,7 +358,17 @@ const MainRoutes = () => (
           path={PATHS.FOLLOWED}
           element={
             <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<LoadingSpinner />}>
+              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                <FollowPage />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={PATHS.FOLLOWED_SHORT}
+          element={
+            <ProtectedRoute allowedStatuses={["active", "verified"]}>
+              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
                 <FollowPage />
               </Suspense>
             </ProtectedRoute>
@@ -274,7 +378,17 @@ const MainRoutes = () => (
           path={PATHS.COUPON}
           element={
             <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<LoadingSpinner />}>
+              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                <CouponPage />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={PATHS.COUPON_SHORT}
+          element={
+            <ProtectedRoute allowedStatuses={["active", "verified"]}>
+              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
                 <CouponPage />
               </Suspense>
             </ProtectedRoute>
@@ -284,7 +398,17 @@ const MainRoutes = () => (
           path={PATHS.BROWSER}
           element={
             <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<LoadingSpinner />}>
+              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                <BrowserhistoryPage />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={PATHS.BROWSER_SHORT}
+          element={
+            <ProtectedRoute allowedStatuses={["active", "verified"]}>
+              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
                 <BrowserhistoryPage />
               </Suspense>
             </ProtectedRoute>
@@ -294,7 +418,17 @@ const MainRoutes = () => (
           path={PATHS.PERMISSION}
           element={
             <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<LoadingSpinner />}>
+              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                <PermissionPage />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={PATHS.PERMISSION_SHORT}
+          element={
+            <ProtectedRoute allowedStatuses={["active", "verified"]}>
+              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
                 <PermissionPage />
               </Suspense>
             </ProtectedRoute>
@@ -304,7 +438,7 @@ const MainRoutes = () => (
           path={PATHS.NOTIFICATION}
           element={
             <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<LoadingSpinner />}>
+              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
                 <NotificationPage />
               </Suspense>
             </ProtectedRoute>
@@ -314,7 +448,17 @@ const MainRoutes = () => (
           path={PATHS.PAYMENT}
           element={
             <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<LoadingSpinner />}>
+              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                <PaymentMethodPage />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={PATHS.PAYMENT_SHORT}
+          element={
+            <ProtectedRoute allowedStatuses={["active", "verified"]}>
+              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
                 <PaymentMethodPage />
               </Suspense>
             </ProtectedRoute>
@@ -322,7 +466,26 @@ const MainRoutes = () => (
         />
       </Route>
     </Route>
+    {/* Catch-all route for debugging - should never match if order-confirmation route works */}
+    <Route
+      path="*"
+      element={
+        <div style={{ padding: '50px', textAlign: 'center' }}>
+          <h1>404 - Route Not Found</h1>
+          <p>Current pathname: {window.location.pathname}</p>
+          <p>Current search: {window.location.search}</p>
+          <p>Full URL: {window.location.href}</p>
+          <p style={{ color: 'red', marginTop: '20px' }}>
+            If you expected to see the order confirmation page, the route may not be matching correctly.
+          </p>
+          <p style={{ marginTop: '10px' }}>
+            Expected route: <code>/order-confirmation</code>
+          </p>
+        </div>
+      }
+    />
   </Routes>
-);
+  );
+};
 
 export default MainRoutes;

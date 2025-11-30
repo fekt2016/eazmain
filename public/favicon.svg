@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bagGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffc400;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e29800;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Shopping bag body -->
+  <path d="M 16 20 L 12 56 C 12 58 13 60 15 60 L 49 60 C 51 60 52 58 52 56 L 48 20 Z" 
+        fill="url(#bagGradient)" 
+        stroke="#bb6c02" 
+        stroke-width="1.5"/>
+  
+  <!-- Shopping bag handle -->
+  <path d="M 20 20 C 20 12 28 8 32 8 C 36 8 44 12 44 20" 
+        fill="none" 
+        stroke="#bb6c02" 
+        stroke-width="2.5" 
+        stroke-linecap="round"/>
+  
+  <!-- Letter "E" integrated into bag -->
+  <g fill="#fff" opacity="0.95">
+    <rect x="24" y="28" width="12" height="3" rx="1"/>
+    <rect x="24" y="36" width="10" height="3" rx="1"/>
+    <rect x="24" y="44" width="12" height="3" rx="1"/>
+    <rect x="24" y="28" width="3" height="19" rx="1"/>
+  </g>
+</svg>

@@ -1,7 +1,7 @@
 import { Navigate } from "react-router-dom";
 import { memo, Suspense, useEffect, useMemo, useState } from "react";
-import useAuth from "../hooks/useAuth";
-import LoadingSpinner from "../components/LoadingSpinner";
+import useAuth from '../shared/hooks/useAuth';
+import { LoadingState, PageSpinner, SpinnerContainer } from '../components/loading';
 
 const ProtectedRoutes = ({ children }) => {
   const { userData, isLoading, error } = useAuth();
@@ -10,23 +10,29 @@ const ProtectedRoutes = ({ children }) => {
       userData?.data?.data || userData?.data?.user || userData?.user || null
     );
   }, [userData]);
+ 
 
+  // Cookie-based auth: No need to check localStorage
+  // Authentication state is determined by useAuth hook which calls getCurrentUser()
+  // Browser automatically sends cookie via withCredentials: true
   const [localAuthCheck, setLocalAuthCheck] = useState(() => {
-    return !!localStorage.getItem("authToken");
+    // Always return true initially - let useAuth determine actual auth state
+    return true;
   });
 
   useEffect(() => {
+    // Update based on actual auth state from useAuth
     if (!isLoading) {
-      setLocalAuthCheck(!!localStorage.getItem("authToken"));
+      setLocalAuthCheck(!!userData);
     }
-  }, [isLoading]);
+  }, [isLoading, userData]);
 
   if (localAuthCheck && isLoading) {
-    return <LoadingSpinner />;
+    return <LoadingState message="Loading..." />;
   }
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <LoadingState message="Loading..." />;
   }
 
   if (error) {
@@ -48,7 +54,7 @@ const ProtectedRoutes = ({ children }) => {
     return handleStatusRedirect(user.status);
   }
 
-  return <Suspense fallback={<LoadingSpinner />}>{children}</Suspense>;
+  return <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>{children}</Suspense>;
 };
 
 const statusRedirectMap = {
