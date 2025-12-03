@@ -1,7 +1,7 @@
 import { jwtDecode } from "jwt-decode";
 
-export const formatCurrency = (value) =>
-  new Intl.NumberFormat("en", { style: "currency", currency: "USD" }).format(
+export const formatCurrency = (value, currency = "USD") =>
+  new Intl.NumberFormat("en", { style: "currency", currency: currency }).format(
     value
   );
 

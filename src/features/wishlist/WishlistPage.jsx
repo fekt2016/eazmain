@@ -12,13 +12,23 @@ import { useMemo } from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
 import { useWishlist } from '../../shared/hooks/useWishlist';
-import usePageTitle from '../../shared/hooks/usePageTitle';
+import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 import seoConfig from '../../shared/config/seoConfig';
 import ProductCard from '../../shared/components/ProductCard';
 import { LoadingState } from '../../components/loading';
 
 const WishlistPage = () => {
-  usePageTitle(seoConfig.wishlist);
+  useDynamicPageTitle({
+    title: seoConfig.wishlist.title,
+    description: seoConfig.wishlist.description,
+    keywords: seoConfig.wishlist.keywords,
+    image: seoConfig.wishlist.image,
+    type: seoConfig.wishlist.type,
+    canonical: seoConfig.wishlist.canonical,
+    jsonLd: seoConfig.wishlist.jsonLd,
+    defaultTitle: seoConfig.wishlist.title,
+    defaultDescription: seoConfig.wishlist.description,
+  });
   const { data: wishlistData, isLoading, error } = useWishlist();
 
   // Memoized product extraction - only recalculates when wishlistData changes

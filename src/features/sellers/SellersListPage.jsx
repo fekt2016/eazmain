@@ -1,17 +1,23 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
+import logger from '../../shared/utils/logger';
 import { FaArrowRight, FaShieldAlt, FaMapMarkerAlt, FaFilter, FaTimes, FaSortAmountDown, FaSearch, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { useGetFeaturedSellers } from '../../shared/hooks/useSeller';
 import Container from '../../shared/components/Container';
 import { devicesMax } from '../../shared/styles/breakpoint';
 import { PATHS } from "../../routes/routePaths";
 import { LoadingState } from '../../components/loading';
-import usePageTitle from '../../shared/hooks/usePageTitle';
+import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 import StarRating from '../../shared/components/StarRating';
 
 export default function SellersListPage() {
-  usePageTitle('Sellers - EazShop');
+  useDynamicPageTitle({
+    title: 'Sellers - EazShop',
+    description: 'Discover trusted sellers on EazShop',
+    defaultTitle: 'Sellers - EazShop',
+    defaultDescription: 'Discover trusted sellers on EazShop',
+  });
   const { data: sellersData, isLoading } = useGetFeaturedSellers({ limit: 100 });
   
   const [showFilters, setShowFilters] = useState(false);
@@ -21,8 +27,31 @@ export default function SellersListPage() {
   const [sortOption, setSortOption] = useState("rating-desc");
 
   const allSellers = useMemo(() => {
-    return sellersData || [];
-  }, [sellersData]);
+    // Handle different response structures
+    if (!sellersData) return [];
+    
+    // If it's already an array, return it
+    if (Array.isArray(sellersData)) {
+      return sellersData;
+    }
+    
+    // If it's an object with sellers array
+    if (sellersData?.sellers && Array.isArray(sellersData.sellers)) {
+      return sellersData.sellers;
+    }
+    
+    // If it's an object with data.sellers
+    if (sellersData?.data?.sellers && Array.isArray(sellersData.data.sellers)) {
+      return sellersData.data.sellers;
+    }
+    
+    // If it's an object with responseData.sellers
+    if (sellersData?.responseData?.sellers && Array.isArray(sellersData.responseData.sellers)) {
+      return sellersData.responseData.sellers;
+    }
+    
+    return [];
+    }, [sellersData]);
 
   // Get unique locations
   const locations = useMemo(() => {
@@ -363,21 +392,21 @@ export default function SellersListPage() {
 // Styled Components
 const PageContainer = styled.div`
   min-height: 100vh;
-  background: linear-gradient(to bottom, #f8fafc 0%, #ffffff 100%);
+  background: linear-gradient(to bottom, var(--color-grey-50) 0%, var(--color-white-0) 100%);
 `;
 
 const PageHeader = styled.div`
   padding: 3rem 0;
   text-align: center;
   margin-bottom: 2rem;
-  background: white;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--color-white-0);
+  border-bottom: 1px solid var(--color-grey-200);
 `;
 
 const PageTitle = styled.h1`
   font-size: 3.5rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--color-grey-800);
   margin-bottom: 1rem;
   letter-spacing: -1px;
 
@@ -388,7 +417,7 @@ const PageTitle = styled.h1`
 
 const PageDescription = styled.p`
   font-size: 1.6rem;
-  color: #64748b;
+  color: var(--color-grey-600);
   margin: 0;
 `;
 
@@ -410,9 +439,9 @@ const ContentLayout = styled.div`
 
 const FilterSidebar = styled.aside`
   width: 280px;
-  background: white;
+  background: var(--color-white-0);
   border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-md);
   padding: 2rem;
   position: sticky;
   top: 2rem;

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import sellerApi from '../services/sellerApi';
+import logger from '../utils/logger';
 
 export const useGetSellerProfile = (sellerId) => {
   return useQuery({
@@ -14,7 +15,7 @@ export const useGetSellerProfile = (sellerId) => {
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     onError: (error) => {
-      console.error("Seller error:", error.message);
+      logger.error("Seller error:", error.message);
     },
   });
 };
@@ -30,7 +31,7 @@ export const useGetSellerById = (sellerId) => {
         const data = await sellerApi.getSellerById(sellerId);
         return data;
       } catch (error) {
-        console.error("Error fetching seller:", error);
+        logger.error("Error fetching seller:", error);
         throw new Error("Failed to fetch seller data");
       }
     },
@@ -39,7 +40,7 @@ export const useGetSellerById = (sellerId) => {
     retry: 2, // Retry twice on failure
     refetchOnWindowFocus: false,
     onError: (error) => {
-      console.error("Seller fetch error:", error.message);
+      logger.error("Seller fetch error:", error.message);
     },
     onSettled: (data, error) => {
       if (error) {
@@ -58,12 +59,23 @@ export const useGetFeaturedSellers = (options = {}) => {
     queryKey: ["featured-sellers", limit, minRating],
     queryFn: async () => {
       const sellers = await sellerApi.getFeaturedSellers(limit, minRating);
-      return sellers;
+      // Ensure we return an array
+      if (Array.isArray(sellers)) {
+        return sellers;
+      }
+      // Handle case where API returns object with sellers array
+      if (sellers?.data?.sellers) {
+        return sellers.data.sellers;
+      }
+      if (sellers?.sellers) {
+        return sellers.sellers;
+      }
+      return [];
     },
     staleTime: 5 * 60 * 1000, // 5 minutes cache
     refetchOnWindowFocus: false,
     onError: (error) => {
-      console.error("Featured sellers error:", error.message);
+      logger.error("Featured sellers error:", error.message);
     },
   });
 };

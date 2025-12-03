@@ -1,13 +1,19 @@
-import { useEffect, useMemo } from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { useEffect, useMemo, lazy, Suspense } from "react";
+import { BrowserRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import GlobalStyles from "./shared/styles/GlobalStyles";
 
 import MainRoutes from "./routes/MainRoutes";
 import GlobalLoading from "./shared/components/GlobalLoading";
+import ScrollToTop from "./shared/ScrollToTop";
+import ErrorBoundary from "./shared/components/ErrorBoundary";
+
+// ReactQueryDevtools only in development
+const ReactQueryDevtools = import.meta.env.DEV
+  ? lazy(() => import("@tanstack/react-query-devtools").then((mod) => ({ default: mod.ReactQueryDevtools })))
+  : () => null;
 
 function App() {
   // Use useMemo to prevent creating new QueryClient on every render
@@ -64,26 +70,33 @@ function App() {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <GlobalStyles />
-      <GlobalLoading />
-      <BrowserRouter basename="">
-        <MainRoutes />
-      </BrowserRouter>
-      <ReactQueryDevtools initialIsOpen={false} />
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <GlobalStyles />
+        <GlobalLoading />
+        <BrowserRouter basename="">
+          <ScrollToTop />
+          <MainRoutes />
+        </BrowserRouter>
+        {import.meta.env.DEV && (
+          <Suspense fallback={null}>
+            <ReactQueryDevtools initialIsOpen={false} />
+          </Suspense>
+        )}
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

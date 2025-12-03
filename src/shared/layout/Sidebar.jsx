@@ -19,6 +19,7 @@ import {
   FaGem
 } from "react-icons/fa";
 import useAuth from '../hooks/useAuth';
+import { getAvatarUrl } from '../utils/avatarUtils';
 
 import { PATHS } from '../../routes/routePaths';
 
@@ -58,21 +59,14 @@ const SideBar = ({ $isOpen, onClose }) => {
 
   return (
     <SidebarContainer $isOpen={$isOpen}>
-      {/* Brand Header */}
-      <BrandSection>
-        <BrandLogo>
-          <FaGem />
-        </BrandLogo>
-        <BrandText>
-          <BrandName>Elevate</BrandName>
-          <BrandSubtitle>Dashboard</BrandSubtitle>
-        </BrandText>
-      </BrandSection>
-
       {/* User Profile */}
       <UserSection>
         <UserAvatar>
-          <FaUserCircle />
+          {user?.photo ? (
+            <AvatarImage src={getAvatarUrl(user.photo)} alt={user?.name || "User"} />
+          ) : (
+            <FaUserCircle />
+          )}
           <OnlineIndicator />
         </UserAvatar>
         <UserInfo>
@@ -252,6 +246,14 @@ const UserAvatar = styled.div`
   font-size: 2.4rem;
   color: var(--color-primary-500);
   position: relative;
+  overflow: hidden;
+`;
+
+const AvatarImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 14px;
   border: 2px solid var(--color-white-0);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 `;

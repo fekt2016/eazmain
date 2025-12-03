@@ -1,4 +1,5 @@
 import api from "./api";
+import logger from "../utils/logger";
 
 const sellerApi = {
   getFeaturedSellers: async (limit = 8, minRating = 4.0) => {
@@ -8,7 +9,7 @@ const sellerApi = {
       });
       return response.data.data.sellers;
     } catch (error) {
-      console.error("Error fetching featured sellers:", error);
+      logger.error("Error fetching featured sellers:", error);
       return [];
     }
   },
@@ -35,8 +36,35 @@ const sellerApi = {
       const response = await api.get(`/seller/profile/${sellerId}`);
       return response; // Adjust based on your actual response structure
     } catch (error) {
-      console.error("Error fetching seller:", error);
+      logger.error("Error fetching seller:", error);
       throw error; // Important: throw to trigger React Query error state
+    }
+  },
+
+  getBestSellers: async (params = {}) => {
+    const { page = 1, limit = 20, sort = 'orders' } = params;
+    
+    try {
+      const response = await api.get("/seller/public/best-sellers", {
+        params: { page, limit, sort },
+      });
+      // Axios response structure: response.data contains the backend response
+      // Backend returns: { status: 'success', data: { sellers: [...], total, page, limit, totalPages } }
+      return response.data;
+    } catch (error) {
+      logger.error("Error fetching best sellers:", error);
+      logger.error("Error details:", error.response?.data || error.message);
+      // Return empty result on error instead of fallback
+      return { 
+        status: 'error',
+        data: { 
+          sellers: [], 
+          total: 0, 
+          page, 
+          limit, 
+          totalPages: 0 
+        } 
+      };
     }
   },
 };

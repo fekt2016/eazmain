@@ -1,4 +1,5 @@
 import api from './api';
+import logger from '../utils/logger';
 
 const shippingService = {
   // Get active pickup centers
@@ -10,7 +11,7 @@ const shippingService = {
 
   // Calculate shipping quote
   calculateShippingQuote: async (buyerCity, items, method = 'dispatch', pickupCenterId = null, deliverySpeed = 'standard') => {
-    console.log("🌐 [shippingApi] calculateShippingQuote called with:", {
+    logger.log("🌐 [shippingApi] calculateShippingQuote called with:", {
       buyerCity,
       itemsCount: items?.length,
       items: items,
@@ -19,7 +20,7 @@ const shippingService = {
       deliverySpeed,
     });
     
-    console.log("🌐 [shippingApi] Making POST request to /shipping/quote...");
+    logger.log("🌐 [shippingApi] Making POST request to /shipping/quote...");
     const response = await api.post('/shipping/quote', {
       buyerCity,
       items,
@@ -28,9 +29,9 @@ const shippingService = {
       deliverySpeed, // Add delivery speed parameter
     });
     
-    console.log("🌐 [shippingApi] Response received:", response);
-    console.log("🌐 [shippingApi] response.data:", response.data);
-    console.log("🌐 [shippingApi] Returning response.data");
+    logger.log("🌐 [shippingApi] Response received:", response);
+    logger.log("🌐 [shippingApi] response.data:", response.data);
+    logger.log("🌐 [shippingApi] Returning response.data");
     
     return response.data;
   },

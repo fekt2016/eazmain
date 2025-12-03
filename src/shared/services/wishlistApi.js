@@ -1,4 +1,5 @@
 import api from './api';
+import logger from '../utils/logger';
 import { getSessionId, generateSessionId } from '../utils/guestWishlist';
 
 // Check if user is authenticated
@@ -28,7 +29,7 @@ const wishlistApi = {
 
   // Add to wishlist (works for both authenticated and guest users)
   addToWishlist: async (productId) => {
-    console.log("Adding to wishlist for productId:", productId);
+    logger.log("Adding to wishlist for productId:", productId);
 
     if (isAuthenticated()) {
       // Authenticated user - use the standard endpoint
@@ -73,7 +74,7 @@ const wishlistApi = {
 
   // Sync guest wishlist to user account after login
   mergeWishlists: async () => {
-    console.log("Merging guest wishlist to user account");
+    logger.log("Merging guest wishlist to user account");
     if (!isAuthenticated()) {
       throw new Error("User must be authenticated to sync wishlist");
     }
@@ -144,7 +145,7 @@ const wishlistApi = {
 
         return { inWishlist };
       } catch (error) {
-        console.error("Error checking wishlist:", error);
+        logger.error("Error checking wishlist:", error);
         return { inWishlist: false };
       }
     }

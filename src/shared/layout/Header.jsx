@@ -20,10 +20,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { useWishlist } from '../hooks/useWishlist';
 import { useCartTotals } from '../hooks/useCart';
 import useCategory from '../hooks/useCategory';
-import { useSearchProducts } from '../hooks/useSearch';
+import { useSearchSuggestions } from '../hooks/useSearch';
 import { PATHS } from '../../routes/routePaths';
 import HeaderSearchBar from '../components/HeaderSearchBar';
 import Logo from '../components/Logo';
+import { getAvatarUrl } from '../utils/avatarUtils';
 
 export default function Header({ onToggleSidebar, isSidebarOpen }) {
   const navigate = useNavigate();
@@ -47,9 +48,11 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
   const { data: categoriesData, isLoading: isCategoriesLoading, isError: isCategoriesError } =
     getParentCategories;
 
-  // Search hook for products only
-  const { data: searchProductsData, isLoading: isSearchProductsLoading } =
-    useSearchProducts(debouncedSearchTerm);
+  // Improved search suggestions hook with better caching
+  const { data: searchSuggestionsData, isLoading: isSearchProductsLoading } =
+    useSearchSuggestions(debouncedSearchTerm, {
+      staleTime: 2 * 60 * 1000, // 2 minutes
+    });
 
   // Handle scroll effect
   useEffect(() => {
@@ -79,7 +82,7 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
     }
   }, [showCategoriesDropdown, parentCategories, hoveredCategory]);
 
-  // Debounce search term
+  // Debounce search term (300ms delay)
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
@@ -113,11 +116,12 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
     };
   }, [wishlistData]);
 
-  // Generate search suggestions (products only)
+  // Generate search suggestions from improved API response
   const searchSuggestions = useMemo(() => {
-    if (!debouncedSearchTerm) return [];
-    return searchProductsData?.data || [];
-  }, [debouncedSearchTerm, searchProductsData]);
+    if (!debouncedSearchTerm || debouncedSearchTerm.length < 2) return [];
+    // New API returns: { success: true, data: [...] }
+    return searchSuggestionsData?.data || searchSuggestionsData || [];
+  }, [debouncedSearchTerm, searchSuggestionsData]);
 
   // Handle keyboard navigation for search
   const handleSearchKeyDown = (e) => {
@@ -234,9 +238,9 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
             </PromoText>
             
             <RightLinks>
-              <TopLink>Daily Deals</TopLink>
-              <TopLink>New Arrivals</TopLink>
-              <TopLink>Best Sellers</TopLink>
+              <TopLink to={PATHS.DEALS}>Daily Deals</TopLink>
+              <TopLink to={PATHS.NEW_ARRIVALS}>New Arrivals</TopLink>
+              <TopLink to={PATHS.BEST_SELLERS}>Best Sellers</TopLink>
             </RightLinks>
           </TopBarContent>
         </Container>
@@ -400,7 +404,7 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
                         <UserAvatar>
                           {user?.photo ? (
                             <AvatarImage 
-                              src={user.photo} 
+                              src={getAvatarUrl(user.photo)} 
                               alt={user?.name || 'User'}
                               key={`avatar-${user?.photo}-${user?._id || user?.id}`} // Force re-render when photo or user changes
                               onError={(e) => {

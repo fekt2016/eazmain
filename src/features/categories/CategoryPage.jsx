@@ -9,7 +9,7 @@ import Pagination from '../../shared/components/pagination';
 import SkeletonLoader from '../../shared/components/SkeletonLoader';
 import Container from '../../shared/components/Container';
 import { devicesMax } from '../../shared/styles/breakpoint';
-import usePageTitle from '../../shared/hooks/usePageTitle';
+import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 import { fadeIn, slideUp } from '../../shared/styles/animations';
 
 export default function CategoryPage() {
@@ -76,7 +76,12 @@ export default function CategoryPage() {
     return categoryData;
   }, [categoryData]);
 
-  usePageTitle(category.name ? `${category.name} - EazShop` : 'Category - EazShop');
+  useDynamicPageTitle({
+    title: "Category",
+    dynamicTitle: category?.name && `${category.name} — Browse Products`,
+    description: category?.description,
+    defaultTitle: "EazShop Categories",
+  });
 
   const products = useMemo(() => {
     return productsData?.data?.products || [];

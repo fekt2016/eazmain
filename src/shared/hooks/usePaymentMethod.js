@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import paymentMethodApi from '../services/paymentMethodApi';
+import logger from '../utils/logger';
 
 export const useCreatePaymentMethod = () => {
   const queryClient = useQueryClient();
@@ -12,7 +13,7 @@ export const useCreatePaymentMethod = () => {
       return response;
     },
     onSuccess: (data) => {
-      console.log("payment method created successfully!!!", data);
+      logger.log("payment method created successfully!!!", data);
       queryClient.invalidateQueries({ queryKey: ["paymentMethods"] });
     },
   });

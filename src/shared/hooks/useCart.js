@@ -45,18 +45,18 @@ export const getCartStructure = (cartData) => {
   }
 
   // Fallback to empty array
-  console.warn("Unknown cart structure:", cartData);
+  logger.warn("Unknown cart structure:", cartData);
   return [];
 };
 
 // Helper to save guest cart to localStorage
 
 const saveGuestCart = (cartData) => {
-  console.log("Saving guest cart:", cartData);
+  logger.log("Saving guest cart:", cartData);
   try {
     localStorage.setItem("guestCart", JSON.stringify(cartData));
   } catch (error) {
-    console.error("Failed to save guest cart", error);
+    logger.error("Failed to save guest cart", error);
   }
 };
 const getGuestCart = () => {
@@ -64,7 +64,7 @@ const getGuestCart = () => {
     const guestCart = localStorage.getItem("guestCart");
     return guestCart ? JSON.parse(guestCart) : { cart: { products: [] } };
   } catch (error) {
-    console.error("Error parsing guest cart, resetting", error);
+    logger.error("Error parsing guest cart, resetting", error);
     const emptyCart = { cart: { products: [] } };
     localStorage.setItem("guestCart", JSON.stringify(emptyCart));
     return emptyCart;
@@ -87,7 +87,7 @@ export const useGetCart = () => {
 
           return response;
         } catch (error) {
-          console.error("Failed to fetch cart:", error);
+          logger.error("Failed to fetch cart:", error);
           return { data: { cart: { products: [] } } };
         }
       }
@@ -128,12 +128,12 @@ export const useCartActions = () => {
   };
   const addToCartMutation = useMutation({
     mutationFn: async ({ product, quantity, variant }) => {
-      console.log("cart mutation", product, quantity, variant);
+      logger.log("cart mutation", product, quantity, variant);
       // Support both id and _id for product identifier
       const productId = product?.id || product?._id;
       
       if (!productId) {
-        console.error("Product ID not found:", product);
+        logger.error("Product ID not found:", product);
         throw new Error("Product ID is required");
       }
 
@@ -143,10 +143,10 @@ export const useCartActions = () => {
           ? variant._id 
           : variant;
         
-        console.log('[addToCart] Calling API with:', { productId, quantity, variantId });
+        logger.log('[addToCart] Calling API with:', { productId, quantity, variantId });
         const response = await cartApi.addToCart(productId, quantity, variantId);
-        console.log('[addToCart] API response:', response);
-        console.log('[addToCart] API response.data:', response.data);
+        logger.log('[addToCart] API response:', response);
+        logger.log('[addToCart] API response.data:', response.data);
         
         // Backend returns: { status: 'success', data: { cart: {...} } }
         // axios response structure: { data: { status: 'success', data: { cart: {...} } } }
@@ -186,7 +186,7 @@ export const useCartActions = () => {
       return guestCart;
     },
     onSuccess: (apiResponse) => {
-      console.log('[addToCart] Success response:', apiResponse);
+      logger.log('[addToCart] Success response:', apiResponse);
       
       // apiResponse structure: { status: 'success', data: { cart: {...} } }
       // We need to extract { data: { cart: {...} } } to match getCartStructure expectations
@@ -206,8 +206,8 @@ export const useCartActions = () => {
         cartData = apiResponse;
       }
       
-      console.log('[addToCart] Setting cart data:', cartData);
-      console.log('[addToCart] Cart products:', cartData?.data?.cart?.products || cartData?.cart?.products);
+      logger.log('[addToCart] Setting cart data:', cartData);
+      logger.log('[addToCart] Cart products:', cartData?.data?.cart?.products || cartData?.cart?.products);
       
       // Update query data and invalidate to ensure UI refreshes
       queryClient.setQueryData(queryKey, cartData);
@@ -220,7 +220,7 @@ export const useCartActions = () => {
       });
     },
     onError: (error) => {
-      console.error('Add to cart error:', error);
+      logger.error('Add to cart error:', error);
       // Show error notification
       const errorMessage = error.response?.data?.message || error.message || 'Failed to add item to cart';
       toast.error(errorMessage, {
@@ -297,19 +297,19 @@ export const useCartActions = () => {
       return emptyCart;
     },
     onSuccess: (data) => {
-      console.log("cart successfully!!! cleared:", data);
+      logger.log("cart successfully!!! cleared:", data);
       queryClient.setQueryData(queryKey, data);
     },
     ...mutationOptions,
   });
   const syncCartMutation = useMutation({
     mutationFn: async () => {
-      console.log("Syncing guest cart to server...");
+      logger.log("Syncing guest cart to server...");
       const guestCart = getGuestCart();
-      console.log("GuestCart sync", guestCart);
+      logger.log("GuestCart sync", guestCart);
       const products =
         guestCart?.data?.cart?.products || guestCart.cart.products || [];
-      console.log("Products to sync:", products);
+      logger.log("Products to sync:", products);
       const results = await Promise.allSettled(
         products.map((item) =>
           cartApi.addToCart(item.product._id, item.quantity)
@@ -337,19 +337,19 @@ export const useCartActions = () => {
       };
     },
     onSuccess: (result) => {
-      console.log("sync successfully!!!", result);
+      logger.log("sync successfully!!!", result);
       queryClient.invalidateQueries({ queryKey });
     },
     ...mutationOptions,
   });
   // Wrapper function for addToCart that provides better error handling
   const addToCartWrapper = useCallback((params, options) => {
-    console.log('[useCartActions] addToCart called with:', params);
+    logger.log('[useCartActions] addToCart called with:', params);
     return addToCartMutation.mutate(params, {
       ...options,
       onError: (error) => {
-        console.error('[useCartActions] addToCart error:', error);
-        console.error('[useCartActions] Error details:', {
+        logger.error('[useCartActions] addToCart error:', error);
+        logger.error('[useCartActions] Error details:', {
           message: error.message,
           response: error.response?.data,
           status: error.response?.status,
@@ -388,14 +388,14 @@ export const useAutoSyncCart = () => {
       const guestCart = getGuestCart();
       const hasGuestItems = guestCart.cart?.products?.length > 0;
       if (hasGuestItems) {
-        console.log("Sycing guest cart items to server...");
+        logger.log("Sycing guest cart items to server...");
         syncCart(undefined, {
           onSuccess: () => {
             if (isAuthenticated) {
               const guestCart = getGuestCart();
               const hasGuestItems = guestCart.cart?.products?.length > 0;
               if (hasGuestItems) {
-                console.log("Sycing guest cart items to server...");
+                logger.log("Sycing guest cart items to server...");
                 syncCart(undefined, {
                   onSuccess: () => {
                     saveGuestCart({ cart: { products: [] } });

@@ -1,4 +1,5 @@
 import api from './api';
+import logger from '../utils/logger';
 
 const addressApi = {
   getUserAddresses: async () => {
@@ -6,33 +7,33 @@ const addressApi = {
       const response = await api.get(`/address`);
       return response;
     } catch (error) {
-      console.error("Error fetching user addresses:", error);
+      logger.error("Error fetching user addresses:", error);
       throw error;
     }
   },
   getUserAddress: async () => {
     try {
       const response = await api.get(`/address`);
-      console.log("address response", response);
+      logger.log("address response", response);
       return response;
     } catch (error) {
-      console.error("Error fetching user addresses:", error);
+      logger.error("Error fetching user addresses:", error);
       throw error;
     }
   },
 
   createUserAddress: async (addressData) => {
-    console.log("api address data", addressData);
+    logger.log("api address data", addressData);
     try {
       const response = await api.post(`/address`, addressData);
       return response;
     } catch (error) {
-      console.error("Error creating user address:", error);
+      logger.error("Error creating user address:", error);
       throw error;
     }
   },
   updateUserAddress: async (addressData) => {
-    console.log("api address data", addressData);
+    logger.log("api address data", addressData);
     try {
       // Extract id and data from the addressData object
       const { id, data, ...rest } = addressData;
@@ -46,7 +47,7 @@ const addressApi = {
       );
       return response;
     } catch (error) {
-      console.error("Error updating user address:", error);
+      logger.error("Error updating user address:", error);
       throw error;
     }
   },
@@ -55,7 +56,7 @@ const addressApi = {
       const response = await api.delete(`/address/${addressId}`);
       return response;
     } catch (error) {
-      console.error("Error deleting user address:", error);
+      logger.error("Error deleting user address:", error);
       throw error;
     }
   },
@@ -66,7 +67,7 @@ const addressApi = {
       });
       return response.data;
     } catch (error) {
-      console.error("Error looking up digital address:", error);
+      logger.error("Error looking up digital address:", error);
       throw error;
     }
   },
@@ -75,7 +76,7 @@ const addressApi = {
       const response = await api.post(`/address/create`, addressData);
       return response.data;
     } catch (error) {
-      console.error("Error creating address with zone:", error);
+      logger.error("Error creating address with zone:", error);
       throw error;
     }
   },

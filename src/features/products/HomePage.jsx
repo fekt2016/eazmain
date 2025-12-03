@@ -16,7 +16,7 @@ import { getOrCreateSessionId } from '../../shared/utils/sessionUtils';
 import useAnalytics from '../../shared/hooks/useAnalytics';
 import Container from '../../shared/components/Container';
 import { devicesMax } from '../../shared/styles/breakpoint';
-import usePageTitle from '../../shared/hooks/usePageTitle';
+import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 import seoConfig from '../../shared/config/seoConfig';
 import { PATHS } from "../../routes/routePaths";
 import { useGetFeaturedSellers } from '../../shared/hooks/useSeller';
@@ -42,7 +42,17 @@ const shimmer = keyframes`
 `;
 
 const HomePage = () => {
-  usePageTitle(seoConfig.home);
+  useDynamicPageTitle({
+    title: seoConfig.home.title,
+    description: seoConfig.home.description,
+    keywords: seoConfig.home.keywords,
+    image: seoConfig.home.image,
+    type: seoConfig.home.type,
+    canonical: seoConfig.home.canonical,
+    jsonLd: seoConfig.home.jsonLd,
+    defaultTitle: seoConfig.home.title,
+    defaultDescription: seoConfig.home.description,
+  });
   const { getProducts } = useProduct();
   const { recordProductView } = useAnalytics();
   const { data: productsData, isLoading } = getProducts;
@@ -231,7 +241,7 @@ const HomePage = () => {
 
       {/* Trending Sellers */}
       <Section $bg="#f8f9fa">
-        <Container>
+        <Container fluid>
           <SectionHeader>
             <SectionTitle>Trending Now</SectionTitle>
             <SectionLink to={PATHS.SELLERS}>View All Sellers <FaArrowRight /></SectionLink>
@@ -755,12 +765,21 @@ const CategoryContent = styled.div`
 
 const ProductGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(4, 1fr); /* 4 cards per row */
+  gap: 1.5rem;
+  
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(3, 1fr); /* 3 cards on medium screens */
+  }
+  
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(2, 1fr); /* 2 cards on tablets */
+    gap: 1rem;
+  }
   
   @media ${devicesMax.sm} {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(2, 1fr); /* 2 cards on mobile */
+    gap: 0.75rem;
   }
 `;
 

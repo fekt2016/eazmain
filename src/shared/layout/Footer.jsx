@@ -1,9 +1,14 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
+// Using react-icons/fa for all icons (no Simple Icons)
+import { FaFacebook, FaTwitter, FaInstagram, FaTiktok, FaCreditCard, FaBox, FaWallet, FaMoneyBillWave } from "react-icons/fa";
 import { useNewsletter } from '../hooks/useNewsletter';
 import { PrimaryButton } from '../components/ui/Buttons';
 import { ButtonSpinner } from '../../components/loading';
+import Logo from '../components/Logo';
+import { PATHS } from '../../routes/routePaths';
+import { SSLBadge, PCIBadge, PaystackBadge } from '../components/security';
 
 export default function Footer() {
   const [email, setEmail] = useState("");
@@ -27,16 +32,13 @@ export default function Footer() {
         {/* Top Section */}
         <FooterTop>
           <BrandSection>
-            <Logo>
-              <LogoIcon>🛍️</LogoIcon>
-              <BrandInfo>
-                <BrandName>EazShop</BrandName>
+            <LogoWrapper>
+              <Logo to={PATHS.HOME} variant="default" />
+            </LogoWrapper>
                 <BrandTagline>Redefining Shopping Experience</BrandTagline>
-              </BrandInfo>
-            </Logo>
             <BrandDescription>
               Your premier destination for curated products, exceptional service, 
-              and seamless shopping.
+              and seamless shopping. Discover quality, style, and convenience all in one place.
             </BrandDescription>
           </BrandSection>
 
@@ -89,10 +91,11 @@ export default function Footer() {
               <LinkList>
                 <LinkItem to="/help-center">Help Center</LinkItem>
                 <LinkItem to="/contact">Contact Us</LinkItem>
-                <LinkItem to="/shipping">Shipping Info</LinkItem>
-                <LinkItem to="/returns">Returns & Exchanges</LinkItem>
+                <LinkItem to={PATHS.SUPPORT}>Support</LinkItem>
+                <LinkItem to={PATHS.SHIPPING_POLICY}>Shipping Info</LinkItem>
+                <LinkItem to={PATHS.REFUND_POLICY}>Return & Refund Policy</LinkItem>
                 <LinkItem to="/size-guide">Size Guide</LinkItem>
-                <LinkItem to="/product-care">Product Care</LinkItem>
+                <LinkItem to={PATHS.PRODUCT_CARE}>Product Care</LinkItem>
               </LinkList>
             </LinkColumn>
 
@@ -100,6 +103,7 @@ export default function Footer() {
               <ColumnTitle>Company</ColumnTitle>
               <LinkList>
                 <LinkItem to="/about">About Us</LinkItem>
+                <LinkItem to={PATHS.PARTNER}>Partner With Us</LinkItem>
                 <LinkItem to="/careers">Careers</LinkItem>
                 <LinkItem to="/press">Press</LinkItem>
                 <LinkItem to="/sustainability">Sustainability</LinkItem>
@@ -111,26 +115,69 @@ export default function Footer() {
             <LinkColumn>
               <ColumnTitle>Connect</ColumnTitle>
               <SocialLinks>
-                <SocialLink href="https://facebook.com" target="_blank" rel="noopener">
-                  <SocialIcon>📘</SocialIcon>
-                  Facebook
+                <SocialLink href="https://facebook.com" target="_blank" rel="noopener noreferrer">
+                  <SocialIcon>
+                    <FaFacebook />
+                  </SocialIcon>
+                  <span>Facebook</span>
                 </SocialLink>
-                <SocialLink href="https://twitter.com" target="_blank" rel="noopener">
-                  <SocialIcon>🐦</SocialIcon>
-                  Twitter
+                <SocialLink href="https://twitter.com" target="_blank" rel="noopener noreferrer">
+                  <SocialIcon>
+                    <FaTwitter />
+                  </SocialIcon>
+                  <span>Twitter</span>
                 </SocialLink>
-                <SocialLink href="https://instagram.com" target="_blank" rel="noopener">
-                  <SocialIcon>📷</SocialIcon>
-                  Instagram
+                <SocialLink href="https://instagram.com" target="_blank" rel="noopener noreferrer">
+                  <SocialIcon>
+                    <FaInstagram />
+                  </SocialIcon>
+                  <span>Instagram</span>
                 </SocialLink>
-                <SocialLink href="https://tiktok.com" target="_blank" rel="noopener">
-                  <SocialIcon>🎵</SocialIcon>
-                  TikTok
+                <SocialLink href="https://tiktok.com" target="_blank" rel="noopener noreferrer">
+                  <SocialIcon>
+                    <FaTiktok />
+                  </SocialIcon>
+                  <span>TikTok</span>
                 </SocialLink>
               </SocialLinks>
             </LinkColumn>
           </LinkGrid>
         </FooterMiddle>
+
+        {/* Payment Methods Section */}
+        <PaymentMethodsSection>
+          <PaymentSectionTitle>We Accept</PaymentSectionTitle>
+          <PaymentMethodsGrid>
+            <PaymentMethod>
+              <PaymentMethodIcon>
+                <FaBox />
+              </PaymentMethodIcon>
+              <PaymentMethodLabel>Payment on Delivery</PaymentMethodLabel>
+            </PaymentMethod>
+            <PaymentMethod>
+              <PaymentMethodIcon>
+                <FaCreditCard />
+              </PaymentMethodIcon>
+              <PaymentMethodLabel>Paystack (Momo & Card)</PaymentMethodLabel>
+            </PaymentMethod>
+            <PaymentMethod>
+              <PaymentMethodIcon>
+                <FaWallet />
+              </PaymentMethodIcon>
+              <PaymentMethodLabel>App Wallet</PaymentMethodLabel>
+            </PaymentMethod>
+          </PaymentMethodsGrid>
+        </PaymentMethodsSection>
+
+        {/* Security & Certifications Section */}
+        <SecuritySection>
+          <SecuritySectionTitle>Security & Certifications</SecuritySectionTitle>
+          <SecurityBadgesGrid>
+            <SSLBadge />
+            <PCIBadge />
+            <PaystackBadge />
+          </SecurityBadgesGrid>
+        </SecuritySection>
 
         {/* Bottom Section */}
         <FooterBottom>
@@ -140,19 +187,11 @@ export default function Footer() {
             </Copyright>
             
             <LegalLinks>
-              <LegalLink to="/privacy">Privacy Policy</LegalLink>
-              <LegalLink to="/terms">Terms of Service</LegalLink>
+                    <LegalLink to={PATHS.SITEMAP}>Sitemap</LegalLink>
+              <LegalLink to={PATHS.PRIVACY}>Privacy Policy</LegalLink>
+              <LegalLink to={PATHS.TERMS}>Terms & Service</LegalLink>
               <LegalLink to="/cookies">Cookie Policy</LegalLink>
             </LegalLinks>
-
-            <PaymentMethods>
-              <PaymentText>We accept:</PaymentText>
-              <PaymentIcons>
-                <PaymentIcon>💳</PaymentIcon>
-                <PaymentIcon>📱</PaymentIcon>
-                <PaymentIcon>🔗</PaymentIcon>
-              </PaymentIcons>
-            </PaymentMethods>
           </BottomContent>
         </FooterBottom>
       </FooterContent>
@@ -160,282 +199,565 @@ export default function Footer() {
   );
 }
 
-// Clean, modern styled components
+// Modern styled components with gradient and glassmorphism effects
 const FooterContainer = styled.footer`
-  background: #1a1a1a;
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
   color: #ffffff;
-  border-top: 1px solid #333;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 196, 0, 0.5), transparent);
+  }
 `;
 
 const FooterContent = styled.div`
-  max-width: 1200px;
+  max-width: 140rem;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 2rem;
+  position: relative;
+  z-index: 1;
+
+  @media (max-width: 768px) {
+    padding: 0 1.5rem;
+  }
 `;
 
 const FooterTop = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 60px;
-  padding: 60px 0 40px;
-  border-bottom: 1px solid #333;
+  gap: 6rem;
+  padding: 6rem 0 4rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+  @media (max-width: 968px) {
+    gap: 4rem;
+  }
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
-    gap: 40px;
-    padding: 40px 0 30px;
+    gap: 3rem;
+    padding: 4rem 0 3rem;
   }
 `;
 
 const BrandSection = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 1.5rem;
 `;
 
-const Logo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 15px;
-`;
-
-const LogoIcon = styled.span`
-  font-size: 2.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 12px;
-  width: 50px;
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const BrandInfo = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
-
-const BrandName = styled.span`
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: #ffffff;
+const LogoWrapper = styled.div`
+  margin-bottom: 0.5rem;
+  
+  /* Ensure logo is visible on dark background */
+  a {
+    text-decoration: none;
+  }
+  
+  /* Override logo text colors for dark footer */
+  /* Target the first span (Eaz) to be white */
+  div > div > span:first-of-type {
+    color: #ffffff !important;
+  }
+  
+  /* Keep the second span (Shop) yellow */
+  div > div > span:last-of-type {
+    color: #ffc400 !important;
+  }
+  
+  /* Ensure logo icon stays yellow */
+  svg {
+    color: #ffc400 !important;
+  }
 `;
 
 const BrandTagline = styled.span`
-  font-size: 0.9rem;
-  color: #999;
-  margin-top: 2px;
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  margin-top: 0.5rem;
 `;
 
 const BrandDescription = styled.p`
-  color: #999;
-  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.8;
   font-size: 1rem;
   margin: 0;
-  max-width: 400px;
+  max-width: 450px;
+  font-weight: 400;
 `;
 
 const NewsletterSection = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 1.5rem;
 `;
 
 const NewsletterTitle = styled.h3`
-  font-size: 1.3rem;
-  font-weight: 600;
+  font-size: 1.6rem;
+  font-weight: 700;
   color: #ffffff;
   margin: 0;
+  background: linear-gradient(135deg, #ffffff 0%, rgba(255, 196, 0, 0.9) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 `;
 
 const NewsletterDescription = styled.p`
-  color: #999;
-  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1rem;
   margin: 0;
+  line-height: 1.6;
 `;
 
 const NewsletterForm = styled.form`
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 1.2rem;
 `;
 
 const InputWrapper = styled.div`
   display: flex;
-  gap: 10px;
-  background: #2a2a2a;
-  border-radius: 8px;
-  padding: 5px;
-  border: 1px solid #444;
+  gap: 0;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 0.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+  &:focus-within {
+    border-color: rgba(255, 196, 0, 0.5);
+    box-shadow: 0 0 0 3px rgba(255, 196, 0, 0.1);
+    transform: translateY(-1px);
+  }
 
   @media (max-width: 480px) {
     flex-direction: column;
-    padding: 15px;
-    gap: 15px;
+    padding: 1.2rem;
+    gap: 1rem;
   }
 `;
 
 const NewsletterInput = styled.input`
   flex: 1;
-  padding: 12px 15px;
+  padding: 1.2rem 1.5rem;
   border: none;
   background: transparent;
   color: #ffffff;
   font-size: 1rem;
   outline: none;
+  font-weight: 400;
 
   &::placeholder {
-    color: #666;
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  &:focus {
+    color: #ffffff;
   }
 `;
 
 const SubscribeButton = styled(PrimaryButton)`
-  padding: 12px 24px;
-  border-radius: 6px;
+  padding: 1.2rem 2.4rem;
+  border-radius: 8px;
   font-weight: 600;
   white-space: nowrap;
+  background: linear-gradient(135deg, #ffc400 0%, #ff9800 100%);
+  border: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255, 196, 0, 0.3);
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 196, 0, 0.4);
+  }
 
   &:disabled {
-    opacity: 0.7;
+    opacity: 0.6;
     cursor: not-allowed;
+    transform: none;
   }
 `;
 
 const FooterMiddle = styled.div`
-  padding: 50px 0;
-  border-bottom: 1px solid #333;
+  padding: 5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+  @media (max-width: 768px) {
+    padding: 3rem 0;
+  }
 `;
 
 const LinkGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 40px;
+  gap: 4rem;
 
   @media (max-width: 968px) {
     grid-template-columns: repeat(2, 1fr);
-    gap: 30px;
+    gap: 3rem;
   }
 
   @media (max-width: 480px) {
     grid-template-columns: 1fr;
-    gap: 30px;
+    gap: 2.5rem;
   }
 `;
 
 const LinkColumn = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 2rem;
 `;
 
 const ColumnTitle = styled.h3`
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 1.3rem;
+  font-weight: 700;
   color: #ffffff;
   margin: 0;
+  position: relative;
+  padding-bottom: 1rem;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 3rem;
+    height: 2px;
+    background: linear-gradient(90deg, #ffc400, transparent);
+    border-radius: 2px;
+  }
 `;
 
 const LinkList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 1rem;
 `;
 
 const LinkItem = styled(Link)`
-  color: #999;
+  color: rgba(255, 255, 255, 0.7);
   text-decoration: none;
-  font-size: 0.95rem;
-  transition: color 0.2s ease;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  padding: 0.5rem 0;
+  position: relative;
+  font-weight: 400;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: -1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 2px;
+    background: #ffc400;
+    transition: width 0.3s ease;
+    border-radius: 2px;
+  }
 
   &:hover {
-    color: #ffffff;
+    color: #ffc400;
+    padding-left: 1rem;
+    
+    &::before {
+      width: 0.5rem;
+    }
   }
 `;
 
 const SocialLinks = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 1rem;
 `;
 
 const SocialLink = styled.a`
   display: flex;
   align-items: center;
-  gap: 10px;
-  color: #999;
+  gap: 1.2rem;
+  color: rgba(255, 255, 255, 0.7);
   text-decoration: none;
-  font-size: 0.95rem;
-  transition: color 0.2s ease;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  font-weight: 400;
 
   &:hover {
     color: #ffffff;
+    background: rgba(255, 196, 0, 0.1);
+    border-color: rgba(255, 196, 0, 0.3);
+    transform: translateX(4px);
+  }
+
+  span {
+    flex: 1;
   }
 `;
 
 const SocialIcon = styled.span`
-  font-size: 1.2rem;
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+
+  ${SocialLink}:hover & {
+    background: rgba(255, 196, 0, 0.2);
+    transform: scale(1.1);
+  }
 `;
 
 const FooterBottom = styled.div`
-  padding: 30px 0;
+  padding: 3rem 0;
+  position: relative;
 `;
 
 const BottomContent = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 20px;
+  gap: 2rem;
+  flex-wrap: wrap;
 
   @media (max-width: 768px) {
     flex-direction: column;
     text-align: center;
-    gap: 15px;
+    gap: 2rem;
   }
 `;
 
 const Copyright = styled.span`
-  color: #666;
-  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.95rem;
+  font-weight: 400;
 `;
 
 const LegalLinks = styled.div`
   display: flex;
-  gap: 25px;
+  gap: 2rem;
+  align-items: center;
+  flex-wrap: wrap;
 
   @media (max-width: 480px) {
     flex-direction: column;
-    gap: 10px;
+    gap: 1rem;
   }
 `;
 
 const LegalLink = styled(Link)`
-  color: #666;
+  color: rgba(255, 255, 255, 0.6);
   text-decoration: none;
-  font-size: 0.9rem;
-  transition: color 0.2s ease;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  font-weight: 400;
+  position: relative;
+  padding: 0.5rem 0;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background: #ffc400;
+    transition: width 0.3s ease;
+  }
 
   &:hover {
-    color: #ffffff;
+    color: #ffc400;
+    
+    &::after {
+      width: 100%;
+    }
   }
 `;
 
-const PaymentMethods = styled.div`
+const PaymentMethodsSection = styled.div`
+  padding: 2rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
+
+  @media (max-width: 768px) {
+    padding: 1.5rem 0;
+  }
+`;
+
+const PaymentSectionTitle = styled.h4`
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 1.2rem 0;
+  text-align: center;
+  letter-spacing: 0.5px;
+
+  @media (max-width: 768px) {
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+  }
+`;
+
+const PaymentMethodsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.2rem;
+  align-items: center;
+  justify-items: center;
+  max-width: 800px;
+  margin: 0 auto;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    max-width: 100%;
+  }
+
+  @media (min-width: 769px) and (max-width: 968px) {
+    gap: 1rem;
+  }
+`;
+
+const PaymentMethod = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1rem 0.8rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.3s ease;
+  min-width: 140px;
+  max-width: 180px;
+  width: 100%;
+
+  &:hover {
+    background: rgba(255, 196, 0, 0.08);
+    border-color: rgba(255, 196, 0, 0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 196, 0, 0.15);
+  }
+
+  @media (max-width: 768px) {
+    min-width: 100%;
+    max-width: 100%;
+    padding: 0.9rem;
+  }
+`;
+
+const PaymentMethodIcon = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  width: 3.2rem;
+  height: 3.2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.8);
+  transition: all 0.3s ease;
+
+  svg {
+    font-size: 1.5rem;
+  }
+
+  ${PaymentMethod}:hover & {
+    background: rgba(255, 196, 0, 0.15);
+    color: #ffc400;
+    transform: scale(1.1);
+  }
+
+  @media (max-width: 768px) {
+    width: 3rem;
+    height: 3rem;
+    
+    svg {
+      font-size: 1.4rem;
+    }
+  }
 `;
 
-const PaymentText = styled.span`
-  color: #666;
+const PaymentMethodLabel = styled.span`
+  color: rgba(255, 255, 255, 0.75);
   font-size: 0.9rem;
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.4;
+  transition: color 0.3s ease;
+
+  ${PaymentMethod}:hover & {
+    color: rgba(255, 255, 255, 0.95);
+  }
+
+  @media (max-width: 768px) {
+    font-size: 0.85rem;
+  }
 `;
 
-const PaymentIcons = styled.div`
-  display: flex;
-  gap: 5px;
+const SecuritySection = styled.div`
+  padding: 2rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
+
+  @media (max-width: 768px) {
+    padding: 1.5rem 0;
+  }
 `;
 
-const PaymentIcon = styled.span`
-  font-size: 1.2rem;
-  opacity: 0.7;
+const SecuritySectionTitle = styled.h4`
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 1.2rem 0;
+  text-align: center;
+  letter-spacing: 0.5px;
+
+  @media (max-width: 768px) {
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+  }
+`;
+
+const SecurityBadgesGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.2rem;
+  align-items: center;
+  justify-items: center;
+  max-width: 1000px;
+  margin: 0 auto;
+
+  @media (max-width: 968px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    max-width: 100%;
+  }
 `;

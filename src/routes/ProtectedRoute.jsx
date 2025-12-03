@@ -50,6 +50,21 @@ const ProtectedRoutes = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
 
+  // ✅ CRITICAL: Check if account is verified before allowing access
+  if (!user.emailVerified && !user.phoneVerified) {
+    return (
+      <Navigate
+        to="/verify-account"
+        state={{
+          email: user.email,
+          phone: user.phone,
+          message: "Please verify your account to access this page",
+        }}
+        replace
+      />
+    );
+  }
+
   if (user.status !== "active") {
     return handleStatusRedirect(user.status);
   }

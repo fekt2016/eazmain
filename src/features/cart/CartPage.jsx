@@ -12,13 +12,23 @@ import useAuth from '../../shared/hooks/useAuth';
 import { PrimaryButton, DangerButton, GhostButton, SuccessButton } from '../../shared/components/ui/Buttons';
 import { LoadingState, EmptyState, ErrorState, ButtonSpinner } from '../../components/loading';
 import { spin } from '../../shared/styles/animations';
-import usePageTitle from '../../shared/hooks/usePageTitle';
+import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 import seoConfig from '../../shared/config/seoConfig';
 // import { useMemo } from "react";
 
 const CartPage = () => {
   // SEO - Set page title and meta tags
-  usePageTitle(seoConfig.cart);
+  useDynamicPageTitle({
+    title: seoConfig.cart.title,
+    description: seoConfig.cart.description,
+    keywords: seoConfig.cart.keywords,
+    image: seoConfig.cart.image,
+    type: seoConfig.cart.type,
+    canonical: seoConfig.cart.canonical,
+    jsonLd: seoConfig.cart.jsonLd,
+    defaultTitle: seoConfig.cart.title,
+    defaultDescription: seoConfig.cart.description,
+  });
   const { data, isLoading: isCartLoading, isError } = useGetCart();
   console.log("cart data", data);
   const { total: subTotal } = useCartTotals();

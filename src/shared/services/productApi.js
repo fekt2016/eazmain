@@ -1,4 +1,5 @@
 import api from './api';
+import logger from '../utils/logger';
 
 export const productService = {
   getProductById: async (id) => {
@@ -8,7 +9,7 @@ export const productService = {
 
       return response;
     } catch (err) {
-      console.error("Error fetching product by ID:", err);
+      logger.error("Error fetching product by ID:", err);
       throw err; // Re-throw to allow calling code to handle
     }
   },
@@ -42,7 +43,7 @@ export const productService = {
 
       return response.data;
     } catch (err) {
-      console.error("Product creation error:", {
+      logger.error("Product creation error:", {
         message: err.message,
         status: err.response?.status,
         data: err.response?.data,
@@ -69,7 +70,7 @@ export const productService = {
       // Axios response data is in response.data
       return response.data;
     } catch (err) {
-      console.error("Error updating product:", err);
+      logger.error("Error updating product:", err);
       throw err; // Re-throw for error boundary handling
     }
   },
@@ -91,7 +92,7 @@ export const productService = {
         return { success: true };
       }
     } catch (err) {
-      console.error("Error deleting product:", err);
+      logger.error("Error deleting product:", err);
       throw err;
     }
   },
@@ -105,7 +106,7 @@ export const productService = {
         throw new Error(`HTTP error! status: ${response.status}`);
       return await response.json();
     } catch (err) {
-      console.error("Error searching products:", err);
+      logger.error("Error searching products:", err);
       throw err;
     }
   },

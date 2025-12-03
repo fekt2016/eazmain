@@ -8,11 +8,16 @@ import ProductCard from "../../shared/components/ProductCard";
 import Container from "../../shared/components/Container";
 import { SkeletonGrid, SkeletonCard, EmptyState } from "../../components/loading";
 import { devicesMax } from "../../shared/styles/breakpoint";
-import usePageTitle from "../../shared/hooks/usePageTitle";
+import useDynamicPageTitle from "../../shared/hooks/useDynamicPageTitle";
 import { fadeInUp } from "../../shared/styles/animations";
 
 const ProductsPage = () => {
-  usePageTitle("All Products - EazShop");
+  useDynamicPageTitle({
+    title: "All Products - EazShop",
+    description: "Browse all products on EazShop",
+    defaultTitle: "All Products - EazShop",
+    defaultDescription: "Browse all products on EazShop",
+  });
   const location = useLocation();
   const [showFilters, setShowFilters] = useState(false);
   const [sortOption, setSortOption] = useState("newest");
@@ -399,15 +404,24 @@ const EazShopSubtitle = styled.p`
 
 const EazShopGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(4, 1fr); /* 4 cards per row */
+  gap: 1.5rem;
   position: relative;
   z-index: 1;
   margin-bottom: 2rem;
 
-  @media ${devicesMax.sm} {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(3, 1fr); /* 3 cards on medium screens */
+  }
+  
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(2, 1fr); /* 2 cards on tablets */
     gap: 1rem;
+  }
+
+  @media ${devicesMax.sm} {
+    grid-template-columns: repeat(2, 1fr); /* 2 cards on mobile */
+    gap: 0.75rem;
   }
 `;
 

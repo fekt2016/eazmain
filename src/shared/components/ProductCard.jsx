@@ -16,6 +16,7 @@ import {
   hasProductPriceRange,
   getProductTotalStock,
 } from '../utils/productHelpers';
+import { highlightSearchTerm } from '../utils/searchUtils.jsx';
 
 export default function ProductCard({
   product,
@@ -25,6 +26,7 @@ export default function ProductCard({
   layout = "vertical", // 'vertical' or 'horizontal'
   showQuickView = false,
   showBadges = true,
+  highlightTerm = null, // Search term to highlight in product name
 }) {
   // Early return if product is not available
   if (!product) {
@@ -109,6 +111,13 @@ export default function ProductCard({
             src={product.imageCover} 
             alt={product.name}
             $layout={layout}
+            onError={(e) => {
+              // Prevent infinite loop and use local fallback
+              if (e.target.dataset.fallbackAttempted !== 'true') {
+                e.target.dataset.fallbackAttempted = 'true';
+                e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600"%3E%3Crect width="600" height="600" fill="%23f0f0f0"/%3E%3Ctext x="50%25" y="50%25" font-family="Arial" font-size="24" fill="%23999" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E';
+              }
+            }}
           />
           
           {/* Overlay Actions */}
@@ -210,7 +219,20 @@ export default function ProductCard({
           )}
           
           <ProductName title={product.name || ""}>
-            {product.name && product.name.length > 25 ? `${product.name.slice(0, 25)}...` : (product.name || "Product Name")}
+            {highlightTerm && product.name ? (
+              <>
+                {highlightSearchTerm(
+                  product.name.length > 25 
+                    ? `${product.name.slice(0, 25)}...` 
+                    : product.name,
+                  highlightTerm
+                )}
+              </>
+            ) : (
+              product.name && product.name.length > 25 
+                ? `${product.name.slice(0, 25)}...` 
+                : (product.name || "Product Name")
+            )}
           </ProductName>
           
           {/* Short Description */}
@@ -304,9 +326,9 @@ export default function ProductCard({
 const CardContainer = styled.div`
   position: relative;
   background: white;
-  border-radius: 1.6rem;
+  border-radius: 1.2rem; /* Reduced from 1.6rem */
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06); /* Reduced shadow */
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid var(--color-grey-100);
   display: flex;
@@ -315,8 +337,8 @@ const CardContainer = styled.div`
   animation: ${fadeIn} 0.5s ease-out;
 
   &:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+    transform: translateY(-4px); /* Reduced from -8px */
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1); /* Reduced shadow */
     
     .image-overlay {
       opacity: 1;
@@ -338,14 +360,14 @@ const ProductLink = styled(Link)`
 
 const ImageContainer = styled.div`
   position: relative;
-  height: ${({ $layout }) => ($layout === "horizontal" ? "100%" : "220px")};
+  height: ${({ $layout }) => ($layout === "horizontal" ? "100%" : "180px")}; /* Reduced from 220px */
   width: ${({ $layout }) => ($layout === "horizontal" ? "140px" : "100%")};
   background: linear-gradient(135deg, var(--color-grey-50) 0%, var(--color-grey-100) 100%);
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: ${({ $layout }) => ($layout === "horizontal" ? "1.5rem" : "2rem")};
+  padding: ${({ $layout }) => ($layout === "horizontal" ? "1.5rem" : "1.2rem")}; /* Reduced from 2rem */
 
   ${({ $layout }) => $layout === "horizontal" && css`
     flex-shrink: 0;
@@ -386,16 +408,16 @@ const ImageOverlay = styled.div`
 // Wishlist button positioned in top-right corner of image
 const WishlistIconButton = styled.div`
   position: absolute;
-  top: 1rem;
-  right: 1rem;
+  top: 0.8rem; /* Reduced from 1rem */
+  right: 0.8rem; /* Reduced from 1rem */
   z-index: 10;
   border-radius: 50% !important;
-  width: 3.6rem !important;
-  height: 3.6rem !important;
+  width: 3rem !important; /* Reduced from 3.6rem */
+  height: 3rem !important; /* Reduced from 3.6rem */
   padding: 0 !important;
   background-color: rgba(255, 255, 255, 0.95) !important;
   backdrop-filter: blur(4px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12); /* Reduced shadow */
   transition: var(--transition-base);
   
   ${({ $active }) => $active && `
@@ -432,18 +454,18 @@ const QuickViewButton = styled.button`
 
 const BadgeContainer = styled.div`
   position: absolute;
-  top: 1rem;
-  left: 1rem;
+  top: 0.8rem; /* Reduced from 1rem */
+  left: 0.8rem; /* Reduced from 1rem */
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.4rem; /* Reduced from 0.5rem */
   align-items: flex-start;
 `;
 
 const Badge = styled.span`
-  padding: 0.4rem 0.8rem;
-  border-radius: 0.6rem;
-  font-size: 1rem;
+  padding: 0.3rem 0.6rem; /* Reduced from 0.4rem 0.8rem */
+  border-radius: 0.5rem; /* Reduced from 0.6rem */
+  font-size: 0.85rem; /* Reduced from 1rem */
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -523,40 +545,40 @@ const EazShopBadge = styled(Badge)`
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   font-weight: 700;
-  font-size: 0.85rem;
-  box-shadow: 0 2px 12px rgba(102, 126, 234, 0.4);
+  font-size: 0.75rem; /* Reduced from 0.85rem */
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3); /* Reduced shadow */
   border: 1px solid rgba(255, 255, 255, 0.3);
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.3rem; /* Reduced from 0.4rem */
   z-index: 5;
   position: relative;
   animation: ${pulse} 3s infinite;
 `;
 
 const EazShopIcon = styled.span`
-  font-size: 1rem;
+  font-size: 0.9rem; /* Reduced from 1rem */
   font-weight: 800;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.6rem;
-  height: 1.6rem;
+  width: 1.4rem; /* Reduced from 1.6rem */
+  height: 1.4rem; /* Reduced from 1.6rem */
   background: rgba(255, 255, 255, 0.2);
   border-radius: 50%;
   backdrop-filter: blur(5px);
 `;
 
 const ProductInfo = styled.div`
-  padding: ${({ $layout }) => ($layout === "horizontal" ? "1.2rem" : "1.2rem")};
+  padding: ${({ $layout }) => ($layout === "horizontal" ? "1.2rem" : "1rem")}; /* Reduced from 1.2rem */
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.4rem; /* Reduced from 0.5rem */
 `;
 
 const ProductCategory = styled.span`
-  font-size: 1.2rem;
+  font-size: 1rem; /* Reduced from 1.2rem */
   color: var(--color-grey-500);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -564,17 +586,17 @@ const ProductCategory = styled.span`
 `;
 
 const ProductBrand = styled.span`
-  font-size: 1.3rem;
+  font-size: 1.1rem; /* Reduced from 1.3rem */
   color: var(--color-primary-600);
   font-weight: 600;
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.1rem; /* Reduced from 0.2rem */
 `;
 
 const ProductShortDescription = styled.p`
-  font-size: 1.2rem;
+  font-size: 1rem; /* Reduced from 1.2rem */
   color: var(--color-grey-600);
   line-height: 1.4;
-  margin: 0.2rem 0;
+  margin: 0.1rem 0; /* Reduced from 0.2rem */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -582,7 +604,7 @@ const ProductShortDescription = styled.p`
 `;
 
 const ProductName = styled.h3`
-  font-size: 1.5rem;
+  font-size: 1.3rem; /* Reduced from 1.5rem */
   font-weight: 700;
   color: var(--color-grey-900);
   line-height: 1.3;
@@ -600,36 +622,36 @@ const ProductName = styled.h3`
 const RatingSection = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  margin-top: 0.2rem;
+  gap: 0.5rem; /* Reduced from 0.6rem */
+  margin-top: 0.1rem; /* Reduced from 0.2rem */
 `;
 
 const RatingCount = styled.span`
-  font-size: 1.2rem;
+  font-size: 1rem; /* Reduced from 1.2rem */
   color: var(--color-grey-500);
 `;
 
 const PriceSection = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.8rem;
+  gap: 0.6rem; /* Reduced from 0.8rem */
   margin-top: auto;
 `;
 
 const CurrentPrice = styled.span`
-  font-size: 1.8rem;
+  font-size: 1.5rem; /* Reduced from 1.8rem */
   font-weight: 800;
   color: var(--color-primary-500);
 `;
 
 const OriginalPrice = styled.span`
-  font-size: 1.4rem;
+  font-size: 1.2rem; /* Reduced from 1.4rem */
   color: var(--color-grey-500);
   text-decoration: line-through;
 `;
 
 const PriceRange = styled.span`
-  font-size: 1.8rem;
+  font-size: 1.5rem; /* Reduced from 1.8rem */
   font-weight: 800;
   color: var(--color-primary-500);
 `;
@@ -637,8 +659,8 @@ const PriceRange = styled.span`
 const StockStatus = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  font-size: 1.2rem;
+  gap: 0.5rem; /* Reduced from 0.6rem */
+  font-size: 1rem; /* Reduced from 1.2rem */
   font-weight: 500;
   color: ${({ $inStock }) => ($inStock ? "var(--color-green-600)" : "var(--color-red-600)")};
 `;
@@ -652,10 +674,10 @@ const StatusDot = styled.div`
 `;
 
 const ActionSection = styled.div`
-  padding: ${({ $layout }) => ($layout === "horizontal" ? "1.2rem" : "0 1.2rem 1.2rem")};
+  padding: ${({ $layout }) => ($layout === "horizontal" ? "1.2rem" : "0 1rem 1rem")}; /* Reduced from 1.2rem */
   display: flex;
   flex-direction: ${({ $layout }) => ($layout === "horizontal" ? "column" : "row")};
-  gap: 0.6rem;
+  gap: 0.5rem; /* Reduced from 0.6rem */
   align-items: center;
 
   ${({ $layout }) => $layout === "horizontal" && css`

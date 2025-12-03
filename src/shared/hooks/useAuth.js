@@ -23,12 +23,12 @@ const useAuth = () => {
       } catch (error) {
         // Only clear auth data after server confirms 401 (not on network errors)
         if (error.response?.status === 401) {
-          console.warn("[useAuth] Server confirmed 401 - clearing auth data");
+          logger.warn("[useAuth] Server confirmed 401 - clearing auth data");
           // Clear any stale auth data
           queryClient.setQueryData(["auth"], null);
         } else {
           // For network errors, don't clear auth - might be temporary
-          console.warn("[useAuth] Network error (not 401) - keeping auth state");
+          logger.warn("[useAuth] Network error (not 401) - keeping auth state");
         }
 
         return null;
@@ -67,7 +67,7 @@ const useAuth = () => {
         const response = await authApi.getProfile();
         return response?.data?.data;
       } catch (error) {
-        console.error("Error fetching profile:", error);
+        logger.error("Error fetching profile:", error);
         throw error; // Propagate error to React Query
       }
     },
@@ -85,7 +85,7 @@ const useAuth = () => {
     if (user) {
       // Update React Query cache with user data
       queryClient.setQueryData(["auth"], user);
-      console.log("[useAuth] User authenticated - cookie set by backend");
+      logger.log("[useAuth] User authenticated - cookie set by backend");
     }
 
     return user;
@@ -118,7 +118,7 @@ const useAuth = () => {
         queryClient.refetchQueries({ queryKey: ["auth"] });
         queryClient.refetchQueries({ queryKey: ["profile"] });
         
-        console.log("[useAuth] OTP verified - cookie set by backend, queries invalidated");
+        logger.log("[useAuth] OTP verified - cookie set by backend, queries invalidated");
       }
 
       // Return redirectTo for navigation
@@ -128,27 +128,42 @@ const useAuth = () => {
 
   const register = useMutation({
     mutationFn: async (registerData) => {
-      console.log("registerData:", registerData);
+      logger.log("registerData:", registerData);
       const response = await authApi.register(registerData);
       return response;
     },
     onSuccess: handleAuthSuccess,
     onError: (error) => {
-      console.log(error);
+      logger.log(error);
     },
   });
   const emailVerification = useMutation({
     mutationFn: async (email) => {
-      console.log(email);
+      logger.log(email);
       const response = await authApi.emailVerification(email);
       return response;
     },
     onSuccess: (data) => {
-      console.log("Email verification sent:", data);
+      logger.log("Email verification sent:", data);
       // Optionally, you can handle UI updates or state changes here
     },
+  });
+
+  // ✅ New: Verify account with OTP (for signup verification)
+  const verifyAccount = useMutation({
+    mutationFn: ({ email, phone, otp }) => authApi.verifyAccount(email, phone, otp),
+    onSuccess: () => {
+      // Invalidate auth query to refetch user data
+      queryClient.invalidateQueries({ queryKey: ["auth"] });
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+    },
+  });
+
+  // ✅ New: Resend OTP
+  const resendOtp = useMutation({
+    mutationFn: ({ email, phone }) => authApi.resendOtp(email, phone),
     onError: (error) => {
-      console.log("Error sending email verification:", error);
+      logger.log("Error sending email verification:", error);
       // Optionally, you can handle UI updates or state changes here
     },
   });
@@ -156,11 +171,11 @@ const useAuth = () => {
     mutationFn: async ({ email }) =>
       await authApi.resendVerification({ email }),
     onSuccess: (data) => {
-      console.log("Email verification sent:", data);
+      logger.log("Email verification sent:", data);
       // Optionally, you can handle UI updates or state changes here
     },
     onError: (error) => {
-      console.error("Error sending email verification:", error);
+      logger.error("Error sending email verification:", error);
       // Optionally, you can handle UI updates or state changes here
     },
   });
@@ -177,7 +192,7 @@ const useAuth = () => {
       queryClient.setQueryData(["cart", false], { products: [] });
       localStorage.removeItem("guestCart");
 
-      console.log("[useAuth] Logged out - cookie cleared by backend");
+      logger.log("[useAuth] Logged out - cookie cleared by backend");
       navigate("/");
     },
   });
@@ -186,7 +201,7 @@ const useAuth = () => {
   const updateProfile = useMutation({
     mutationFn: (profileData) => authApi.updateProfile(profileData),
     onSuccess: (data) => {
-      console.log("Profile updated:", data);
+      logger.log("Profile updated:", data);
     },
   });
 
@@ -196,12 +211,12 @@ const useAuth = () => {
         const response = await authApi.changePassword(passwords);
         return response;
       } catch (error) {
-        console.error("Error changing password:", error);
+        logger.error("Error changing password:", error);
         throw error; // Propagate error to React Query
       }
     },
     onSuccess: () => {
-      console.log("Password changed successfully");
+      logger.log("Password changed successfully");
     },
   });
 
@@ -211,7 +226,7 @@ const useAuth = () => {
         const response = await authApi.deactivateAccount();
         return response;
       } catch (error) {
-        console.error("Error deactivating account:", error);
+        logger.error("Error deactivating account:", error);
         throw error; // Propagate error to React Query
       }
     },
@@ -219,7 +234,7 @@ const useAuth = () => {
       queryClient.removeQueries(["auth"]);
       queryClient.removeQueries(["profile"]);
       // No need to remove token from localStorage - we're using cookies now
-      console.log("[useAuth] Account deactivated - cookie cleared by backend");
+      logger.log("[useAuth] Account deactivated - cookie cleared by backend");
       navigate("/");
     },
   });
@@ -346,7 +361,69 @@ const useAuth = () => {
       return response;
     },
     onSuccess: (data) => {
-      console.log("photo successfully uploaded", data);
+      logger.log("photo successfully uploaded", data);
+      
+      // Extract updated user from response (backend returns: { status: 'success', data: { user: {...} } })
+      const updatedUser = data?.data?.data?.user || data?.data?.user || data?.user;
+      const photo = updatedUser?.photo;
+      
+      if (photo) {
+        // Update auth cache immediately - handle different response structures
+        queryClient.setQueryData(["auth"], (oldData) => {
+          if (!oldData) {
+            // If no old data, return the updated user in the expected format
+            return updatedUser;
+          }
+          
+          // Handle nested structures from getCurrentUser response
+          // getCurrentUser returns: { status: 'success', data: {...user} }
+          if (oldData?.data?.data) {
+            // Structure: { data: { data: user } }
+            return {
+              ...oldData,
+              data: {
+                ...oldData.data,
+                data: {
+                  ...oldData.data.data,
+                  photo: photo,
+                },
+              },
+            };
+          }
+          if (oldData?.data) {
+            // Structure: { data: user }
+            return {
+              ...oldData,
+              data: {
+                ...oldData.data,
+                photo: photo,
+              },
+            };
+          }
+          // Structure: user object directly
+          return {
+            ...oldData,
+            photo: photo,
+          };
+        });
+        
+        // Update profile cache immediately
+        queryClient.setQueryData(["profile"], (oldData) => {
+          if (!oldData) return null;
+          
+          return {
+            ...oldData,
+            userInfo: {
+              ...oldData.userInfo,
+              photo: photo,
+            },
+          };
+        });
+        
+        // Invalidate queries to trigger refetch in background (for consistency)
+        queryClient.invalidateQueries({ queryKey: ["auth"] });
+        queryClient.invalidateQueries({ queryKey: ["profile"] });
+      }
     },
   });
   const sendPasswordResetOtp = useMutation({
@@ -355,11 +432,11 @@ const useAuth = () => {
       return response;
     },
     onSuccess: (data) => {
-      console.log("Password reset OTP sent:", data);
+      logger.log("Password reset OTP sent:", data);
       // You can handle UI updates or state changes here
     },
     onError: (error) => {
-      console.error("Error sending password reset OTP:", error);
+      logger.error("Error sending password reset OTP:", error);
       // Handle error UI updates
     },
   });
@@ -369,14 +446,14 @@ const useAuth = () => {
       return response;
     },
     onSuccess: (data) => {
-      console.log("Password reset OTP verified:", data);
+      logger.log("Password reset OTP verified:", data);
       // Store reset token if provided by the API
       if (data.data?.resetToken) {
         localStorage.setItem("resetToken", data.data.resetToken);
       }
     },
     onError: (error) => {
-      console.error("Error verifying password reset OTP:", error);
+      logger.error("Error verifying password reset OTP:", error);
     },
   });
   const resetPassword = useMutation({
@@ -389,7 +466,7 @@ const useAuth = () => {
       return response;
     },
     onSuccess: (data) => {
-      console.log("Password reset successful:", data);
+      logger.log("Password reset successful:", data);
       // Clear reset token from storage
       localStorage.removeItem("resetToken");
       // Navigate to login page with success message
@@ -401,7 +478,7 @@ const useAuth = () => {
       });
     },
     onError: (error) => {
-      console.error("Error resetting password:", error);
+      logger.error("Error resetting password:", error);
     },
   });
 
@@ -424,6 +501,8 @@ const useAuth = () => {
     register,
     emailVerification,
     resendVerification,
+    verifyAccount, // ✅ New: Verify account with OTP
+    resendOtp, // ✅ New: Resend OTP
     logout,
     refetchAuth,
     // refetchProfile,

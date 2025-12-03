@@ -16,7 +16,7 @@ import {
 } from "react-icons/fa";
 import { orderService } from "../../shared/services/orderApi";
 import { LoadingState, ErrorState } from "../../components/loading";
-import usePageTitle from "../../shared/hooks/usePageTitle";
+import useDynamicPageTitle from "../../shared/hooks/useDynamicPageTitle";
 
 const TrackingPage = () => {
   const { trackingNumber } = useParams();
@@ -25,7 +25,12 @@ const TrackingPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  usePageTitle(`Track Order ${trackingNumber} - EazShop`);
+  useDynamicPageTitle({
+    title: "Track Order",
+    dynamicTitle: trackingNumber && `Track Order ${trackingNumber} | EazShop`,
+    description: "Track your order status and delivery",
+    defaultTitle: "Track Order | EazShop",
+  });
 
   useEffect(() => {
     const fetchTrackingData = async () => {
@@ -38,11 +43,11 @@ const TrackingPage = () => {
         
         const response = await orderService.getOrderByTrackingNumber(trackingNumber);
         const order = response.data?.order;
-        console.log('Tracking Page - Order Data:', order);
-        console.log('Tracking Page - Shipping Address:', order?.shippingAddress);
+        logger.log('Tracking Page - Order Data:', order);
+        logger.log('Tracking Page - Shipping Address:', order?.shippingAddress);
         setOrderData(order);
       } catch (err) {
-        console.error('Tracking Page Error:', err);
+        logger.error('Tracking Page Error:', err);
         
         // Better error handling for connection issues
         if (err.code === 'ERR_NETWORK' || err.message?.includes('Network Error') || err.message?.includes('CONNECTION_REFUSED')) {

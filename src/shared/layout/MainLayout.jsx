@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { styled } from "styled-components";
 import Header from "./Header";
+import Footer from "./Footer";
 
 
 const Container = styled.div`
@@ -77,7 +78,7 @@ export default function MainLayout() {
       <Main>
           <Outlet />
       </Main>
-      {/* {!isDashboardRoute && <Footer />} */}
+      {!isDashboardRoute && <Footer />}
     </Container>
   );
 }

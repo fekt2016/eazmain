@@ -7,10 +7,15 @@ import Container from '../../shared/components/Container';
 import { devicesMax } from '../../shared/styles/breakpoint';
 import { PATHS } from "../../routes/routePaths";
 import { LoadingState } from '../../components/loading';
-import usePageTitle from '../../shared/hooks/usePageTitle';
+import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 
 export default function CategoriesListPage() {
-  usePageTitle('Categories - EazShop');
+  useDynamicPageTitle({
+    title: 'Categories - EazShop',
+    description: 'Browse products by category on EazShop',
+    defaultTitle: 'Categories - EazShop',
+    defaultDescription: 'Browse products by category on EazShop',
+  });
   const { getCategories } = useCategory();
   const { data: categoriesData, isLoading, isError } = getCategories;
 

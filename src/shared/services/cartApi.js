@@ -1,5 +1,6 @@
 // sr./apiService/cartApi.js
-import api from './api'; // Your base API instance
+import api from './api';
+import logger from '../utils/logger'; // Your base API instance
 
 const cartApi = {
   getCart: async () => {
@@ -20,11 +21,11 @@ const cartApi = {
         quantity,
         variantId: variantIdValue || undefined, // Only include if it exists
       });
-      console.log("Add to cart API response:", response.data);
+      logger.log("Add to cart API response:", response.data);
       return response; // Return full response
     } catch (error) {
-      console.error("Error adding to cart:", error);
-      console.error("Error details:", {
+      logger.error("Error adding to cart:", error);
+      logger.error("Error details:", {
         message: error.message,
         response: error.response?.data,
         status: error.response?.status,
@@ -34,12 +35,12 @@ const cartApi = {
   },
   updateCartItem: async (itemId, quantity) => {
     const response = await api.patch(`/cart/items/${itemId}`, { quantity });
-    console.log("Updated cart item:", response);
+    logger.log("Updated cart item:", response);
     return response;
   },
 
   removeCartItem: async (itemId) => {
-    console.log("api Removing item:", itemId);
+    logger.log("api Removing item:", itemId);
     await api.delete(`/cart/items/${itemId}`);
     return itemId;
   },

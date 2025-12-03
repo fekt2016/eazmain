@@ -1,45 +1,107 @@
 import { useMemo, useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import styled, { css } from "styled-components";
-import { FaFilter, FaChevronDown, FaChevronUp, FaTimes, FaSortAmountDown, FaSearch } from "react-icons/fa";
+import { FaFilter, FaChevronDown, FaChevronUp, FaTimes, FaSortAmountDown, FaSearch, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { useSearchResults } from '../../shared/hooks/useSearch';
 import ProductCard from '../../shared/components/ProductCard';
 import { LoadingState, SkeletonGrid } from '../../components/loading';
 import { spin, fadeIn } from '../../shared/styles/animations';
 import Container from '../../shared/components/Container';
 import { devicesMax } from '../../shared/styles/breakpoint';
-import usePageTitle from '../../shared/hooks/usePageTitle';
+import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
+import { parseSearchParams, buildSearchUrl, highlightSearchTerm } from '../../shared/utils/searchUtils.jsx';
 
 export default function SearchResultsPage() {
-  const useQueryParams = () => {
-    const { search } = useLocation();
-    const queryParams = new URLSearchParams(search);
-    const paramsObject = {};
-    for (const [key, value] of queryParams.entries()) {
-      paramsObject[key] = value;
-    }
-    return paramsObject;
-  };
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Parse URL params using utility
+  const urlParams = useMemo(() => {
+    const searchParams = new URLSearchParams(location.search);
+    return parseSearchParams(searchParams);
+  }, [location.search]);
 
-  const queryParams = useQueryParams();
-  const [sortBy, setSortBy] = useState("relevance");
+  // Initialize state from URL params
+  const [sortBy, setSortBy] = useState(urlParams.sortBy || "relevance");
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
-    category: [],
-    priceRange: { min: 0, max: 5000 },
-    rating: null,
-    inStock: false,
-    onSale: false,
+    category: urlParams.category ? [urlParams.category] : [],
+    priceRange: {
+      min: urlParams.minPrice ? parseFloat(urlParams.minPrice) : 0,
+      max: urlParams.maxPrice ? parseFloat(urlParams.maxPrice) : 5000,
+    },
+    rating: urlParams.rating ? parseFloat(urlParams.rating) : null,
+    inStock: urlParams.inStock || false,
+    onSale: urlParams.onSale || false,
   });
+
+  // Build query params for API
+  const queryParams = useMemo(() => {
+    const params = {
+      ...urlParams,
+      sortBy,
+      minPrice: filters.priceRange.min > 0 ? filters.priceRange.min : undefined,
+      maxPrice: filters.priceRange.max < 5000 ? filters.priceRange.max : undefined,
+      rating: filters.rating || undefined,
+      inStock: filters.inStock || undefined,
+      onSale: filters.onSale || undefined,
+    };
+    // Remove undefined values
+    Object.keys(params).forEach((key) => {
+      if (params[key] === undefined || params[key] === '') {
+        delete params[key];
+      }
+    });
+    return params;
+  }, [urlParams, sortBy, filters]);
+
+  // Sync URL when filters change (with debounce to prevent infinite loops)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      const newUrl = buildSearchUrl({
+        q: urlParams.q,
+        type: urlParams.type,
+        category: filters.category[0] || urlParams.category,
+        brand: urlParams.brand,
+        minPrice: filters.priceRange.min > 0 ? filters.priceRange.min : undefined,
+        maxPrice: filters.priceRange.max < 5000 ? filters.priceRange.max : undefined,
+        rating: filters.rating || undefined,
+        inStock: filters.inStock || undefined,
+        onSale: filters.onSale || undefined,
+        sortBy: sortBy !== 'relevance' ? sortBy : undefined,
+        page: urlParams.page > 1 ? urlParams.page : undefined,
+      });
+
+      const currentUrl = location.search.substring(1);
+      if (newUrl !== currentUrl) {
+        navigate(`/search?${newUrl}`, { replace: true });
+      }
+    }, 300); // Debounce URL updates
+
+    return () => clearTimeout(timeoutId);
+  }, [filters, sortBy]); // Only depend on filters and sortBy, not urlParams to avoid loops
 
   const { data: productData, isLoading } = useSearchResults(queryParams);
 
-  const products = useMemo(() => {
-    return productData?.data?.data || [];
+  // Extract products and pagination info
+  const { products, totalProducts, currentPage, totalPages } = useMemo(() => {
+    const data = productData?.data || productData || {};
+    return {
+      products: data.data || [],
+      totalProducts: data.totalProducts || data.results || 0,
+      currentPage: data.currentPage || 1,
+      totalPages: data.totalPages || 1,
+    };
   }, [productData]);
 
-  const searchQuery = queryParams.q || "";
-  usePageTitle(`Search: ${searchQuery} - EazShop`);
+  const searchQuery = urlParams.q || "";
+  
+  useDynamicPageTitle({
+    title: "Search",
+    dynamicTitle: searchQuery && `Search: ${searchQuery} | EazShop`,
+    description: searchQuery ? `Search results for "${searchQuery}"` : "Search products on EazShop",
+    defaultTitle: "Search | EazShop",
+  });
 
   const toggleFilters = () => setShowFilters(!showFilters);
 
@@ -61,6 +123,19 @@ export default function SearchResultsPage() {
     setFilters({ ...filters, priceRange: { min, max } });
   };
 
+  const handleSortChange = (newSortBy) => {
+    setSortBy(newSortBy);
+  };
+
+  const handlePageChange = (newPage) => {
+    const newUrl = buildSearchUrl({
+      ...urlParams,
+      page: newPage,
+    });
+    navigate(`/search?${newUrl}`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <PageContainer>
       <Container>
@@ -69,7 +144,15 @@ export default function SearchResultsPage() {
             <SearchTitle>
               Results for <span>"{searchQuery}"</span>
             </SearchTitle>
-            <ResultCount>{products.length} items found</ResultCount>
+            <ResultCount>
+              {totalProducts > 0 ? (
+                <>
+                  Showing {products.length} of {totalProducts} {totalProducts === 1 ? 'item' : 'items'}
+                </>
+              ) : (
+                'No items found'
+              )}
+            </ResultCount>
           </HeaderContent>
         </SearchHeader>
 
@@ -204,13 +287,13 @@ export default function SearchResultsPage() {
 
               <SortContainer>
                 <FaSortAmountDown />
-                <SortSelect value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                  <option value="relevance">Relevance</option>
-                  <option value="price-low">Price: Low to High</option>
-                  <option value="price-high">Price: High to Low</option>
-                  <option value="rating">Customer Rating</option>
-                  <option value="newest">Newest Arrivals</option>
-                </SortSelect>
+              <SortSelect value={sortBy} onChange={(e) => handleSortChange(e.target.value)}>
+                <option value="relevance">Relevance</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+                <option value="rating">Customer Rating</option>
+                <option value="newest">Newest Arrivals</option>
+              </SortSelect>
               </SortContainer>
             </ControlsHeader>
 
@@ -226,15 +309,76 @@ export default function SearchResultsPage() {
                   <FaSearch />
                 </EmptyIcon>
                 <h3>No Results Found</h3>
-                <p>We couldn't find any products matching "{searchQuery}".</p>
-                <p>Try checking your spelling or using different keywords.</p>
+                <p>
+                  We couldn't find any products matching{" "}
+                  <strong>"{searchQuery}"</strong>.
+                </p>
+                <EmptySuggestions>
+                  <p>Try:</p>
+                  <ul>
+                    <li>Checking your spelling</li>
+                    <li>Using different keywords</li>
+                    <li>Removing some filters</li>
+                    <li>Browsing by category instead</li>
+                  </ul>
+                </EmptySuggestions>
               </EmptyState>
             ) : (
-              <ProductsGrid>
-                {products.map((product) => (
-                  <ProductCard key={product._id} product={product} />
-                ))}
-              </ProductsGrid>
+              <>
+                <ProductsGrid>
+                  {products.map((product) => (
+                    <ProductCard
+                      key={product._id}
+                      product={product}
+                      highlightTerm={searchQuery}
+                    />
+                  ))}
+                </ProductsGrid>
+                
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <PaginationContainer>
+                    <PaginationButton
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      <FaChevronLeft /> Previous
+                    </PaginationButton>
+                    
+                    <PageNumbers>
+                      {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+                        
+                        return (
+                          <PageNumber
+                            key={pageNum}
+                            $active={pageNum === currentPage}
+                            onClick={() => handlePageChange(pageNum)}
+                          >
+                            {pageNum}
+                          </PageNumber>
+                        );
+                      })}
+                    </PageNumbers>
+                    
+                    <PaginationButton
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      Next <FaChevronRight />
+                    </PaginationButton>
+                  </PaginationContainer>
+                )}
+              </>
             )}
           </ProductsSection>
         </MainLayout>
@@ -672,4 +816,100 @@ const SkeletonLoader = styled.div`
   animation: ${css`
     ${fadeIn} 1.5s infinite ease-in-out
   `};
+`;
+
+const EmptySuggestions = styled.div`
+  margin-top: 2rem;
+  text-align: left;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+
+  p {
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--color-text-dark);
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    li {
+      padding: 0.5rem 0;
+      color: var(--color-text-light);
+      position: relative;
+      padding-left: 1.5rem;
+
+      &:before {
+        content: "•";
+        position: absolute;
+        left: 0;
+        color: var(--color-primary);
+        font-weight: bold;
+      }
+    }
+  }
+`;
+
+const PaginationContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding: 2rem 0;
+`;
+
+const PaginationButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--color-text-dark);
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+const PageNumbers = styled.div`
+  display: flex;
+  gap: 0.5rem;
+`;
+
+const PageNumber = styled.button`
+  width: 4rem;
+  height: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${(props) => (props.$active ? 'var(--color-primary)' : 'white')};
+  color: ${(props) => (props.$active ? 'white' : 'var(--color-text-dark)')};
+  border: 1px solid ${(props) => (props.$active ? 'var(--color-primary)' : 'var(--color-border)')};
+  border-radius: 8px;
+  font-size: 1.4rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: ${(props) => (props.$active ? 'var(--color-primary-hover)' : 'var(--color-bg-light)')};
+    border-color: var(--color-primary);
+  }
 `;

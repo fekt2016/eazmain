@@ -14,7 +14,7 @@ import {
 import { useMemo, useEffect, useRef } from "react";
 import { useCartActions } from "../../shared/hooks/useCart";
 import { useQueryClient } from "@tanstack/react-query";
-import usePageTitle from "../../shared/hooks/usePageTitle";
+import useDynamicPageTitle from "../../shared/hooks/useDynamicPageTitle";
 import seoConfig from "../../shared/config/seoConfig";
 import { useOrderConfirmation } from "../../shared/hooks/useOrderConfirmation";
 
@@ -103,7 +103,17 @@ const OrderConfirmationPage = () => {
   }, [order]);
 
   // SEO - Set page title
-  usePageTitle(seoConfig.orderSuccess);
+  useDynamicPageTitle({
+    title: seoConfig.orderSuccess.title,
+    description: seoConfig.orderSuccess.description,
+    keywords: seoConfig.orderSuccess.keywords,
+    image: seoConfig.orderSuccess.image,
+    type: seoConfig.orderSuccess.type,
+    canonical: seoConfig.orderSuccess.canonical,
+    jsonLd: seoConfig.orderSuccess.jsonLd,
+    defaultTitle: seoConfig.orderSuccess.title,
+    defaultDescription: seoConfig.orderSuccess.description,
+  });
 
   /**
    * Validate URL parameters for Paystack redirects
@@ -123,20 +133,38 @@ const OrderConfirmationPage = () => {
       };
     }
 
-    // Payment reference is required for Paystack verification
-    // But if payment method is COD, reference might not be present
+    // Payment reference validation:
+    // - COD orders don't require payment reference
+    // - Wallet/Credit balance orders don't require payment reference (payment is immediate)
+    // - Paystack/mobile_money orders require payment reference for verification
+    // - If order is still loading, be lenient (don't fail yet - might be COD or wallet)
     const isCOD = order?.paymentMethod === "payment_on_delivery" || 
-                  order?.paymentMethod === "Cash on Delivery";
+                  order?.paymentMethod === "Cash on Delivery" ||
+                  order?.paymentMethod === "cod";
     
-    if (!paymentReference && !isCOD) {
+    const isWalletPayment = order?.paymentMethod === "credit_balance" ||
+                           order?.paymentMethod === "wallet" ||
+                           order?.paymentMethod === "account_balance";
+    
+    // Only require payment reference for Paystack/mobile_money payments
+    // COD and wallet payments don't need external payment references
+    const orderIsLoaded = !!order && !!order.paymentMethod;
+    const isPaystackPayment = orderIsLoaded && !isCOD && !isWalletPayment;
+    const requiresPaymentReference = isPaystackPayment && !paymentReference;
+    
+    if (requiresPaymentReference) {
       return {
         isValid: false,
         error: "Invalid order confirmation link. Missing payment reference.",
       };
     }
 
+    // If order is still loading and no payment reference, that's okay
+    // (might be COD, wallet, or might be loaded later)
+    // We'll validate again once order is loaded
+
     return { isValid: true, error: null };
-  }, [orderIdFromUrl, paymentReference, orderFromState, order?.paymentMethod]);
+  }, [orderIdFromUrl, paymentReference, orderFromState, order?.paymentMethod, order]);
 
   /**
    * Determine if this is a Pay on Delivery order
@@ -150,7 +178,18 @@ const OrderConfirmationPage = () => {
   }, [order?.paymentMethod]);
 
   /**
-   * Safe cart clearing - only after successful verification or COD confirmation
+   * Determine if this is a wallet/credit balance payment
+   */
+  const isWalletPayment = useMemo(() => {
+    return (
+      order?.paymentMethod === "credit_balance" ||
+      order?.paymentMethod === "wallet" ||
+      order?.paymentMethod === "account_balance"
+    );
+  }, [order?.paymentMethod]);
+
+  /**
+   * Safe cart clearing - only after successful verification or COD/wallet confirmation
    */
   useEffect(() => {
     const orderId = order?.orderId || order?.orderNumber;
@@ -168,8 +207,9 @@ const OrderConfirmationPage = () => {
       }
     }
 
-    // For COD orders, clear immediately (no verification needed)
-    if (isCashOnDelivery) {
+    // For COD and wallet orders, clear immediately (no verification needed)
+    // Wallet payments are processed immediately on the backend
+    if (isCashOnDelivery || isWalletPayment) {
       cartClearedRef.current = true;
       if (typeof window !== "undefined") {
         window.sessionStorage.setItem(cartClearKey, "yes");
@@ -188,7 +228,7 @@ const OrderConfirmationPage = () => {
       clearCart();
       queryClient.invalidateQueries({ queryKey: ["cart"] });
     }
-  }, [order, isCashOnDelivery, verificationStatus, hasVerified, clearCart, queryClient]);
+  }, [order, isCashOnDelivery, isWalletPayment, verificationStatus, hasVerified, clearCart, queryClient]);
 
   // ========== RENDER STATES ==========
 
@@ -263,8 +303,8 @@ const OrderConfirmationPage = () => {
     );
   }
 
-  // Payment verification failed state
-  if (verificationStatus === "failed" && !isCashOnDelivery) {
+  // Payment verification failed state (only for Paystack payments)
+  if (verificationStatus === "failed" && !isCashOnDelivery && !isWalletPayment) {
     return (
       <LoadingContainer>
         <ErrorIcon>
@@ -542,8 +582,16 @@ const OrderConfirmationPage = () => {
                 </PaymentNotice>
               )}
 
-              {/* Show Paystack reference if available and not COD */}
-              {!isCashOnDelivery && paymentReference && (
+              {isWalletPayment && (
+                <PaymentNotice>
+                  <p>
+                    ✅ Payment completed using your account balance. Order #{order?.orderNumber || order?.orderId || "N/A"}
+                  </p>
+                </PaymentNotice>
+              )}
+
+              {/* Show Paystack reference if available and not COD/wallet */}
+              {!isCashOnDelivery && !isWalletPayment && paymentReference && (
                 <PaymentNotice>
                   <p>
                     <strong>Payment Reference:</strong> {paymentReference}

@@ -14,6 +14,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import wishlistApi from '../services/wishlistApi';
 import useAuth from '../../shared/hooks/useAuth';
 import { getSessionId, clearSessionId } from '../utils/guestWishlist';
+import logger from '../utils/logger';
 
 /**
  * Get wishlist query key helper
@@ -46,7 +47,7 @@ export const useWishlist = () => {
           return { data: { wishlist: { products: [] } } };
         }
       } catch (error) {
-        console.error("Error fetching wishlist:", error);
+        logger.error("Error fetching wishlist:", error);
         // Return empty wishlist on error to prevent UI breaking
         return { data: { wishlist: { products: [] } } };
       }

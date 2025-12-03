@@ -12,6 +12,7 @@ export const PATHS = {
   LOGIN: "/login",
   SIGNUP: "/signup",
   REGISTER: "/signup", // Alias for backward compatibility
+  VERIFY_ACCOUNT: "/verify-account", // ✅ New: Account verification page
   FORGOT_PASSWORD: "/forgot-password",
   FORGOT: "/forgot-password", // Alias for backward compatibility
   RESET_PASSWORD: "/reset-password/:token",
@@ -62,8 +63,13 @@ export const PATHS = {
   NOTIFICATIONS: "/notifications",
   NOTIFICATION: "/notifications", // Alias for backward compatibility
   SUPPORT: "/support",
+  SUPPORT_TICKETS: "/support/tickets",
+  SUPPORT_TICKET_DETAIL: "/support/tickets/:id",
   CREDIT: "/profile/credit",
   CREDIT_SHORT: "/credit-balance", // Short alias
+  WALLET: "/wallet",
+  WALLET_ADD_MONEY: "/wallet/add-money",
+  WALLET_TOPUP_SUCCESS: "/wallet/topup-success",
   FOLLOWED: "/profile/followed",
   FOLLOWED_SHORT: "/followed", // Short alias
   COUPON: "/profile/coupons",
@@ -80,6 +86,7 @@ export const PATHS = {
   HELP: "/help",
   BLOG: "/blog",
   BLOG_POST: "/blog/:slug",
+  PARTNER: "/partner",
   PARTNERS: "/partners", // Alias for backward compatibility
   SITEMAP: "/sitemap", // Alias for backward compatibility
   PRESS: "/press", // Alias for backward compatibility
@@ -89,6 +96,7 @@ export const PATHS = {
   TERMS: "/terms",
   REFUND_POLICY: "/refund-policy",
   SHIPPING_POLICY: "/shipping-policy",
+  PRODUCT_CARE: "/product-care",
   CAREERS: "/careers",
 
   // Special
@@ -267,6 +275,12 @@ export const ROUTE_CONFIG = {
     keywords: "shipping policy, delivery, EazShop",
   },
 
+  [PATHS.PRODUCT_CARE]: {
+    title: "Product Care Guide - EazShop",
+    description: "Learn how to properly care for your clothes, electronics, home items, beauty products and more",
+    keywords: "product care, care guide, maintenance tips, cleaning instructions, EazShop",
+  },
+
   [PATHS.CAREERS]: {
     title: "Careers - EazShop",
     description: "Join the EazShop team and build a career in e-commerce",
@@ -292,9 +306,9 @@ export const ROUTE_CONFIG = {
   },
 
   [PATHS.BEST_SELLERS]: {
-    title: "Best Sellers - EazShop",
-    description: "Top-selling products on EazShop",
-    keywords: "best sellers, popular, trending, EazShop",
+    title: "Best Sellers – EazShop",
+    description: "Discover the most popular and top-selling products on EazShop.",
+    keywords: "best sellers, top products, popular items, EazShop",
   },
 
   [PATHS.NOT_FOUND]: {

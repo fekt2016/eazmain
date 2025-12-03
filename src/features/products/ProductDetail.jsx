@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import styled, { css } from "styled-components";
 import { spin, pulse, float, fadeIn, slideUp } from "../../shared/styles/animations";
+import logger from "../../shared/utils/logger";
 import {
   FaShoppingCart,
   FaHeart,
@@ -27,6 +28,13 @@ import {
 import useProduct from '../../shared/hooks/useProduct.js';
 import { useGetProductReviews } from '../../shared/hooks/useReview.js';
 import SimilarProducts from '../../shared/components/SimilarProduct.jsx';
+import {
+  RelatedProductsCarousel,
+  AlsoBoughtCarousel,
+  AISimilarProducts,
+} from '../../shared/components/recommendations';
+import { useTrackActivity } from '../../shared/hooks/useRecommendations';
+import useAuth from '../../shared/hooks/useAuth';
 import StarRating from '../../shared/components/StarRating.jsx';
 import { useCartActions } from '../../shared/hooks/useCart.js';
 import useAnalytics from '../../shared/hooks/useAnalytics.js';
@@ -34,8 +42,7 @@ import { getOrCreateSessionId } from '../../shared/utils/sessionUtils.js';
 import { useAddHistoryItem } from '../../shared/hooks/useBrowserhistory.js';
 import { useToggleWishlist } from '../../shared/hooks/useWishlist.js';
 import { LoadingState, ErrorState, EmptyState, ButtonSpinner } from '../../components/loading';
-import usePageTitle from '../../shared/hooks/usePageTitle';
-import seoConfig from '../../shared/config/seoConfig';
+import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 import {
   isColorValue,
   getProductDisplayPrice,
@@ -68,9 +75,9 @@ const ProductDetailPage = () => {
   const { data: reviewsData, isLoading: reviewsLoading, error: reviewsError } = useGetProductReviews(id);
   
   // Debug logging
-  console.log("reviewsData", reviewsData);
-  console.log("reviewsLoading", reviewsLoading);
-  console.log("reviewsError", reviewsError);
+  logger.log("reviewsData", reviewsData);
+  logger.log("reviewsLoading", reviewsLoading);
+  logger.log("reviewsError", reviewsError);
 
   const product = useMemo(() => {
     if (!productData) return null;
@@ -86,7 +93,13 @@ const ProductDetailPage = () => {
   }, [productData]);
 
   // SEO - Update page title and meta tags based on product data
-  usePageTitle(product ? seoConfig.product(product) : seoConfig.home);
+  useDynamicPageTitle({
+    title: "Product Details",
+    dynamicTitle: product?.name && `Buy ${product.name} | EazShop`,
+    description: product?.shortDescription || product?.description || product?.summary,
+    defaultTitle: "EazShop",
+    defaultDescription: "Shop the best products on EazShop",
+  });
 
   // Wishlist hook - use product._id once product is loaded, fallback to id from params
   const productId = product?._id || id;
@@ -95,6 +108,8 @@ const ProductDetailPage = () => {
   const { addToCart } = useCartActions();
   const hasRecordedView = useRef(false);
   const hasRecordedHistory = useRef(false);
+  const { user } = useAuth();
+  const trackActivity = useTrackActivity();
 
   const { recordProductView } = useAnalytics();
 
@@ -122,8 +137,21 @@ const ProductDetailPage = () => {
       hasRecordedView.current = true;
       const sessionId = getOrCreateSessionId();
       recordProductView.mutate({ productId: id, sessionId });
+      
+      // Track activity for recommendations
+      if (productId) {
+        trackActivity.mutate({
+          productId,
+          action: 'view',
+          metadata: {
+            sessionId,
+            productName: product?.name,
+            category: product?.parentCategory?.name,
+          },
+        });
+      }
     }
-  }, [id, recordProductView]);
+  }, [id, productId, product, recordProductView, trackActivity]);
 
   const variants = useMemo(() => {
     return product?.variants || [];
@@ -222,7 +250,7 @@ const ProductDetailPage = () => {
     // API response: { success: true, data: { count, reviews, averageRating } }
     // Axios wraps it: response.data = { success: true, data: { count, reviews, averageRating } }
     if (reviewsData) {
-      console.log("Processing reviewsData structure:", {
+      logger.log("Processing reviewsData structure:", {
         hasData: !!reviewsData.data,
         dataKeys: reviewsData.data ? Object.keys(reviewsData.data) : [],
         hasDataData: !!reviewsData.data?.data,
@@ -231,21 +259,21 @@ const ProductDetailPage = () => {
       
       // Check if it's the wrapped response: reviewsData.data.data.reviews
       if (reviewsData.data?.data?.reviews && Array.isArray(reviewsData.data.data.reviews)) {
-        console.log("Found reviews in reviewsData.data.data.reviews:", reviewsData.data.data.reviews.length);
+        logger.log("Found reviews in reviewsData.data.data.reviews:", reviewsData.data.data.reviews.length);
         return reviewsData.data.data.reviews;
       }
       // Check if reviews are directly in data: reviewsData.data.reviews
       if (reviewsData.data?.reviews && Array.isArray(reviewsData.data.reviews)) {
-        console.log("Found reviews in reviewsData.data.reviews:", reviewsData.data.reviews.length);
+        logger.log("Found reviews in reviewsData.data.reviews:", reviewsData.data.reviews.length);
         return reviewsData.data.reviews;
       }
       // Check if reviews are at root level
       if (Array.isArray(reviewsData.reviews)) {
-        console.log("Found reviews in reviewsData.reviews:", reviewsData.reviews.length);
+        logger.log("Found reviews in reviewsData.reviews:", reviewsData.reviews.length);
         return reviewsData.reviews;
       }
     }
-    console.log("No reviews found in reviewsData, using product.reviews");
+    logger.log("No reviews found in reviewsData, using product.reviews");
     return product?.reviews || [];
   }, [reviewsData, product]);
 
@@ -838,6 +866,15 @@ const ProductDetailPage = () => {
             currentProductId={product.id}
           />
         </SimilarSection>
+      )}
+
+      {/* Recommendation Sections */}
+      {productId && (
+        <>
+          <RelatedProductsCarousel productId={productId} limit={10} />
+          <AlsoBoughtCarousel productId={productId} limit={10} />
+          <AISimilarProducts productId={productId} limit={10} />
+        </>
       )}
 
       {/* Image Modal */}

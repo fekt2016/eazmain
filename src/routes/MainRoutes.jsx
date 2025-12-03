@@ -1,18 +1,21 @@
 import { lazy, Suspense, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { PATHS } from "./routePaths";
-import ContactUs from '../features/profile/ContactUs';
+const ContactPage = lazy(() => import("../pages/contact/ContactPage"));
 import { PageSpinner, SpinnerContainer } from "../components/loading";
 // Import OrderConfirmationPage directly (not lazy) to ensure it loads immediately
 import OrderConfirmationPage from "../features/orders/OrderConfirmationPage";
 
 const SearchResult = lazy(() => import("../features/search/SearchResult"));
 const Partners = lazy(() => import("../features/Partners"));
-const Aboutus = lazy(() => import("../features/profile/Aboutus"));
+const Press = lazy(() => import("../features/Press"));
+const AboutPage = lazy(() => import("../pages/about/AboutPage"));
 const NotificationPage = lazy(() => import("../features/profile/NotificationPage"));
 const PermissionPage = lazy(() => import("../features/profile/PermissionPage"));
 const FollowPage = lazy(() => import("../features/profile/FollowPage"));
 const Creditbalance = lazy(() => import("../features/profile/Creditbalance"));
+const AddMoneyPage = lazy(() => import("../features/wallet/AddMoneyPage"));
+const TopupSuccessPage = lazy(() => import("../features/wallet/TopupSuccessPage"));
 const AddressPage = lazy(() => import("../features/profile/AddressPage"));
 const SignupPage = lazy(() => import("../features/auth/SignupPage"));
 const LoginPage = lazy(() => import("../features/auth/loginPage"));
@@ -29,6 +32,18 @@ const CheckoutPage = lazy(() => import("../features/orders/CheckoutPage"));
 
 const ProfilePage = lazy(() => import("../features/profile/profilePage"));
 const SupportPage = lazy(() => import("../features/SupportPage"));
+const CustomerSupportPage = lazy(() => import("../features/support/CustomerSupportPage"));
+const TicketsListPage = lazy(() => import("../features/support/TicketsListPage"));
+const TicketDetailPage = lazy(() => import("../features/support/TicketDetailPage"));
+const SitemapPage = lazy(() => import("../pages/sitemap/SitemapPage"));
+const ReturnRefundPolicyPage = lazy(() => import("../pages/policies/ReturnRefundPolicyPage"));
+const PrivacyPolicyPage = lazy(() => import("../pages/policies/PrivacyPolicyPage"));
+const TermsPage = lazy(() => import("../pages/policies/TermsPage"));
+const ProductCarePage = lazy(() => import("../pages/product-care/ProductCarePage"));
+const PartnerPage = lazy(() => import("../pages/partner/PartnerPage"));
+const CareersPage = lazy(() => import("../pages/careers/CareersPage"));
+const ShippingInfoPage = lazy(() => import("../pages/shipping/ShippingInfoPage"));
+const NewArrivalsPage = lazy(() => import("../pages/new-arrivals/NewArrivalsPage"));
 const OrderList = lazy(() => import("../features/orders/OrderList"));
 const OrderDetail = lazy(() => import("../features/orders/OrderDetail"));
 const TrackingPage = lazy(() => import("../features/orders/TrackingPage"));
@@ -41,13 +56,14 @@ const BrowserhistoryPage = lazy(() => import("../features/profile/Browserhistory
 const PaymentMethodPage = lazy(() => import("../features/profile/PaymentMethodPage"));
 const WishListPage = lazy(() => import("../features/wishlist/WishlistPage"));
 const ForgotPasswordPage = lazy(() => import("../features/auth/ForgotPasswordPage"));
-const MainRoutes = () => {
-  // Debug: Log route matching on mount and when pathname changes
-  
+const VerifyAccountPage = lazy(() => import("../features/auth/VerifyAccountPage"));
+const BestSellersPage = lazy(() => import("../pages/best-sellers/BestSellersPage"));
+const DealsPage = lazy(() => import("../pages/deals/DealsPage"));
+const NotFoundPage = lazy(() => import("../pages/NotFoundPage"));
 
+const MainRoutes = () => {
   return (
     <Routes>
-
       <Route
         path="/order-confirmation"
         element={<OrderConfirmationPage />}
@@ -68,7 +84,32 @@ const MainRoutes = () => {
         </Suspense>
       }
     />
+    {/* Alias route for /register to match the link in login page */}
+    <Route
+      path="/register"
+      element={
+        <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+          <SignupPage />
+        </Suspense>
+      }
+    />
+    <Route
+      path={PATHS.VERIFY_ACCOUNT}
+      element={
+        <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+          <VerifyAccountPage />
+        </Suspense>
+      }
+    />
     <Route element={<MainLayout />}>
+      <Route
+        path="/wallet/topup-success"
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <TopupSuccessPage />
+          </Suspense>
+        }
+      />
       <Route
         path={PATHS.HOME}
         element={
@@ -97,7 +138,7 @@ const MainRoutes = () => {
         path={PATHS.ABOUT}
         element={
           <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <Aboutus />
+            <AboutPage />
           </Suspense>
         }
       />
@@ -105,7 +146,7 @@ const MainRoutes = () => {
         path={PATHS.CONTACT}
         element={
           <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <ContactUs />
+            <ContactPage />
           </Suspense>
         }
       />
@@ -113,7 +154,79 @@ const MainRoutes = () => {
         path={PATHS.SITEMAP}
         element={
           <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <ContactUs />
+            <SitemapPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.REFUND_POLICY}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <ReturnRefundPolicyPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.PRIVACY}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <PrivacyPolicyPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.TERMS}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <TermsPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.PRODUCT_CARE}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <ProductCarePage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.PARTNER}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <PartnerPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.CAREERS}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <CareersPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.SHIPPING_POLICY}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <ShippingInfoPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.NEW_ARRIVALS}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <NewArrivalsPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.DEALS}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <DealsPage />
           </Suspense>
         }
       />
@@ -129,7 +242,7 @@ const MainRoutes = () => {
         path={PATHS.PRESS}
         element={
           <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <ContactUs />
+            <Press />
           </Suspense>
         }
       />
@@ -225,7 +338,23 @@ const MainRoutes = () => {
         path={PATHS.SUPPORT}
         element={
           <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <SupportPage />
+            <CustomerSupportPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.SUPPORT_TICKETS}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <TicketsListPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.SUPPORT_TICKET_DETAIL}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <TicketDetailPage />
           </Suspense>
         }
       />
@@ -250,6 +379,14 @@ const MainRoutes = () => {
         element={
           <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
             <SellerPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.BEST_SELLERS}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <BestSellersPage />
           </Suspense>
         }
       />
@@ -350,6 +487,16 @@ const MainRoutes = () => {
             <ProtectedRoute allowedStatuses={["active", "verified"]}>
               <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
                 <Creditbalance />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={PATHS.WALLET_ADD_MONEY}
+          element={
+            <ProtectedRoute allowedStatuses={["active", "verified"]}>
+              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                <AddMoneyPage />
               </Suspense>
             </ProtectedRoute>
           }
@@ -466,22 +613,13 @@ const MainRoutes = () => {
         />
       </Route>
     </Route>
-    {/* Catch-all route for debugging - should never match if order-confirmation route works */}
+    {/* 404 Not Found Page */}
     <Route
       path="*"
       element={
-        <div style={{ padding: '50px', textAlign: 'center' }}>
-          <h1>404 - Route Not Found</h1>
-          <p>Current pathname: {window.location.pathname}</p>
-          <p>Current search: {window.location.search}</p>
-          <p>Full URL: {window.location.href}</p>
-          <p style={{ color: 'red', marginTop: '20px' }}>
-            If you expected to see the order confirmation page, the route may not be matching correctly.
-          </p>
-          <p style={{ marginTop: '10px' }}>
-            Expected route: <code>/order-confirmation</code>
-          </p>
-        </div>
+        <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+          <NotFoundPage />
+        </Suspense>
       }
     />
   </Routes>

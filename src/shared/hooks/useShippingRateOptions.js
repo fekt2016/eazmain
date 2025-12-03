@@ -3,6 +3,7 @@ import { shippingRateService } from '../services/shippingRateApi';
 import { calculateCartWeight } from '../utils/calculateCartWeight';
 import { detectZone } from '../utils/zoneDetection';
 import { WAREHOUSE_LOCATION } from '../config/warehouseConfig';
+import logger from '../utils/logger';
 
 /**
  * Hook to get shipping options using the new ShippingRate system
@@ -114,7 +115,7 @@ export const useShippingRateOptions = ({
           perKgFee: data?.perKgFee,
         });
       } else {
-        console.error('Standard shipping calculation failed:', standardResult.reason);
+        logger.error('Standard shipping calculation failed:', standardResult.reason);
       }
 
       // Same-day delivery option

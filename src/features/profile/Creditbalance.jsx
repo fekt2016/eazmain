@@ -9,76 +9,58 @@ import {
   FaSortDown,
 } from "react-icons/fa";
 import { devicesMax } from '../../shared/styles/breakpoint';
-import { useCreditBalance } from '../../shared/hooks/useCreditbalance';
+import { useWalletBalance, useWalletTransactions } from '../../shared/hooks/useWallet';
 import { useMemo, useState } from "react";
+import { useNavigate } from 'react-router-dom';
 import { formatDate } from '../../shared/utils/helpers';
 import { useApplyUserCoupon } from '../../shared/hooks/useCoupon';
 import { LoadingState, ButtonSpinner, ErrorState } from '../../components/loading';
+import { PATHS } from '../../routes/routePaths';
 
 const CreditBalance = () => {
-  const { data, isLoading } = useCreditBalance();
+  const navigate = useNavigate();
+  const { data: walletData, isLoading: isBalanceLoading } = useWalletBalance();
   const [couponCode, setCouponCode] = useState("");
-  const [sortConfig, setSortConfig] = useState({
-    key: "date",
-    direction: "desc",
+  const [page, setPage] = useState(1);
+  const [typeFilter, setTypeFilter] = useState(null);
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const limit = 10;
+
+  const { data: transactionsData, isLoading: isTransactionsLoading } = useWalletTransactions({
+    page,
+    limit,
+    type: typeFilter,
+    sortBy,
+    sortOrder,
   });
+
   const { mutate: applyCouponMutate, isPending: isApplying, error: couponError } =
     useApplyUserCoupon();
 
-  const creditBalance = useMemo(() => {
-    return data?.data?.creditbalance || {};
-  }, [data]);
-  const lastTransaction = useMemo(() => {
-    if (!creditBalance.transactions || creditBalance.transactions.length === 0)
-      return null;
-    return creditBalance.transactions.reduce((latest, transaction) =>
-      new Date(transaction.date) > new Date(latest.date) ? transaction : latest
-    );
-  }, [creditBalance.transactions]);
+  const wallet = useMemo(() => {
+    return walletData?.data?.wallet || { balance: 0, availableBalance: 0 };
+  }, [walletData]);
 
-  // Sort transactions based on sort configuration
-  const sortedTransactions = useMemo(() => {
-    if (!creditBalance.transactions) return [];
+  const transactions = useMemo(() => {
+    return transactionsData?.data?.transactions || [];
+  }, [transactionsData]);
 
-    let sortableItems = [...creditBalance.transactions];
-    return sortableItems.sort((a, b) => {
-      if (sortConfig.key === "date") {
-        // Sort by date
-        const dateA = new Date(a.date);
-        const dateB = new Date(b.date);
-        if (sortConfig.direction === "desc") {
-          return dateB - dateA; // Newest first
-        } else {
-          return dateA - dateB; // Oldest first
-        }
-      } else if (sortConfig.key === "amount") {
-        // Sort by amount
-        if (sortConfig.direction === "desc") {
-          return b.amount - a.amount; // Highest first
-        } else {
-          return a.amount - b.amount; // Lowest first
-        }
-      } else if (sortConfig.key === "description") {
-        // Sort by description
-        if (a.description < b.description) {
-          return sortConfig.direction === "desc" ? 1 : -1;
-        }
-        if (a.description > b.description) {
-          return sortConfig.direction === "desc" ? -1 : 1;
-        }
-        return 0;
-      }
-      return 0;
-    });
-  }, [creditBalance.transactions, sortConfig]);
+  const pagination = useMemo(() => {
+    return transactionsData?.pagination || { page: 1, pages: 1, total: 0 };
+  }, [transactionsData]);
+
+  const isLoading = isBalanceLoading || isTransactionsLoading;
 
   // Function to handle sorting
   const requestSort = (key) => {
-    let direction = "desc";
-    if (sortConfig.key === key && sortConfig.direction === "desc") {
-      direction = "asc";
+    if (sortBy === key) {
+      setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
+    } else {
+      setSortBy(key);
+      setSortOrder('desc');
     }
-    setSortConfig({ key, direction });
+    setPage(1); // Reset to first page when sorting changes
   };
 
   // Function to handle coupon application
@@ -88,8 +70,31 @@ const CreditBalance = () => {
 
   // Get sort icon for a column
   const getSortIcon = (key) => {
-    if (sortConfig.key !== key) return <FaSort />;
-    return sortConfig.direction === "desc" ? <FaSortDown /> : <FaSortUp />;
+    if (sortBy !== key) return <FaSort />;
+    return sortOrder === "desc" ? <FaSortDown /> : <FaSortUp />;
+  };
+
+  // Get transaction type color
+  const getTransactionColor = (type) => {
+    if (type.startsWith('CREDIT_')) {
+      return 'var(--color-green-700)';
+    } else if (type === 'CREDIT_REFUND') {
+      return 'var(--color-blue-700)';
+    } else {
+      return 'var(--color-red-700)';
+    }
+  };
+
+  // Get transaction type label
+  const getTransactionTypeLabel = (type) => {
+    const labels = {
+      'CREDIT_TOPUP': 'Top-up',
+      'DEBIT_ORDER': 'Order Payment',
+      'CREDIT_REFUND': 'Refund',
+      'DEBIT_ADJUSTMENT': 'Adjustment (Debit)',
+      'CREDIT_ADJUSTMENT': 'Adjustment (Credit)',
+    };
+    return labels[type] || type;
   };
 
   if (isLoading) {
@@ -106,23 +111,19 @@ const CreditBalance = () => {
       </Header>
 
       <BalanceCard>
-        <BalanceLabel>Actual Balance</BalanceLabel>
-        <BalanceAmount>
-          GH&#x20B5;{creditBalance.balance?.toFixed(2) || "0.00"}
-        </BalanceAmount>
         <BalanceLabel>Available Balance</BalanceLabel>
         <BalanceAmount>
-          GH&#x20B5;{creditBalance.balance?.toFixed(2) || "0.00"}
+          GH&#x20B5;{wallet.balance?.toFixed(2) || "0.00"}
         </BalanceAmount>
         <BalanceInfo>
           <InfoItem>
-            <span>Last Top-up</span>
-            <strong>${lastTransaction?.amount || "0.00"}</strong>
+            <span>Currency</span>
+            <strong>{wallet.currency || 'GHS'}</strong>
           </InfoItem>
-          {/* <InfoItem>
-            <span>Expires</span>
-            <strong>Dec 31, 2024</strong>
-          </InfoItem> */}
+          <InfoItem>
+            <span>Total Transactions</span>
+            <strong>{pagination.total || 0}</strong>
+          </InfoItem>
         </BalanceInfo>
       </BalanceCard>
 
@@ -152,6 +153,18 @@ const CreditBalance = () => {
       </CouponSection>
 
       <ActionCards>
+        <ActionCard onClick={() => navigate(PATHS.WALLET_ADD_MONEY)}>
+          <ActionIcon $color="var(--color-primary-600)">
+            <FaPlus />
+          </ActionIcon>
+          <ActionContent>
+            <h3>Add Money</h3>
+            <p>Top up your wallet via Paystack</p>
+          </ActionContent>
+          <ActionArrow>
+            <FaArrowRight />
+          </ActionArrow>
+        </ActionCard>
         <ActionCard>
           <ActionIcon $color="var(--color-green-700)">
             <FaHistory />
@@ -172,11 +185,45 @@ const CreditBalance = () => {
           <h2>Recent Transactions</h2>
         </SectionHeader>
 
+        {/* Filter buttons */}
+        <FilterButtons>
+          <FilterButton
+            $active={typeFilter === null}
+            onClick={() => setTypeFilter(null)}
+          >
+            All
+          </FilterButton>
+          <FilterButton
+            $active={typeFilter === 'CREDIT_TOPUP'}
+            onClick={() => setTypeFilter('CREDIT_TOPUP')}
+          >
+            Top-ups
+          </FilterButton>
+          <FilterButton
+            $active={typeFilter === 'DEBIT_ORDER'}
+            onClick={() => setTypeFilter('DEBIT_ORDER')}
+          >
+            Orders
+          </FilterButton>
+          <FilterButton
+            $active={typeFilter === 'CREDIT_REFUND'}
+            onClick={() => setTypeFilter('CREDIT_REFUND')}
+          >
+            Refunds
+          </FilterButton>
+        </FilterButtons>
+
         <TransactionTable>
           <thead>
             <tr>
-              <TableHeader onClick={() => requestSort("date")} $clickable>
-                Date {getSortIcon("date")}
+              <TableHeader onClick={() => requestSort("createdAt")} $clickable>
+                Date {getSortIcon("createdAt")}
+              </TableHeader>
+              <TableHeader
+                onClick={() => requestSort("type")}
+                $clickable
+              >
+                Type {getSortIcon("type")}
               </TableHeader>
               <TableHeader
                 onClick={() => requestSort("description")}
@@ -194,29 +241,55 @@ const CreditBalance = () => {
             </tr>
           </thead>
           <tbody>
-            {sortedTransactions.map((transaction) => (
-              <TableRow key={transaction._id}>
-                <TableCell>{formatDate(transaction.date)}</TableCell>
-                <TableCell>{transaction.description}</TableCell>
-                <TableCell
-                  $color={
-                    transaction.amount > 0
-                      ? "var(--color-green-700)"
-                      : "var(--color-red-700)"
-                  }
-                  $align="right"
-                >
-                  {transaction.amount > 0 ? "+" : ""}$
-                  {Math.abs(transaction.amount).toFixed(2)}
+            {transactions.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} $align="center">
+                  No transactions found
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              transactions.map((transaction) => (
+                <TableRow key={transaction._id}>
+                  <TableCell>{formatDate(transaction.createdAt)}</TableCell>
+                  <TableCell>
+                    <TypeBadge $color={getTransactionColor(transaction.type)}>
+                      {getTransactionTypeLabel(transaction.type)}
+                    </TypeBadge>
+                  </TableCell>
+                  <TableCell>{transaction.description}</TableCell>
+                  <TableCell
+                    $color={getTransactionColor(transaction.type)}
+                    $align="right"
+                  >
+                    {transaction.amount > 0 ? "+" : ""}GH₵
+                    {Math.abs(transaction.amount).toFixed(2)}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </tbody>
         </TransactionTable>
 
-        <ViewAllButton>
-          View Full Transaction History <FaArrowRight />
-        </ViewAllButton>
+        {/* Pagination */}
+        {pagination.pages > 1 && (
+          <PaginationContainer>
+            <PaginationButton
+              onClick={() => setPage(page - 1)}
+              disabled={page === 1}
+            >
+              Previous
+            </PaginationButton>
+            <PageInfo>
+              Page {pagination.page} of {pagination.pages}
+            </PageInfo>
+            <PaginationButton
+              onClick={() => setPage(page + 1)}
+              disabled={page === pagination.pages}
+            >
+              Next
+            </PaginationButton>
+          </PaginationContainer>
+        )}
       </TransactionSection>
     </PageContainer>
   );
@@ -535,4 +608,75 @@ const ApplyButton = styled.button`
   @media ${devicesMax.sm} {
     width: 100%;
   }
+`;
+
+const FilterButtons = styled.div`
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+`;
+
+const FilterButton = styled.button`
+  padding: 8px 16px;
+  background: ${(props) => (props.$active ? 'var(--color-primary-600)' : 'white')};
+  color: ${(props) => (props.$active ? 'white' : 'var(--color-grey-700)')};
+  border: 1px solid ${(props) => (props.$active ? 'var(--color-primary-600)' : 'var(--color-grey-300)')};
+  border-radius: var(--border-radius-md);
+  font-size: 1.4rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+
+  &:hover {
+    background: ${(props) => (props.$active ? 'var(--color-primary-700)' : 'var(--color-grey-100)')};
+  }
+`;
+
+const TypeBadge = styled.span`
+  display: inline-block;
+  padding: 4px 8px;
+  background: ${(props) => props.$color}20;
+  color: ${(props) => props.$color};
+  border-radius: var(--border-radius-sm);
+  font-size: 1.2rem;
+  font-weight: 600;
+`;
+
+const PaginationContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-grey-200);
+`;
+
+const PaginationButton = styled.button`
+  padding: 10px 20px;
+  background: var(--color-primary-600);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: 1.4rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+
+  &:hover:not(:disabled) {
+    background: var(--color-primary-700);
+  }
+
+  &:disabled {
+    background: var(--color-grey-400);
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+`;
+
+const PageInfo = styled.span`
+  font-size: 1.4rem;
+  color: var(--color-grey-600);
+  font-weight: 500;
 `;

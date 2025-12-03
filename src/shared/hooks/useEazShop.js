@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { eazshopService } from '../services/eazshopApi';
+import logger from '../utils/logger';
 
 export const useEazShop = () => {
   const queryClient = useQueryClient();
@@ -13,7 +14,7 @@ export const useEazShop = () => {
           const response = await eazshopService.getEazShopProducts();
           return response.data?.products || [];
         } catch (error) {
-          console.error('Failed to fetch EazShop products:', error);
+          logger.error('Failed to fetch EazShop products:', error);
           throw new Error('Failed to load EazShop products');
         }
       },
@@ -30,7 +31,7 @@ export const useEazShop = () => {
           const response = await eazshopService.getPickupCenters(city);
           return response.data?.pickupCenters || [];
         } catch (error) {
-          console.error('Failed to fetch pickup centers:', error);
+          logger.error('Failed to fetch pickup centers:', error);
           throw new Error('Failed to load pickup centers');
         }
       },

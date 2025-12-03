@@ -2,6 +2,7 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import followApi from '../services/followApi';
 import useAuth from '../../shared/hooks/useAuth';
 import { useMemo } from "react";
+import logger from '../utils/logger';
 
 export const useToggleFollow = (sellerId) => {
   const queryClient = useQueryClient();
@@ -19,7 +20,7 @@ export const useToggleFollow = (sellerId) => {
       } catch (error) {
         if (error.response?.status === 401) {
           // Handle authentication errors
-          console.warn("Authentication required for follow status");
+          logger.warn("Authentication required for follow status");
           return { isFollowing: false, followersCount: 0 };
         }
         throw error;

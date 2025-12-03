@@ -112,7 +112,14 @@ export default function SignupPage() {
         onSuccess: (data) => {
           console.log("Registration successful:", data);
           if (data?.data?.requiresVerification || data.status === "success") {
-            setVerificationSent(true);
+            // ✅ Redirect to verification page with email/phone
+            navigate("/verify-account", {
+              state: {
+                email: state.email,
+                phone: state.phone,
+                message: "Please verify your account to continue",
+              },
+            });
           } else {
             navigate("/");
           }

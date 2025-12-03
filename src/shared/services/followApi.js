@@ -1,14 +1,15 @@
 import api from "./api";
+import logger from '../utils/logger';
 
 const followApi = {
   followSeller: async (sellerId) => {
-    console.log("[API] Following seller:", sellerId);
+    logger.log("[API] Following seller:", sellerId);
     try {
       const response = await api.post(`/follow/${sellerId}`);
-      console.log("[API] Follow success:", response.data);
+      logger.log("[API] Follow success:", response.data);
       return response.data;
     } catch (error) {
-      console.error(
+      logger.error(
         "[API] Follow error:",
         error.response?.data || error.message
       );
@@ -17,13 +18,13 @@ const followApi = {
   },
 
   unfollowSeller: async (sellerId) => {
-    console.log("[API] Unfollowing seller:", sellerId);
+    logger.log("[API] Unfollowing seller:", sellerId);
     try {
       const response = await api.delete(`/follow/${sellerId}`);
-      console.log("[API] Unfollow success:", response.data);
+      logger.log("[API] Unfollow success:", response.data);
       return response.data;
     } catch (error) {
-      console.error(
+      logger.error(
         "[API] Unfollow error:",
         error.response?.data || error.message
       );
@@ -41,7 +42,7 @@ const followApi = {
     }
   },
   getSellerFollowers: async (sellerId) => {
-    console.log("[API] Getting seller followers:", sellerId);
+    logger.log("[API] Getting seller followers:", sellerId);
     try {
       const response = await api.get(`/follow/${sellerId}/followers`);
       return response.data;
@@ -54,10 +55,10 @@ const followApi = {
   getFollowStatus: async (sellerId) => {
     try {
       const response = await api.get(`/follow/status/${sellerId}`);
-      console.log("[API] Follow status:", response.data);
+      logger.log("[API] Follow status:", response.data);
       return response.data;
     } catch (error) {
-      console.error(
+      logger.error(
         "[API] Follow status error:",
         error.response?.data || error.message
       );

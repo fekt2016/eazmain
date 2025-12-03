@@ -7,14 +7,25 @@ const authApi = {
   },
 
   verifyOtp: async (loginId, otp, password, redirectTo = '/') => {
-    const response = await api.post("/users/verify-otp", {
-      loginId,
-      otp,
-      password,
-      redirectTo,
-    });
-    console.log("verifyOtp response:", response);
-    return response;
+    try {
+      logger.log("[authApi] verifyOtp called with:", { loginId, otp: otp ? '***' : 'missing', password: password ? '***' : 'missing', redirectTo });
+      const response = await api.post("/users/verify-otp", {
+        loginId,
+        otp,
+        password,
+        redirectTo,
+      });
+      logger.log("[authApi] verifyOtp response:", response);
+      return response;
+    } catch (error) {
+      logger.error("[authApi] verifyOtp error:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        config: error.config,
+      });
+      throw error;
+    }
   },
 
   register: async (registerData) => {
@@ -24,6 +35,18 @@ const authApi = {
   emailVerification: async (email) => {
     const response = await api.post("/users/email-verification", { email });
     return response;
+  },
+  
+  // ✅ New: Verify account with OTP (for signup verification)
+  verifyAccount: async (email, phone, otp) => {
+    const response = await api.post("/users/verify-account", { email, phone, otp });
+    return response.data;
+  },
+  
+  // ✅ New: Resend OTP
+  resendOtp: async (email, phone) => {
+    const response = await api.post("/users/resend-otp", { email, phone });
+    return response.data;
   },
 
   logout: async () => {
@@ -66,7 +89,7 @@ const authApi = {
       const response = await api.get("/users/profile");
       return response; // Return only the data payload
     } catch (err) {
-      console.log("API getProfile error", err);
+      logger.log("API getProfile error", err);
       throw err; // Important for React Query error handling
     }
   },
@@ -76,7 +99,7 @@ const authApi = {
   },
 
   deactivateAccount: async () => {
-    console.log("deactivateAccount");
+    logger.log("deactivateAccount");
     const response = await api.delete("/users/deleteMe");
     return response;
   },

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import browswerHistoryApi from '../services/browserHistoryApi';
+import logger from '../utils/logger';
 
 // Fetch user's browsing history
 export const useGetHistory = () => {
@@ -11,7 +12,7 @@ export const useGetHistory = () => {
 
         return response;
       } catch (error) {
-        console.error(error);
+        logger.error(error);
       }
     },
   });
@@ -25,7 +26,7 @@ export const useAddHistoryItem = () => {
         const response = await browswerHistoryApi.addHistoryItem(data);
         return response;
       } catch (error) {
-        console.error(error);
+        logger.error(error);
       }
     },
     onSuccess: (data) => {
@@ -46,7 +47,7 @@ export const useDeleteMultipleHistoryItems = () => {
       queryClient.invalidateQueries("browserHistory");
     },
     onError: (error) => {
-      console.error("Deletion error:", error.message);
+      logger.error("Deletion error:", error.message);
     },
   });
 };

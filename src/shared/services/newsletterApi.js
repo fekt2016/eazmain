@@ -1,4 +1,5 @@
 import api from "./api";
+import logger from '../utils/logger';
 
 const newsletter = {
   subscribe: async (email) => {
@@ -6,7 +7,7 @@ const newsletter = {
       const response = await api.post("/newsletter", { email });
       return response;
     } catch (error) {
-      console.log("API Error - subscribe:", {
+      logger.log("API Error - subscribe:", {
         url: error.config?.url,
         status: error.response?.status,
         message: error.message,

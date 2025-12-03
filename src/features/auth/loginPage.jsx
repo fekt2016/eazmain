@@ -62,10 +62,25 @@ export default function LoginPage() {
         },
       });
     } else {
+      // Ensure OTP is a string and not empty
+      const otpString = typeof otp === 'string' ? otp : (Array.isArray(otp) ? otp.join('') : String(otp || ''));
+      
+      if (!otpString || otpString.length !== 6) {
+        console.error("[Login] Invalid OTP format:", { otp, otpString, type: typeof otp });
+        return;
+      }
+      
+      console.log("[Login] Submitting OTP verification:", {
+        loginId: state.loginId,
+        otpLength: otpString.length,
+        hasPassword: !!state.password,
+        redirectTo,
+      });
+      
       verifyOtpMutation(
         {
           loginId: state.loginId,
-          otp,
+          otp: otpString,
           password: state.password,
           redirectTo,
         },
@@ -88,7 +103,37 @@ export default function LoginPage() {
             setOtp("");
           },
           onError: (err) => {
-            console.error("OTP verification failed:", err.message);
+            console.error("OTP verification failed:", {
+              message: err.message,
+              response: err.response?.data,
+              status: err.response?.status,
+              code: err.code,
+              config: err.config,
+            });
+            
+            // Handle network errors
+            if (err.code === 'ERR_NETWORK' || err.message === 'Network Error') {
+              console.error("[Login] Network error - backend may be down or CORS issue");
+              // You might want to show a toast/alert here
+              return;
+            }
+            
+            // ✅ Handle unverified account - redirect to verification page
+            if (err.response?.status === 403) {
+              const errorMessage = err.response?.data?.message || err.message;
+              if (errorMessage.includes('not verified') || errorMessage.includes('verify')) {
+                // Extract email or phone from loginId
+                const isEmail = state.loginId.includes('@');
+                navigate('/verify-account', {
+                  state: {
+                    email: isEmail ? state.loginId : null,
+                    phone: !isEmail ? state.loginId : null,
+                    message: errorMessage || 'Please verify your account to continue',
+                  },
+                });
+                return;
+              }
+            }
           },
         }
       );
@@ -185,24 +230,42 @@ export default function LoginPage() {
             ) : (
               <OtpContainer>
                 <OtpInputs>
-                  {[...Array(6)].map((_, index) => (
-                    <OtpInput
-                      key={index}
-                      type="text"
-                      maxLength={1}
-                      value={otp[index] || ""}
-                      onChange={(e) => {
-                        const newOtp = [...otp];
-                        newOtp[index] = e.target.value;
-                        setOtp(newOtp.join(""));
-                        if (e.target.value && index < 5) {
-                          document.getElementById(`otp-${index + 1}`).focus();
-                        }
-                      }}
-                      id={`otp-${index}`}
-                      autoFocus={index === 0}
-                    />
-                  ))}
+                  {[...Array(6)].map((_, index) => {
+                    // Convert string OTP to array for display
+                    const otpArray = otp.split('').slice(0, 6);
+                    return (
+                      <OtpInput
+                        key={index}
+                        type="text"
+                        maxLength={1}
+                        value={otpArray[index] || ""}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, ''); // Only digits
+                          if (value.length > 1) return; // Only allow single digit
+                          
+                          const newOtpArray = [...otpArray];
+                          newOtpArray[index] = value;
+                          const newOtp = newOtpArray.join('');
+                          setOtp(newOtp);
+                          
+                          // Auto-focus next input
+                          if (value && index < 5) {
+                            const nextInput = document.getElementById(`otp-${index + 1}`);
+                            if (nextInput) nextInput.focus();
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          // Handle backspace
+                          if (e.key === 'Backspace' && !otpArray[index] && index > 0) {
+                            const prevInput = document.getElementById(`otp-${index - 1}`);
+                            if (prevInput) prevInput.focus();
+                          }
+                        }}
+                        id={`otp-${index}`}
+                        autoFocus={index === 0}
+                      />
+                    );
+                  })}
                 </OtpInputs>
 
                 <ResendWrapper>
@@ -245,7 +308,7 @@ export default function LoginPage() {
           </StyledForm>
 
           <Footer>
-            Don't have an account? <Link to="/register">Create account</Link>
+            Don't have an account? <Link to="/signup">Create account</Link>
           </Footer>
         </FormContainer>
       </FormSection>

@@ -1,11 +1,12 @@
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import reviewApi from '../services/reviewApi';
+import logger from '../utils/logger';
 
 export const useGetProductReviews = (productId, options = {}) => {
   return useQuery({
     queryKey: ["reviews", productId],
     queryFn: async () =>{const response =  await reviewApi.getProductReviews(productId)
-      console.log("response", response);
+      logger.log("response", response);
       return response
     },
     enabled: options.enabled !== false && !!productId && productId !== 'undefined' && productId !== 'null',

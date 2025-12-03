@@ -47,7 +47,7 @@ export const useGetSellerOrders = () => {
       // Fixed property name (queryFn instead of queryfn)
       try {
         const response = await orderService.getSellersOrders();
-        console.log("Order fetch response:", response);
+        logger.log("Order fetch response:", response);
 
         // Check for valid response structure
         if (!response || !response.data) {
@@ -57,7 +57,7 @@ export const useGetSellerOrders = () => {
         return response;
       } catch (error) {
         // Log detailed error information
-        console.error("Order fetch error:", {
+        logger.error("Order fetch error:", {
           message: error.message,
           response: error.response?.data,
           status: error.response?.status,
@@ -70,13 +70,13 @@ export const useGetSellerOrders = () => {
       }
     },
     onsuccess: (data) => {
-      console.log(data);
+      logger.log(data);
       queryClient.invalidateQueries({ queryKey: ["seller-orders"] });
     },
     retry: 2, // Add retry mechanism
     staleTime: 1000 * 60 * 5, // 5 minutes cache
     onError: (error) => {
-      console.error("Order fetch failed:", error.message);
+      logger.error("Order fetch failed:", error.message);
     },
   });
 };
@@ -88,20 +88,20 @@ export const useCreateOrder = () => {
     mutationFn: async (data) => {
       try {
         const response = await orderService.createOrder(data);
-        console.log("Order fetch response:", response);
+        logger.log("Order fetch response:", response);
         queryClient.invalidateQueries({ queryKey: ["orders"] });
         return response;
       } catch (error) {
-        console.error("Order fetch error:", error);
+        logger.error("Order fetch error:", error);
         throw error;
       }
     },
     onSuccess: (data) => {
-      console.log("order created successfully!!!", data);
+      logger.log("order created successfully!!!", data);
       queryClient.invalidateQueries({ queryKey: ["orders"] });
     },
     onError: (error) => {
-      console.error("Order fetch failed:", error.message);
+      logger.error("Order fetch failed:", error.message);
     },
   });
 };
@@ -120,12 +120,12 @@ export const useGetUserOrderById = (id) => {
     queryKey: ["order", id], // Include id in queryKey for unique caching
     queryFn: async () => {
       if (!id) {
-        console.log("[useGetUserOrderById] No ID provided, returning null");
+        logger.log("[useGetUserOrderById] No ID provided, returning null");
         return null;
       }
-      console.log("[useGetUserOrderById] Fetching order with ID:", id);
+      logger.log("[useGetUserOrderById] Fetching order with ID:", id);
       const response = await orderService.getUserOrderById(id);
-      console.log("[useGetUserOrderById] API Response structure:", {
+      logger.log("[useGetUserOrderById] API Response structure:", {
         hasData: !!response?.data,
         hasOrder: !!response?.data?.order,
         hasStatus: !!response?.status,
@@ -153,7 +153,7 @@ export const useDeleteOrder = () => {
       return response;
     },
     onSuccess: () => {
-      console.log("Order deleted successfully");
+      logger.log("Order deleted successfully");
       queryClient.invalidateQueries({ queryKey: ["order"] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
     },
@@ -168,7 +168,7 @@ export const useUpdateOrderAddress = () => {
       return response;
     },
     onSuccess: (data, variables) => {
-      console.log("Order address updated successfully");
+      logger.log("Order address updated successfully");
       queryClient.invalidateQueries({ queryKey: ["order", variables.orderId] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
     },
@@ -187,7 +187,7 @@ export const useUpdateOrderAddressAndRecalculate = () => {
       return response;
     },
     onSuccess: (data, variables) => {
-      console.log("Order address and shipping recalculated");
+      logger.log("Order address and shipping recalculated");
       queryClient.invalidateQueries({ queryKey: ["order", variables.orderId] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
     },
@@ -202,9 +202,37 @@ export const usePayShippingDifference = () => {
       return response;
     },
     onSuccess: (data, variables) => {
-      console.log("Shipping difference payment initialized");
+      logger.log("Shipping difference payment initialized");
       queryClient.invalidateQueries({ queryKey: ["order", variables] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
     },
+  });
+};
+
+export const useRequestRefund = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ orderId, data }) => {
+      const response = await orderService.requestRefund(orderId, data);
+      return response;
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["order", variables.orderId] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["refundStatus", variables.orderId] });
+    },
+  });
+};
+
+export const useGetRefundStatus = (orderId) => {
+  return useQuery({
+    queryKey: ["refundStatus", orderId],
+    queryFn: async () => {
+      if (!orderId) return null;
+      const response = await orderService.getRefundStatus(orderId);
+      return response.data;
+    },
+    enabled: !!orderId,
+    staleTime: 1000 * 60, // 1 minute
   });
 };

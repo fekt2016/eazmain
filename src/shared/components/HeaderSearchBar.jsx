@@ -40,7 +40,7 @@ export default function HeaderSearchBar({
           $size="sm"
           onClick={() => {
             if (searchTerm) {
-              navigate(`/products/search?q=${encodeURIComponent(searchTerm)}`);
+              navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
               setShowSearchSuggestions(false);
             }
           }}
@@ -60,14 +60,28 @@ export default function HeaderSearchBar({
           {searchSuggestions.map((suggestion, index) => {
             return (
               <SuggestionItem
-                key={`${suggestion.type}-${suggestion.text}`}
+                key={`${suggestion.type}-${suggestion.text}-${index}`}
                 active={index === activeSuggestion}
                 onClick={() => handleSuggestionSelect(suggestion)}
               >
+                {suggestion.image && (
+                  <SuggestionImage>
+                    <img src={suggestion.image} alt={suggestion.text} />
+                  </SuggestionImage>
+                )}
                 <SuggestionText>
                   <SuggestionName>{suggestion.text}</SuggestionName>
                   <SuggestionDetails>
-                    <SuggestionCategory>{suggestion.type}</SuggestionCategory>
+                    <SuggestionCategory>
+                      {suggestion.type === 'product' && 'Product'}
+                      {suggestion.type === 'category' && 'Category'}
+                      {suggestion.type === 'brand' && 'Brand'}
+                      {suggestion.type === 'tag' && 'Tag'}
+                      {suggestion.type === 'trending' && '🔥 Trending'}
+                    </SuggestionCategory>
+                    {suggestion.price && (
+                      <SuggestionPrice>₵{suggestion.price.toFixed(2)}</SuggestionPrice>
+                    )}
                   </SuggestionDetails>
                 </SuggestionText>
               </SuggestionItem>
@@ -167,31 +181,58 @@ const SuggestionItem = styled.li`
 //   }
 // `;
 
+const SuggestionImage = styled.div`
+  width: 4rem;
+  height: 4rem;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-right: 1.5rem;
+  flex-shrink: 0;
+  background: var(--color-grey-100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+`;
+
 const SuggestionText = styled.div`
   flex: 1;
+  min-width: 0;
 `;
 
 const SuggestionName = styled.div`
   font-weight: 600;
   margin-bottom: 4px;
+  font-size: 1.4rem;
+  color: var(--color-text-dark);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 const SuggestionDetails = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1rem;
 `;
 
 const SuggestionCategory = styled.div`
   font-size: 1.2rem;
   color: var(--color-grey-400);
+  text-transform: capitalize;
 `;
 
-// const SuggestionPrice = styled.div`
-//   font-size: 1.4rem;
-//   font-weight: 600;
-//   color: var(--color-primary-500);
-// `;
+const SuggestionPrice = styled.div`
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--color-primary-500);
+`;
 
 const NoSuggestions = styled.div`
   position: absolute;

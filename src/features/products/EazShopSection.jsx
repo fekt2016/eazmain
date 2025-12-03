@@ -247,25 +247,43 @@ const SectionLink = styled(Link)`
 
 const ProductGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(4, 1fr); /* 4 cards per row */
+  gap: 1.5rem;
   position: relative;
   z-index: 1;
   
-  @media ${devicesMax.sm} {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(3, 1fr); /* 3 cards on medium screens */
+  }
+  
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(2, 1fr); /* 2 cards on tablets */
     gap: 1rem;
+  }
+  
+  @media ${devicesMax.sm} {
+    grid-template-columns: repeat(2, 1fr); /* 2 cards on mobile */
+    gap: 0.75rem;
   }
 `;
 
 const LoadingGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(4, 1fr); /* 4 cards per row */
+  gap: 1.5rem;
+  
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(3, 1fr); /* 3 cards on medium screens */
+  }
+  
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(2, 1fr); /* 2 cards on tablets */
+    gap: 1rem;
+  }
   
   @media ${devicesMax.sm} {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(2, 1fr); /* 2 cards on mobile */
+    gap: 0.75rem;
   }
 `;
 

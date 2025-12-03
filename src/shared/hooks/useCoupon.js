@@ -1,6 +1,7 @@
 // hooks/useApplyCoupon.js
 import { useMutation } from "@tanstack/react-query";
 import couponApi from '../services/couponApi';
+import logger from '../utils/logger';
 
 export const useApplyCoupon = () => {
   return useMutation({
@@ -11,10 +12,10 @@ export const useApplyCoupon = () => {
   });
 };
 export const useApplyUserCoupon = () => {
-  console.log("useApplyUserCoupon called");
+  logger.log("useApplyUserCoupon called");
   return useMutation({
     mutationFn: async (couponCode) => {
-      console.log("Hook Applying coupon code:", couponCode);
+      logger.log("Hook Applying coupon code:", couponCode);
       const response = await couponApi.applyUserCoupon(couponCode);
       return response;
     },

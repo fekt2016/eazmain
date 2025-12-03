@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { ButtonSpinner } from "../../../components/loading";
 
 const SecuritySettingsSection = ({
   onPasswordChange,
@@ -192,10 +193,10 @@ const SaveButton = styled.button`
 
 const ErrorMessage = styled.div`
   padding: 0.75rem;
-  background-color: var(--color-red-100);
-  border: 1px solid var(--color-red-500);
+  background-color: var(--color-grey-100);
+  border: 1px solid var(--color-grey-300);
   border-radius: 6px;
-  color: var(--color-red-600);
+  color: var(--color-grey-700);
   font-size: 0.875rem;
   margin-bottom: 1rem;
 `;

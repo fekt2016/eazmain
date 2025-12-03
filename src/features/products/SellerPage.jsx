@@ -9,8 +9,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useToggleFollow, useGetSellersFollowers } from '../../shared/hooks/useFollow';
 import { useAddHistoryItem } from '../../shared/hooks/useBrowserhistory';
 import { ButtonSpinner } from '../../components/loading';
-import usePageTitle from '../../shared/hooks/usePageTitle';
-import seoConfig from '../../shared/config/seoConfig';
+import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 
 const PublicSellerProfile = () => {
   const { id: sellerId } = useParams();
@@ -32,7 +31,13 @@ const PublicSellerProfile = () => {
   }, [sellerData]);
 
   // SEO - Set page title based on seller data
-  usePageTitle(seller ? seoConfig.sellerShop(seller) : seoConfig.home);
+  useDynamicPageTitle({
+    title: "Seller Store",
+    dynamicTitle: seller?.shopName && `${seller.shopName} — Shop on EazShop`,
+    dynamicDescription: seller?.description || seller?.bio,
+    defaultTitle: "EazShop",
+    defaultDescription: "Shop from trusted sellers on EazShop",
+  });
 
   const followers = useMemo(() => {
     return followerData?.data.follows || [];

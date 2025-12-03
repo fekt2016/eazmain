@@ -15,11 +15,12 @@ import {
   FaMapMarkerAlt,
   FaCreditCard,
   FaStar,
+  FaUndo,
+  FaTimes,
 } from "react-icons/fa";
-import { useGetUserOrderById } from '../../shared/hooks/useOrder';
+import { useGetUserOrderById, useRequestRefund, useGetRefundStatus } from '../../shared/hooks/useOrder';
 import { LoadingState, ErrorState, EmptyState } from '../../components/loading';
-import usePageTitle from '../../shared/hooks/usePageTitle';
-import seoConfig from '../../shared/config/seoConfig';
+import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 import { PATHS } from '../../routes/routePaths';
 import EditOrderModal from './EditOrderModal';
 import { orderService } from './orderApi';
@@ -31,14 +32,30 @@ const OrderDetail = () => {
   const navigate = useNavigate();
   const { data: orderData, isLoading, isError, refetch } = useGetUserOrderById(orderId);
   const order = useMemo(() => orderData?.order, [orderData]);
-console.log("order", order);
+logger.log("order", order);
 
-  usePageTitle(order ? seoConfig.orderDetail(order) : seoConfig.orderDetail(null));
+  useDynamicPageTitle({
+    title: "Order Details",
+    dynamicTitle: order && `Order #${order._id?.slice(-8) || order._id} | EazShop`,
+    description: "Track your order in real-time.",
+    defaultTitle: "EazShop Orders",
+  });
 
   const [status, setStatus] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [selectedProductForReview, setSelectedProductForReview] = useState(null);
+  const [refundModalOpen, setRefundModalOpen] = useState(false);
+  const [refundReason, setRefundReason] = useState('');
+  const [refundReasonText, setRefundReasonText] = useState('');
+  const [refundAmount, setRefundAmount] = useState('');
+  // Item-level refund state
+  const [selectedItems, setSelectedItems] = useState({}); // { orderItemId: { quantity, reason, reasonText, images } }
+  const [refundMode, setRefundMode] = useState('items'); // 'items' or 'whole'
+
+  const { mutate: requestRefund, isPending: isRefundPending } = useRequestRefund();
+  const { data: refundStatusData } = useGetRefundStatus(orderId);
+  const refundStatus = useMemo(() => refundStatusData?.refund, [refundStatusData]);
 
   // Refetch order when component mounts or orderId changes (to get latest status after payment)
   useEffect(() => {
@@ -94,11 +111,11 @@ console.log("order", order);
   };
 
   const handleSaveStatus = () => {
-    console.log("Saving status:", status);
+    logger.log("Saving status:", status);
   };
 
   const handleDeleteOrder = () => {
-    console.log("Deleting order:", orderId);
+    logger.log("Deleting order:", orderId);
   };
 
   const handleEditOrder = () => {
@@ -120,8 +137,239 @@ console.log("order", order);
       const response = await orderService.sendOrderDetailEmail(orderId);
       alert('Order detail email sent successfully!');
     } catch (error) {
-      console.error('Error sending email:', error);
+      logger.error('Error sending email:', error);
       alert(error?.response?.data?.message || 'Failed to send email. Please try again.');
+    }
+  };
+
+  // Check if order is eligible for refund
+  const isEligibleForRefund = useMemo(() => {
+    if (!order) return false;
+    
+    // Order must be paid
+    if (order.paymentStatus !== 'paid' && order.paymentStatus !== 'completed') {
+      return false;
+    }
+    
+    // Order cannot already be refunded
+    if (order.paymentStatus === 'refunded' || order.currentStatus === 'refunded') {
+      return false;
+    }
+    
+    // Order cannot be cancelled
+    if (order.currentStatus === 'cancelled' || order.status === 'cancelled') {
+      return false;
+    }
+    
+    // Check if refund already requested and pending
+    if (refundStatus?.requested && refundStatus?.status === 'pending') {
+      return false;
+    }
+    
+    // Check if refund already approved
+    if (refundStatus?.requested && refundStatus?.status === 'approved') {
+      return false;
+    }
+    
+    // Check refund window (30 days from delivery or order date)
+    const refundWindowDays = 30;
+    const orderDate = order.deliveredAt ? new Date(order.deliveredAt) : new Date(order.createdAt);
+    const daysSinceOrder = (Date.now() - orderDate.getTime()) / (1000 * 60 * 60 * 24);
+    
+    if (daysSinceOrder > refundWindowDays) {
+      return false;
+    }
+    
+    return true;
+  }, [order, refundStatus]);
+
+  const handleRequestRefund = () => {
+    setRefundModalOpen(true);
+    setRefundAmount(order?.totalPrice?.toFixed(2) || '');
+    setRefundMode('items'); // Default to item-level refunds
+    setSelectedItems({});
+  };
+
+  const handleItemSelection = (itemId, checked) => {
+    if (checked) {
+      const item = order.orderItems.find(i => (i._id || i.id) === itemId);
+      if (item) {
+        setSelectedItems(prev => ({
+          ...prev,
+          [itemId]: {
+            quantity: item.quantity,
+            reason: '',
+            reasonText: '',
+            images: [],
+          }
+        }));
+      }
+    } else {
+      setSelectedItems(prev => {
+        const newItems = { ...prev };
+        delete newItems[itemId];
+        return newItems;
+      });
+    }
+  };
+
+  const handleItemQuantityChange = (itemId, quantity) => {
+    const item = order.orderItems.find(i => (i._id || i.id) === itemId);
+    if (item && quantity > 0 && quantity <= item.quantity) {
+      setSelectedItems(prev => ({
+        ...prev,
+        [itemId]: {
+          ...prev[itemId],
+          quantity: parseInt(quantity),
+        }
+      }));
+    }
+  };
+
+  const handleItemReasonChange = (itemId, reason) => {
+    setSelectedItems(prev => ({
+      ...prev,
+      [itemId]: {
+        ...prev[itemId],
+        reason,
+      }
+    }));
+  };
+
+  const handleItemReasonTextChange = (itemId, reasonText) => {
+    setSelectedItems(prev => ({
+      ...prev,
+      [itemId]: {
+        ...prev[itemId],
+        reasonText,
+      }
+    }));
+  };
+
+  const handleItemImageUpload = (itemId, files) => {
+    // Convert files to base64 or upload to server
+    // For now, we'll store file objects and convert on submit
+    const imageFiles = Array.from(files);
+    setSelectedItems(prev => ({
+      ...prev,
+      [itemId]: {
+        ...prev[itemId],
+        images: imageFiles,
+      }
+    }));
+  };
+
+  const convertImagesToBase64 = async (files) => {
+    const promises = Array.from(files).map(file => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    });
+    return Promise.all(promises);
+  };
+
+  const handleSubmitRefundRequest = async (e) => {
+    e.preventDefault();
+    
+    // ITEM-LEVEL REFUND
+    if (refundMode === 'items') {
+      const selectedItemsArray = Object.keys(selectedItems);
+      
+      if (selectedItemsArray.length === 0) {
+        alert('Please select at least one item to refund');
+        return;
+      }
+
+      // Validate all selected items have reason
+      for (const itemId of selectedItemsArray) {
+        const itemData = selectedItems[itemId];
+        if (!itemData.reason) {
+          alert('Please select a refund reason for all selected items');
+          return;
+        }
+      }
+
+      // Prepare items array with images converted to base64
+      const items = await Promise.all(
+        selectedItemsArray.map(async (itemId) => {
+          const itemData = selectedItems[itemId];
+          const orderItem = order.orderItems.find(i => (i._id || i.id) === itemId);
+          
+          let imageUrls = [];
+          if (itemData.images && itemData.images.length > 0) {
+            imageUrls = await convertImagesToBase64(itemData.images);
+          }
+
+          return {
+            orderItemId: itemId,
+            quantity: itemData.quantity,
+            reason: itemData.reason,
+            reasonText: itemData.reasonText || '',
+            images: imageUrls,
+          };
+        })
+      );
+
+      requestRefund(
+        {
+          orderId,
+          data: {
+            items,
+            reason: refundReason || items[0]?.reason, // Main reason for backward compatibility
+            reasonText: refundReasonText || '',
+            images: [], // Main images for backward compatibility
+          },
+        },
+        {
+          onSuccess: () => {
+            alert('Refund request submitted successfully!');
+            setRefundModalOpen(false);
+            setRefundReason('');
+            setRefundReasonText('');
+            setRefundAmount('');
+            setSelectedItems({});
+            refetch();
+          },
+          onError: (error) => {
+            alert(error?.response?.data?.message || 'Failed to submit refund request. Please try again.');
+          },
+        }
+      );
+    } else {
+      // WHOLE-ORDER REFUND (backward compatible)
+      if (!refundReason) {
+        alert('Please select a refund reason');
+        return;
+      }
+      
+      const amount = parseFloat(refundAmount) || order?.totalPrice || 0;
+      
+      requestRefund(
+        {
+          orderId,
+          data: {
+            reason: refundReason,
+            reasonText: refundReasonText,
+            amount,
+          },
+        },
+        {
+          onSuccess: () => {
+            alert('Refund request submitted successfully!');
+            setRefundModalOpen(false);
+            setRefundReason('');
+            setRefundReasonText('');
+            setRefundAmount('');
+            refetch();
+          },
+          onError: (error) => {
+            alert(error?.response?.data?.message || 'Failed to submit refund request. Please try again.');
+          },
+        }
+      );
     }
   };
 
@@ -592,6 +840,21 @@ console.log("order", order);
           Delete Order
         </DangerButton>
         <ActionGroup>
+          {isEligibleForRefund && (
+            <RefundButton onClick={handleRequestRefund}>
+              <FaUndo />
+              Request Refund
+            </RefundButton>
+          )}
+          {refundStatus?.requested && (
+            <RefundStatusBadge $status={refundStatus.status}>
+              Refund {refundStatus.status === 'pending' ? 'Pending' : 
+                      refundStatus.status === 'approved' ? 'Approved' :
+                      refundStatus.status === 'rejected' ? 'Rejected' :
+                      refundStatus.status === 'processing' ? 'Processing' :
+                      refundStatus.status === 'completed' ? 'Completed' : 'Requested'}
+            </RefundStatusBadge>
+          )}
           <SecondaryButton onClick={handleEditOrder}>
             <FaMapMarkerAlt />
             Change Shipping Address or Method
@@ -647,6 +910,288 @@ console.log("order", order);
                   setSelectedProductForReview(null);
                 }}
               />
+            </ReviewModalBody>
+          </ReviewModalContent>
+        </ReviewModalOverlay>
+      )}
+
+      {/* Refund Request Modal */}
+      {refundModalOpen && (
+        <ReviewModalOverlay onClick={() => setRefundModalOpen(false)}>
+          <ReviewModalContent onClick={(e) => e.stopPropagation()}>
+            <ReviewModalHeader>
+              <ReviewModalTitle>
+                Request Refund for Order #{order?.orderNumber}
+              </ReviewModalTitle>
+              <ReviewModalClose onClick={() => setRefundModalOpen(false)}>
+                ×
+              </ReviewModalClose>
+            </ReviewModalHeader>
+            <ReviewModalBody>
+              <RefundForm onSubmit={handleSubmitRefundRequest}>
+                {/* Refund Mode Toggle */}
+                <FormGroup>
+                  <Label>Refund Type *</Label>
+                  <ModeToggle>
+                    <ModeButton
+                      type="button"
+                      $active={refundMode === 'items'}
+                      onClick={() => setRefundMode('items')}
+                    >
+                      Select Items
+                    </ModeButton>
+                    <ModeButton
+                      type="button"
+                      $active={refundMode === 'whole'}
+                      onClick={() => setRefundMode('whole')}
+                    >
+                      Whole Order
+                    </ModeButton>
+                  </ModeToggle>
+                </FormGroup>
+
+                {refundMode === 'items' ? (
+                  <>
+                    {/* Item Selection */}
+                    <FormGroup>
+                      <Label>Select Items to Refund *</Label>
+                      <ItemsList>
+                        {order?.orderItems?.map((item, index) => {
+                          const itemId = item._id || item.id;
+                          const isSelected = selectedItems[itemId];
+                          const itemData = selectedItems[itemId] || {};
+                          const maxQty = item.quantity || 1;
+                          const alreadyRefundedQty = item.refundApprovedQty || 0;
+                          const availableQty = maxQty - alreadyRefundedQty;
+                          // Check if item can be refunded (not already fully refunded and not in pending/approved state)
+                          const refundStatus = item.refundStatus || 'none';
+                          const canRefund = availableQty > 0 && 
+                            (refundStatus === 'none' || refundStatus === 'rejected') &&
+                            refundStatus !== 'requested' && 
+                            refundStatus !== 'seller_review' && 
+                            refundStatus !== 'admin_review' && 
+                            refundStatus !== 'approved';
+
+                          return (
+                            <ItemCard key={itemId} $selected={isSelected} $disabled={!canRefund}>
+                              <ItemCheckbox>
+                                <input
+                                  type="checkbox"
+                                  checked={!!isSelected}
+                                  onChange={(e) => handleItemSelection(itemId, e.target.checked)}
+                                  disabled={!canRefund}
+                                />
+                                <ItemInfo>
+                                  <ItemImage src={item.product?.imageCover} alt={item.product?.name} />
+                                  <ItemDetails>
+                                    <ItemName>{item.product?.name}</ItemName>
+                                    <ItemMeta>
+                                      <span>Price: GH₵{item.price?.toFixed(2)}</span>
+                                      <span>Qty: {item.quantity}</span>
+                                      {alreadyRefundedQty > 0 && (
+                                        <span style={{ color: '#e74c3c' }}>
+                                          Already refunded: {alreadyRefundedQty}
+                                        </span>
+                                      )}
+                                    </ItemMeta>
+                                    {!canRefund && (
+                                      <HelperText style={{ color: '#e74c3c', marginTop: '0.5rem' }}>
+                                        This item cannot be refunded
+                                      </HelperText>
+                                    )}
+                                  </ItemDetails>
+                                </ItemInfo>
+                              </ItemCheckbox>
+
+                              {isSelected && canRefund && (
+                                <ItemRefundForm>
+                                  <FormGroup>
+                                    <Label>Quantity to Refund *</Label>
+                                    <Input
+                                      type="number"
+                                      min="1"
+                                      max={availableQty}
+                                      value={itemData.quantity || 1}
+                                      onChange={(e) => handleItemQuantityChange(itemId, e.target.value)}
+                                      required
+                                    />
+                                    <HelperText>
+                                      Available: {availableQty} of {maxQty}
+                                    </HelperText>
+                                  </FormGroup>
+
+                                  <FormGroup>
+                                    <Label>Refund Reason *</Label>
+                                    <Select
+                                      value={itemData.reason || ''}
+                                      onChange={(e) => handleItemReasonChange(itemId, e.target.value)}
+                                      required
+                                    >
+                                      <option value="">Select a reason</option>
+                                      <option value="defective_product">Defective Product</option>
+                                      <option value="wrong_item">Wrong Item Received</option>
+                                      <option value="not_as_described">Not as Described</option>
+                                      <option value="damaged_during_shipping">Damaged During Shipping</option>
+                                      <option value="late_delivery">Late Delivery</option>
+                                      <option value="changed_mind">Changed My Mind</option>
+                                      <option value="duplicate_order">Duplicate Order</option>
+                                      <option value="other">Other</option>
+                                    </Select>
+                                  </FormGroup>
+
+                                  <FormGroup>
+                                    <Label>Additional Details</Label>
+                                    <TextArea
+                                      value={itemData.reasonText || ''}
+                                      onChange={(e) => handleItemReasonTextChange(itemId, e.target.value)}
+                                      placeholder="Please provide more details about this item..."
+                                      rows={3}
+                                      maxLength={500}
+                                    />
+                                    <CharCount>{(itemData.reasonText || '').length}/500</CharCount>
+                                  </FormGroup>
+
+                                  <FormGroup>
+                                    <Label>Upload Images (Optional)</Label>
+                                    <Input
+                                      type="file"
+                                      accept="image/*"
+                                      multiple
+                                      onChange={(e) => handleItemImageUpload(itemId, e.target.files)}
+                                    />
+                                    <HelperText>
+                                      Upload images showing the issue (max 5 images)
+                                    </HelperText>
+                                    {itemData.images && itemData.images.length > 0 && (
+                                      <ImagePreview>
+                                        {Array.from(itemData.images).slice(0, 5).map((file, idx) => (
+                                          <ImagePreviewItem key={idx}>
+                                            <img src={URL.createObjectURL(file)} alt={`Preview ${idx + 1}`} />
+                                            <span>{file.name}</span>
+                                          </ImagePreviewItem>
+                                        ))}
+                                      </ImagePreview>
+                                    )}
+                                  </FormGroup>
+                                </ItemRefundForm>
+                              )}
+                            </ItemCard>
+                          );
+                        })}
+                      </ItemsList>
+                      {Object.keys(selectedItems).length === 0 && (
+                        <HelperText>Please select at least one item to refund</HelperText>
+                      )}
+                    </FormGroup>
+
+                    {/* Main reason (optional, for backward compatibility) */}
+                    <FormGroup>
+                      <Label>Main Refund Reason (Optional)</Label>
+                      <Select
+                        value={refundReason}
+                        onChange={(e) => setRefundReason(e.target.value)}
+                      >
+                        <option value="">Select a reason (optional)</option>
+                        <option value="defective_product">Defective Product</option>
+                        <option value="wrong_item">Wrong Item Received</option>
+                        <option value="not_as_described">Not as Described</option>
+                        <option value="damaged_during_shipping">Damaged During Shipping</option>
+                        <option value="late_delivery">Late Delivery</option>
+                        <option value="changed_mind">Changed My Mind</option>
+                        <option value="duplicate_order">Duplicate Order</option>
+                        <option value="other">Other</option>
+                      </Select>
+                    </FormGroup>
+
+                    <FormGroup>
+                      <Label>Additional Details (Optional)</Label>
+                      <TextArea
+                        value={refundReasonText}
+                        onChange={(e) => setRefundReasonText(e.target.value)}
+                        placeholder="Please provide more details about your refund request..."
+                        rows={3}
+                        maxLength={500}
+                      />
+                      <CharCount>{refundReasonText.length}/500</CharCount>
+                    </FormGroup>
+                  </>
+                ) : (
+                  <>
+                    {/* Whole Order Refund Form (Backward Compatible) */}
+                    <FormGroup>
+                      <Label>Refund Reason *</Label>
+                      <Select
+                        value={refundReason}
+                        onChange={(e) => setRefundReason(e.target.value)}
+                        required
+                      >
+                        <option value="">Select a reason</option>
+                        <option value="defective_product">Defective Product</option>
+                        <option value="wrong_item">Wrong Item Received</option>
+                        <option value="not_as_described">Not as Described</option>
+                        <option value="damaged_during_shipping">Damaged During Shipping</option>
+                        <option value="late_delivery">Late Delivery</option>
+                        <option value="changed_mind">Changed My Mind</option>
+                        <option value="duplicate_order">Duplicate Order</option>
+                        <option value="other">Other</option>
+                      </Select>
+                    </FormGroup>
+
+                    <FormGroup>
+                      <Label>Additional Details</Label>
+                      <TextArea
+                        value={refundReasonText}
+                        onChange={(e) => setRefundReasonText(e.target.value)}
+                        placeholder="Please provide more details about your refund request..."
+                        rows={4}
+                        maxLength={500}
+                      />
+                      <CharCount>{refundReasonText.length}/500</CharCount>
+                    </FormGroup>
+
+                    <FormGroup>
+                      <Label>Refund Amount (GH₵)</Label>
+                      <Input
+                        type="number"
+                        value={refundAmount}
+                        onChange={(e) => setRefundAmount(e.target.value)}
+                        min="0"
+                        max={order?.totalPrice || 0}
+                        step="0.01"
+                        required
+                      />
+                      <HelperText>
+                        Maximum refundable: GH₵{order?.totalPrice?.toFixed(2) || '0.00'}
+                      </HelperText>
+                    </FormGroup>
+                  </>
+                )}
+
+                <ButtonGroup>
+                  <CancelButton
+                    type="button"
+                    onClick={() => {
+                      setRefundModalOpen(false);
+                      setRefundReason('');
+                      setRefundReasonText('');
+                      setRefundAmount('');
+                      setSelectedItems({});
+                    }}
+                  >
+                    Cancel
+                  </CancelButton>
+                  <SubmitButton 
+                    type="submit" 
+                    disabled={
+                      isRefundPending || 
+                      (refundMode === 'items' && Object.keys(selectedItems).length === 0) ||
+                      (refundMode === 'whole' && !refundReason)
+                    }
+                  >
+                    {isRefundPending ? 'Submitting...' : 'Submit Request'}
+                  </SubmitButton>
+                </ButtonGroup>
+              </RefundForm>
             </ReviewModalBody>
           </ReviewModalContent>
         </ReviewModalOverlay>
@@ -1459,6 +2004,307 @@ const ReviewModalClose = styled.button`
 
 const ReviewModalBody = styled.div`
   padding: 2rem;
+`;
+
+const RefundButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--color-orange-600, #ea580c);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-semibold);
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: var(--color-orange-700, #c2410c);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  svg {
+    font-size: 1rem;
+  }
+`;
+
+const RefundStatusBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-semibold);
+  background: ${(props) => {
+    switch (props.$status) {
+      case 'pending':
+        return 'var(--color-yellow-100, #fef3c7)';
+      case 'approved':
+      case 'processing':
+        return 'var(--color-blue-100, #dbeafe)';
+      case 'completed':
+        return 'var(--color-green-100, #d1fae5)';
+      case 'rejected':
+        return 'var(--color-red-100, #fee2e2)';
+      default:
+        return 'var(--color-grey-100, #f3f4f6)';
+    }
+  }};
+  color: ${(props) => {
+    switch (props.$status) {
+      case 'pending':
+        return 'var(--color-yellow-800, #92400e)';
+      case 'approved':
+      case 'processing':
+        return 'var(--color-blue-800, #1e40af)';
+      case 'completed':
+        return 'var(--color-green-800, #065f46)';
+      case 'rejected':
+        return 'var(--color-red-800, #991b1b)';
+      default:
+        return 'var(--color-grey-800, #1f2937)';
+    }
+  }};
+`;
+
+const RefundForm = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+`;
+
+const FormGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
+
+const Label = styled.label`
+  font-size: var(--font-size-base);
+  font-weight: var(--font-semibold);
+  color: var(--color-grey-800);
+`;
+
+const Select = styled.select`
+  padding: 0.75rem;
+  border: 1px solid var(--color-grey-300);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-base);
+  background: white;
+  color: var(--color-grey-900);
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  }
+`;
+
+const TextArea = styled.textarea`
+  padding: 0.75rem;
+  border: 1px solid var(--color-grey-300);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-base);
+  font-family: inherit;
+  resize: vertical;
+  min-height: 100px;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  }
+`;
+
+const Input = styled.input`
+  padding: 0.75rem;
+  border: 1px solid var(--color-grey-300);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-base);
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  }
+`;
+
+const HelperText = styled.p`
+  font-size: var(--font-size-sm);
+  color: var(--color-grey-600);
+  margin: 0;
+`;
+
+const CharCount = styled.span`
+  font-size: var(--font-size-xs);
+  color: var(--color-grey-500);
+  text-align: right;
+  margin-top: -0.25rem;
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+`;
+
+const CancelButton = styled.button`
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  border: 1px solid var(--color-grey-300);
+  border-radius: var(--border-radius-md);
+  background: white;
+  color: var(--color-grey-700);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-semibold);
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: var(--color-grey-50);
+    border-color: var(--color-grey-400);
+  }
+`;
+
+const SubmitButton = styled.button`
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--border-radius-md);
+  background: var(--color-primary-600);
+  color: white;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-semibold);
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    background: var(--color-primary-700);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+// Item-level refund styled components
+const ModeToggle = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  background: var(--color-grey-100);
+  padding: 0.25rem;
+  border-radius: var(--border-radius-md);
+`;
+
+const ModeButton = styled.button`
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  background: ${props => props.$active ? 'var(--color-primary-600)' : 'transparent'};
+  color: ${props => props.$active ? 'white' : 'var(--color-grey-700)'};
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-semibold);
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: ${props => props.$active ? 'var(--color-primary-700)' : 'var(--color-grey-200)'};
+  }
+`;
+
+const ItemsList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  max-height: 500px;
+  overflow-y: auto;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--color-grey-200);
+  border-radius: var(--border-radius-md);
+  background: var(--color-grey-50);
+`;
+
+const ItemCard = styled.div`
+  background: white;
+  border: 2px solid ${props => props.$selected ? 'var(--color-primary-500)' : 'var(--color-grey-200)'};
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  transition: all 0.2s;
+  opacity: ${props => props.$disabled ? 0.6 : 1};
+  cursor: ${props => props.$disabled ? 'not-allowed' : 'pointer'};
+
+  &:hover {
+    border-color: ${props => props.$disabled ? 'var(--color-grey-200)' : 'var(--color-primary-400)'};
+    box-shadow: ${props => props.$disabled ? 'none' : '0 2px 8px rgba(0, 0, 0, 0.1)'};
+  }
+`;
+
+const ItemCheckbox = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+
+  input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    margin-top: 0.25rem;
+    cursor: pointer;
+  }
+`;
+
+const ItemInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex: 1;
+`;
+
+const ItemRefundForm = styled.div`
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-grey-200);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+`;
+
+const ImagePreview = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+`;
+
+const ImagePreviewItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  width: 80px;
+
+  img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--color-grey-200);
+  }
+
+  span {
+    font-size: var(--font-size-xs);
+    color: var(--color-grey-600);
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    max-width: 100%;
+  }
 `;
 
 export default OrderDetail;

@@ -1,4 +1,5 @@
 import axios from "axios";
+import logger from "../utils/logger";
 
 // API configuration
 const API_CONFIG = {
@@ -28,6 +29,9 @@ const PUBLIC_ROUTES = [
   "/discount",
   "/newsletter",
   "/search/results",
+  "/search/suggestions", // Public search suggestions endpoint
+  "/search/query", // Public search query endpoint
+  "/recommendations/products", // Public recommendation endpoints
   "/neighborhoods", // Public neighborhood routes
   "/neighborhoods/search", // Neighborhood search
   "/shipping/pickup-centers", // Public pickup centers endpoint
@@ -50,6 +54,12 @@ const PUBLIC_GET_ENDPOINTS = [
   /^\/neighborhoods\/[a-fA-F\d]{24}\/map-url$/, // Neighborhood map URL
   /^\/order\/track\/.+$/, // Public order tracking by tracking number
   /^\/shipping\/pickup-centers/, // Pickup centers endpoint (with optional query params)
+  /^\/search\/suggestions\/.+/, // Search suggestions endpoint
+  /^\/search\/query\/.+/, // Search query endpoint
+  /^\/recommendations\/products\/[a-fA-F\d]{24}\/related/, // Related products
+  /^\/recommendations\/products\/[a-fA-F\d]{24}\/also-bought/, // Also bought
+  /^\/recommendations\/products\/[a-fA-F\d]{24}\/ai-similar/, // AI similar
+  /^\/recommendations\/products\/trending/, // Trending products
 ];
 
 // Helper functions
@@ -139,7 +149,7 @@ api.interceptors.request.use((config) => {
   const normalizedPath = normalizePath(relativePath);
   const method = config.method ? config.method.toLowerCase() : "get";
 
-  console.debug(`[API] ${method.toUpperCase()} ${normalizedPath}`);
+  logger.debug(`[API] ${method.toUpperCase()} ${normalizedPath}`);
 
   // Skip authentication for public routes
   if (isPublicRoute(normalizedPath, method)) {
@@ -149,7 +159,7 @@ api.interceptors.request.use((config) => {
   // Cookie-based authentication: JWT is automatically sent via withCredentials: true
   // Backend will read from req.cookies.jwt
   // No need to manually attach Authorization header - cookie is sent automatically
-  console.debug(`[API] Cookie will be sent automatically for ${method.toUpperCase()} ${normalizedPath}`);
+  logger.debug(`[API] Cookie will be sent automatically for ${method.toUpperCase()} ${normalizedPath}`);
 
   return config;
 });
@@ -158,7 +168,23 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error("API Error:", error.response?.data || error.message);
+    // Enhanced error logging
+    if (error.code === 'ECONNABORTED') {
+      console.error("[API] Request timeout:", error.config?.url);
+    } else if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+      console.error("[API] Network error - check if backend is running:", {
+        url: error.config?.url,
+        baseURL: error.config?.baseURL,
+        method: error.config?.method,
+      });
+    } else {
+      console.error("[API] Error:", {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        url: error.config?.url,
+      });
+    }
     return Promise.reject(error);
   }
 );

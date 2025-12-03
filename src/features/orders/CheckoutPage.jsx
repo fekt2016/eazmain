@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import styled, { css } from "styled-components";
 import { pulse } from "../../shared/styles/animations";
+import logger from "../../shared/utils/logger";
 import {
   FaCheck,
   FaMapMarkerAlt,
@@ -23,7 +24,7 @@ import {
 } from "../../shared/hooks/useCart";
 import { useApplyCoupon } from "../../shared/hooks/useCoupon";
 import useAuth from "../../shared/hooks/useAuth";
-import { useCreditBalance } from "../../shared/hooks/useCreditbalance";
+import { useWalletBalance } from "../../shared/hooks/useWallet";
 import storage from "../../shared/utils/storage";
 import { usePaystackPayment } from "../../shared/hooks/usePaystackPayment";
 import { useGetPickupCenters, useCalculateShippingQuote } from "../../shared/hooks/useShipping";
@@ -36,7 +37,7 @@ import {
 } from "../../shared/components/ui/Buttons";
 import { Card } from "../../shared/components/ui/Cards";
 import { ButtonSpinner, ErrorState, LoadingState } from "../../components/loading";
-import usePageTitle from "../../shared/hooks/usePageTitle";
+import useDynamicPageTitle from "../../shared/hooks/useDynamicPageTitle";
 import seoConfig from "../../shared/config/seoConfig";
 import NeighborhoodAutocomplete from "../../shared/components/NeighborhoodAutocomplete";
 
@@ -45,11 +46,9 @@ import NeighborhoodAutocomplete from "../../shared/components/NeighborhoodAutoco
 // ────────────────────────────────────────────────
 
 const normalizeApiResponse = (response) => {
-  console.log("[normalizeApiResponse] Input:", response);
-  
   // Handle null/undefined
   if (!response) {
-    console.warn("[normalizeApiResponse] Response is null/undefined");
+    logger.warn("[normalizeApiResponse] Response is null/undefined");
     return null;
   }
   
@@ -59,44 +58,38 @@ const normalizeApiResponse = (response) => {
   // Path 1: response.data.data (double nested)
   if (response?.data?.data) {
     payload = response.data.data;
-    console.log("[normalizeApiResponse] Found response.data.data");
   }
   // Path 2: response.data (single nested)
   else if (response?.data) {
     payload = response.data;
-    console.log("[normalizeApiResponse] Found response.data");
   }
   // Path 3: response directly
   else {
     payload = response;
-    console.log("[normalizeApiResponse] Using response directly");
   }
-  
-  console.log("[normalizeApiResponse] Normalized payload:", payload);
-  console.log("[normalizeApiResponse] totalShippingFee in payload:", payload?.totalShippingFee);
   
   return payload;
 };
 
 const getShippingItems = (rawItems) => {
-  console.log("📦 getShippingItems called with rawItems:", rawItems);
-  console.log("📦 rawItems type:", typeof rawItems);
-  console.log("📦 rawItems is array?", Array.isArray(rawItems));
-  console.log("📦 rawItems.length:", rawItems?.length);
+  logger.log("📦 getShippingItems called with rawItems:", rawItems);
+  logger.log("📦 rawItems type:", typeof rawItems);
+  logger.log("📦 rawItems is array?", Array.isArray(rawItems));
+  logger.log("📦 rawItems.length:", rawItems?.length);
   
   if (!rawItems || !Array.isArray(rawItems) || rawItems.length === 0) {
-    console.warn("⚠️ getShippingItems: rawItems is empty or not an array");
+    logger.warn("⚠️ getShippingItems: rawItems is empty or not an array");
     return [];
   }
   
   const mapped = rawItems
     .map((item, index) => {
-      console.log(`📦 Processing item ${index}:`, item);
-      console.log(`📦 Item ${index} - product:`, item.product);
-      console.log(`📦 Item ${index} - product._id:`, item.product?._id);
-      console.log(`📦 Item ${index} - product.seller:`, item.product?.seller);
-      console.log(`📦 Item ${index} - product.seller._id:`, item.product?.seller?._id);
-      console.log(`📦 Item ${index} - quantity:`, item.quantity);
+      logger.log(`📦 Processing item ${index}:`, item);
+      logger.log(`📦 Item ${index} - product:`, item.product);
+      logger.log(`📦 Item ${index} - product._id:`, item.product?._id);
+      logger.log(`📦 Item ${index} - product.seller:`, item.product?.seller);
+      logger.log(`📦 Item ${index} - product.seller._id:`, item.product?.seller?._id);
+      logger.log(`📦 Item ${index} - quantity:`, item.quantity);
       
       // Handle different seller formats:
       // 1. seller is an object with _id: { _id: "...", name: "..." }
@@ -125,11 +118,11 @@ const getShippingItems = (rawItems) => {
         quantity: item.quantity || 1,
       };
       
-      console.log(`📦 Item ${index} mapped:`, mappedItem);
-      console.log(`📦 Item ${index} - hasProductId:`, !!mappedItem.productId);
-      console.log(`📦 Item ${index} - hasSellerId:`, !!mappedItem.sellerId);
-      console.log(`📦 Item ${index} - sellerId value:`, sellerId);
-      console.log(`📦 Item ${index} - productId value:`, mappedItem.productId);
+      logger.log(`📦 Item ${index} mapped:`, mappedItem);
+      logger.log(`📦 Item ${index} - hasProductId:`, !!mappedItem.productId);
+      logger.log(`📦 Item ${index} - hasSellerId:`, !!mappedItem.sellerId);
+      logger.log(`📦 Item ${index} - sellerId value:`, sellerId);
+      logger.log(`📦 Item ${index} - productId value:`, mappedItem.productId);
       
       return mappedItem;
     });
@@ -137,13 +130,13 @@ const getShippingItems = (rawItems) => {
   const filtered = mapped.filter((item) => {
     const isValid = item.productId && item.sellerId;
     if (!isValid) {
-      console.warn("⚠️ Filtering out item - missing productId or sellerId:", item);
+      logger.warn("⚠️ Filtering out item - missing productId or sellerId:", item);
     }
     return isValid;
   });
   
-  console.log("📦 Final shippingItems:", filtered);
-  console.log("📦 Final shippingItems.length:", filtered.length);
+  logger.log("📦 Final shippingItems:", filtered);
+  logger.log("📦 Final shippingItems.length:", filtered.length);
   return filtered;
 };
 
@@ -208,7 +201,7 @@ const CheckoutPage = () => {
   const { mutate: createOrder, isPending: isCreatingOrder, error: createOrderError } =
     useCreateOrder();
   const { initializePaystackPayment } = usePaystackPayment();
-  const { data: creditBalanceData, isLoading: isCreditBalanceLoading } = useCreditBalance();
+  const { data: walletData, isLoading: isCreditBalanceLoading } = useWalletBalance();
 
   // ────────────────────────────────────────────────
   // Local state
@@ -234,8 +227,8 @@ const CheckoutPage = () => {
 
   // Credit balance data
   const creditBalance = useMemo(() => {
-    return creditBalanceData?.data?.creditbalance?.balance || 0;
-  }, [creditBalanceData]);
+    return walletData?.data?.wallet?.balance || 0;
+  }, [walletData]);
 
   // Address form state
   const [newAddress, setNewAddress] = useState({
@@ -489,7 +482,7 @@ const CheckoutPage = () => {
           setShippingQuote(payload);
         },
         onError: (error) => {
-          console.error("Shipping calculation error:", error);
+          logger.error("Shipping calculation error:", error);
           setShippingFee(0);
           setShippingQuote(null);
         },
@@ -512,7 +505,7 @@ const CheckoutPage = () => {
   // ────────────────────────────────────────────────
 
   const handleDeliveryMethodChange = (method) => {
-    console.log("🔄 Delivery method changed to:", method);
+    logger.log("🔄 Delivery method changed to:", method);
     setDeliveryMethod(method);
     // Reset delivery speed when switching away from dispatch
     if (method !== "dispatch") {
@@ -616,7 +609,7 @@ const CheckoutPage = () => {
             digitalAddress: digitalAddress,
           }));
         } catch (error) {
-          console.error("Reverse geocoding error:", error);
+          logger.error("Reverse geocoding error:", error);
           setLocationError(
             "Failed to get address details. Please enter manually."
           );
@@ -625,7 +618,7 @@ const CheckoutPage = () => {
         }
       },
       (error) => {
-        console.error("Geolocation error:", error);
+        logger.error("Geolocation error:", error);
         setLocationError(
           "Location access denied. Please enable location services."
         );
@@ -766,7 +759,7 @@ const CheckoutPage = () => {
         0;
 
         if (!price || price === 0) {
-        console.warn("Product price not found:", {
+        logger.warn("Product price not found:", {
             productId: product.product._id,
             productName: product.product.name,
             variant: product.variant,
@@ -821,19 +814,19 @@ const CheckoutPage = () => {
 
         if (paymentMethod === "mobile_money") {
           try {
-            console.log("[CheckoutPage] Initializing Paystack payment for order:", order._id);
+            logger.log("[CheckoutPage] Initializing Paystack payment for order:", order._id);
             const { redirectTo } = await initializePaystackPayment({
               orderId: order._id,
               amount: total * 100, // smallest currency unit
               email: order.user?.email || "",
             });
 
-            console.log("[CheckoutPage] Redirecting to Paystack:", redirectTo);
+            logger.log("[CheckoutPage] Redirecting to Paystack:", redirectTo);
             // Use window.location.href for full page redirect to Paystack
             // After payment, Paystack will redirect back to our callback URL
             window.location.href = redirectTo;
           } catch (paymentError) {
-            console.error("[CheckoutPage] Payment initialization error:", paymentError);
+            logger.error("[CheckoutPage] Payment initialization error:", paymentError);
             setFormError(
               paymentError.response?.data?.message ||
                 "Failed to initialize payment. Please try again."
@@ -842,23 +835,23 @@ const CheckoutPage = () => {
         } else if (paymentMethod === "credit_balance") {
           // Credit balance payment is handled on the backend
           // Navigate to order confirmation page
-          console.log("[CheckoutPage] Credit balance payment - navigating to order confirmation");
+          logger.log("[CheckoutPage] Credit balance payment - navigating to order confirmation");
           const confirmationPath = `/order-confirmation?orderId=${order._id}`;
           navigate(confirmationPath);
         } else {
           // For non-Paystack payments (COD, bank transfer), navigate directly with order data
           // Use the same URL structure as Paystack: /order-confirmation?orderId=xxx
           // This ensures consistency between payment methods
-          console.log("[CheckoutPage] Navigating to order confirmation (non-Paystack payment)");
+          logger.log("[CheckoutPage] Navigating to order confirmation (non-Paystack payment)");
           
           // Safety check: Ensure we're in the eazmain app (port 5173), not admin app (port 5174)
           const currentPort = window.location.port;
           const isEazmain = currentPort === '5173' || currentPort === '' || !currentPort.includes('5174');
           
           if (!isEazmain) {
-            console.error(`[CheckoutPage] ❌ CRITICAL: Current port is ${currentPort}, expected 5173 (eazmain)`);
-            console.error(`[CheckoutPage] Current URL: ${window.location.href}`);
-            console.error(`[CheckoutPage] This should not happen - you may be in the wrong app!`);
+            logger.error(`[CheckoutPage] ❌ CRITICAL: Current port is ${currentPort}, expected 5173 (eazmain)`);
+            logger.error(`[CheckoutPage] Current URL: ${window.location.href}`);
+            logger.error(`[CheckoutPage] This should not happen - you may be in the wrong app!`);
           }
           
           // Build URL with query parameter (same format as Paystack redirect)
@@ -866,9 +859,9 @@ const CheckoutPage = () => {
           // We'll use: /order-confirmation?orderId=XXX (reference/trxref only for Paystack)
           const confirmationPath = `/order-confirmation?orderId=${order._id}`;
           
-          console.log(`[CheckoutPage] Navigating to: ${confirmationPath}`);
-          console.log(`[CheckoutPage] Current location: ${window.location.pathname}`);
-          console.log(`[CheckoutPage] Current origin: ${window.location.origin}`);
+          logger.log(`[CheckoutPage] Navigating to: ${confirmationPath}`);
+          logger.log(`[CheckoutPage] Current location: ${window.location.pathname}`);
+          logger.log(`[CheckoutPage] Current origin: ${window.location.origin}`);
           
           // Navigate with both URL query param and state (for backward compatibility)
           navigate(confirmationPath, {
@@ -901,7 +894,7 @@ const CheckoutPage = () => {
         }
       },
       onError: (error) => {
-        console.error("Order creation error:", error);
+        logger.error("Order creation error:", error);
         setFormError(
           error.response?.data?.message || "Failed to place order"
         );

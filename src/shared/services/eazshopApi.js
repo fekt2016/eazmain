@@ -1,4 +1,5 @@
 import api from './api';
+import logger from '../utils/logger';
 
 export const eazshopService = {
   // Get all EazShop products (public endpoint)
@@ -8,7 +9,7 @@ export const eazshopService = {
       const response = await api.get('/product/eazshop');
       return response.data;
     } catch (error) {
-      console.error('Error fetching EazShop products:', error);
+      logger.error('Error fetching EazShop products:', error);
       // Return empty array on error to prevent homepage crash
       return { data: { products: [] }, results: 0 };
     }
@@ -20,7 +21,7 @@ export const eazshopService = {
       const response = await api.get('/eazshop/orders');
       return response.data;
     } catch (error) {
-      console.error('Error fetching EazShop orders:', error);
+      logger.error('Error fetching EazShop orders:', error);
       throw error;
     }
   },
@@ -31,7 +32,7 @@ export const eazshopService = {
       const response = await api.get('/eazshop/shipping-fees');
       return response.data;
     } catch (error) {
-      console.error('Error fetching EazShop shipping fees:', error);
+      logger.error('Error fetching EazShop shipping fees:', error);
       throw error;
     }
   },
@@ -42,7 +43,7 @@ export const eazshopService = {
       const response = await api.patch('/eazshop/shipping-fees', fees);
       return response.data;
     } catch (error) {
-      console.error('Error updating EazShop shipping fees:', error);
+      logger.error('Error updating EazShop shipping fees:', error);
       throw error;
     }
   },
@@ -54,7 +55,7 @@ export const eazshopService = {
       const response = await api.get('/eazshop/pickup-centers', { params });
       return response.data;
     } catch (error) {
-      console.error('Error fetching pickup centers:', error);
+      logger.error('Error fetching pickup centers:', error);
       throw error;
     }
   },

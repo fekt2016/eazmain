@@ -18,7 +18,7 @@ const useCategory = () => {
         // Return the response data
         return response;
       } catch (error) {
-        console.error("Failed to fetch categories:", error);
+        logger.error("Failed to fetch categories:", error);
         // Return a structure that matches the expected format
         return {
           status: 'error',
@@ -39,10 +39,10 @@ const useCategory = () => {
         if (!id) return null;
         try {
           const { data } = await categoryService.getCategory(id);
-          console.log(data);
+          logger.log(data);
           return data || null;
         } catch (error) {
-          console.error(`Failed to fetch category ${id}:`, error);
+          logger.error(`Failed to fetch category ${id}:`, error);
           throw new Error(`Failed to load category: ${error.message}`);
         }
       },
@@ -67,7 +67,7 @@ const useCategory = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
-      console.log("Category created successfully!!!");
+      logger.log("Category created successfully!!!");
     },
   });
 
@@ -84,7 +84,7 @@ const useCategory = () => {
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       queryClient.invalidateQueries({ queryKey: ["category", variables.id] });
-      console.log("Category updated successfully!!!");
+      logger.log("Category updated successfully!!!");
     },
   });
 
@@ -97,7 +97,7 @@ const useCategory = () => {
     onSuccess: (deletedId) => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       queryClient.removeQueries({ queryKey: ["category", deletedId] });
-      console.log("Category deleted successfully!!!");
+      logger.log("Category deleted successfully!!!");
     },
   });
   const getParentCategories = useQuery({
@@ -108,7 +108,7 @@ const useCategory = () => {
         // Backend returns: { status: 'success', results: number, data: { categories: [...] } }
         return response;
       } catch (error) {
-        console.error("Failed to fetch parent categories:", error.message);
+        logger.error("Failed to fetch parent categories:", error.message);
         // Return a structure that matches the expected format
         return {
           status: 'error',

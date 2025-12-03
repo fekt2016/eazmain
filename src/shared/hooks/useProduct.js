@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { productService } from '../services/productApi';
+import logger from '../utils/logger';
 // import api from "../services/api"';
 
 const useProduct = () => {
@@ -12,7 +13,7 @@ const useProduct = () => {
       try {
         return await productService.getAllProducts();
       } catch (error) {
-        console.error("Failed to fetch products:", error);
+        logger.error("Failed to fetch products:", error);
         throw new Error("Failed to load products");
       }
     },
@@ -32,7 +33,7 @@ const useProduct = () => {
 
           return res.data;
         } catch (error) {
-          console.error(`Failed to fetch product ${id}:`, error);
+          logger.error(`Failed to fetch product ${id}:`, error);
           throw new Error(`Failed to load product: ${error.message}`);
         }
       },
@@ -43,7 +44,7 @@ const useProduct = () => {
 
   // Get all products by seller
   const useGetAllProductBySeller = (sellerId) => {
-    console.log(" product hooksellerId", sellerId);
+    logger.log(" product hooksellerId", sellerId);
     return useQuery({
       queryKey: ["products", sellerId],
       queryFn: async () => {
@@ -71,7 +72,7 @@ const useProduct = () => {
           // Handle different response structures
           return response.products || response.data?.products || response;
         } catch (error) {
-          console.error("Error fetching products:", error);
+          logger.error("Error fetching products:", error);
           return [];
         }
       },
@@ -97,7 +98,7 @@ const useProduct = () => {
 
     onSuccess: () => {
       queryClient.invalidateQueries(["product"]);
-      console.log("product updated successfully!!!");
+      logger.log("product updated successfully!!!");
     },
   });
   // Delete product mutation
@@ -105,7 +106,7 @@ const useProduct = () => {
     mutationFn: (id) => productService.deleteProduct(id),
     onSuccess: () => {
       queryClient.getQueryData(["product"]);
-      console.log("product deleted successfully!!!");
+      logger.log("product deleted successfully!!!");
     },
   });
 
@@ -114,7 +115,7 @@ const useProduct = () => {
     queryFn: () => productService.getProductCountByCategory(),
     onSuccess: () => {
       queryClient.invalidateQueries(["productCountByCategory"]);
-      console.log("product count by category updated successfully!!!");
+      logger.log("product count by category updated successfully!!!");
     },
   });
 

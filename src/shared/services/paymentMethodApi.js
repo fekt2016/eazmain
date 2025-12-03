@@ -1,4 +1,5 @@
 import api from "./api";
+import logger from '../utils/logger';
 
 const paymentMethodApi = {
   getPaymentMethods: async () => {
@@ -6,7 +7,7 @@ const paymentMethodApi = {
       const response = await api.get("/paymentmethod");
       return response.data;
     } catch (error) {
-      console.error("Error fetching payment methods:", error);
+      logger.error("Error fetching payment methods:", error);
       throw error;
     }
   },
@@ -15,7 +16,7 @@ const paymentMethodApi = {
       const response = await api.post("/paymentmethod", paymentMethodData);
       return response.data;
     } catch (error) {
-      console.error("Error creating payment method:", error);
+      logger.error("Error creating payment method:", error);
       throw error;
     }
   },
@@ -24,7 +25,7 @@ const paymentMethodApi = {
       const response = await api.delete(`/paymentmethod/${paymentMethodId}`);
       return response.data;
     } catch (error) {
-      console.error("Error deleting payment method:", error);
+      logger.error("Error deleting payment method:", error);
       throw error;
     }
   },
@@ -36,7 +37,7 @@ const paymentMethodApi = {
       );
       return response.data;
     } catch (error) {
-      console.error("Error updating payment method:", error);
+      logger.error("Error updating payment method:", error);
       throw error;
     }
   },
@@ -45,7 +46,7 @@ const paymentMethodApi = {
       const response = await api.get(`/paymentmethod/${paymentMethodId}`);
       return response.data;
     } catch (error) {
-      console.error("Error fetching payment method:", error);
+      logger.error("Error fetching payment method:", error);
       throw error;
     }
   },
@@ -54,7 +55,7 @@ const paymentMethodApi = {
       const response = await api.get("/paymentmethod/default");
       return response.data;
     } catch (error) {
-      console.error("Error fetching default payment method:", error);
+      logger.error("Error fetching default payment method:", error);
       throw error;
     }
   },
@@ -69,7 +70,7 @@ const paymentMethodApi = {
       );
       return response.data;
     } catch (error) {
-      console.error("Error setting default payment method:", error);
+      logger.error("Error setting default payment method:", error);
       throw error;
     }
   },
