@@ -76,6 +76,7 @@ const LogoContainer = styled.div`
 const LogoLink = styled(Link)`
   text-decoration: none;
   display: inline-flex;
+  cursor: pointer;
 `;
 
 const LogoIcon = styled.div`

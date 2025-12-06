@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from "react";
 import styled, { keyframes } from "styled-components";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import { devicesMax } from '../../shared/styles/breakpoint';
 import {
   useGetHistory,
@@ -9,6 +11,7 @@ import {
 import DeleteModal from '../../shared/components/modals/DeleteModal';
 import RatingStars from '../../shared/components/RatingStars';
 import { LoadingState, ButtonSpinner, SpinnerContainer } from '../../components/loading';
+import logger from '../../shared/utils/logger';
 import { 
   FaSearch, 
   FaClock, 
@@ -24,6 +27,7 @@ import {
 } from "react-icons/fa";
 
 const BrowserHistoryPage = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
   const [selectedItems, setSelectedItems] = useState([]);
@@ -151,12 +155,12 @@ const BrowserHistoryPage = () => {
   };
 
   const handleDeleteConfirmed = () => {
-    console.log("Deleting selected items:", selectedItems);
+    // Deleting selected items
     if (deletionType === "selected") {
       deleteMultipleItems(selectedItems, {
         onSuccess: () => setSelectedItems([]),
         onError: (error) => {
-          console.error("Deletion error:", error);
+          logger.error("Deletion error:", error);
           alert(`Failed to delete items: ${error.message}`);
         },
         onSettled: () => setShowDeleteModal(false),
@@ -165,7 +169,7 @@ const BrowserHistoryPage = () => {
       clearAll(undefined, {
         onSuccess: () => setSelectedItems([]),
         onError: (error) => {
-          console.error("Clear all error:", error);
+          logger.error("Clear all error:", error);
           alert(`Failed to clear history: ${error.message}`);
         },
         onSettled: () => {
@@ -406,7 +410,21 @@ const BrowserHistoryPage = () => {
                           {formatTimeSince(item.viewedAt)}
                         </TimeAgo>
                         <ViewButton
-                          onClick={() => alert(`Navigating to ${item.name}`)}
+                          onClick={() => {
+                            if (item.type === 'product' && item.productId) {
+                              navigate(`/products/${item.productId}`);
+                            } else if (item.type === 'seller' && item.sellerId) {
+                              navigate(`/seller/${item.sellerId}`);
+                            } else {
+                              // Fallback: try to navigate using item ID
+                              const itemId = item.productId || item.sellerId || item.id;
+                              if (itemId) {
+                                navigate(`/${item.type}s/${itemId}`);
+                              } else {
+                                toast.info('Unable to navigate to this item');
+                              }
+                            }
+                          }}
                         >
                           <FaEye />
                           View Again

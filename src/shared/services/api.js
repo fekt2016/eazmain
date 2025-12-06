@@ -2,10 +2,11 @@ import axios from "axios";
 import logger from "../utils/logger";
 
 // API configuration
+// SECURITY: Use environment variables for API URLs
 const API_CONFIG = {
-  DEVELOPMENT: "http://localhost:4000/api/v1/",
-  PRODUCTION: "https://eazworld.com/api/v1/",
-  TIMEOUT: 500000,
+  DEVELOPMENT: import.meta.env.VITE_API_URL || "http://localhost:4000/api/v1/",
+  PRODUCTION: import.meta.env.VITE_API_URL || "https://eazworld.com/api/v1/",
+  TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT || "500000", 10),
 };
 
 // Public routes configuration
@@ -52,7 +53,7 @@ const PUBLIC_GET_ENDPOINTS = [
   /^\/neighborhoods\/city\/.+/, // Neighborhoods by city
   /^\/neighborhoods\/[a-fA-F\d]{24}$/, // Single neighborhood by ID
   /^\/neighborhoods\/[a-fA-F\d]{24}\/map-url$/, // Neighborhood map URL
-  /^\/order\/track\/.+$/, // Public order tracking by tracking number
+  /^\/order\/track\/.+$/, // Public order tracking by tracking number (FIX: Already included)
   /^\/shipping\/pickup-centers/, // Pickup centers endpoint (with optional query params)
   /^\/search\/suggestions\/.+/, // Search suggestions endpoint
   /^\/search\/query\/.+/, // Search query endpoint
@@ -64,29 +65,26 @@ const PUBLIC_GET_ENDPOINTS = [
 
 // Helper functions
 const getBaseURL = () => {
-  // Debug environment variables
-  // console.log("Environment mode:", import.meta.env.MODE);
-  // console.log("VITE_API_URL:", import.meta.env.VITE_API_URL);
-  // console.log("PROD:", import.meta.env.PROD);
-  // console.log("DEV:", import.meta.env.DEV);
-  // console.log(window.location.hostname);
+  // SECURITY: Use environment variable if available (highest priority)
+  // This prevents hardcoded URLs and allows different environments
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
 
-  // Use environment variable if available (highest priority)
+  // Fallback to hostname-based detection (less secure, but backward compatible)
   if (
-    window.location.hostname === "localhost" ||
-    window.location.hostname === "127.0.0.1"
+    typeof window !== 'undefined' &&
+    (window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1")
   ) {
-    // console.log("Using VITE_API_URL from environment");
     return API_CONFIG.DEVELOPMENT;
   }
 
   // Use production API for production builds
-  // console.log("Using production API", API_CONFIG.PRODUCTION);
   return API_CONFIG.PRODUCTION;
 };
 
 const getRelativePath = (url) => {
-  // console.log("checking url", url);
   if (url.startsWith("http")) {
     try {
       const parsedUrl = new URL(url);
@@ -99,7 +97,7 @@ const getRelativePath = (url) => {
 
       return path;
     } catch (e) {
-      console.error("URL parsing error:", e);
+      logger.error("URL parsing error:", e);
       return url;
     }
   }
@@ -134,6 +132,15 @@ const isPublicRoute = (normalizedPath, method) => {
 // Browser automatically sends cookies via withCredentials: true
 // Backend reads from req.cookies.jwt
 
+// SECURITY: Helper to get CSRF token from cookie
+const getCookie = (name) => {
+  if (typeof document === 'undefined') return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+};
+
 // Create axios instance with a baseURL that might be updated later
 let baseURL = getBaseURL();
 
@@ -161,6 +168,23 @@ api.interceptors.request.use((config) => {
   // No need to manually attach Authorization header - cookie is sent automatically
   logger.debug(`[API] Cookie will be sent automatically for ${method.toUpperCase()} ${normalizedPath}`);
 
+  // SECURITY: CSRF protection - add CSRF token to state-changing operations
+  // Backend should provide CSRF token in response headers or initial page load
+  // For now, we'll get it from cookie (backend should set it)
+  if (['post', 'patch', 'put', 'delete'].includes(method)) {
+    // Try to get CSRF token from cookie
+    const csrfToken = getCookie('csrf-token');
+    if (csrfToken) {
+      config.headers['X-CSRF-Token'] = csrfToken;
+      logger.debug(`[API] CSRF token added to ${method.toUpperCase()} ${normalizedPath}`);
+    } else {
+      // If no CSRF token, log warning (backend should provide it)
+      if (import.meta.env.DEV) {
+        logger.warn(`[API] No CSRF token found for ${method.toUpperCase()} ${normalizedPath} - backend should provide CSRF token`);
+      }
+    }
+  }
+
   return config;
 });
 
@@ -170,15 +194,15 @@ api.interceptors.response.use(
   (error) => {
     // Enhanced error logging
     if (error.code === 'ECONNABORTED') {
-      console.error("[API] Request timeout:", error.config?.url);
+      logger.error("[API] Request timeout:", error.config?.url);
     } else if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
-      console.error("[API] Network error - check if backend is running:", {
+      logger.error("[API] Network error - check if backend is running:", {
         url: error.config?.url,
         baseURL: error.config?.baseURL,
         method: error.config?.method,
       });
     } else {
-      console.error("[API] Error:", {
+      logger.error("[API] Error:", {
         message: error.message,
         status: error.response?.status,
         data: error.response?.data,

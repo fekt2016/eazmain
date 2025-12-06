@@ -1,10 +1,11 @@
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { orderService } from '../services/orderApi'; // Adjust the import path as necessary
+import logger from '../utils/logger';
 
 // import { useNavigate } from "react-router-dom";
 
 export const getOrderStructure = (orderData) => {
-  console.log("orderData structure", orderData);
+  // Processing order data structure
   if (!orderData) return [];
 
   if (orderData?.data?.data?.orderss) {

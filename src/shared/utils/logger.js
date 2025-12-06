@@ -14,10 +14,12 @@ class Logger {
   }
 
   error(...args) {
-    // Always log errors, but in production send to error reporting service
+    // In production, only send to error reporting service (don't log to console)
     if (isProduction) {
       // TODO: Send to error reporting service (e.g., Sentry)
       // errorReportingService.captureException(new Error(args.join(' ')));
+      // Do NOT log to console in production to prevent leaking sensitive data
+      return;
     }
     console.error(...args);
   }

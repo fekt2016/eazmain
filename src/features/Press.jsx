@@ -2,6 +2,7 @@ import React from "react";
 import styled from "styled-components";
 import { FaNewspaper, FaEnvelope, FaPhone, FaMapMarkerAlt, FaDownload } from "react-icons/fa";
 import { PATHS } from "../routes/routePaths";
+import { toast } from "react-toastify";
 
 const PressContainer = styled.div`
   min-height: 100vh;
@@ -175,6 +176,31 @@ const ListItem = styled.li`
 `;
 
 export default function Press() {
+  const handleDownloadMediaKit = async () => {
+    try {
+      // For now, show a message that this feature is being prepared
+      // In the future, this can be connected to an API endpoint that serves the media kit
+      toast.info('Media kit download is being prepared. Please contact support for immediate access to media resources.');
+      
+      // Future implementation when API is ready:
+      // const response = await fetch('/api/media-kit/download');
+      // if (!response.ok) throw new Error('Download failed');
+      // const blob = await response.blob();
+      // const url = window.URL.createObjectURL(blob);
+      // const a = document.createElement('a');
+      // a.href = url;
+      // a.download = 'eazshop-media-kit.zip';
+      // document.body.appendChild(a);
+      // a.click();
+      // document.body.removeChild(a);
+      // window.URL.revokeObjectURL(url);
+      // toast.success('Media kit downloaded successfully!');
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Failed to download media kit. Please try again later.');
+    }
+  };
+
   return (
     <PressContainer>
       <Container>
@@ -228,11 +254,9 @@ export default function Press() {
               <strong>Product Images:</strong> High-quality product and platform screenshots
             </ListItem>
           </List>
-          <Button href="#download" onClick={(e) => {
-            e.preventDefault();
-            // TODO: Add download functionality
-            alert("Media resources download coming soon!");
-          }}>
+          <Button 
+            onClick={handleDownloadMediaKit}
+          >
             <FaDownload />
             Download Media Kit
           </Button>

@@ -137,7 +137,7 @@ export default function CategoryPage() {
     <PageContainer>
       {/* Premium Category Hero */}
       <HeroSection>
-        <Container>
+        <Container style={{ width: '100%', maxWidth: '100%' }}>
           {isCategoryLoading ? (
             <SkeletonLoader width="100%" height="400px" borderRadius="32px" />
           ) : (
@@ -181,7 +181,7 @@ export default function CategoryPage() {
       {/* Subcategory Tabs */}
       {subcategories.length > 0 && (
         <SubcategorySection>
-          <Container>
+          <Container style={{ width: '100%', maxWidth: '100%' }}>
             <SectionTitle>Explore Categories</SectionTitle>
             <SubcategoryTabsContainer>
               <SubcategoryTabs>
@@ -391,6 +391,8 @@ const PageContainer = styled.div`
   padding: 2rem 0 4rem;
   background-color: #f8fafc;
   min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
 `;
 
 const HeroSection = styled.div`

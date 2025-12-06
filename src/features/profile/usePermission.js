@@ -1,12 +1,13 @@
 // usePermission.js
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import permissionApi from '../../shared/services/permissionApi';
+import logger from '../../shared/utils/logger';
 
 export const useGetPermissions = () => {
   return useQuery({
     queryKey: ["permissions"],
     queryFn: permissionApi.getPermissions,
-    onError: (error) => console.error("Error fetching permissions:", error),
+    onError: (error) => logger.error("Error fetching permissions:", error),
   });
 };
 
@@ -15,16 +16,16 @@ export const useUpdateEmailPrefs = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (prefs) => {
-      console.log("prefs", prefs);
+      logger.log("prefs", prefs);
       const response = await permissionApi.updateEmailPrefs(prefs);
-      console.log("response", response);
+      logger.log("response", response);
       return response;
     },
     onSuccess: (data) => {
-      console.log("Email prefs updated successfully", data);
+      logger.log("Email prefs updated successfully", data);
       queryClient.invalidateQueries(["permissions"]);
     },
-    onError: (error) => console.error("Error updating email prefs:", error),
+    onError: (error) => logger.error("Error updating email prefs:", error),
   });
 };
 
@@ -33,14 +34,14 @@ export const useUpdateSMSPrefs = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (smsPrefs) => {
-      console.log("smsPrefs", smsPrefs);
+      logger.log("smsPrefs", smsPrefs);
       const response = await permissionApi.updateSMSPrefs(smsPrefs);
       return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["permissions"]);
     },
-    onError: (error) => console.error("Error updating SMS prefs:", error),
+    onError: (error) => logger.error("Error updating SMS prefs:", error),
   });
 };
 
@@ -49,7 +50,7 @@ export const useUpdateDataSharing = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (dataShare) => {
-      console.log("dataShare", dataShare);
+      logger.log("dataShare", dataShare);
       const response = await permissionApi.updateDataSharing(dataShare);
       return response;
     },
@@ -57,7 +58,7 @@ export const useUpdateDataSharing = () => {
     onSuccess: () => {
       queryClient.invalidateQueries(["permissions"]);
     },
-    onError: (error) => console.error("Error updating data sharing:", error),
+    onError: (error) => logger.error("Error updating data sharing:", error),
   });
 };
 
@@ -70,10 +71,10 @@ export const useUpdateLocationAccess = () => {
       return response;
     },
     onSuccess: () => {
-      console.log("Location access updated successfully");
+      logger.log("Location access updated successfully");
       queryClient.invalidateQueries(["permissions"]);
     },
-    onError: (error) => console.error("Error updating location access:", error),
+    onError: (error) => logger.error("Error updating location access:", error),
   });
 };
 
@@ -86,10 +87,10 @@ export const useUpdateSocialSharing = () => {
       return response;
     },
     onSuccess: () => {
-      console.log("Social sharing updated successfully");
+      logger.log("Social sharing updated successfully");
       queryClient.invalidateQueries(["permissions"]);
     },
-    onError: (error) => console.error("Error updating social sharing:", error),
+    onError: (error) => logger.error("Error updating social sharing:", error),
   });
 };
 
@@ -102,11 +103,11 @@ export const useUpdateAccountVisibility = () => {
       return response;
     },
     onSuccess: () => {
-      console.log("Account visibility updated successfully");
+      logger.log("Account visibility updated successfully");
       queryClient.invalidateQueries(["permissions"]);
     },
     onError: (error) =>
-      console.error("Error updating account visibility:", error),
+      logger.error("Error updating account visibility:", error),
   });
 };
 
@@ -117,7 +118,7 @@ export const useRequestDataDownload = () => {
       const response = permissionApi.requestDataDownload();
       return response;
     },
-    onError: (error) => console.error("Error requesting data download:", error),
+    onError: (error) => logger.error("Error requesting data download:", error),
   });
 };
 
@@ -132,10 +133,10 @@ export const useScheduleAccountDeletion = () => {
       return response;
     },
     onSuccess: () => {
-      console.log("Account deletion scheduled successfully");
+      logger.log("Account deletion scheduled successfully");
     },
     onError: (error) =>
-      console.error("Error scheduling account deletion:", error),
+      logger.error("Error scheduling account deletion:", error),
   });
 };
 export const useCancelAccountDeletion = () => {
@@ -145,9 +146,9 @@ export const useCancelAccountDeletion = () => {
       return response;
     },
     onSuccess: () => {
-      console.log("Account deletion canceled successfully");
+      logger.log("Account deletion canceled successfully");
     },
     onError: (error) =>
-      console.error("Error canceling account deletion:", error),
+      logger.error("Error canceling account deletion:", error),
   });
 };

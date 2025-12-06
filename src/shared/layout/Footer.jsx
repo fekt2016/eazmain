@@ -9,6 +9,7 @@ import { ButtonSpinner } from '../../components/loading';
 import Logo from '../components/Logo';
 import { PATHS } from '../../routes/routePaths';
 import { SSLBadge, PCIBadge, PaystackBadge } from '../components/security';
+import logger from '../utils/logger';
 
 export default function Footer() {
   const [email, setEmail] = useState("");
@@ -20,7 +21,7 @@ export default function Footer() {
 
     newsletterMutation(email, {
       onSuccess: () => {
-        console.log("subscribed successfully");
+        logger.log("subscribed successfully");
       },
     });
     setEmail("");
@@ -89,7 +90,7 @@ export default function Footer() {
             <LinkColumn>
               <ColumnTitle>Support</ColumnTitle>
               <LinkList>
-                <LinkItem to="/help-center">Help Center</LinkItem>
+                <LinkItem to="/help" aria-label="Help Center">Help Center</LinkItem>
                 <LinkItem to="/contact">Contact Us</LinkItem>
                 <LinkItem to={PATHS.SUPPORT}>Support</LinkItem>
                 <LinkItem to={PATHS.SHIPPING_POLICY}>Shipping Info</LinkItem>

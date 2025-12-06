@@ -5,9 +5,11 @@ import { FaFacebook, FaApple, FaCheck, FaEnvelope, FaUser, FaPhone, FaLock, FaAr
 import { FcGoogle } from "react-icons/fc";
 import useAuth from '../../shared/hooks/useAuth';
 import { validateGhanaPhoneNumberOnly } from '../../shared/utils/helpers';
+import { sanitizeEmail, sanitizePhone, sanitizeText } from '../../shared/utils/sanitize';
 import { ButtonSpinner, ErrorState } from '../../components/loading';
 import { spin } from '../../shared/styles/animations';
 import { devicesMax } from '../../shared/styles/breakpoint';
+import logger from '../../shared/utils/logger';
 
 // Animations
 const fadeIn = keyframes`
@@ -65,7 +67,7 @@ export default function SignupPage() {
           alert("Verification email sent successfully!");
         },
         onError: (error) => {
-          console.error("Error resending verification:", error);
+          logger.error("Error resending verification:", error);
           setError(error.message || "An error occurred. Please try again.");
         },
       }
@@ -110,7 +112,7 @@ export default function SignupPage() {
 
       register.mutate(registrationData, {
         onSuccess: (data) => {
-          console.log("Registration successful:", data);
+          logger.debug("Registration successful:", data);
           if (data?.data?.requiresVerification || data.status === "success") {
             // ✅ Redirect to verification page with email/phone
             navigate("/verify-account", {
@@ -125,12 +127,12 @@ export default function SignupPage() {
           }
         },
         onError: (error) => {
-          console.error("Registration error:", error);
+          logger.error("Registration error:", error);
           setError(error.message || "Registration failed. Please try again.");
         },
       });
     } catch (err) {
-      console.error("Registration error:", err);
+      logger.error("Registration error:", err);
       setError(err.message || "Registration failed. Please try again.");
     }
   };
@@ -181,9 +183,13 @@ export default function SignupPage() {
                 <ErrorState message={resendVerification.error?.message || "Failed to resend verification"} />
               )}
 
-              <BackButton onClick={() => navigate("/login")}>
-                <FaArrowLeft /> Back to Login
-              </BackButton>
+              <Button 
+                variant="ghost" 
+                onClick={() => navigate("/login")}
+                leftIcon={<FaArrowLeft />}
+              >
+                Back to Login
+              </Button>
             </VerificationSent>
           </FormContainer>
         </FormSection>
@@ -222,9 +228,14 @@ export default function SignupPage() {
                   type="text"
                   id="name"
                   value={state.name}
-                  onChange={(e) => setState({ ...state, name: e.target.value })}
+                  onChange={(e) => {
+                    // SECURITY: Sanitize input - remove script tags and limit length
+                    const sanitized = e.target.value.replace(/<[^>]*>/g, '').slice(0, 100);
+                    setState({ ...state, name: sanitized });
+                  }}
                   placeholder="John Doe"
                   required
+                  maxLength={100}
                 />
               </InputWrapper>
             </InputGroup>
@@ -237,9 +248,14 @@ export default function SignupPage() {
                   type="email"
                   id="email"
                   value={state.email}
-                  onChange={(e) => setState({ ...state, email: e.target.value })}
+                  onChange={(e) => {
+                    // SECURITY: Sanitize email input
+                    const sanitized = sanitizeEmail(e.target.value);
+                    setState({ ...state, email: sanitized });
+                  }}
                   placeholder="name@example.com"
                   required
+                  maxLength={255}
                 />
               </InputWrapper>
             </InputGroup>
@@ -252,9 +268,14 @@ export default function SignupPage() {
                   type="tel"
                   id="phone"
                   value={state.phone}
-                  onChange={(e) => setState({ ...state, phone: e.target.value })}
+                  onChange={(e) => {
+                    // SECURITY: Sanitize phone input
+                    const sanitized = sanitizePhone(e.target.value);
+                    setState({ ...state, phone: sanitized });
+                  }}
                   placeholder="+233 XX XXX XXXX"
                   $error={phoneError ? true : false}
+                  maxLength={20}
                 />
               </InputWrapper>
               {phoneError && <ErrorText>{phoneError}</ErrorText>}
@@ -269,10 +290,15 @@ export default function SignupPage() {
                     type="password"
                     id="password"
                     value={state.password}
-                    onChange={(e) => setState({ ...state, password: e.target.value })}
+                    onChange={(e) => {
+                      // SECURITY: Limit password length to prevent DoS
+                      const sanitized = e.target.value.slice(0, 128);
+                      setState({ ...state, password: sanitized });
+                    }}
                     placeholder="••••••••"
                     required
                     minLength="8"
+                    maxLength={128}
                   />
                 </InputWrapper>
               </InputGroup>
@@ -285,9 +311,14 @@ export default function SignupPage() {
                     type="password"
                     id="passwordConfirm"
                     value={state.passwordConfirm}
-                    onChange={(e) => setState({ ...state, passwordConfirm: e.target.value })}
+                    onChange={(e) => {
+                      // SECURITY: Limit password length to prevent DoS
+                      const sanitized = e.target.value.slice(0, 128);
+                      setState({ ...state, passwordConfirm: sanitized });
+                    }}
                     placeholder="••••••••"
                     required
+                    maxLength={128}
                   />
                 </InputWrapper>
               </InputGroup>
@@ -310,9 +341,14 @@ export default function SignupPage() {
               </TermsLabel>
             </TermsGroup>
 
-            <SubmitButton type="submit" disabled={register.isPending}>
-              {register.isPending ? <ButtonSpinner size="sm" /> : "Create Account"}
-            </SubmitButton>
+            <Button 
+              type="submit" 
+              variant="primary" 
+              fullWidth
+              loading={register.isPending}
+            >
+              Create Account
+            </Button>
 
             {register.error && (
               <ErrorState message={register.error?.message || "Failed to create account"} />

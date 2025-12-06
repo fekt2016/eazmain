@@ -1,6 +1,5 @@
 import React from 'react';
 import styled from 'styled-components';
-import { Link } from 'react-router-dom';
 import { FaExclamationTriangle, FaHome, FaRedo } from 'react-icons/fa';
 import { PATHS } from '../../routes/routePaths';
 // Container not needed for ErrorBoundary - using full viewport
@@ -69,7 +68,7 @@ const ButtonGroup = styled.div`
   flex-wrap: wrap;
 `;
 
-const Button = styled(Link)`
+const Button = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -77,9 +76,13 @@ const Button = styled(Link)`
   background: var(--color-primary-500);
   color: var(--color-white-0);
   text-decoration: none;
+  border: none;
   border-radius: var(--radius-md);
   font-weight: var(--font-semibold);
   transition: background var(--transition-base);
+  cursor: pointer;
+  font-size: var(--font-size-md);
+  font-family: var(--font-body);
 
   &:hover {
     background: var(--color-primary-600);
@@ -95,6 +98,15 @@ const Button = styled(Link)`
   }
 `;
 
+const HomeButton = styled(Button)`
+  background: var(--color-primary-500);
+  color: var(--color-white-0);
+
+  &:hover {
+    background: var(--color-primary-600);
+  }
+`;
+
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -106,11 +118,13 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    // Log error to error reporting service in production
+    // In production, send to error reporting service (don't log to console)
     if (import.meta.env.PROD) {
       // TODO: Send to error reporting service (e.g., Sentry, LogRocket)
-      console.error('Error caught by boundary:', error, errorInfo);
+      // Do NOT log to console in production to prevent leaking sensitive data
+      // errorReportingService.captureException(error, { extra: errorInfo });
     } else {
+      // Only log in development
       console.error('Error caught by boundary:', error, errorInfo);
     }
 
@@ -122,6 +136,10 @@ class ErrorBoundary extends React.Component {
 
   handleReset = () => {
     this.setState({ hasError: false, error: null, errorInfo: null });
+    window.location.href = PATHS.HOME;
+  };
+
+  handleGoHome = () => {
     window.location.href = PATHS.HOME;
   };
 
@@ -158,10 +176,10 @@ class ErrorBoundary extends React.Component {
             )}
 
             <ButtonGroup>
-              <Button to={PATHS.HOME}>
+              <HomeButton onClick={this.handleGoHome} type="button">
                 <FaHome /> Go Home
-              </Button>
-              <Button as="button" onClick={this.handleReset} type="button">
+              </HomeButton>
+              <Button onClick={this.handleReset} type="button">
                 <FaRedo /> Try Again
               </Button>
             </ButtonGroup>

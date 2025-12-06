@@ -28,10 +28,10 @@ export const useCreateReview = () => {
       queryClient.invalidateQueries({ queryKey: ["products", variables.product] });
       // Also invalidate all reviews queries
       queryClient.invalidateQueries({ queryKey: ["reviews"] });
-      console.log("Review created successfully!!!");
+      logger.log("Review created successfully!!!");
     },
     onError: (error) => {
-      console.error("Review submission failed:", error);
+      logger.error("Review submission failed:", error);
       alert(`Review submission failed: ${error.message}`);
     },
   });

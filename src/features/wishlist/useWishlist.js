@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import wishlistApi from '../../shared/services/wishlistApi';
 import useAuth from '../../shared/hooks/useAuth';
 import { getSessionId, clearSessionId } from '../../shared/utils/guestWishlist';
+import logger from '../../shared/utils/logger';
 
 export const useWishlist = () => {
   const { userData } = useAuth();
@@ -20,14 +21,14 @@ export const useWishlist = () => {
           return response;
         } else if (sessionId) {
           const response = await wishlistApi.getOrCreateGuestWishlist();
-          console.log("Guest Wishlist data:", response);
+          logger.log("Guest Wishlist data:", response);
           return response;
         } else {
           // Create a new session and wishlist
           return { data: { wishlist: { products: [] } } };
         }
       } catch (error) {
-        console.error("Error fetching wishlist:", error);
+        logger.error("Error fetching wishlist:", error);
         return { data: { wishlist: { products: [] } } };
       }
     },
@@ -86,7 +87,7 @@ export const useMergeWishlists = () => {
       return response;
     },
     onSuccess: () => {
-      console.log("Wishlist merged successfully");
+      logger.log("Wishlist merged successfully");
       // Clear guest session ID
       clearSessionId();
       // Invalidate and refetch wishlist data

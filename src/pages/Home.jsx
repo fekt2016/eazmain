@@ -6,7 +6,7 @@ import Grid from '../../components/ui/Grid';
 import Card from '../../components/ui/Card';
 import SectionTitle from '../../components/ui/SectionTitle';
 import Button from '../../components/ui/Button';
-import { useGetProducts } from '../../shared/hooks/useProduct';
+import useProduct from '../../shared/hooks/useProduct';
 import { useEazShop } from '../../shared/hooks/useEazShop';
 import useCategory from '../../shared/hooks/useCategory';
 import ProductCard from '../../shared/components/ProductCard';

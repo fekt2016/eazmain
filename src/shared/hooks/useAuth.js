@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import authApi from '../services/authApi';
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
+import logger from '../utils/logger';
 
 const useAuth = () => {
   const queryClient = useQueryClient();
@@ -447,10 +448,9 @@ const useAuth = () => {
     },
     onSuccess: (data) => {
       logger.log("Password reset OTP verified:", data);
-      // Store reset token if provided by the API
-      if (data.data?.resetToken) {
-        localStorage.setItem("resetToken", data.data.resetToken);
-      }
+      // SECURITY: Reset token should be in httpOnly cookie, not localStorage
+      // Backend should set reset token in httpOnly cookie for security
+      // Do NOT store reset token in localStorage (XSS vulnerability)
     },
     onError: (error) => {
       logger.error("Error verifying password reset OTP:", error);
@@ -458,17 +458,20 @@ const useAuth = () => {
   });
   const resetPassword = useMutation({
     mutationFn: async ({ loginId, newPassword, resetToken }) => {
+      // SECURITY: Reset token should come from httpOnly cookie set by backend
+      // If backend requires it in request, it should be extracted from cookie server-side
+      // For now, pass resetToken if provided (backend should handle cookie extraction)
       const response = await authApi.resetPassword(
         loginId,
         newPassword,
-        resetToken
+        resetToken // Backend should prefer cookie over this parameter
       );
       return response;
     },
     onSuccess: (data) => {
       logger.log("Password reset successful:", data);
-      // Clear reset token from storage
-      localStorage.removeItem("resetToken");
+      // SECURITY: No need to clear localStorage - token was never stored there
+      // Backend clears the reset token cookie after successful reset
       // Navigate to login page with success message
       navigate("/login", {
         state: {

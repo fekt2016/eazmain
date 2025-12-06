@@ -17,6 +17,7 @@ import {
 import { orderService } from "../../shared/services/orderApi";
 import { LoadingState, ErrorState } from "../../components/loading";
 import useDynamicPageTitle from "../../shared/hooks/useDynamicPageTitle";
+import logger from "../../shared/utils/logger";
 
 const TrackingPage = () => {
   const { trackingNumber } = useParams();
@@ -47,13 +48,24 @@ const TrackingPage = () => {
         logger.log('Tracking Page - Shipping Address:', order?.shippingAddress);
         setOrderData(order);
       } catch (err) {
-        logger.error('Tracking Page Error:', err);
+        logger.error('Tracking Page Error:', {
+          error: err,
+          message: err.message,
+          code: err.code,
+          response: err.response?.data,
+          status: err.response?.status,
+          url: err.config?.url,
+          baseURL: err.config?.baseURL,
+          trackingNumber,
+        });
         
         // Better error handling for connection issues
-        if (err.code === 'ERR_NETWORK' || err.message?.includes('Network Error') || err.message?.includes('CONNECTION_REFUSED')) {
-          setError("Unable to connect to the server. Please ensure the backend server is running on port 4000.");
+        if (err.code === 'ERR_NETWORK' || err.message?.includes('Network Error') || err.message?.includes('CONNECTION_REFUSED') || err.isNetworkError) {
+          setError("Unable to connect to the server. Please ensure the backend server is running on port 4000 and try again.");
         } else if (err.response?.status === 404) {
           setError("Order not found with this tracking number. Please verify the tracking number is correct.");
+        } else if (err.response?.status === 500) {
+          setError("Server error occurred. Please try again later.");
         } else {
           setError(err.response?.data?.message || err.message || "Failed to load tracking information");
         }

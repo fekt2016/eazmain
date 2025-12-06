@@ -30,7 +30,7 @@ export const useAddHistoryItem = () => {
       }
     },
     onSuccess: (data) => {
-      console.log("history item added successfully!!!", data);
+      logger.log("history item added successfully!!!", data);
     },
   });
 };

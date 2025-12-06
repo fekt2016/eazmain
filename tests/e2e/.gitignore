@@ -1,0 +1,13 @@
+# Playwright test artifacts
+/test-results/
+/playwright-report/
+/playwright/.cache/
+playwright-results.json
+
+# Screenshots and videos
+**/screenshots/
+**/videos/
+
+# Test coverage
+coverage/
+

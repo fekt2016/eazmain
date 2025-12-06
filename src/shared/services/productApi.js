@@ -116,6 +116,12 @@ export const productService = {
   },
   getAllPublicProductsBySeller: async (sellerId) => {
     const response = await api.get(`/product/${sellerId}/public`);
+    console.log("🔍 [productApi.getAllPublicProductsBySeller] Full axios response:", response);
+    console.log("🔍 [productApi.getAllPublicProductsBySeller] response.data:", response.data);
+    console.log("🔍 [productApi.getAllPublicProductsBySeller] response.data.data:", response.data?.data);
+    console.log("🔍 [productApi.getAllPublicProductsBySeller] response.data.data.products:", response.data?.data?.products);
+    console.log("🔍 [productApi.getAllPublicProductsBySeller] response.data.data.products length:", response.data?.data?.products?.length);
+    console.log("🔍 [productApi.getAllPublicProductsBySeller] response.data.data.products isArray:", Array.isArray(response.data?.data?.products));
     return response.data;
   },
   getProductsByCategory: async (categoryId, queryParams) => {

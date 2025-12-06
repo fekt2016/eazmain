@@ -182,7 +182,29 @@ export const getProductSku = (product, variant = null) => {
  * @returns {number} - Stock count
  */
 export const getProductStock = (product, variant = null) => {
-  return variant?.stock || product?.stock || 0;
+  // If variant is provided and active, return variant stock
+  if (variant && variant.status !== 'inactive') {
+    return variant.stock || 0;
+  }
+  
+  // If variant is inactive, return 0
+  if (variant && variant.status === 'inactive') {
+    return 0;
+  }
+  
+  // Fallback to product stock or calculate from variants
+  if (product?.stock !== undefined) {
+    return product.stock;
+  }
+  
+  // If product has variants, sum up active variant stocks
+  if (product?.variants && Array.isArray(product.variants) && product.variants.length > 0) {
+    return product.variants
+      .filter((v) => v.status !== 'inactive')
+      .reduce((sum, v) => sum + (v.stock || 0), 0);
+  }
+  
+  return 0;
 };
 
 /**
@@ -192,7 +214,16 @@ export const getProductStock = (product, variant = null) => {
  * @returns {boolean} - True if in stock
  */
 export const isProductInStock = (product, variant = null) => {
-  const stock = getProductStock(product, variant);
+  // If variant is provided, check variant stock and status
+  if (variant) {
+    // Variant must have stock > 0 AND status must be 'active'
+    const isActive = variant.status !== 'inactive';
+    const hasStock = (variant.stock || 0) > 0;
+    return isActive && hasStock;
+  }
+  
+  // If no variant, check product stock
+  const stock = product?.stock || 0;
   return stock > 0;
 };
 

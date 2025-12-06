@@ -3,9 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { FaHome, FaArrowLeft, FaSearch, FaShoppingBag } from 'react-icons/fa';
-import { PATHS } from '../../routes/routePaths';
-import Container from '../../shared/components/Container';
-import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
+import { PATHS } from '../routes/routePaths';
+import Container from '../shared/components/Container';
+import useDynamicPageTitle from '../shared/hooks/useDynamicPageTitle';
 
 const NotFoundContainer = styled.div`
   min-height: 100vh;

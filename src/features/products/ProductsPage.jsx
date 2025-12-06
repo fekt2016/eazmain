@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import styled from "styled-components";
 import { FaFilter, FaChevronDown, FaTimes, FaSortAmountDown, FaAward, FaCheck, FaShieldAlt, FaTruck } from "react-icons/fa";
-import { useProduct } from "../../shared/hooks/useProduct";
+import useProduct from "../../shared/hooks/useProduct";
 import { useEazShop } from "../../shared/hooks/useEazShop";
 import ProductCard from "../../shared/components/ProductCard";
 import Container from "../../shared/components/Container";
@@ -41,29 +41,69 @@ const ProductsPage = () => {
 
   // Process all products
   const allProducts = useMemo(() => {
-    const products = productsData?.results || [];
-    return products.filter(p => p.status === 'active');
+    // Handle various API response structures defensively
+    let products = [];
+    
+    if (Array.isArray(productsData)) {
+      products = productsData;
+    } else if (productsData?.results && Array.isArray(productsData.results)) {
+      products = productsData.results;
+    } else if (productsData?.data?.results && Array.isArray(productsData.data.results)) {
+      products = productsData.data.results;
+    } else if (productsData?.data?.products && Array.isArray(productsData.data.products)) {
+      products = productsData.data.products;
+    } else if (productsData?.data && Array.isArray(productsData.data)) {
+      products = productsData.data;
+    } else if (productsData?.products && Array.isArray(productsData.products)) {
+      products = productsData.products;
+    }
+    
+    // Filter active products only if products is an array
+    if (Array.isArray(products)) {
+      return products.filter(p => p.status === 'active');
+    }
+    
+    return [];
   }, [productsData]);
 
   // Process EazShop products
   const eazshopProducts = useMemo(() => {
-    if (!eazshopProductsData) return [];
-    if (Array.isArray(eazshopProductsData)) return eazshopProductsData;
-    if (eazshopProductsData?.products) return eazshopProductsData.products;
-    if (eazshopProductsData?.data?.products) return eazshopProductsData.data.products;
-    return [];
+    // Handle various API response structures defensively
+    let products = [];
+    
+    if (!eazshopProductsData) {
+      return [];
+    }
+    
+    if (Array.isArray(eazshopProductsData)) {
+      products = eazshopProductsData;
+    } else if (eazshopProductsData?.results && Array.isArray(eazshopProductsData.results)) {
+      products = eazshopProductsData.results;
+    } else if (eazshopProductsData?.data?.results && Array.isArray(eazshopProductsData.data.results)) {
+      products = eazshopProductsData.data.results;
+    } else if (eazshopProductsData?.data?.products && Array.isArray(eazshopProductsData.data.products)) {
+      products = eazshopProductsData.data.products;
+    } else if (eazshopProductsData?.data && Array.isArray(eazshopProductsData.data)) {
+      products = eazshopProductsData.data;
+    } else if (eazshopProductsData?.products && Array.isArray(eazshopProductsData.products)) {
+      products = eazshopProductsData.products;
+    }
+    
+    return Array.isArray(products) ? products : [];
   }, [eazshopProductsData]);
 
   // Combine and filter products
   const displayProducts = useMemo(() => {
     let products = [...allProducts];
 
-    // Add EazShop products if not already included
-    eazshopProducts.forEach(eazProduct => {
-      if (!products.find(p => p._id === eazProduct._id)) {
-        products.push(eazProduct);
-      }
-    });
+    // Add EazShop products if not already included (only if eazshopProducts is an array)
+    if (Array.isArray(eazshopProducts)) {
+      eazshopProducts.forEach(eazProduct => {
+        if (!products.find(p => p._id === eazProduct._id)) {
+          products.push(eazProduct);
+        }
+      });
+    }
 
     // Filter by EazShop only if requested
     if (showEazShopOnly) {

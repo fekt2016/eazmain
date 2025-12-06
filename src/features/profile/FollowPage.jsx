@@ -23,7 +23,35 @@ const FollowPage = () => {
   const { data: productsData } = getProducts;
 
   const products = useMemo(() => {
-    return productsData?.results || [];
+    // Handle different response structures
+    if (!productsData) {
+      return [];
+    }
+    
+    // If productsData is already an array
+    if (Array.isArray(productsData)) {
+      return productsData;
+    }
+    
+    // Try different possible paths
+    if (productsData.results && Array.isArray(productsData.results)) {
+      return productsData.results;
+    }
+    
+    if (productsData.data?.products && Array.isArray(productsData.data.products)) {
+      return productsData.data.products;
+    }
+    
+    if (productsData.data?.results && Array.isArray(productsData.data.results)) {
+      return productsData.data.results;
+    }
+    
+    if (productsData.products && Array.isArray(productsData.products)) {
+      return productsData.products;
+    }
+    
+    // Default to empty array if nothing matches
+    return [];
   }, [productsData]);
 
   const { data: followedData } = useGetFollowedSellerByUser();
@@ -46,7 +74,9 @@ const FollowPage = () => {
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     const groupedByseller = {};
     
-    followedSellers.forEach((follow) => {
+    // Ensure followedSellers is an array
+    const validFollowedSellers = Array.isArray(followedSellers) ? followedSellers : [];
+    validFollowedSellers.forEach((follow) => {
       if (follow.seller) {
         groupedByseller[follow.seller._id] = {
           seller: follow.seller,
@@ -55,7 +85,9 @@ const FollowPage = () => {
       }
     });
 
-    products.forEach((product) => {
+    // Ensure products is an array before using forEach
+    const validProducts = Array.isArray(products) ? products : [];
+    validProducts.forEach((product) => {
       const sellerId = product.seller?._id || product.seller;
       const seller = sellerMap[sellerId];
       if (seller && new Date(product.createdAt) > oneWeekAgo) {

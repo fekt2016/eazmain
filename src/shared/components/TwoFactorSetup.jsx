@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import { ButtonSpinner, ErrorState } from '../../components/loading';
+import logger from '../../shared/utils/logger';
 
 const TwoFactorSetup = ({
   isEnabled,
@@ -17,7 +18,7 @@ const TwoFactorSetup = ({
         setSetupData(result);
       },
       onError: (error) => {
-        console.error("Failed to enable 2FA:", error);
+        logger.error("Failed to enable 2FA:", error);
       },
     });
   };
@@ -28,7 +29,7 @@ const TwoFactorSetup = ({
         setSetupData(null);
       },
       onError: (error) => {
-        console.error("Verification failed:", error);
+        logger.error("Verification failed:", error);
       },
     });
   };
@@ -41,7 +42,7 @@ const TwoFactorSetup = ({
     ) {
       disableTwoFactor.mutate(undefined, {
         onError: (error) => {
-          console.error("Failed to disable 2FA:", error);
+          logger.error("Failed to disable 2FA:", error);
         },
       });
     }

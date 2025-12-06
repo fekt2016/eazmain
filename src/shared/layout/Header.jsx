@@ -12,6 +12,7 @@ import {
   FaChevronUp,
   FaSearch,
   FaTimes,
+  FaBell,
 } from "react-icons/fa";
 import styled from "styled-components";
 import {  slideDown } from "../styles/animations";
@@ -21,10 +22,12 @@ import { useWishlist } from '../hooks/useWishlist';
 import { useCartTotals } from '../hooks/useCart';
 import useCategory from '../hooks/useCategory';
 import { useSearchSuggestions } from '../hooks/useSearch';
+import { useUnreadCount } from '../hooks/notifications/useNotifications';
 import { PATHS } from '../../routes/routePaths';
 import HeaderSearchBar from '../components/HeaderSearchBar';
 import Logo from '../components/Logo';
 import { getAvatarUrl } from '../utils/avatarUtils';
+import NotificationDropdown from '../components/NotificationDropdown';
 
 export default function Header({ onToggleSidebar, isSidebarOpen }) {
   const navigate = useNavigate();
@@ -47,6 +50,31 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
   const { getParentCategories } = useCategory();
   const { data: categoriesData, isLoading: isCategoriesLoading, isError: isCategoriesError } =
     getParentCategories;
+  const { data: unreadData, isLoading: isUnreadLoading } = useUnreadCount();
+  const unreadCount = useMemo(() => {
+    // FIX: Handle different response structures and ensure we get a number
+    if (!unreadData) return 0;
+    
+    // Backend returns: { status: 'success', data: { unreadCount: number } }
+    const count = unreadData?.data?.unreadCount ?? 
+                  unreadData?.data?.data?.unreadCount ?? 
+                  unreadData?.unreadCount ?? 
+                  0;
+    
+    // Ensure it's a valid number
+    const numCount = Number(count) || 0;
+    
+    // Debug in development
+    if (process.env.NODE_ENV === 'development' && !isUnreadLoading) {
+      console.log('[Header] Unread count debug:', {
+        unreadData,
+        extractedCount: numCount,
+        rawData: unreadData
+      });
+    }
+    
+    return numCount;
+  }, [unreadData, isUnreadLoading]);
 
   // Improved search suggestions hook with better caching
   const { data: searchSuggestionsData, isLoading: isSearchProductsLoading } =
@@ -275,6 +303,8 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
                 <CategoriesButton
                   onClick={() => setShowCategoriesDropdown(!showCategoriesDropdown)}
                   isActive={showCategoriesDropdown}
+                  aria-expanded={showCategoriesDropdown}
+                  aria-label="Browse product categories"
                 >
                   <MenuIcon>
                     <FaThList />
@@ -477,6 +507,10 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
                 </HeaderAction>
 
                 <HeaderAction>
+                  <NotificationDropdown unreadCount={unreadCount} />
+                </HeaderAction>
+
+                <HeaderAction>
                   <BottomLink to="/wishlist">
                     <ActionIcon>
                       <FaHeart />
@@ -551,10 +585,10 @@ const ModernHeader = styled.header`
 `;
 
 const TopBar = styled.div`
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-brand-500) 0%, var(--color-brand-700) 100%);
   padding: 0.8rem 0;
-  color: white;
-  font-size: 1.2rem;
+  color: var(--color-white-0);
+  font-size: var(--text-sm);
   font-family: var(--font-heading);
 
   @media (max-width: 768px) {
@@ -563,12 +597,13 @@ const TopBar = styled.div`
 `;
 
 const Container = styled.div`
-  max-width: 140rem;
+  width: 100%;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 0 var(--space-lg);
 
   @media (max-width: 768px) {
-    padding: 0 1rem;
+    padding: 0 var(--space-md);
   }
 `;
 
@@ -587,23 +622,23 @@ const TopLinks = styled.div`
 const TopLink = styled(Link)`
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: var(--space-xs);
   color: rgba(255, 255, 255, 0.9);
   text-decoration: none;
-  font-size: 1.2rem;
+  font-size: var(--text-sm);
   font-weight: 400;
-  transition: all 0.3s ease;
+  transition: all var(--transition-base);
   font-family: var(--font-heading);
 
   &:hover {
-    color: white;
+    color: var(--color-white-0);
     transform: translateY(-1px);
   }
 `;
 
 const PromoText = styled.div`
-  font-weight: 600;
-  font-size: 1.3rem;
+  font-weight: var(--font-semibold);
+  font-size: var(--text-sm);
   font-family: var(--font-body);
   text-align: center;
   flex: 1;
@@ -617,21 +652,23 @@ const RightLinks = styled.div`
 
 const MainHeader = styled.div`
   padding: 1rem 0;
+  position: relative; /* Ensure dropdown positioning context */
 `;
 
 const HeaderContent = styled.div`
-  display: grid;
-  grid-template-columns: auto auto 1fr auto;
+  display: flex;
   align-items: center;
-  gap: 2rem;
+  gap: var(--space-lg);
   width: 100%;
-
+  min-width: 0;
+  position: relative; /* Ensure dropdown positioning context */
+  
   @media (max-width: 1024px) {
-    gap: 1.5rem;
+    gap: var(--space-md);
   }
 
   @media (max-width: 768px) {
-    gap: 1rem;
+    gap: var(--space-sm);
   }
 `;
 
@@ -639,13 +676,14 @@ const HeaderContent = styled.div`
 const NavSection = styled.div`
   display: flex;
   align-items: center;
-  gap: 2rem;
+  gap: var(--space-lg);
   flex: 1;
-  max-width: 800px;
-  margin: 0 auto;
+  min-width: 0;
+  max-width: 100%; 
+  position: relative; /* Ensure dropdown positioning context */
 
   @media (max-width: 1024px) {
-    gap: 1rem;
+    gap: var(--space-md);
   }
 
   @media (max-width: 768px) {
@@ -654,8 +692,12 @@ const NavSection = styled.div`
 `;
 
 const SearchContainer = styled.div`
-  flex: 1;
-  max-width: 600px;
+  flex: 2;
+  min-width: 0; 
+  max-width: 100%; 
+  width: 100%;
+  position: relative; /* Ensure dropdown positioning context */
+  z-index: 100; /* Lower than dropdown but ensures proper stacking */
 `;
 
 const MobileSearchSection = styled.div`
@@ -670,34 +712,35 @@ const MobileSearchSection = styled.div`
 
 const CategoriesContainer = styled.div`
   position: relative;
+  flex-shrink: 0; /* Prevent categories button from shrinking */
 `;
 
 const CategoriesButton = styled.button`
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1.2rem 2rem;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
   background: ${props => props.isActive 
-    ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
+    ? 'linear-gradient(135deg, var(--color-brand-500) 0%, var(--color-brand-700) 100%)' 
     : 'var(--color-white-0)'
   };
-  color: ${props => props.isActive ? 'white' : 'var(--color-grey-700)'};
+  color: ${props => props.isActive ? 'var(--color-white-0)' : 'var(--color-grey-700)'};
   border: 2px solid ${props => props.isActive ? 'transparent' : 'var(--color-grey-200)'};
-  border-radius: 12px;
+  border-radius: var(--radius-xl);
   cursor: pointer;
-  font-weight: 500;
-  font-size: 1.4rem;
-  transition: all 0.3s ease;
+  font-weight: var(--font-medium);
+  font-size: var(--text-sm);
+  transition: all var(--transition-base);
   white-space: nowrap;
   font-family: var(--font-heading);
 
   &:hover {
     background: ${props => props.isActive 
-      ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
+      ? 'linear-gradient(135deg, var(--color-brand-500) 0%, var(--color-brand-700) 100%)' 
       : 'var(--color-grey-50)'
     };
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-sm);
   }
 `;
 
@@ -1035,18 +1078,18 @@ const ActionBadge = styled.span`
   position: absolute;
   top: -5px;
   right: -5px;
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+  background: linear-gradient(135deg, var(--color-red-600) 0%, var(--color-red-700) 100%);
   color: var(--color-white-0);
-  font-size: 1rem;
+  font-size: var(--text-xs);
   width: 2rem;
   height: 2rem;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
+  font-weight: var(--font-bold);
   border: 2px solid var(--color-white-0);
-  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+  box-shadow: 0 2px 8px rgba(248, 113, 113, 0.3);
 `;
 
 const MobileMenuButton = styled.button`

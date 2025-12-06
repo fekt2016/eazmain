@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import searchApi from '../../shared/services/searchApi';
+import logger from '../../shared/utils/logger';
 
 export const useSearchProducts = (searchTerm) => {
   return useQuery({
@@ -7,7 +8,7 @@ export const useSearchProducts = (searchTerm) => {
     queryFn: async () => {
       if (!searchTerm) return { results: [] };
       const response = await searchApi.searchProducts(searchTerm);
-      console.log("response", response);
+      logger.log("Search response:", response);
       return response;
     },
     enabled: !!searchTerm, // Only run query when searchTerm is not empty

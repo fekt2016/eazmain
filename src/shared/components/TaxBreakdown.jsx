@@ -226,7 +226,7 @@ export function OrderTaxBreakdown({ order }) {
       
       <TaxRow>
         <TaxLabel>COVID Levy (1%):</TaxLabel>
-        <TaxValue>GH₵{totalCovidLevy.toFixed(2)}</TaxValue>
+        <TaxValue>GH₵{totalCovidLevy.toFixed(2)} <span style={{ fontSize: '0.85em', color: '#666' }}>(tracked, not charged to customer)</span></TaxValue>
       </TaxRow>
       
       <TaxRow>
@@ -246,7 +246,7 @@ export function OrderTaxBreakdown({ order }) {
       
       <InfoText>
         <strong>Note:</strong> Prices include 15% VAT (VAT + NHIL + GETFund). 
-        COVID levy (1%) is added separately as required by Ghana Revenue Authority.
+        COVID levy (1%) is tracked for seller withdrawal deduction but is NOT charged to customers.
       </InfoText>
     </TaxContainer>
   );

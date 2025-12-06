@@ -15,6 +15,7 @@ import authApi from "../../shared/services/authApi";
 import { ButtonSpinner, ErrorState } from "../../components/loading";
 import { devicesMax } from "../../shared/styles/breakpoint";
 import { toast } from "react-toastify";
+import logger from "../../shared/utils/logger";
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -28,7 +29,6 @@ export default function VerifyAccountPage() {
   const [countdown, setCountdown] = useState(0);
   const [error, setError] = useState("");
   const inputRefs = useRef([]);
-console.log(otp)
   // Get email/phone from location state or query params
   const email = location.state?.email || new URLSearchParams(location.search).get("email");
   const phone = location.state?.phone || new URLSearchParams(location.search).get("phone");

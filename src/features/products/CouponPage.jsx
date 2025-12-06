@@ -1,103 +1,34 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import styled, { keyframes } from "styled-components";
 import { spin } from "../../shared/styles/animations";
 import { devicesMax } from '../../shared/styles/breakpoint';
-import { FaCopy, FaCheck, FaGift, FaClock, FaShoppingBag, FaTag, FaInfoCircle, FaFire } from "react-icons/fa";
+import { FaCopy, FaCheck, FaGift, FaClock, FaShoppingBag, FaTag, FaInfoCircle, FaFire, FaGlobe } from "react-icons/fa";
+import { useGetMyCoupons } from "../../shared/hooks/useCoupon";
+import { LoadingSpinner } from "../../shared/components/LoadingSpinner";
+import { ErrorState } from "../../components/loading";
+import { useNavigate } from "react-router-dom";
+import { PATHS } from "../../routes/routePaths";
 
 const CouponsPage = () => {
-  const [coupons, setCoupons] = useState([]);
+  const navigate = useNavigate();
   const [filter, setFilter] = useState("all");
-  const [loading, setLoading] = useState(true);
-  const [selectedCoupon, setSelectedCoupon] = useState(null);
   const [copiedCode, setCopiedCode] = useState(null);
+  
+  const { data: couponsData, isLoading: loading, error, refetch } = useGetMyCoupons();
+  
+  const coupons = useMemo(() => {
+    return couponsData?.data?.coupons || [];
+  }, [couponsData]);
 
-  // Mock coupon data
-  useEffect(() => {
-    setTimeout(() => {
-      setCoupons([
-        {
-          id: "cpn1",
-          code: "SUMMER25",
-          title: "Summer Special",
-          description: "25% off all summer collection items",
-          discount: "25%",
-          expiration: "2024-09-30",
-          minPurchase: 50,
-          status: "active",
-          category: "seasonal",
-          featured: true
-        },
-        {
-          id: "cpn2",
-          code: "WELCOME10",
-          title: "Welcome Offer",
-          description: "$10 off your first order",
-          discount: "$10",
-          expiration: "2024-08-15",
-          minPurchase: 30,
-          status: "used",
-          category: "welcome"
-        },
-        {
-          id: "cpn3",
-          code: "FREESHIP",
-          title: "Free Shipping",
-          description: "Free delivery on all orders",
-          discount: "Free Shipping",
-          expiration: "2024-12-31",
-          minPurchase: 0,
-          status: "active",
-          category: "shipping"
-        },
-        {
-          id: "cpn4",
-          code: "VIP50",
-          title: "VIP Discount",
-          description: "50% off for VIP members",
-          discount: "50%",
-          expiration: "2024-07-01",
-          minPurchase: 100,
-          status: "expired",
-          category: "vip"
-        },
-        {
-          id: "cpn5",
-          code: "FLASH30",
-          title: "Flash Sale",
-          description: "30% off limited time offer",
-          discount: "30%",
-          expiration: "2024-06-20",
-          minPurchase: 25,
-          status: "active",
-          category: "flash",
-          featured: true
-        },
-        {
-          id: "cpn6",
-          code: "LOYAL15",
-          title: "Loyalty Reward",
-          description: "15% off for loyal customers",
-          discount: "15%",
-          expiration: "2024-11-30",
-          minPurchase: 40,
-          status: "active",
-          category: "loyalty"
-        },
-      ]);
-      setLoading(false);
-    }, 800);
-  }, []);
+  const filteredCoupons = useMemo(() => {
+    return coupons.filter(
+      (coupon) => filter === "all" || coupon.status === filter
+    );
+  }, [coupons, filter]);
 
-  const filteredCoupons = coupons.filter(
-    (coupon) => filter === "all" || coupon.status === filter
-  );
-
-  const featuredCoupons = coupons.filter(coupon => coupon.featured && coupon.status === "active");
-
-  const handleApplyCoupon = (coupon) => {
-    setSelectedCoupon(coupon);
-    // In real app: apply coupon to order
-  };
+  const featuredCoupons = useMemo(() => {
+    return coupons.filter(coupon => coupon.featured && coupon.status === "active");
+  }, [coupons]);
 
   const copyToClipboard = async (code) => {
     try {
@@ -119,11 +50,13 @@ const CouponsPage = () => {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
     const options = { year: "numeric", month: "short", day: "numeric" };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
   const getDaysUntilExpiry = (dateString) => {
+    if (!dateString) return null;
     const today = new Date();
     const expiry = new Date(dateString);
     const diffTime = expiry - today;
@@ -131,13 +64,34 @@ const CouponsPage = () => {
     return diffDays;
   };
 
+  // Calculate total savings (only for active coupons)
+  const totalSavings = useMemo(() => {
+    return coupons
+      .filter(c => c.status === 'active' && c.discountType === 'fixed')
+      .reduce((sum, c) => sum + (c.discountValue || 0), 0);
+  }, [coupons]);
+
   if (loading) {
     return (
       <LoadingContainer>
-        <SpinnerContainer>
-          <Spinner />
-          <LoadingText>Loading your coupons...</LoadingText>
-        </SpinnerContainer>
+        <LoadingSpinner />
+        <LoadingText>Loading your coupons...</LoadingText>
+      </LoadingContainer>
+    );
+  }
+
+  if (error) {
+    return (
+      <LoadingContainer>
+        <ErrorState 
+          title="Failed to load coupons"
+          message={error?.response?.data?.message || "We couldn't load your coupons. Please try again."}
+          action={
+            <RetryButton onClick={() => refetch()}>
+              Try Again
+            </RetryButton>
+          }
+        />
       </LoadingContainer>
     );
   }
@@ -158,7 +112,7 @@ const CouponsPage = () => {
             </StatItem>
             <StatDivider />
             <StatItem>
-              <StatNumber>${coupons.reduce((sum, c) => sum + (c.status === 'active' ? parseInt(c.discount) || 0 : 0), 0)}</StatNumber>
+              <StatNumber>GH₵{totalSavings.toFixed(2)}</StatNumber>
               <StatLabel>Total Savings</StatLabel>
             </StatItem>
             <StatDivider />
@@ -168,23 +122,6 @@ const CouponsPage = () => {
             </StatItem>
           </StatsCard>
         </HeaderContent>
-
-        {selectedCoupon && (
-          <AppliedBanner>
-            <BannerContent>
-              <Checkmark>
-                <FaCheck />
-              </Checkmark>
-              <BannerText>
-                <BannerTitle>Coupon Applied!</BannerTitle>
-                <BannerSubtitle>
-                  {selectedCoupon.code} - {selectedCoupon.title} has been applied to your cart
-                </BannerSubtitle>
-              </BannerText>
-            </BannerContent>
-            <ViewCartButton>View Cart</ViewCartButton>
-          </AppliedBanner>
-        )}
       </HeaderSection>
 
       {featuredCoupons.length > 0 && (
@@ -277,7 +214,19 @@ const CouponsPage = () => {
                       {coupon.minPurchase > 0 && (
                         <DetailItem>
                           <FaShoppingBag />
-                          <span>Min. order ${coupon.minPurchase}</span>
+                          <span>Min. order GH₵{coupon.minPurchase}</span>
+                        </DetailItem>
+                      )}
+                      {coupon.global && (
+                        <DetailItem>
+                          <FaGlobe />
+                          <span>Global Coupon</span>
+                        </DetailItem>
+                      )}
+                      {coupon.seller && !coupon.global && (
+                        <DetailItem>
+                          <FaTag />
+                          <span>From {coupon.seller?.shopName || coupon.seller?.name || "Seller"}</span>
                         </DetailItem>
                       )}
                     </DetailsRow>
@@ -292,16 +241,6 @@ const CouponsPage = () => {
                           </CopyButton>
                         </CodeDisplay>
                       </CodeSection>
-
-                      {coupon.status === "active" ? (
-                        <ApplyButton onClick={() => handleApplyCoupon(coupon)}>
-                          Apply Coupon
-                        </ApplyButton>
-                      ) : (
-                        <DisabledButton disabled>
-                          {coupon.status === "used" ? "Already Used" : "Expired"}
-                        </DisabledButton>
-                      )}
                     </ActionSection>
                   </CardBody>
                 </CouponCard>
@@ -634,25 +573,11 @@ const CouponCount = styled.div`
 
 const LoadingContainer = styled.div`
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   height: 60vh;
-`;
-
-const SpinnerContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   gap: 1.6rem;
-`;
-
-const Spinner = styled.div`
-  width: 5rem;
-  height: 5rem;
-  border: 3px solid var(--color-grey-200);
-  border-top: 3px solid var(--color-primary-500);
-  border-radius: 50%;
-  animation: ${spin} 1s linear infinite;
 `;
 
 const LoadingText = styled.div`
@@ -863,34 +788,6 @@ const CopyButton = styled.button`
   }
 `;
 
-const ApplyButton = styled.button`
-  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
-  color: var(--color-white-0);
-  border: none;
-  padding: 1rem 1.6rem;
-  border-radius: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-
-  &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
-  }
-`;
-
-const DisabledButton = styled.button`
-  background: var(--color-grey-200);
-  color: var(--color-grey-500);
-  border: none;
-  padding: 1rem 1.6rem;
-  border-radius: 12px;
-  font-weight: 600;
-  cursor: not-allowed;
-  white-space: nowrap;
-`;
-
 const InfoSection = styled.div`
   margin-top: 4rem;
   background: var(--color-white-0);
@@ -955,6 +852,24 @@ const InfoText = styled.p`
   font-size: 1.4rem;
   color: var(--color-grey-600);
   line-height: 1.5;
+`;
+
+const RetryButton = styled.button`
+  margin-top: 1rem;
+  padding: 0.8rem 1.6rem;
+  background: var(--color-primary-500);
+  color: var(--color-white-0);
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: var(--color-primary-600);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  }
 `;
 
 export default CouponsPage;

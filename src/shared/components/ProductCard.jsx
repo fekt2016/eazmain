@@ -18,6 +18,15 @@ import {
 } from '../utils/productHelpers';
 import { highlightSearchTerm } from '../utils/searchUtils.jsx';
 
+// Helper function to get grid image - MUST use product.images ONLY
+const getGridImage = (product) => {
+  if (product?.images?.length > 0) {
+    return product.images[0];
+  }
+  // Fallback placeholder
+  return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600"%3E%3Crect width="600" height="600" fill="%23f0f0f0"/%3E%3Ctext x="50%25" y="50%25" font-family="Arial" font-size="24" fill="%23999" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E';
+};
+
 export default function ProductCard({
   product,
   showWishlistButton = true,
@@ -108,7 +117,7 @@ export default function ProductCard({
         {/* Image Section */}
         <ImageContainer $layout={layout}>
           <ProductImage 
-            src={product.imageCover} 
+            src={getGridImage(product)} 
             alt={product.name}
             $layout={layout}
             onError={(e) => {
@@ -378,7 +387,8 @@ const ImageContainer = styled.div`
 const ProductImage = styled.img`
   max-height: 100%;
   max-width: 100%;
-  object-fit: contain;
+  object-fit: cover;
+  border-radius: var(--border-radius-md);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   ${CardContainer}:hover & {

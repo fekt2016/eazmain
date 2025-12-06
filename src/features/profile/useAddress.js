@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import addressApi from '../../shared/services/addressApi';
+import logger from '../../shared/utils/logger';
 
 export const useGetUserAddresses = () => {
   return useQuery({
@@ -25,7 +26,7 @@ export const useCreateAddress = () => {
   return useMutation({
     mutationFn: (addressData) => addressApi.createUserAddress(addressData),
     onSuccess(data) {
-      console.log("address created succesfully!!!!", data);
+      logger.log("address created succesfully!!!!", data);
       queryClient.invalidateQueries(["address"]);
     },
   });
@@ -36,7 +37,7 @@ export const useDeleteAddress = () => {
   return useMutation({
     mutationFn: (addressId) => addressApi.deleteUserAddress(addressId),
     onSuccess(data) {
-      console.log("address deleted succesfully!!!", data);
+      logger.log("address deleted succesfully!!!", data);
       queryClient.invalidateQueries(["address"]);
     },
   });
@@ -47,7 +48,7 @@ export const useUpdateAddress = () => {
   return useMutation({
     mutationFn: (addressData) => addressApi.updateUserAddress(addressData),
     onSuccess(data) {
-      console.log(data);
+      logger.log("Address updated:", data);
       queryClient.getQueryData(["address"]);
     },
   });
@@ -57,7 +58,7 @@ export const useSetDefaultAddress = () => {
   return useMutation({
     mutationFn: (addressData) => addressApi.setDefaultAddress(addressData),
     onSuccess(data) {
-      console.log(data);
+      logger.log("Address updated:", data);
       queryClient.getQueryData(["address"]);
     },
   });

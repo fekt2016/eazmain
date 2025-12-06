@@ -29,7 +29,7 @@ const NotificationSettingsPage = () => {
 
   // Toggle notification setting
   const toggleSetting = (channel, type) => {
-    console.log("channel", channel, "type", type);
+    // Toggling notification setting
     const path = `${channel}.${type}`;
     updateSetting.mutate({ path, value: !settings[channel][type] });
   };

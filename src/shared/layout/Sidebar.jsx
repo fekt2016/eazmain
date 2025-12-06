@@ -20,14 +20,27 @@ import {
 } from "react-icons/fa";
 import useAuth from '../hooks/useAuth';
 import { getAvatarUrl } from '../utils/avatarUtils';
+import { useUnreadCount } from '../hooks/notifications/useNotifications';
+import { useWalletBalance } from '../hooks/useWallet';
+import { useMemo } from 'react';
 
 import { PATHS } from '../../routes/routePaths';
 
 const SideBar = ({ $isOpen, onClose }) => {
   const navigate = useNavigate();
   const { logout, userData } = useAuth();
+  const { data: unreadData } = useUnreadCount();
+  const unreadCount = unreadData?.data?.unreadCount || 0;
   
   const user = userData?.data?.data || userData?.data?.user || userData?.user || null;
+  
+  // Get wallet balance
+  const { data: walletData, isLoading: isBalanceLoading } = useWalletBalance();
+  const wallet = useMemo(() => {
+    return walletData?.data?.wallet || { balance: 0, availableBalance: 0 };
+  }, [walletData]);
+  
+  const balance = wallet.balance || 0;
 
   const location = useLocation();
 
@@ -40,13 +53,13 @@ const SideBar = ({ $isOpen, onClose }) => {
     { path: PATHS.ORDERS, icon: <FaShoppingBag />, label: "Orders", badge: 3 },
     { path: PATHS.REVIEWS, icon: <FaStar />, label: "My Reviews" },
     { path: PATHS.ADDRESS, icon: <FaMapMarkerAlt />, label: "Addresses" },
-    { path: PATHS.CREDIT, icon: <FaMoneyBill />, label: "Balance", amount: "$245.00" },
+    { path: PATHS.CREDIT, icon: <FaMoneyBill />, label: "Balance", amount: isBalanceLoading ? "..." : `GH₵${balance.toFixed(2)}` },
     { path: PATHS.FOLLOWED, icon: <FaHeart />, label: "Followed Shops" },
     { path: PATHS.COUPON, icon: <FaTicketAlt />, label: "Coupons", badge: 5 },
     { path: PATHS.PAYMENT, icon: <FaCreditCard />, label: "Payments" },
     { path: PATHS.BROWSER, icon: <FaHistory />, label: "History" },
     { path: PATHS.PERMISSION, icon: <FaUserShield />, label: "Permissions" },
-    { path: PATHS.NOTIFICATION, icon: <FaBell />, label: "Notifications", badge: 12 },
+    { path: PATHS.NOTIFICATION, icon: <FaBell />, label: "Notifications", badge: unreadCount > 0 ? unreadCount : null },
     { path: PATHS.PROFILE, icon: <FaUserCog />, label: "Settings" },
   ];
 
@@ -88,7 +101,9 @@ const SideBar = ({ $isOpen, onClose }) => {
         </StatItem>
         <StatDivider />
         <StatItem>
-          <StatValue>$245</StatValue>
+          <StatValue>
+            {isBalanceLoading ? "..." : `GH₵${balance.toFixed(2)}`}
+          </StatValue>
           <StatLabel>Balance</StatLabel>
         </StatItem>
       </StatsSection>

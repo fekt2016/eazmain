@@ -26,6 +26,8 @@ import EditOrderModal from './EditOrderModal';
 import { orderService } from './orderApi';
 import CreateReviewForm from '../products/CreateReviewForm';
 import OrderTrackingTimeline from './OrderTrackingTimeline';
+import logger from '../../shared/utils/logger';
+import Button from '../../shared/components/Button';
 
 const OrderDetail = () => {
   const { id: orderId } = useParams();
@@ -41,7 +43,6 @@ logger.log("order", order);
     defaultTitle: "EazShop Orders",
   });
 
-  const [status, setStatus] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [selectedProductForReview, setSelectedProductForReview] = useState(null);
@@ -96,23 +97,6 @@ logger.log("order", order);
 
   const currentStage = getCurrentStage();
 
-  useEffect(() => {
-    if (order) {
-      // Use paymentStatus if available, otherwise fall back to status or orderStatus
-      const displayStatus = order.paymentStatus === 'completed' 
-        ? 'paid' 
-        : order.status || order.orderStatus || 'pending';
-      setStatus(displayStatus);
-    }
-  }, [order]);
-
-  const handleStatusChange = (e) => {
-    setStatus(e.target.value);
-  };
-
-  const handleSaveStatus = () => {
-    logger.log("Saving status:", status);
-  };
 
   const handleDeleteOrder = () => {
     logger.log("Deleting order:", orderId);
@@ -381,9 +365,10 @@ logger.log("order", order);
   // Calculate grand total (tax is already included in subtotal for VAT-inclusive pricing)
   const subtotal = order.sellerOrder.reduce((total, sellerOrder) => total + (sellerOrder.subtotal || 0), 0);
   const totalShipping = order.shippingCost || order.sellerOrder.reduce((total, sellerOrder) => total + (sellerOrder.shippingCost || 0), 0);
-  // Get COVID levy from order (if available) or calculate from seller orders
+  // Get COVID levy from order (for tracking only, NOT added to customer total - will be deducted from seller at withdrawal)
   const totalCovidLevy = order.totalCovidLevy || order.sellerOrder.reduce((total, sellerOrder) => total + (sellerOrder.totalCovidLevy || 0), 0);
-  const grandTotal = order.totalPrice || (subtotal + totalShipping + totalCovidLevy);
+  // Grand total: subtotal + shipping (COVID levy NOT included)
+  const grandTotal = order.totalPrice || (subtotal + totalShipping);
 
   return (
     <OrderDetailContainer>
@@ -477,18 +462,6 @@ logger.log("order", order);
                   </StepContent>
                 </TimelineStep>
               </StatusTimeline>
-
-              <StatusControl>
-                <StatusSelect value={status} onChange={handleStatusChange}>
-                  <option value="processing">Processing</option>
-                  <option value="shipped">Shipped</option>
-                  <option value="delivered">Delivered</option>
-                  <option value="cancelled">Cancelled</option>
-                </StatusSelect>
-                <PrimaryButton onClick={handleSaveStatus}>
-                  Update Status
-                </PrimaryButton>
-              </StatusControl>
             </CardBody>
           </Card>
 
@@ -841,10 +814,13 @@ logger.log("order", order);
         </DangerButton>
         <ActionGroup>
           {isEligibleForRefund && (
-            <RefundButton onClick={handleRequestRefund}>
-              <FaUndo />
+            <Button 
+              variant="secondary" 
+              onClick={handleRequestRefund}
+              leftIcon={<FaUndo />}
+            >
               Request Refund
-            </RefundButton>
+            </Button>
           )}
           {refundStatus?.requested && (
             <RefundStatusBadge $status={refundStatus.status}>
@@ -1513,30 +1489,6 @@ const StepDate = styled.div`
   color: var(--color-grey-500);
 `;
 
-const StatusControl = styled.div`
-  display: flex;
-  gap: var(--spacing-sm);
-  
-  @media (max-width: 480px) {
-    flex-direction: column;
-  }
-`;
-
-const StatusSelect = styled.select`
-  flex: 1;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--color-grey-300);
-  border-radius: var(--border-radius-md);
-  font-size: var(--font-size-sm);
-  background: var(--color-white-0);
-  
-  &:focus {
-    outline: none;
-    border-color: var(--color-primary-500);
-    box-shadow: 0 0 0 3px var(--color-primary-100);
-  }
-`;
-
 const InfoGrid = styled.div`
   display: flex;
   flex-direction: column;
@@ -2004,31 +1956,6 @@ const ReviewModalClose = styled.button`
 
 const ReviewModalBody = styled.div`
   padding: 2rem;
-`;
-
-const RefundButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: var(--color-orange-600, #ea580c);
-  color: white;
-  border: none;
-  border-radius: var(--border-radius-md);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-semibold);
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    background: var(--color-orange-700, #c2410c);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-
-  svg {
-    font-size: 1rem;
-  }
 `;
 
 const RefundStatusBadge = styled.span`

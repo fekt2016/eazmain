@@ -21,6 +21,7 @@ import { detectZone } from '../../shared/utils/zoneDetection';
 import { WAREHOUSE_LOCATION } from '../../shared/config/warehouseConfig';
 import { ButtonSpinner } from '../../components/loading';
 import { PrimaryButton, SecondaryButton } from '../../shared/components/ui/Buttons';
+import logger from '../../shared/utils/logger';
 
 /**
  * EditOrderModal Component
@@ -134,7 +135,7 @@ const EditOrderModal = ({ isOpen, onClose, order, onSuccess }) => {
             }
           },
           onError: (error) => {
-            console.error('Failed to calculate shipping with distance-based system:', error);
+            logger.error('Failed to calculate shipping with distance-based system:', error);
             // Fallback to zone-based calculation
             const detectedZone = detectZone(formData.region, formData.city);
             setZone(detectedZone);
@@ -180,7 +181,7 @@ const EditOrderModal = ({ isOpen, onClose, order, onSuccess }) => {
             }
           },
           onError: (error) => {
-            console.error('Failed to calculate shipping:', error);
+            logger.error('Failed to calculate shipping:', error);
           },
         }
       );
@@ -268,7 +269,7 @@ const EditOrderModal = ({ isOpen, onClose, order, onSuccess }) => {
               }
             },
             onError: (error) => {
-              console.error('Failed to calculate shipping:', error);
+              logger.error('Failed to calculate shipping:', error);
             },
           }
         );

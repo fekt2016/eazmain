@@ -1,10 +1,10 @@
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { orderService } from '../../shared/services/orderApi'; // Adjust the import path as necessary
+import logger from '../../shared/utils/logger';
 
 // import { useNavigate } from "react-router-dom";
 
 export const getOrderStructure = (orderData) => {
-  console.log("orderData structure", orderData);
   if (!orderData) return [];
 
   if (orderData?.data?.data?.orderss) {
@@ -69,8 +69,7 @@ export const useGetSellerOrders = () => {
         );
       }
     },
-    onsuccess: (data) => {
-      logger.log(data);
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["seller-orders"] });
     },
     retry: 2, // Add retry mechanism
@@ -97,7 +96,7 @@ export const useCreateOrder = () => {
       }
     },
     onSuccess: (data) => {
-      logger.log("order created successfully!!!", data);
+      logger.debug("Order created successfully", data);
       queryClient.invalidateQueries({ queryKey: ["orders"] });
     },
     onError: (error) => {

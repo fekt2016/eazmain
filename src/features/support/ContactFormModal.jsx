@@ -6,6 +6,7 @@ import { useCreateTicket } from '../../shared/hooks/useSupport';
 import useAuth from '../../shared/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import { orderService } from '../../shared/services/orderApi';
+import logger from '../../shared/utils/logger';
 
 /**
  * Contact Form Modal Component

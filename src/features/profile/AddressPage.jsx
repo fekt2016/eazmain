@@ -29,7 +29,10 @@ import {
   useUpdateAddress,
   useSetDefaultAddress,
 } from '../../shared/hooks/useAddress';
-import { LoadingState, ErrorState, ButtonSpinner } from '../../components/loading';
+import Button from '../../shared/components/Button';
+import { LoadingState, ErrorState } from '../../components/loading';
+import logger from '../../shared/utils/logger';
+import { sanitizeText, sanitizeAddress, sanitizePhone } from '../../shared/utils/sanitize';
 
 const AddressManagementPage = () => {
   const navigate = useNavigate();
@@ -41,7 +44,7 @@ const AddressManagementPage = () => {
     isError,
     refetch,
   } = useGetUserAddress();
-  console.log("addressData", addressData);
+  // Address data loaded
 
   const savedAddresses = useMemo(
     () => addressData?.data?.data?.addresses || [],
@@ -157,7 +160,7 @@ const AddressManagementPage = () => {
             digitalAddress: generateGhanaDigitalAddress(latitude, longitude),
           }));
         } catch (error) {
-          console.error("Reverse geocoding error:", error);
+          logger.error("Reverse geocoding error:", error);
           setLocationError(
             "Failed to get address details. Please enter manually."
           );
@@ -166,7 +169,7 @@ const AddressManagementPage = () => {
         }
       },
       (error) => {
-        console.error("Geolocation error:", error);
+        logger.error("Geolocation error:", error);
         setLocationError(
           "Location access denied. Please enable location services."
         );
@@ -210,21 +213,22 @@ const AddressManagementPage = () => {
     }
 
     // Prepare data with lowercase string fields
-    // Note: city should be uppercase, digitalAddress should be uppercase, contactPhone should remain as is
+    // SECURITY: Sanitize all address inputs
     const dataToSend = {
       ...formData,
-      // Convert string fields to lowercase (except city, digitalAddress, contactPhone)
-      fullName: formData.fullName ? formData.fullName.toLowerCase().trim() : "",
-      streetAddress: formData.streetAddress ? formData.streetAddress.toLowerCase().trim() : "",
-      area: formData.area ? formData.area.toLowerCase().trim() : "",
-      landmark: formData.landmark ? formData.landmark.toLowerCase().trim() : "",
-      city: formData.city ? formData.city.toLowerCase().trim() : "", // City should be lowercase
-      region: formData.region ? formData.region.toLowerCase().trim() : "",
-      country: formData.country ? formData.country.toLowerCase().trim() : "",
-      additionalInformation: formData.additionalInformation ? formData.additionalInformation.toLowerCase().trim() : "",
-      // Keep these as is (uppercase or original format)
-      digitalAddress: formData.digitalAddress ? formData.digitalAddress.toUpperCase().trim() : "",
-      contactPhone: formData.contactPhone ? formData.contactPhone.trim() : "", // Phone numbers should not be converted
+      // SECURITY: Sanitize all text inputs
+      fullName: sanitizeText(formData.fullName || "", 100).toLowerCase(),
+      streetAddress: sanitizeAddress(formData.streetAddress || "").toLowerCase(),
+      area: sanitizeText(formData.area || "", 100).toLowerCase(),
+      landmark: sanitizeText(formData.landmark || "", 100).toLowerCase(),
+      city: sanitizeText(formData.city || "", 50).toLowerCase(),
+      region: sanitizeText(formData.region || "", 50).toLowerCase(),
+      country: sanitizeText(formData.country || "Ghana", 50).toLowerCase(),
+      additionalInformation: sanitizeText(formData.additionalInformation || "", 500).toLowerCase(),
+      // SECURITY: Sanitize digital address (uppercase, alphanumeric only)
+      digitalAddress: (formData.digitalAddress || "").replace(/[^A-Z0-9]/g, '').toUpperCase().substring(0, 9),
+      // SECURITY: Sanitize phone number
+      contactPhone: sanitizePhone(formData.contactPhone || ""),
       // Keep boolean as is
       isDefault: formData.isDefault,
     };
@@ -239,7 +243,7 @@ const AddressManagementPage = () => {
             refetch();
           },
           onError: (error) => {
-            console.error("Error updating address:", error);
+            logger.error("Error updating address:", error);
           },
         }
       );
@@ -250,14 +254,14 @@ const AddressManagementPage = () => {
           refetch();
         },
         onError: (error) => {
-          console.error("Error creating address:", error);
+          logger.error("Error creating address:", error);
         },
       });
     }
   };
 
   const handleEditAddress = (address) => {
-    console.log("editing address", address);
+    // Editing address
     // Use address.id or address._id (handle both formats)
     const addressId = address.id || address._id;
     
@@ -287,7 +291,7 @@ const AddressManagementPage = () => {
     if (window.confirm("Are you sure you want to delete this address?")) {
       deleteAddress(id, {
         onError: (error) => {
-          console.error("Error deleting address:", error);
+          logger.error("Error deleting address:", error);
         },
       });
     }
@@ -297,7 +301,7 @@ const AddressManagementPage = () => {
     setDefaultAddress(id, {
       onSuccess: () => refetch(),
       onError: (error) => {
-        console.error("Error setting default address:", error);
+        logger.error("Error setting default address:", error);
       },
     });
   };
@@ -577,25 +581,21 @@ const AddressManagementPage = () => {
               </CheckboxGroup>
 
               <ButtonGroup>
-                <CancelButton
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={resetForm}
                   disabled={isCreating || isUpdating}
                 >
                   Cancel
-                </CancelButton>
-                <SaveButton
+                </Button>
+                <Button
                   type="submit"
-                  disabled={isCreating || isUpdating}
+                  variant="primary"
+                  loading={isCreating || isUpdating}
                 >
-                  {isCreating || isUpdating ? (
-                    <ButtonSpinner size="sm" />
-                  ) : editingAddress ? (
-                    "Update Address"
-                  ) : (
-                    "Save Address"
-                  )}
-                </SaveButton>
+                  {editingAddress ? "Update Address" : "Save Address"}
+                </Button>
               </ButtonGroup>
             </Form>
           </FormSection>
@@ -656,13 +656,16 @@ const AddressManagementPage = () => {
                       >
                         <FaEdit />
                       </EditButton>
-                      <DeleteButton
+                      <Button
+                        variant="danger"
+                        iconOnly
                         onClick={() => handleDeleteAddress(address.id)}
-                        disabled={isDeleting}
+                        loading={isDeleting}
+                        ariaLabel="Delete address"
                         title="Delete address"
                       >
-                        {isDeleting ? <ButtonSpinner size="sm" /> : <FaTrash />}
-                      </DeleteButton>
+                        <FaTrash />
+                      </Button>
                     </ActionButtons>
                   </AddressHeader>
 

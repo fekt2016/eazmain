@@ -44,7 +44,6 @@ import { useToggleWishlist } from '../../shared/hooks/useWishlist.js';
 import { LoadingState, ErrorState, EmptyState, ButtonSpinner } from '../../components/loading';
 import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 import {
-  isColorValue,
   getProductDisplayPrice,
   getProductOriginalPrice,
   hasProductDiscount,
@@ -54,14 +53,18 @@ import {
   getProductStock,
   isProductInStock,
 } from '../../shared/utils/productHelpers';
+import VariantNameSelector from '../../components/product/variantNameSelector/VariantNameSelector';
+import VariantDetailsDisplay from '../../components/product/variantNameSelector/VariantDetailsDisplay';
+import VariantColorImageGallery from '../../components/product/variantNameSelector/VariantColorImageGallery';
+import VariantMainImageSwitcher from '../../components/product/variantNameSelector/VariantMainImageSwitcher';
+import VariantPriceDisplay from './components/variantSelector/VariantPriceDisplay';
+import { useVariantSelectionByName } from '../../shared/hooks/products/useVariantSelectionByName';
 
 const ProductDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [selectedVariant, setSelectedVariant] = useState(null);
-  const [selectedAttributes, setSelectedAttributes] = useState({});
   const [isImageZoomed, setIsImageZoomed] = useState(false);
   const [imageZoomPosition, setImageZoomPosition] = useState({ x: 0, y: 0 });
   const [showFullDescription, setShowFullDescription] = useState(false);
@@ -153,47 +156,19 @@ const ProductDetailPage = () => {
     }
   }, [id, productId, product, recordProductView, trackActivity]);
 
+  // Get all variants (including inactive ones - they'll be marked as disabled)
   const variants = useMemo(() => {
     return product?.variants || [];
   }, [product]);
 
-  // Get all unique attributes from variants
-  const attributeKeys = useMemo(() => {
-    const keys = new Set();
-    variants.forEach((variant) => {
-      variant.attributes.forEach((attr) => {
-        keys.add(attr.key);
-      });
-    });
-    return Array.from(keys);
-  }, [variants]);
-
-  // Initialize selected attributes with first in-stock variant
-  useEffect(() => {
-    if (variants.length > 0) {
-      const initialAttributes = {};
-      const inStockVariant = variants.find((v) => v.stock > 0) || variants[0];
-      inStockVariant.attributes.forEach((attr) => {
-        initialAttributes[attr.key] = attr.value;
-      });
-      setSelectedAttributes(initialAttributes);
-      setSelectedVariant(inStockVariant);
-    }
-  }, [variants]);
-
-  // Update selected variant when attributes change
-  useEffect(() => {
-    if (Object.keys(selectedAttributes).length > 0) {
-      const matchingVariant = variants.find((variant) => {
-        return Object.entries(selectedAttributes).every(([key, value]) => {
-          return variant.attributes.some(
-            (attr) => attr.key === key && attr.value === value
-          );
-        });
-      });
-      setSelectedVariant(matchingVariant);
-    }
-  }, [selectedAttributes, variants]);
+  // Use the variant selection by name hook (manages its own state and auto-initializes)
+  const variantSelection = useVariantSelectionByName(variants, product);
+  const { selectedVariant, handleVariantSelect } = variantSelection;
+  
+  // Handle variant image selection (from color gallery)
+  const handleVariantImageSelect = useCallback((variant) => {
+    handleVariantSelect(variant);
+  }, [handleVariantSelect]);
 
   // Update quantity if it exceeds selected variant stock
   useEffect(() => {
@@ -224,12 +199,10 @@ const ProductDetailPage = () => {
     }
   };
 
-  const handleAttributeChange = useCallback((attribute, value) => {
-    setSelectedAttributes((prev) => ({
-      ...prev,
-      [attribute]: value,
-    }));
-  }, []);
+  // Handle variant selection
+  const handleVariantSelectCallback = useCallback((variant) => {
+    handleVariantSelect(variant);
+  }, [handleVariantSelect]);
 
   const handleImageZoom = (e) => {
     if (!imageRef.current) return;
@@ -277,6 +250,70 @@ const ProductDetailPage = () => {
     return product?.reviews || [];
   }, [reviewsData, product]);
 
+  // Use utility functions for product calculations (must be before early returns)
+  const displayPrice = getProductDisplayPrice(product, selectedVariant);
+  const originalPrice = getProductOriginalPrice(product);
+  const hasDiscount = hasProductDiscount(product, selectedVariant);
+  const discountPercentage = getProductDiscountPercentage(product, selectedVariant);
+  const displaySku = getProductSku(product, selectedVariant);
+  
+  // Get stock - use selected variant if available, otherwise calculate from all active variants
+  const variantStock = useMemo(() => {
+    if (!product) return 0;
+    if (selectedVariant) {
+      // If variant is inactive, return 0
+      if (selectedVariant.status === 'inactive') {
+        return 0;
+      }
+      // Return variant stock
+      return selectedVariant.stock || 0;
+    }
+    // If no variant selected, sum all active variant stocks
+    if (variants.length > 0) {
+      const totalStock = variants
+        .filter((v) => v.status !== 'inactive')
+        .reduce((sum, v) => sum + (v.stock || 0), 0);
+      return totalStock;
+    }
+    // Fallback to product stock
+    return getProductStock(product, selectedVariant);
+  }, [selectedVariant, variants, product]);
+  
+  // Check if in stock - must have stock > 0 and variant must be active (if variant exists)
+  const isInStock = useMemo(() => {
+    if (!product) return false;
+    if (selectedVariant) {
+      // Variant must be active AND have stock > 0
+      const isActive = selectedVariant.status !== 'inactive';
+      const hasStock = (selectedVariant.stock || 0) > 0;
+      return isActive && hasStock;
+    }
+    // If no variant selected, check if any active variant has stock
+    if (variants.length > 0) {
+      return variants.some((v) => {
+        const isActive = v.status !== 'inactive';
+        const hasStock = (v.stock || 0) > 0;
+        return isActive && hasStock;
+      });
+    }
+    // Fallback to product stock check
+    return isProductInStock(product, selectedVariant);
+  }, [selectedVariant, variants, product]);
+  
+  // Get product images - ModernProductGrid MUST use product.images ONLY
+  // This is separate from variant images and never changes based on variant selection
+  const productImages = useMemo(() => {
+    if (!product) return [];
+    return getProductImages(product);
+  }, [product]);
+
+  // Reset selected image to 0 when product images change
+  useEffect(() => {
+    if (productImages.length > 0) {
+      setSelectedImage(0);
+    }
+  }, [productImages.length]);
+
   if (isLoading) return <LoadingState message="Loading product..." />;
   if (error) return <ErrorState
     title="Something went wrong"
@@ -296,16 +333,6 @@ const ProductDetailPage = () => {
       </BackButton>
     }
   />;
-
-  // Use utility functions for product calculations
-  const displayPrice = getProductDisplayPrice(product, selectedVariant);
-  const originalPrice = getProductOriginalPrice(product);
-  const hasDiscount = hasProductDiscount(product, selectedVariant);
-  const discountPercentage = getProductDiscountPercentage(product, selectedVariant);
-  const displaySku = getProductSku(product, selectedVariant);
-  const variantStock = getProductStock(product, selectedVariant);
-  const isInStock = isProductInStock(product, selectedVariant);
-  const images = getProductImages(product);
 
   return (
     <ModernPageContainer>
@@ -340,7 +367,7 @@ const ProductDetailPage = () => {
             $isZoomed={isImageZoomed}
           >
             <ModernMainImage
-              src={images[selectedImage] || images[0]}
+              src={productImages[selectedImage] || productImages[0]}
               alt={product.name}
               $zoomX={imageZoomPosition.x}
               $zoomY={imageZoomPosition.y}
@@ -386,7 +413,7 @@ const ProductDetailPage = () => {
           </MainImageWrapper>
 
           {/* Thumbnail Gallery */}
-          {images.length > 1 && (
+          {productImages.length > 1 && (
             <ThumbnailGallery>
               <ThumbnailScrollButton
                 onClick={() => setSelectedImage(Math.max(0, selectedImage - 1))}
@@ -396,7 +423,7 @@ const ProductDetailPage = () => {
               </ThumbnailScrollButton>
 
               <ThumbnailList>
-                {images.map((img, index) => (
+                {productImages.map((img, index) => (
                   <ModernThumbnail
                     key={index}
                     $active={index === selectedImage}
@@ -409,8 +436,8 @@ const ProductDetailPage = () => {
               </ThumbnailList>
 
               <ThumbnailScrollButton
-                onClick={() => setSelectedImage(Math.min(images.length - 1, selectedImage + 1))}
-                disabled={selectedImage === images.length - 1}
+                onClick={() => setSelectedImage(Math.min(productImages.length - 1, selectedImage + 1))}
+                disabled={selectedImage === productImages.length - 1}
               >
                 <FaChevronRight />
               </ThumbnailScrollButton>
@@ -449,144 +476,58 @@ const ProductDetailPage = () => {
 
           {/* Pricing Section */}
           <PricingCard>
-            <PriceDisplay>
-              <CurrentPrice>GH₵{displayPrice > 0 ? displayPrice.toFixed(2) : '0.00'}</CurrentPrice>
-              {hasDiscount && originalPrice > 0 && (
-                <OriginalPrice>GH₵{originalPrice.toFixed(2)}</OriginalPrice>
-              )}
-            </PriceDisplay>
-
-            {hasDiscount && originalPrice > 0 && displayPrice > 0 && (
-              <SavingsAlert>
-                🎉 You save GH₵{(originalPrice - displayPrice).toFixed(2)} ({discountPercentage}%)
-              </SavingsAlert>
-            )}
+            <VariantPriceDisplay 
+              product={product} 
+              selectedVariant={selectedVariant}
+              variantSelectionHook={variantSelection}
+            />
 
             <StockAlert $inStock={isInStock}>
               <StatusIndicator $inStock={isInStock} />
               {isInStock ? (
                 <span><strong>{variantStock} available</strong> - Order now!</span>
+              ) : selectedVariant ? (
+                <span>This variant is out of stock</span>
+              ) : variants.length > 0 ? (
+                <span>Please select a variant</span>
               ) : (
                 <span>Currently out of stock</span>
               )}
             </StockAlert>
           </PricingCard>
 
-          {/* Variants Section */}
-          {attributeKeys.length > 0 && (
-            <VariantsCard>
-              <CardTitle>Select Options</CardTitle>
-              {attributeKeys.map((attribute) => {
-                const values = [
-                  ...new Set(
-                    variants
-                      .map((v) => v.attributes.find((a) => a.key === attribute)?.value)
-                      .filter(Boolean)
-                  ),
-                ];
+          {/* Variant Name Selector */}
+          {variants.length > 0 && (
+            <>
+              <VariantNameSelector
+                variants={variants}
+                selectedVariant={selectedVariant}
+                onSelect={handleVariantSelectCallback}
+                variantSelectionHook={variantSelection}
+              />
 
-                const isColor = attribute.toLowerCase().includes("color");
+              {/* Variant Color Image Gallery - shows color swatches for variants with images */}
+              <VariantColorImageGallery
+                selectedVariant={selectedVariant}
+                variants={variants}
+                onImageSelect={handleVariantImageSelect}
+                variantSelectionHook={variantSelection}
+              />
 
-                return (
-                  <VariantGroup key={attribute}>
-                    <VariantGroupLabel>
-                      {attribute}
-                      {selectedAttributes[attribute] && (
-                        <SelectedValue>: {selectedAttributes[attribute]}</SelectedValue>
-                      )}
-                    </VariantGroupLabel>
+              {/* Variant Details Display - shows attributes of selected variant */}
+              <VariantDetailsDisplay
+                selectedVariant={selectedVariant}
+                variantSelectionHook={variantSelection}
+              />
 
-                    <VariantOptionsGrid>
-                      {values.map((value) => {
-                        const showAsColor = isColor && isColorValue(value);
-                        const variantStock = variants.find((variant) => {
-                          return (
-                            variant.attributes.some(
-                              (attr) => attr.key === attribute && attr.value === value
-                            ) &&
-                            Object.entries(selectedAttributes)
-                              .filter(([key]) => key !== attribute)
-                              .every(([key, val]) =>
-                                variant.attributes.some(
-                                  (attr) => attr.key === key && attr.value === val
-                                )
-                              )
-                          );
-                        })?.stock || 0;
-
-                        const isOutOfStock = variantStock <= 0;
-                        const isLowStock = variantStock > 0 && variantStock <= 5;
-                        const isSelected = selectedAttributes[attribute] === value;
-                        const radioId = `${attribute}-${value}`;
-
-                        return (
-                          <RadioOptionWrapper key={radioId}>
-                            <RadioInput
-                              type="radio"
-                              id={radioId}
-                              name={attribute}
-                              value={value}
-                              checked={isSelected}
-                              disabled={isOutOfStock}
-                              onChange={() => !isOutOfStock && handleAttributeChange(attribute, value)}
-                              aria-label={`${attribute}: ${value}${isOutOfStock ? ' (Out of stock)' : isLowStock ? ` (${variantStock} left)` : ''}`}
-                            />
-                            <ModernVariantOption
-                              htmlFor={radioId}
-                              $active={isSelected}
-                              $disabled={isOutOfStock}
-                              $isColor={showAsColor}
-                              $colorValue={showAsColor ? value : null}
-                              $isLowStock={isLowStock}
-                              as="label"
-                            >
-                              {showAsColor ? (
-                                <ColorSwatchContainer>
-                                  <ColorSwatch $color={value} $active={isSelected}>
-                                    {isSelected && (
-                                      <RadioIndicator $isColor>
-                                        <FaCheck />
-                                      </RadioIndicator>
-                                    )}
-                                  </ColorSwatch>
-                                  {isOutOfStock && <OutOfStockBadge>Out</OutOfStockBadge>}
-                                  {isLowStock && !isOutOfStock && (
-                                    <VariantStockBadge $isLowStock>{variantStock}</VariantStockBadge>
-                                  )}
-                                </ColorSwatchContainer>
-                              ) : (
-                                <VariantContent>
-                                  <VariantText $active={isSelected}>
-                                    {value}
-                                  </VariantText>
-                                  {isSelected && (
-                                    <RadioIndicator>
-                                      <FaCheck />
-                                    </RadioIndicator>
-                                  )}
-                                  {isOutOfStock && <OutOfStockBadge>Out of Stock</OutOfStockBadge>}
-                                  {isLowStock && !isOutOfStock && (
-                                    <VariantStockBadge $isLowStock>
-                                      <FaExclamationTriangle />
-                                      {variantStock} left
-                                    </VariantStockBadge>
-                                  )}
-                                  {!isOutOfStock && !isLowStock && variantStock > 5 && (
-                                    <VariantStockBadge $isLowStock={false}>
-                                      {variantStock} in stock
-                                    </VariantStockBadge>
-                                  )}
-                                </VariantContent>
-                              )}
-                            </ModernVariantOption>
-                          </RadioOptionWrapper>
-                        );
-                      })}
-                    </VariantOptionsGrid>
-                  </VariantGroup>
-                );
-              })}
-            </VariantsCard>
+              {/* Variant Main Image Switcher - handles image updates when variant changes */}
+              <VariantMainImageSwitcher
+                selectedVariant={selectedVariant}
+                fallbackImages={getProductImages(product)}
+                onImageChange={setSelectedImage}
+                variantSelectionHook={variantSelection}
+              />
+            </>
           )}
 
           {/* Actions Section */}
@@ -881,7 +822,7 @@ const ProductDetailPage = () => {
       {showImageModal && (
         <ImageModal onClick={() => setShowImageModal(false)}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
-            <ModalImage src={images[selectedImage] || images[0]} alt={product.name} />
+            <ModalImage src={productImages[selectedImage] || productImages[0]} alt={product.name} />
             <CloseModal onClick={() => setShowImageModal(false)}>
               ×
             </CloseModal>
@@ -1355,266 +1296,6 @@ const StatusIndicator = styled.div`
   animation: ${pulse} 2s infinite;
 `;
 
-const VariantsCard = styled.div`
-  background: white;
-  padding: 2.5rem;
-  border-radius: 2rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-  border: 1px solid var(--color-grey-100);
-`;
-
-const CardTitle = styled.h3`
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--color-grey-900);
-  margin-bottom: 2rem;
-`;
-
-const VariantGroup = styled.div`
-  margin-bottom: 2.5rem;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-`;
-
-const VariantGroupLabel = styled.label`
-  font-size: 1.6rem;
-  font-weight: 600;
-  color: var(--color-grey-800);
-  display: block;
-  margin-bottom: 1.5rem;
-`;
-
-const SelectedValue = styled.span`
-  font-weight: 500;
-  color: var(--color-primary-500);
-`;
-
-const VariantOptionsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
-  gap: 1.2rem;
-  
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
-    gap: 1rem;
-  }
-  
-  @media (max-width: 480px) {
-    grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
-    gap: 0.8rem;
-  }
-`;
-
-const RadioOptionWrapper = styled.div`
-  position: relative;
-`;
-
-const RadioInput = styled.input`
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-  margin: 0;
-  padding: 0;
-  
-  /* Ensure radio button is accessible but visually hidden */
-  &:focus-visible + label {
-    outline: 3px solid var(--color-primary-200);
-    outline-offset: 2px;
-  }
-`;
-
-const ModernVariantOption = styled.label`
-  position: relative;
-  min-height: 5.6rem;
-  min-width: 8rem;
-  border: 2.5px solid
-    ${(props) =>
-    props.$active
-      ? "var(--color-primary-500)"
-      : props.$disabled
-        ? "var(--color-grey-300)"
-        : "var(--color-grey-200)"};
-  background: ${(props) =>
-    props.$active
-      ? props.$isColor
-        ? "transparent"
-        : "var(--color-primary-50)"
-      : props.$disabled
-        ? "var(--color-grey-100)"
-        : "white"};
-  border-radius: ${(props) => (props.$isColor ? "50%" : "1.6rem")};
-  cursor: ${(props) => (props.$disabled ? "not-allowed" : "pointer")};
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: visible;
-  opacity: ${(props) => (props.$disabled ? 0.5 : 1)};
-  box-shadow: ${(props) =>
-    props.$active
-      ? "0 4px 16px rgba(0, 120, 204, 0.2)"
-      : "0 2px 8px rgba(0, 0, 0, 0.06)"};
-  padding: ${(props) => (props.$isColor ? "0" : "1.2rem 1.6rem")};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0;
-  
-  /* Ensure touch-friendly size on mobile */
-  @media (max-width: 768px) {
-    min-height: 5rem;
-    min-width: 7rem;
-    padding: ${(props) => (props.$isColor ? "0" : "1rem 1.4rem")};
-  }
-
-  &:hover {
-    border-color: ${(props) =>
-    props.$disabled
-      ? "var(--color-grey-300)"
-      : props.$active
-        ? "var(--color-primary-600)"
-        : "var(--color-primary-500)"};
-    transform: ${(props) => (props.$disabled ? "none" : "translateY(-3px) scale(1.02)")};
-    box-shadow: ${(props) =>
-    props.$disabled
-      ? "0 2px 8px rgba(0, 0, 0, 0.06)"
-      : props.$active
-        ? "0 6px 24px rgba(0, 120, 204, 0.3)"
-        : "0 6px 20px rgba(0, 0, 0, 0.12)"};
-  }
-
-  &:active {
-    transform: ${(props) => (props.$disabled ? "none" : "translateY(-1px) scale(0.98)")};
-  }
-
-  ${(props) =>
-    props.$active &&
-    !props.$isColor &&
-    css`
-      background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-brand-50) 100%);
-      font-weight: 600;
-    `}
-`;
-
-const ColorSwatchContainer = styled.div`
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const ColorSwatch = styled.div`
-  width: 5.6rem;
-  height: 5.6rem;
-  background-color: ${(props) => props.$color};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  position: relative;
-  border: ${(props) =>
-    props.$active ? "3px solid var(--color-primary-500)" : "2px solid var(--color-grey-200)"};
-  box-shadow: ${(props) =>
-    props.$active
-      ? "0 0 0 3px var(--color-primary-100), 0 4px 12px rgba(0, 0, 0, 0.15)"
-      : "0 2px 8px rgba(0, 0, 0, 0.1)"};
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  
-  @media (max-width: 768px) {
-    width: 5rem;
-    height: 5rem;
-  }
-`;
-
-const VariantContent = styled.div`
-  position: relative;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-`;
-
-const RadioIndicator = styled.span`
-  position: absolute;
-  top: ${(props) => (props.$isColor ? "-0.6rem" : "-0.6rem")};
-  right: ${(props) => (props.$isColor ? "-0.6rem" : "-0.6rem")};
-  width: 2.4rem;
-  height: 2.4rem;
-  background: var(--color-primary-500);
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  z-index: 10;
-  box-shadow: 0 2px 8px rgba(0, 120, 204, 0.4);
-  animation: ${pulse} 0.3s ease-out;
-`;
-
-const VariantText = styled.span`
-  font-size: 1.5rem;
-  font-weight: ${(props) => (props.$active ? "600" : "500")};
-  color: ${(props) =>
-    props.$active ? "var(--color-primary-700)" : "var(--color-grey-800)"};
-  position: relative;
-  text-align: center;
-  line-height: 1.3;
-  transition: all 0.2s ease;
-  
-  @media (max-width: 768px) {
-    font-size: 1.4rem;
-  }
-`;
-
-const VariantStockBadge = styled.span`
-  font-size: 1rem;
-  font-weight: 600;
-  padding: 0.3rem 0.6rem;
-  border-radius: 0.8rem;
-  background: ${(props) =>
-    props.$isLowStock
-      ? "linear-gradient(135deg, var(--color-yellow-100) 0%, var(--color-yellow-700) 100%)"
-      : "var(--color-green-50)"};
-  color: ${(props) =>
-    props.$isLowStock ? "var(--color-yellow-700)" : "var(--color-green-700)"};
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  white-space: nowrap;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-  
-  @media (max-width: 768px) {
-    font-size: 0.9rem;
-    padding: 0.25rem 0.5rem;
-  }
-`;
-
-const OutOfStockBadge = styled.span`
-  position: absolute;
-  bottom: -0.8rem;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 1rem;
-  font-weight: 600;
-  padding: 0.4rem 0.8rem;
-  border-radius: 0.8rem;
-  background: linear-gradient(135deg, var(--color-red-600) 0%, var(--color-red-700) 100%);
-  color: white;
-  white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
-  z-index: 5;
-  
-  @media (max-width: 768px) {
-    font-size: 0.9rem;
-    padding: 0.3rem 0.6rem;
-    bottom: -0.6rem;
-  }
-`;
 
 const ActionsCard = styled.div`
   background: white;

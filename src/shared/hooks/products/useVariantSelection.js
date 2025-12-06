@@ -1,0 +1,255 @@
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { isColorValue } from '../../../shared/utils/productHelpers';
+
+/**
+ * Custom hook for managing variant selection logic
+ * Handles attribute selection, variant matching, and availability checking
+ * Auto-selects default variant on initialization
+ */
+export const useVariantSelection = (variants = [], product = null) => {
+  const [selectedAttributes, setSelectedAttributes] = useState({});
+  const [selectedVariant, setSelectedVariant] = useState(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Get all unique attribute keys from variants
+  const attributeKeys = useMemo(() => {
+    const keys = new Set();
+    variants.forEach((variant) => {
+      variant.attributes?.forEach((attr) => {
+        keys.add(attr.key);
+      });
+    });
+    return Array.from(keys);
+  }, [variants]);
+
+  /**
+   * Match selected attributes to a variant
+   * Returns the variant that matches all selected attributes, or null
+   */
+  const matchVariant = useCallback((attributes, variantList = variants) => {
+    if (!variantList.length || !Object.keys(attributes).length) {
+      return null;
+    }
+
+    return variantList.find((variant) => {
+      // Check if variant matches all selected attributes
+      const matchesAllAttributes = Object.entries(attributes).every(([key, value]) => {
+        return variant.attributes?.some(
+          (attr) => attr.key === key && attr.value === value
+        );
+      });
+
+      // Also check that variant has all the required attribute keys
+      const hasAllAttributeKeys = Object.keys(attributes).every((key) => {
+        return variant.attributes?.some((attr) => attr.key === key);
+      });
+
+      // Ensure variant has exactly the same number of attributes as selected
+      const variantAttributeCount = variant.attributes?.length || 0;
+      const selectedAttributeCount = Object.keys(attributes).length;
+      const hasSameAttributeCount = variantAttributeCount === selectedAttributeCount;
+
+      return matchesAllAttributes && hasAllAttributeKeys && hasSameAttributeCount;
+    }) || null;
+  }, [variants]);
+
+  /**
+   * Find the default variant to select on page load
+   * Priority: 1) variant with defaultSKU flag, 2) first in-stock variant, 3) first active variant, 4) first variant
+   */
+  const findDefaultVariant = useCallback(() => {
+    if (!variants.length) return null;
+
+    // Check for variant with defaultSKU flag (if it exists in the future)
+    const defaultVariant = variants.find((v) => v.defaultSKU === true);
+    if (defaultVariant) return defaultVariant;
+
+    // Find first variant with stock > 0 and active status
+    const inStockVariant = variants.find(
+      (v) => (v.stock || 0) > 0 && v.status === 'active'
+    );
+    if (inStockVariant) return inStockVariant;
+
+    // Find first active variant
+    const activeVariant = variants.find((v) => v.status === 'active');
+    if (activeVariant) return activeVariant;
+
+    // Fallback to first variant
+    return variants[0] || null;
+  }, [variants]);
+
+  /**
+   * Initialize with default variant
+   */
+  const initializeDefaultVariant = useCallback(() => {
+    if (isInitialized || !variants.length) return;
+
+    const defaultVariant = findDefaultVariant();
+    if (defaultVariant && defaultVariant.attributes) {
+      const initialAttributes = {};
+      defaultVariant.attributes.forEach((attr) => {
+        if (attr.key && attr.value) {
+          initialAttributes[attr.key] = attr.value;
+        }
+      });
+      setSelectedAttributes(initialAttributes);
+      setSelectedVariant(defaultVariant);
+      setIsInitialized(true);
+    }
+  }, [variants, findDefaultVariant, isInitialized]);
+
+  // Auto-initialize on mount or when variants change
+  useEffect(() => {
+    if (!isInitialized && variants.length > 0) {
+      initializeDefaultVariant();
+    }
+  }, [variants, isInitialized, initializeDefaultVariant]);
+
+  // Update selected variant when attributes change
+  useEffect(() => {
+    if (Object.keys(selectedAttributes).length > 0) {
+      const matched = matchVariant(selectedAttributes);
+      setSelectedVariant(matched);
+    } else {
+      setSelectedVariant(null);
+    }
+  }, [selectedAttributes, matchVariant]);
+
+  /**
+   * Select an attribute value
+   */
+  const selectAttribute = useCallback((attributeName, value) => {
+    setSelectedAttributes((prev) => ({
+      ...prev,
+      [attributeName]: value,
+    }));
+  }, []);
+
+  /**
+   * Check if an option is disabled (would lead to no matching variant)
+   * Note: We allow selection even if variant is out of stock - stock status is shown after selection
+   */
+  const isOptionDisabled = useCallback((attributeName, value) => {
+    // Build potential attributes if this option is selected
+    const potentialAttributes = {
+      ...selectedAttributes,
+      [attributeName]: value,
+    };
+
+    // Find the variant that would match
+    const potentialVariant = matchVariant(potentialAttributes);
+
+    // Option is disabled ONLY if:
+    // 1. No variant matches this combination, OR
+    // 2. The matching variant is inactive
+    // We do NOT disable based on stock - allow selection and show stock status after
+    if (!potentialVariant) return true;
+    if (potentialVariant.status === 'inactive') return true;
+
+    return false;
+  }, [selectedAttributes, matchVariant]);
+
+  /**
+   * Compute available options for an attribute
+   * Returns options with availability and stock info
+   */
+  const computeAvailableOptions = useCallback((attributeKey) => {
+    if (!variants.length) return [];
+
+    // Get all unique values for this attribute
+    const allValues = new Set();
+    variants.forEach((variant) => {
+      const attr = variant.attributes?.find((a) => a.key === attributeKey);
+      if (attr?.value) {
+        allValues.add(attr.value);
+      }
+    });
+
+    return Array.from(allValues).map((value) => {
+      // Build potential attributes if this option is selected
+      const potentialAttributes = {
+        ...selectedAttributes,
+        [attributeKey]: value,
+      };
+
+      // Find the variant that would match
+      const potentialVariant = matchVariant(potentialAttributes, variants);
+
+      // Determine availability and stock
+      const variantStock = potentialVariant?.stock || 0;
+      const isVariantActive = potentialVariant?.status !== 'inactive';
+      const hasStock = variantStock > 0;
+      
+      // Option is available if variant exists, is active, and has stock
+      // This is used for visual indication, but doesn't prevent selection
+      const isAvailable = potentialVariant !== null && isVariantActive && hasStock;
+      
+      // Option is disabled ONLY if it would lead to no variant or inactive variant
+      // We allow selection even if out of stock - stock status shown after selection
+      const isDisabled = isOptionDisabled(attributeKey, value);
+
+      return {
+        value,
+        isAvailable,
+        isDisabled,
+        isSelected: selectedAttributes[attributeKey] === value,
+        variant: potentialVariant,
+        stock: variantStock,
+        isActive: isVariantActive,
+      };
+    });
+  }, [variants, selectedAttributes, matchVariant, isOptionDisabled]);
+
+  /**
+   * Clear selection (reset to default)
+   */
+  const clearSelection = useCallback(() => {
+    initializeDefaultVariant();
+  }, [initializeDefaultVariant]);
+
+  // Check if an attribute is a color attribute
+  const isColorAttribute = useCallback((attributeKey) => {
+    return attributeKey.toLowerCase().includes('color');
+  }, []);
+
+  // Check if a value is a color value
+  const isColorValueAttribute = useCallback((value) => {
+    return isColorValue(value);
+  }, []);
+
+  // Get variant summary text
+  const getVariantSummary = useCallback(() => {
+    if (!selectedVariant || !Object.keys(selectedAttributes).length) {
+      return null;
+    }
+
+    const summaryParts = Object.entries(selectedAttributes)
+      .map(([key, value]) => `${key}: ${value}`)
+      .join(' / ');
+
+    return summaryParts;
+  }, [selectedVariant, selectedAttributes]);
+
+  return {
+    // State
+    selectedAttributes,
+    selectedVariant,
+    isInitialized,
+    
+    // Computed values
+    attributeKeys,
+    
+    // Methods
+    selectAttribute,
+    initializeDefaultVariant,
+    computeAvailableOptions,
+    isOptionDisabled,
+    matchVariant,
+    clearSelection,
+    
+    // Helpers
+    isColorAttribute,
+    isColorValueAttribute,
+    getVariantSummary,
+  };
+};

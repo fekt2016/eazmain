@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import notificationApi from '../../shared/services/notificationApi';
+import logger from '../../shared/utils/logger';
 
 export function useNotificationSettings() {
   return useQuery({
@@ -9,11 +10,11 @@ export function useNotificationSettings() {
       return response;
     },
     onSuccess: () => {
-      console.log("[API] Notification settings fetched");
+      logger.log("[API] Notification settings fetched");
     },
     onError: (error) => {
-      console.error(error);
-      console.error("[API] Error fetching notification settings");
+      logger.error(error);
+      logger.error("[API] Error fetching notification settings");
     },
     initialData: {
       email: {
@@ -59,7 +60,7 @@ export function useUpdateNotificationSetting() {
 
   return useMutation({
     mutationFn: async ({ path, value }) => {
-      console.log("api path", path, "value", value);
+      logger.log("api path", path, "value", value);
       // Create deep copy of current settings
       const currentSettings = queryClient.getQueryData([
         "notification-settings",

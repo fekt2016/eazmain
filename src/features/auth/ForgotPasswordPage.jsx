@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
+import { toast } from "react-toastify";
 import useAuth from '../../shared/hooks/useAuth';
 import { ButtonSpinner, LoadingButton } from '../../shared/components/ButtonSpinner';
+import logger from '../../shared/utils/logger';
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate();
@@ -17,7 +19,14 @@ export default function ForgotPasswordPage() {
   const [otp, setOtp] = useState("");
   const [otpCountdown, setOtpCountdown] = useState(0);
   const [passwordError, setPasswordError] = useState("");
-  const [resetToken, setResetToken] = useState("");
+  // SECURITY: OTP rate limiting - prevent spam resend attempts
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendAttempts, setResendAttempts] = useState(0);
+  const MAX_RESEND_ATTEMPTS = 5; // Max 5 resend attempts per hour
+  const RESEND_COOLDOWN_SECONDS = 60; // 60 second cooldown between resends
+  // SECURITY: Reset token should be in httpOnly cookie, not in component state
+  // Backend should set reset token in httpOnly cookie after OTP verification
+  // Frontend should NOT store reset token - backend extracts from cookie
 
   const {
     sendPasswordResetOtp,
@@ -38,6 +47,17 @@ export default function ForgotPasswordPage() {
     }
     return () => clearInterval(timer);
   }, [otpCountdown]);
+
+  // SECURITY: OTP resend cooldown timer
+  useEffect(() => {
+    let timer;
+    if (resendCooldown > 0) {
+      timer = setInterval(() => {
+        setResendCooldown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   const validatePasswords = () => {
     if (state.newPassword.length < 8) {
@@ -61,7 +81,7 @@ export default function ForgotPasswordPage() {
         setStep("otp");
         setOtpCountdown(120);
       } catch (err) {
-        console.error("OTP send failed:", err.message);
+        logger.error("OTP send failed:", err.message);
       }
     } else if (step === "otp") {
       try {
@@ -69,20 +89,24 @@ export default function ForgotPasswordPage() {
           loginId: state.loginId,
           otp,
         });
-        console.log("OTP verified, response:", response);
-        setResetToken(response.resetToken);
+        logger.log("OTP verified, response:", response);
+        // SECURITY: Reset token should be in httpOnly cookie set by backend
+        // Do NOT store in component state - backend will extract from cookie
+        // If backend returns resetToken, it's only for reference, not storage
         setStep("reset");
       } catch (err) {
-        console.error("OTP verification failed:", err);
+        logger.error("OTP verification failed:", err);
       }
     } else if (step === "reset") {
       if (!validatePasswords()) return;
 
       try {
+        // SECURITY: Backend should extract reset token from httpOnly cookie
+        // Pass null or omit resetToken - backend should prefer cookie over parameter
         await resetPassword.mutateAsync({
           loginId: state.loginId,
           newPassword: state.newPassword,
-          resetToken,
+          resetToken: null, // Backend should extract from httpOnly cookie
         });
         navigate("/login", {
           state: {
@@ -91,7 +115,7 @@ export default function ForgotPasswordPage() {
           },
         });
       } catch (err) {
-        console.error("Password reset failed:", err.message);
+        logger.error("Password reset failed:", err.message);
       }
     }
   };
@@ -102,11 +126,27 @@ export default function ForgotPasswordPage() {
   };
 
   const handleResendOtp = async () => {
+    // SECURITY: Rate limiting - prevent spam resend attempts
+    if (resendCooldown > 0) {
+      toast.warn(`Please wait ${resendCooldown} seconds before resending OTP`);
+      return;
+    }
+
+    if (resendAttempts >= MAX_RESEND_ATTEMPTS) {
+      toast.error('Too many resend attempts. Please try again later.');
+      return;
+    }
+
     try {
       await sendPasswordResetOtp.mutateAsync(state.loginId);
       setOtpCountdown(120);
+      setResendCooldown(RESEND_COOLDOWN_SECONDS);
+      setResendAttempts((prev) => prev + 1);
+      toast.success('OTP resent successfully');
     } catch (err) {
-      console.error("Resend OTP failed:", err.message);
+      logger.error("Resend OTP failed:", err.message);
+      // SECURITY: Generic error message - don't reveal system details
+      toast.error('Unable to resend OTP. Please try again later.');
     }
   };
 

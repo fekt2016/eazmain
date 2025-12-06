@@ -20,6 +20,7 @@ import {
   useSetDefaultPaymentMethod,
 } from '../../shared/hooks/usePaymentMethod';
 import { devicesMax } from '../../shared/styles/breakpoint';
+import logger from '../../shared/utils/logger';
 
 export default function PaymentMethodPage() {
   const [showAddForm, setShowAddForm] = useState(false);
@@ -27,7 +28,6 @@ export default function PaymentMethodPage() {
   
   const { mutateAsync: createPaymentMethod } = useCreatePaymentMethod();
   const { data: paymentMethodData, refetch: refetchPaymentMethods } = useGetPaymentMethods();
-  console.log("paymentMethodData", paymentMethodData);
   const { mutateAsync: deletePaymentMethod } = useDeletePaymentMethod();
   const { mutateAsync: setDefaultMethod } = useSetDefaultPaymentMethod();
 
@@ -78,7 +78,7 @@ export default function PaymentMethodPage() {
     try {
       await setDefaultMethod(id);
     } catch (error) {
-      console.error("Set default error:", error);
+      logger.error("Set default error:", error);
     }
   };
 
@@ -88,7 +88,7 @@ export default function PaymentMethodPage() {
       try {
         await deletePaymentMethod(id);
       } catch (error) {
-        console.error("Delete error:", error);
+        logger.error("Delete error:", error);
       }
     }
   };
@@ -118,7 +118,7 @@ export default function PaymentMethodPage() {
       setShowAddForm(false);
       refetchPaymentMethods();
     } catch (error) {
-      console.error("Error adding payment method:", error);
+      logger.error("Error adding payment method:", error);
       const errorMessage = error.response?.data?.message || "An error occurred";
       const form = type === "mobile" ? mobileForm : bankForm;
       form.setError("root", { type: "manual", message: errorMessage });

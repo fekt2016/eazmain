@@ -3,11 +3,18 @@ import api from "./api";
 import logger from '../utils/logger';
 
 const couponApi = {
-  applyCoupon: async (couponCode, orderAmount) => {
-    logger.log("api coupon data", { couponCode, orderAmount });
+  getMyCoupons: async () => {
+    const response = await api.get("/coupon/my-coupons");
+    return response.data;
+  },
+  applyCoupon: async ({ couponCode, orderAmount, productIds = [], categoryIds = [], sellerIds = [] }) => {
+    logger.log("api coupon data", { couponCode, orderAmount, productIds, categoryIds, sellerIds });
     const response = await api.post("/coupon/apply", {
       couponCode,
       orderAmount,
+      productIds,
+      categoryIds,
+      sellerIds,
     });
     return response.data;
   },

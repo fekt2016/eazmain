@@ -27,19 +27,18 @@ import useAuth from "../../shared/hooks/useAuth";
 import { useWalletBalance } from "../../shared/hooks/useWallet";
 import storage from "../../shared/utils/storage";
 import { usePaystackPayment } from "../../shared/hooks/usePaystackPayment";
+import { useValidateCart } from "../../shared/hooks/useCartValidation";
+import { sanitizeCouponCode, sanitizeText, sanitizePhone, validateQuantity } from "../../shared/utils/sanitize";
 import { useGetPickupCenters, useCalculateShippingQuote } from "../../shared/hooks/useShipping";
 import ShippingOptions from "./ShippingOptions";
-import {
-  PrimaryButton,
-  SuccessButton,
-  SecondaryButton,
-  GhostButton,
-} from "../../shared/components/ui/Buttons";
+import Button from "../../shared/components/Button";
+import { PrimaryButton, GhostButton } from "../../shared/components/ui/Buttons";
 import { Card } from "../../shared/components/ui/Cards";
-import { ButtonSpinner, ErrorState, LoadingState } from "../../components/loading";
+import { ErrorState, LoadingState } from "../../components/loading";
 import useDynamicPageTitle from "../../shared/hooks/useDynamicPageTitle";
 import seoConfig from "../../shared/config/seoConfig";
 import NeighborhoodAutocomplete from "../../shared/components/NeighborhoodAutocomplete";
+import LoadingSpinner from "../../shared/components/LoadingSpinner";
 
 // ────────────────────────────────────────────────
 // Helper functions
@@ -183,7 +182,7 @@ const validateNewAddress = (newAddress) => {
 
 const CheckoutPage = () => {
   // SEO - Set page title and meta tags
-  usePageTitle(seoConfig.checkout);
+  useDynamicPageTitle(seoConfig.checkout);
 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -202,14 +201,18 @@ const CheckoutPage = () => {
     useCreateOrder();
   const { initializePaystackPayment } = usePaystackPayment();
   const { data: walletData, isLoading: isCreditBalanceLoading } = useWalletBalance();
+  const { mutate: validateCart, isPending: isValidatingCart } = useValidateCart();
 
   // ────────────────────────────────────────────────
   // Local state
   // ────────────────────────────────────────────────
 
   const [couponCode, setCouponCode] = useState("");
+  // SECURITY: Discount should come from backend, not frontend calculation
   const [discount, setDiscount] = useState(0);
   const [couponMessage, setCouponMessage] = useState("");
+  // SECURITY: Backend-calculated totals (replaces frontend calculations)
+  const [backendTotals, setBackendTotals] = useState(null);
   const [activeTab, setActiveTab] = useState("existing");
   const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState("payment_on_delivery");
@@ -319,28 +322,34 @@ const CheckoutPage = () => {
   const { mutate: calculateShipping, isPending: isCalculatingShipping } =
     useCalculateShippingQuote();
 
-  // Calculate tax breakdown (Ghana GRA VAT-inclusive pricing)
-  // Subtotal is VAT-inclusive (includes 15% VAT)
-  const taxableAmount = Math.max(0, subTotal - discount);
-  
-  // Extract tax components from VAT-inclusive amount
-  const basePrice = taxableAmount / 1.15; // Base price before VAT
-  const vat = basePrice * 0.125; // 12.5% VAT
-  const nhil = basePrice * 0.025; // 2.5% NHIL
-  const getfund = basePrice * 0.025; // 2.5% GETFund
-  const covidLevy = basePrice * 0.01; // 1% COVID levy (added on top)
-  
-  // Round to 2 decimal places
+  // SECURITY: Use backend-calculated totals instead of frontend calculations
+  // Frontend calculations are for display only - backend must validate all amounts
   const round = (val) => Math.round(val * 100) / 100;
+  
+  // Use backend totals if available, otherwise fallback to frontend calculation for display
+  // NOTE: Backend MUST recalculate and validate all amounts before processing payment
+  const backendTotal = backendTotals?.totalAmount || null;
+  const backendDiscount = backendTotals?.discount || discount;
+  const backendSubtotal = backendTotals?.subtotal || subTotal;
+  
+  // Frontend calculation for display only (backend validates actual amounts)
+  const taxableAmount = Math.max(0, (backendSubtotal || subTotal) - (backendDiscount || discount));
+  const basePrice = taxableAmount / 1.15;
+  const vat = basePrice * 0.125;
+  const nhil = basePrice * 0.025;
+  const getfund = basePrice * 0.025;
+  const covidLevy = basePrice * 0.01;
+  
   const roundedBasePrice = round(basePrice);
   const roundedVAT = round(vat);
   const roundedNHIL = round(nhil);
   const roundedGETFund = round(getfund);
   const roundedCovidLevy = round(covidLevy);
-  const totalTax = round(vat + nhil + getfund + covidLevy);
+  const totalTax = round(vat + nhil + getfund);
   
-  // Grand total: VAT-inclusive subtotal + shipping + COVID levy
-  const total = round(taxableAmount + shippingFee + roundedCovidLevy);
+  // SECURITY: Use backend total if available, otherwise calculate for display
+  // Backend MUST validate this amount before processing payment
+  const total = backendTotal || round(taxableAmount + shippingFee);
 
   // Credit balance calculations
   const hasInsufficientBalance = useMemo(() => {
@@ -673,27 +682,45 @@ const CheckoutPage = () => {
   };
 
   const handleApplyCoupon = () => {
-    if (!couponCode.trim()) {
-      setCouponMessage("Please enter a coupon code");
+    // SECURITY: Sanitize coupon code input
+    const sanitizedCode = sanitizeCouponCode(couponCode);
+    if (!sanitizedCode) {
+      setCouponMessage("Please enter a valid coupon code");
       return;
     }
 
+    // Extract product and seller IDs for validation
+    const productIds = products.map(p => p.product._id);
+    const categoryIds = products.reduce((acc, p) => {
+      if (p.product.parentCategory) acc.push(p.product.parentCategory);
+      if (p.product.subCategory) acc.push(p.product.subCategory);
+      return acc;
+    }, []);
+    const sellerIds = [...new Set(products.map(p => p.product.seller?._id || p.product.seller).filter(Boolean))];
+
+    // SECURITY: Use backend-calculated subtotal, not frontend
     applyCoupon(
-      { couponCode: couponCode.toUpperCase(), orderAmount: subTotal },
+      { 
+        couponCode: sanitizedCode, // SECURITY: Sanitized coupon code
+        orderAmount: backendSubtotal || subTotal, // Use backend subtotal if available
+        productIds,
+        categoryIds,
+        sellerIds,
+      },
       {
         onSuccess: (data) => {
           if (data.status === "success" && data.data.valid) {
-            let discountAmount;
-            if (data.data.discountType === "percentage") {
-              discountAmount = (subTotal * data.data.discountValue) / 100;
-            } else {
-              discountAmount = data.data.discountValue;
-            }
+            // SECURITY: Use backend-calculated discount amount (NO frontend calculation)
+            const discountAmount = data.data.discountAmount || 0;
 
             setDiscount(discountAmount);
+            // SECURITY: Update backend totals if provided
+            if (data.data.totals) {
+              setBackendTotals(data.data.totals);
+            }
             setCouponMessage(
               data?.data.discountType === "percentage"
-                ? `Coupon applied: ${data.data.discountValue}% off`
+                ? `Coupon applied: ${data.data.discountValue}% off (GH₵${discountAmount.toFixed(2)})`
                 : `Coupon applied! GH₵${discountAmount.toFixed(2)} discount`
             );
             setCouponData({
@@ -745,35 +772,33 @@ const CheckoutPage = () => {
 
     setFormError("");
 
+    // SECURITY: Send product IDs and quantities only - backend MUST fetch prices from database
+    // Frontend prices are for display only and MUST NOT be trusted
     const orderItems = products.map((product) => {
-        const variant = product.product.variants?.find(
-        (v) =>
-          v._id === product.variant ||
-          v._id?.toString() === product.variant?.toString()
-      );
+      // SECURITY: Validate quantity
+      const validatedQuantity = validateQuantity(product.quantity, product.product.stock || 999);
+      
+      // SECURITY: Do NOT send price from frontend - backend will fetch from database
+      // Price here is only for reference/logging, backend ignores it
+      const displayPrice = product.product.variants?.find(
+        (v) => v._id === product.variant || v._id?.toString() === product.variant?.toString()
+      )?.price || product.product.defaultPrice || product.product.price || 0;
 
-      const price =
-        variant?.price ||
-        product.product.defaultPrice ||
-        product.product.price ||
-        0;
-
-        if (!price || price === 0) {
-        logger.warn("Product price not found:", {
-            productId: product.product._id,
-            productName: product.product.name,
-            variant: product.variant,
-            variants: product.product.variants,
-            defaultPrice: product.product.defaultPrice,
-          });
-        }
-
-        return {
-          product: product.product._id,
-          quantity: product.quantity,
-          price,
+      if (!displayPrice || displayPrice === 0) {
+        logger.warn("Product price not found (backend will fetch):", {
+          productId: product.product._id,
+          productName: product.product.name,
           variant: product.variant,
-        };
+        });
+      }
+
+      return {
+        product: product.product._id,
+        quantity: validatedQuantity, // SECURITY: Validated quantity
+        // SECURITY: Do NOT trust frontend price - backend MUST fetch from database
+        // price field removed - backend calculates from database
+        variant: product.variant,
+      };
     });
 
     const orderData = {
@@ -784,7 +809,7 @@ const CheckoutPage = () => {
         couponCode,
         couponId: couponData.couponId,
         batchId: couponData.batchId,
-        discountAmount: discount,
+        // ✅ DO NOT send discountAmount - backend calculates it
       }),
       deliveryMethod,
       ...(deliveryMethod === "pickup_center" &&
@@ -814,14 +839,34 @@ const CheckoutPage = () => {
 
         if (paymentMethod === "mobile_money") {
           try {
+            // SECURITY: Backend calculates payment amount from order total
+            // Frontend MUST NOT send amount - backend validates order and calculates payment
             logger.log("[CheckoutPage] Initializing Paystack payment for order:", order._id);
             const { redirectTo } = await initializePaystackPayment({
               orderId: order._id,
-              amount: total * 100, // smallest currency unit
+              // SECURITY: Do NOT send amount - backend calculates from order.total
               email: order.user?.email || "",
             });
 
             logger.log("[CheckoutPage] Redirecting to Paystack:", redirectTo);
+            
+            // SECURITY: Validate redirect URL before redirecting (already validated in paymentApi)
+            // Additional validation here as defense in depth
+            try {
+              const url = new URL(redirectTo);
+              const isValidPaystack = url.hostname === 'paystack.com' || 
+                                     url.hostname.endsWith('.paystack.com') ||
+                                     url.hostname === 'checkout.paystack.com';
+              
+              if (!isValidPaystack) {
+                throw new Error('Invalid payment redirect URL');
+              }
+            } catch (error) {
+              logger.error("[CheckoutPage] Invalid redirect URL:", redirectTo);
+              setFormError('Invalid payment redirect URL. Please contact support.');
+              return;
+            }
+            
             // Use window.location.href for full page redirect to Paystack
             // After payment, Paystack will redirect back to our callback URL
             window.location.href = redirectTo;
@@ -1149,24 +1194,22 @@ const CheckoutPage = () => {
                   </FormGroup>
                 </FormRow>
                 <ButtonGroup>
-                  <SecondaryButton
+                  <Button
                     type="button"
-                    $size="sm"
+                    variant="secondary"
+                    size="sm"
                     onClick={() => setActiveTab("existing")}
                   >
                     Cancel
-                  </SecondaryButton>
-                  <SuccessButton 
+                  </Button>
+                  <Button 
                     type="submit" 
-                    $size="sm"
-                    disabled={isAddressCreating}
+                    variant="success"
+                    size="sm"
+                    loading={isAddressCreating}
                   >
-                    {isAddressCreating ? (
-                      <ButtonSpinner size="sm" />
-                    ) : (
-                      "Save Shipping Address"
-                    )}
-                  </SuccessButton>
+                    Save Shipping Address
+                  </Button>
                 </ButtonGroup>
               </AddressForm>
             )}
@@ -1577,20 +1620,22 @@ const CheckoutPage = () => {
               type="text"
               placeholder="Enter coupon code"
               value={couponCode}
-              onChange={(e) => setCouponCode(e.target.value)}
+              onChange={(e) => {
+                // SECURITY: Sanitize coupon code input
+                const sanitized = sanitizeCouponCode(e.target.value);
+                setCouponCode(sanitized);
+              }}
               disabled={isApplyingCoupon || discount > 0}
             />
-            <SecondaryButton
-              $size="sm"
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={handleApplyCoupon}
-              disabled={isApplyingCoupon || discount > 0}
+              loading={isApplyingCoupon}
+              disabled={discount > 0}
             >
-              {isApplyingCoupon ? (
-                <ButtonSpinner size="sm" />
-              ) : (
-                "Apply"
-              )}
-            </SecondaryButton>
+              Apply
+            </Button>
             {couponMessage && (
               <CouponMessage success={discount > 0}>
                 {couponMessage}
@@ -1614,7 +1659,7 @@ const CheckoutPage = () => {
             <span>Shipping Charges:</span>
             <span>
               {isCalculatingShipping ? (
-                <ButtonSpinner size="sm" />
+                <LoadingSpinner size="sm" />
               ) : shippingFee > 0 ? (
                 `GH₵${shippingFee.toFixed(2)}`
               ) : (
@@ -1635,7 +1680,7 @@ const CheckoutPage = () => {
             style={{ width: "100%", marginTop: "20px" }}
           >
             {isCreatingOrder ? (
-              <ButtonSpinner size="sm" />
+              <LoadingSpinner size="sm" />
             ) : paymentMethod === "mobile_money" ? (
               "Place Order & Pay"
             ) : paymentMethod === "credit_balance" ? (

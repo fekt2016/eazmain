@@ -14,7 +14,7 @@ import { LoadingState, EmptyState, ErrorState, ButtonSpinner } from '../../compo
 import { spin } from '../../shared/styles/animations';
 import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 import seoConfig from '../../shared/config/seoConfig';
-// import { useMemo } from "react";
+import logger from '../../shared/utils/logger';
 
 const CartPage = () => {
   // SEO - Set page title and meta tags
@@ -30,7 +30,6 @@ const CartPage = () => {
     defaultDescription: seoConfig.cart.description,
   });
   const { data, isLoading: isCartLoading, isError } = useGetCart();
-  console.log("cart data", data);
   const { total: subTotal } = useCartTotals();
 
   const { 
@@ -47,16 +46,19 @@ const CartPage = () => {
   useAutoSyncCart();
   const { isAuthenticated } = useAuth();
   const products = getCartStructure(data);
-  console.log("products", products);
 
   const navigate = useNavigate();
   const handleAddToCart = (product) => {
     addToCart({ product, quantity: 1 });
   };
 
-  const handleQuantityChange = (itemId, newQuantity) => {
-    if (newQuantity < 1) return;
-    updateCartItem({ itemId, quantity: newQuantity });
+  const handleQuantityChange = (itemId, newQuantity, maxStock = 999) => {
+    // SECURITY: Validate quantity - must be between 1 and maxStock
+    const validatedQuantity = Math.max(1, Math.min(newQuantity || 1, maxStock));
+    if (validatedQuantity !== newQuantity) {
+      logger.warn(`[CartPage] Quantity ${newQuantity} adjusted to ${validatedQuantity}`);
+    }
+    updateCartItem({ itemId, quantity: validatedQuantity });
   };
 
   const handleRemoveItem = (itemId) => {
@@ -97,7 +99,6 @@ const CartPage = () => {
             products
               .filter((item) => item.product) // Filter out items with null products
               .map((item) => {
-                console.log("Item:", item);
                 // Additional safety check
                 if (!item.product) {
                   return null;
@@ -136,12 +137,12 @@ const CartPage = () => {
                         type="number"
                         min="1"
                         value={item.quantity}
-                        onChange={(e) =>
-                          handleQuantityChange(
-                            item._id,
-                            parseInt(e.target.value) || 1
-                          )
-                        }
+                        onChange={(e) => {
+                          // SECURITY: Validate quantity input
+                          const inputValue = parseInt(e.target.value) || 1;
+                          const maxStock = item.product?.stock || 999;
+                          handleQuantityChange(item._id, inputValue, maxStock);
+                        }}
                         disabled={isUpdating}
                       />
                       <QuantityButton
@@ -156,10 +157,7 @@ const CartPage = () => {
                       <RemoveButton
                         as={DangerButton}
                         $size="sm"
-                        onClick={() => {
-                          console.log("Removing item:", item);
-                          return handleRemoveItem(item._id);
-                        }}
+                        onClick={() => handleRemoveItem(item._id)}
                         disabled={isRemoving}
                       >
                         {isRemoving ? <ButtonSpinner size="sm" /> : "Remove"}

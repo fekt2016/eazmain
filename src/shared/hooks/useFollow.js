@@ -76,7 +76,7 @@ export const useToggleFollow = (sellerId) => {
       return { previousSeller, previousFollowed };
     },
     onError: (error, variables, context) => {
-      console.error("Follow error:", error);
+      logger.error("Follow error:", error);
       // Revert optimistic update
       if (context?.previousSeller) {
         queryClient.setQueryData(
@@ -101,7 +101,7 @@ export const useToggleFollow = (sellerId) => {
   // Unfollow mutation
   const unfollow = useMutation({
     mutationFn: async () => {
-      console.log("Unfollowing seller:", sellerId);
+      logger.log("Unfollowing seller:", sellerId);
       const response = await followApi.unfollowSeller(sellerId);
       return response;
     },
@@ -118,7 +118,7 @@ export const useToggleFollow = (sellerId) => {
       return { previousSeller, previousFollowed };
     },
     onError: (error, variables, context) => {
-      console.error("Unfollow error:", error);
+      logger.error("Unfollow error:", error);
       // Revert optimistic update
       if (context?.previousSeller) {
         queryClient.setQueryData(
@@ -143,7 +143,7 @@ export const useToggleFollow = (sellerId) => {
   // Toggle function
   const toggleFollow = () => {
     if (!user) {
-      console.log("User is not logged in");
+      logger.log("User is not logged in");
       return;
     }
 

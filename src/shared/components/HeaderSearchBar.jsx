@@ -111,7 +111,7 @@ export default function HeaderSearchBar({
 const SearchContainer = styled.div`
   position: relative;
   width: 100%;
-  margin: 0 2rem;
+  z-index: 100; /* Ensure dropdown can appear above other elements */
 
   /* Desktop only */
   ${(props) =>
@@ -131,7 +131,6 @@ const SearchContainer = styled.div`
       display: block;
       width: 100%;
       max-width: 100%;
-      margin: 0;
     }
   `}
 `;
@@ -142,14 +141,14 @@ const SearchSuggestions = styled.ul`
   left: 0;
   right: 0;
   background: var(--color-white-0);
-  border-radius: 0 0 8px 8px;
-  box-shadow: 0 5px 1.5rem rgba(0, 0, 0, 0.1);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  box-shadow: var(--shadow-lg);
   margin-top: -2px;
   max-height: 30rem;
   overflow-y: auto;
-  z-index: 1000;
-  padding: 1rem 0;
-  border: 2px solid var(--primary-500);
+  z-index: 1001; /* Higher than header z-index (1000) */
+  padding: var(--space-sm) 0;
+  border: 2px solid var(--color-primary-500);
   border-top: none;
 `;
 
@@ -159,7 +158,7 @@ const SuggestionItem = styled.li`
   padding: 1.2rem 1.5rem;
   cursor: pointer;
   transition: background-color 0.2s;
-  background-color: ${(props) => (props.active ? "#f8f9fc" : "transparent")};
+  background-color: ${(props) => (props.active ? "var(--color-grey-50)" : "transparent")};
 
   &:hover {
     background-color: var(--color-white-0);
@@ -240,13 +239,13 @@ const NoSuggestions = styled.div`
   left: 0;
   right: 0;
   background: var(--color-white-0);
-  border-radius: 0 0 8px 8px;
-  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  box-shadow: var(--shadow-md);
   margin-top: 2px;
-  padding: 2rem;
+  padding: var(--space-lg);
   text-align: center;
   color: var(--color-grey-400);
-  z-index: 1000;
+  z-index: 1001; /* Higher than header z-index */
   border: 2px solid var(--color-primary-50);
   border-top: none;
 `;
@@ -254,16 +253,18 @@ const NoSuggestions = styled.div`
 const SearchBar = styled.div`
   display: flex;
   width: 100%;
+  min-width: 0; /* Allow flex container to shrink */
 `;
 
 const SearchInput = styled.input`
-  width: 100%;
+  flex: 1;
+  min-width: 0; /* Allow input to shrink */
   padding: 8px 18px;
   border: 2px solid var(--color-grey-200);
   border-radius: 3rem 0 0 3rem;
-  font-size: 1.5rem;
+  font-size: var(--text-base);
   outline: none;
-  transition: all 0.3s;
+  transition: all var(--transition-base);
 
   &:focus {
     border-color: var(--color-primary-500);
@@ -290,17 +291,17 @@ const LoadingSuggestions = styled.div`
   left: 0;
   right: 0;
   background: var(--color-white-0);
-  border-radius: 0 0 8px 8px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  box-shadow: var(--shadow-md);
   margin-top: -2px;
-  padding: 2rem;
+  padding: var(--space-lg);
   text-align: center;
   color: var(--color-grey-400);
-  z-index: 1000;
+  z-index: 1001; /* Higher than header z-index */
   border: 2px solid var(--color-primary-500);
   border-top: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
+  gap: var(--space-sm);
 `;

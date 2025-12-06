@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams, Navigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { FaCheckCircle, FaSpinner, FaArrowLeft, FaHome } from 'react-icons/fa';
@@ -8,6 +8,7 @@ import { toast } from 'react-toastify';
 import { devicesMax } from '../../shared/styles/breakpoint';
 import useAuth from '../../shared/hooks/useAuth';
 import { PATHS } from '../../routes/routePaths';
+import logger from '../../shared/utils/logger';
 
 const TopupSuccessPage = () => {
   const navigate = useNavigate();
@@ -20,28 +21,44 @@ const TopupSuccessPage = () => {
   const [redirecting, setRedirecting] = useState(false);
   const { userData, isLoading: authLoading, refetchAuth } = useAuth();
   const [authCheckComplete, setAuthCheckComplete] = useState(false);
-  const [hasAttemptedAuthRefetch, setHasAttemptedAuthRefetch] = useState(false);
+  
+  // Use refs to prevent infinite loops - refs don't trigger re-renders
+  const hasAttemptedAuthRefetchRef = useRef(false);
+  const authCheckTimerRef = useRef(null);
+  const redirectTimerRef = useRef(null);
 
   // Refetch auth immediately when component mounts (after Paystack redirect)
   // This ensures the auth state is restored from cookies
+  // FIX: Use ref instead of state to prevent re-render loops
   useEffect(() => {
-    if (!hasAttemptedAuthRefetch) {
-      setHasAttemptedAuthRefetch(true);
+    if (!hasAttemptedAuthRefetchRef.current) {
+      hasAttemptedAuthRefetchRef.current = true;
       refetchAuth();
     }
-  }, [hasAttemptedAuthRefetch, refetchAuth]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // refetchAuth is stable from React Query, but we use ref guard instead
+  }, []); // Empty deps - only run once on mount
 
   // Handle auth redirect - must be called unconditionally
   // Add a longer delay to allow auth state to restore after Paystack redirect
+  // FIX: Remove navigate from deps (it's stable), use refs for timers
   useEffect(() => {
+    // Clear any existing timers
+    if (authCheckTimerRef.current) {
+      clearTimeout(authCheckTimerRef.current);
+    }
+    if (redirectTimerRef.current) {
+      clearTimeout(redirectTimerRef.current);
+    }
+
     // Give auth state more time to restore after external redirect
-    const authCheckTimer = setTimeout(() => {
+    authCheckTimerRef.current = setTimeout(() => {
       setAuthCheckComplete(true);
       // Only redirect to login if we're absolutely certain there's no auth
       // Check multiple times with increasing delays
       if (!authLoading && !userData) {
         // Double-check after another delay
-        setTimeout(() => {
+        redirectTimerRef.current = setTimeout(() => {
           if (!userData) {
             navigate('/login', { replace: true });
           }
@@ -49,11 +66,21 @@ const TopupSuccessPage = () => {
       }
     }, 2000); // 2 second delay to allow auth restoration
 
-    return () => clearTimeout(authCheckTimer);
-  }, [authLoading, userData, navigate]);
+    return () => {
+      if (authCheckTimerRef.current) {
+        clearTimeout(authCheckTimerRef.current);
+      }
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current);
+      }
+    };
+  }, [authLoading, userData]); // Removed navigate - it's stable from useNavigate
 
   // Payment verification - must be called unconditionally
   // Allow verification to proceed even if auth is still loading (backend verifies via cookies)
+  // FIX: Use refs to prevent duplicate verification attempts, remove unstable function refs from deps
+  const verificationAttemptedRef = useRef(false);
+  
   useEffect(() => {
     // Don't block verification if auth is still loading - backend will verify via cookies
     // Only block if we're certain there's no user after auth check completes
@@ -61,7 +88,13 @@ const TopupSuccessPage = () => {
       return; // Will redirect to login via useEffect above
     }
 
+    // Prevent duplicate verification attempts
+    if (verificationAttemptedRef.current) {
+      return;
+    }
+
     if (reference && !verified && !redirecting) {
+      verificationAttemptedRef.current = true;
       // Verify the payment
       verifyTopup(reference, {
         onSuccess: (data) => {
@@ -75,8 +108,10 @@ const TopupSuccessPage = () => {
           }, 2000);
         },
         onError: (error) => {
-          console.error('[TopupSuccess] Verification error:', error);
+          logger.error('[TopupSuccess] Verification error:', error);
           toast.error(error?.response?.data?.message || 'Failed to verify payment');
+          // Reset verification attempt flag on error to allow retry
+          verificationAttemptedRef.current = false;
           // Redirect to credit balance page even on error after 3 seconds
           setRedirecting(true);
           setTimeout(() => {
@@ -85,7 +120,7 @@ const TopupSuccessPage = () => {
         },
       });
     } else if (!reference && !redirecting) {
-      console.warn('[TopupSuccess] No reference found in URL params');
+      logger.warn('[TopupSuccess] No reference found in URL params');
       toast.error('Invalid payment reference');
       // Redirect immediately if no reference
       setRedirecting(true);
@@ -93,11 +128,14 @@ const TopupSuccessPage = () => {
         navigate(PATHS.CREDIT, { replace: true });
       }, 1000);
     }
-  }, [reference, verifyTopup, verified, refetchBalance, navigate, redirecting, authLoading, userData, authCheckComplete]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Removed verifyTopup, refetchBalance, navigate from deps - they're stable or handled via refs
+  }, [reference, verified, redirecting, authLoading, userData, authCheckComplete]);
 
   // Show loading while checking auth (but allow payment verification to proceed)
   // Only show loading if we're still waiting for initial auth check
-  if (!hasAttemptedAuthRefetch || (authLoading && !authCheckComplete)) {
+  // FIX: Use ref instead of state
+  if (!hasAttemptedAuthRefetchRef.current || (authLoading && !authCheckComplete)) {
     return (
       <PageContainer>
         <ContentCard>

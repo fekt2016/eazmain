@@ -88,3 +88,31 @@ export const fadeInUp = keyframes`
     transform: translateY(0); 
   }
 `;
+
+// Spinner pulse animation - for modern spinner design
+export const spinnerPulse = keyframes`
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+`;
+
+// Bounce animation for dots
+export const bounce = keyframes`
+  0%, 80%, 100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+`;

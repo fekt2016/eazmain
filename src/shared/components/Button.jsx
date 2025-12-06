@@ -1,6 +1,6 @@
 import styled, { css } from "styled-components";
 import { devicesMax } from "../styles/breakpoint";
-import { spin } from "../styles/animations";
+import LoadingSpinner from "./LoadingSpinner";
 
 const sizeStyles = {
   xs: css`
@@ -44,11 +44,12 @@ const variantStyles = {
     }
   `,
   secondary: css`
-    background-color: var(--color-grey-800);
-    color: var(--color-white-0);
-    border: none;
+    background-color: var(--color-white-0);
+    color: var(--color-primary-600);
+    border: 1px solid var(--color-primary-300);
     &:hover:not(:disabled) {
-      background-color: var(--color-grey-700);
+      background-color: var(--color-primary-50);
+      border-color: var(--color-primary-400);
       transform: translateY(-1px);
     }
     &:active:not(:disabled) {
@@ -158,6 +159,11 @@ const ButtonStyled = styled.button`
     box-shadow: 0 0 0 3px rgba(255, 196, 0, 0.2);
   }
   
+  &:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+  }
+  
   @media ${devicesMax.sm} {
     font-size: ${({ $size }) => {
       if ($size === "lg") return "var(--font-size-md)";
@@ -172,47 +178,70 @@ const ButtonStyled = styled.button`
   }
 `;
 
-const Spinner = styled.span`
-  width: ${({ $size }) => ($size === "xs" ? 12 : $size === "sm" ? 14 : $size === "lg" ? 18 : 16)}px;
-  height: ${({ $size }) => ($size === "xs" ? 12 : $size === "sm" ? 14 : $size === "lg" ? 18 : 16)}px;
-  border: 2px solid currentColor;
-  border-top-color: transparent;
-  border-radius: 50%;
-  animation: ${spin} 0.6s linear infinite;
+const IconWrapper = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 `;
 
 /**
- * Universal Button Component
+ * Universal Button Component - GLOBAL STANDARD
  * 
+ * This is the SINGLE SOURCE OF TRUTH for all buttons across the application.
+ * All other button components should be deprecated and replaced with this one.
+ * 
+ * @param {string} label - Button text (alternative to children)
+ * @param {ReactNode} children - Button content (alternative to label)
+ * @param {Function} onClick - Click handler
+ * @param {string} type - Button type: 'button' | 'submit' | 'reset'
+ * @param {boolean} disabled - Disable the button
+ * @param {boolean} loading - Show loading spinner and disable button
  * @param {string} variant - Button style: 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost' | 'success' | 'link'
  * @param {string} size - Button size: 'xs' | 'sm' | 'md' | 'lg'
  * @param {boolean} fullWidth - Make button full width
- * @param {boolean} isLoading - Show loading spinner
+ * @param {ReactNode} leftIcon - Icon to display on the left
+ * @param {ReactNode} rightIcon - Icon to display on the right
  * @param {boolean} iconOnly - Icon-only button (circular/square)
  * @param {boolean} round - Make icon-only button circular
  * @param {boolean} gradient - Apply gradient background
  * @param {string} weight - Font weight: '400' | '500' | '600' | '700'
- * @param {ReactNode} children - Button content
- * @param {object} props - All other button props (onClick, disabled, type, etc.)
+ * @param {string} ariaLabel - Accessibility label
+ * @param {object} props - All other button props
  * 
  * @example
- * <Button variant="primary" size="md">Click Me</Button>
+ * <Button variant="primary" size="md" onClick={handleClick}>Click Me</Button>
  * <Button variant="outline" iconOnly round><FaIcon /></Button>
- * <Button variant="danger" isLoading>Delete</Button>
+ * <Button variant="danger" loading={isSubmitting}>Delete</Button>
+ * <Button leftIcon={<FaIcon />} rightIcon={<FaChevron />}>Action</Button>
  * <Button as={Link} to="/path" variant="ghost">Navigate</Button>
  */
 export default function Button({
-  isLoading,
+  label,
   children,
+  onClick,
+  type = "button",
+  disabled = false,
+  loading = false,
   variant = "primary",
   size = "md",
   fullWidth = false,
+  leftIcon,
+  rightIcon,
   iconOnly = false,
   round = false,
   gradient = false,
   weight,
+  ariaLabel,
   ...props
 }) {
+  // Determine button content
+  const buttonContent = label || children;
+  
+  // When loading, show spinner instead of content (unless iconOnly)
+  const showSpinner = loading && !iconOnly;
+  const showContent = !loading || iconOnly;
+
   return (
     <ButtonStyled
       $variant={variant}
@@ -222,11 +251,26 @@ export default function Button({
       $round={round}
       $gradient={gradient}
       $weight={weight}
-      disabled={isLoading || props.disabled}
+      type={type}
+      disabled={disabled || loading}
+      onClick={onClick}
+      aria-label={ariaLabel || (iconOnly && buttonContent ? String(buttonContent) : undefined)}
+      role="button"
+      aria-busy={loading}
       {...props}
     >
-      {isLoading && <Spinner $size={size} />}
-      {children}
+      {showSpinner && (
+        <IconWrapper>
+          <LoadingSpinner size="sm" />
+        </IconWrapper>
+      )}
+      {showContent && leftIcon && (
+        <IconWrapper>{leftIcon}</IconWrapper>
+      )}
+      {showContent && !iconOnly && buttonContent}
+      {showContent && rightIcon && (
+        <IconWrapper>{rightIcon}</IconWrapper>
+      )}
     </ButtonStyled>
   );
 }

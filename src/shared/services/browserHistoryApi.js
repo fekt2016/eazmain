@@ -1,5 +1,6 @@
 // src/service/browserHistoryApi.js
 import api from "./api";
+import logger from '../utils/logger';
 
 const browserHistoryApi = {
   //   Get user's browsing history
@@ -40,7 +41,7 @@ const browserHistoryApi = {
 
   // Delete multiple history items
   deleteMultipleItems: async (ids) => {
-    console.log("Deleting IDs:", ids);
+    logger.log("Deleting IDs:", ids);
 
     try {
       // Send IDs in request body

@@ -1,4 +1,5 @@
 import api from './api';
+import logger from '../utils/logger';
 
 const authApi = {
   sendOtp: async (loginId) => {

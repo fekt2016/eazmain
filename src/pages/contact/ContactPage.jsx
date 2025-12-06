@@ -13,6 +13,7 @@ import {
 import { spin } from '../../shared/styles/animations';
 import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 import { useSubmitContactForm } from '../../shared/hooks/useContact';
+import logger from '../../shared/utils/logger';
 import {
   ContactContainer,
   HeroSection,
@@ -188,7 +189,7 @@ const ContactPage = () => {
       setErrors({});
     } catch (error) {
       // Error is handled by the mutation's onError callback
-      console.error('Form submission error:', error);
+      logger.error('Form submission error:', error);
     }
   };
 

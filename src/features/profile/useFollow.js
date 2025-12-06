@@ -2,6 +2,7 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import followApi from '../../shared/services/followApi';
 import useAuth from '../../shared/hooks/useAuth';
 import { useMemo } from "react";
+import logger from '../../shared/utils/logger';
 
 export const useToggleFollow = (sellerId) => {
   const queryClient = useQueryClient();
@@ -19,7 +20,7 @@ export const useToggleFollow = (sellerId) => {
       } catch (error) {
         if (error.response?.status === 401) {
           // Handle authentication errors
-          console.warn("Authentication required for follow status");
+          logger.warn("Authentication required for follow status");
           return { isFollowing: false, followersCount: 0 };
         }
         throw error;
@@ -74,7 +75,7 @@ export const useToggleFollow = (sellerId) => {
       return { previousSeller, previousFollowed };
     },
     onError: (error, variables, context) => {
-      console.error("Follow error:", error);
+      logger.error("Follow error:", error);
       // Revert optimistic update
       if (context?.previousSeller) {
         queryClient.setQueryData(
@@ -99,7 +100,7 @@ export const useToggleFollow = (sellerId) => {
   // Unfollow mutation
   const unfollow = useMutation({
     mutationFn: async () => {
-      console.log("Unfollowing seller:", sellerId);
+      logger.log("Unfollowing seller:", sellerId);
       const response = await followApi.unfollowSeller(sellerId);
       return response;
     },
@@ -115,7 +116,7 @@ export const useToggleFollow = (sellerId) => {
       return { previousSeller, previousFollowed };
     },
     onError: (error, variables, context) => {
-      console.error("Unfollow error:", error);
+      logger.error("Unfollow error:", error);
       // Revert optimistic update
       if (context?.previousSeller) {
         queryClient.setQueryData(
@@ -140,7 +141,7 @@ export const useToggleFollow = (sellerId) => {
   // Toggle function
   const toggleFollow = () => {
     if (!user) {
-      console.log("User is not logged in");
+      logger.log("User is not logged in");
       return;
     }
 

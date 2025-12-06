@@ -1,10 +1,12 @@
 // src/hooks/useCart.js
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRef } from "react";
 import { toast } from "react-toastify";
 import { useCallback } from "react";
 import cartApi from '../services/cartApi';
 import useAuth from './useAuth';
 import { useEffect } from "react";
+import logger from '../utils/logger';
 export const getCartStructure = (cartData) => {
   if (!cartData) return [];
 
@@ -237,16 +239,24 @@ export const useCartActions = () => {
   const updateCartItemMutation = useMutation({
     mutationFn: async (data) => {
       const { itemId: productId, quantity } = data;
+      
+      // SECURITY: Validate quantity on frontend (backend must also validate)
+      const validatedQuantity = Math.max(1, Math.min(quantity || 1, 999)); // Max 999 per item
+      if (validatedQuantity !== quantity) {
+        logger.warn(`[updateCartItem] Quantity ${quantity} adjusted to ${validatedQuantity}`);
+      }
 
       if (isAuthenticated) {
-        const response = await cartApi.updateCartItem(productId, quantity);
+        // SECURITY: Use validated quantity
+        const response = await cartApi.updateCartItem(productId, validatedQuantity);
         return response;
       }
       const guestCart = getGuestCart();
       const item = guestCart?.cart?.products?.find(
         (item) => item?.product?._id === productId
       );
-      if (item) item.quantity = quantity;
+      // SECURITY: Use validated quantity
+      if (item) item.quantity = validatedQuantity;
       saveGuestCart(guestCart);
       return guestCart;
     },
@@ -382,31 +392,39 @@ export const useAutoSyncCart = () => {
   const { isAuthenticated } = useAuth();
   const { syncCart } = useCartActions();
   const queryClient = useQueryClient();
+  
+  // FIX: Use ref to prevent infinite loops from nested syncCart calls
+  const syncAttemptedRef = useRef(false);
 
   useEffect(() => {
+    // Prevent duplicate sync attempts
+    if (syncAttemptedRef.current) {
+      return;
+    }
+
     if (isAuthenticated) {
       const guestCart = getGuestCart();
       const hasGuestItems = guestCart.cart?.products?.length > 0;
       if (hasGuestItems) {
+        syncAttemptedRef.current = true;
         logger.log("Sycing guest cart items to server...");
         syncCart(undefined, {
           onSuccess: () => {
-            if (isAuthenticated) {
-              const guestCart = getGuestCart();
-              const hasGuestItems = guestCart.cart?.products?.length > 0;
-              if (hasGuestItems) {
-                logger.log("Sycing guest cart items to server...");
-                syncCart(undefined, {
-                  onSuccess: () => {
-                    saveGuestCart({ cart: { products: [] } });
-                    queryClient.invalidateQueries(["cart", true]);
-                  },
-                });
-              }
-            }
+            // FIX: Remove nested syncCart call - it was causing infinite loops
+            // After successful sync, clear guest cart and invalidate queries
+            saveGuestCart({ cart: { products: [] } });
+            queryClient.invalidateQueries(["cart", true]);
+            // Reset ref after successful sync to allow future syncs if needed
+            syncAttemptedRef.current = false;
+          },
+          onError: () => {
+            // Reset ref on error to allow retry
+            syncAttemptedRef.current = false;
           },
         });
       }
     }
-  }, [isAuthenticated, syncCart, queryClient]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Removed syncCart and queryClient from deps - they're stable or handled via refs
+  }, [isAuthenticated]);
 };

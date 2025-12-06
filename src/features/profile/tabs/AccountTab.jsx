@@ -17,9 +17,9 @@ import { compressImage } from "../../../shared/utils/imageCompressor";
 import { getAvatarUrl } from "../../../shared/utils/avatarUtils";
 import styled from "styled-components";
 import { FaCamera } from "react-icons/fa";
+import logger from "../../../shared/utils/logger";
 
 const AccountTab = ({ userInfo }) => {
-  console.log('userInfo', userInfo);
   const { updateProfile, uploadAvatar } = useAuth();
   const queryClient = useQueryClient();
   const fileInputRef = useRef(null);
@@ -93,7 +93,7 @@ const AccountTab = ({ userInfo }) => {
         // No need to invalidate here as it's handled in useAuth
       },
       onError: (error) => {
-        console.error("Error uploading avatar:", error);
+        logger.error("Error uploading avatar:", error);
         toast.error(
           error?.response?.data?.message || "Error uploading avatar. Please try again.",
           {
@@ -128,7 +128,7 @@ const AccountTab = ({ userInfo }) => {
         });
       },
       onError: (error) => {
-        console.error("Error updating profile:", error);
+        logger.error("Error updating profile:", error);
         toast.error(
           error?.response?.data?.message || "Failed to update profile. Please try again.",
           {

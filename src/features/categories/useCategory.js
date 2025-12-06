@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { categoryService } from '../../shared/services/categoryApi';
 import api from '../../shared/services/api';
+import logger from '../../shared/utils/logger';
 
 const useCategory = () => {
   const queryClient = useQueryClient();
@@ -16,7 +17,7 @@ const useCategory = () => {
         // Set a high limit to get all categories
         return response;
       } catch (error) {
-        console.error("Failed to fetch categories:", error);
+        logger.error("Failed to fetch categories:", error);
         return [];
       }
     },
@@ -32,10 +33,10 @@ const useCategory = () => {
         if (!id) return null;
         try {
           const { data } = await categoryService.getCategory(id);
-          console.log(data);
+          logger.log("Category data:", data);
           return data || null;
         } catch (error) {
-          console.error(`Failed to fetch category ${id}:`, error);
+          logger.error(`Failed to fetch category ${id}:`, error);
           throw new Error(`Failed to load category: ${error.message}`);
         }
       },
@@ -60,7 +61,7 @@ const useCategory = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
-      console.log("Category created successfully!!!");
+      logger.log("Category created successfully!!!");
     },
   });
 
@@ -77,7 +78,7 @@ const useCategory = () => {
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       queryClient.invalidateQueries({ queryKey: ["category", variables.id] });
-      console.log("Category updated successfully!!!");
+      logger.log("Category updated successfully!!!");
     },
   });
 
@@ -90,7 +91,7 @@ const useCategory = () => {
     onSuccess: (deletedId) => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       queryClient.removeQueries({ queryKey: ["category", deletedId] });
-      console.log("Category deleted successfully!!!");
+      logger.log("Category deleted successfully!!!");
     },
   });
   const getParentCategories = useQuery({
@@ -101,7 +102,7 @@ const useCategory = () => {
 
         return response;
       } catch (error) {
-        console.error("Failed to fetch parent categories:", error.mess);
+        logger.error("Failed to fetch parent categories:", error.message);
         return [];
       }
     },

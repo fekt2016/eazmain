@@ -60,7 +60,7 @@ const paymentMethodApi = {
     }
   },
   setDefaultPaymentMethod: async (paymentMethodId) => {
-    console.log(paymentMethodId);
+    logger.log("Setting default payment method:", paymentMethodId);
     try {
       const response = await api.patch(
         `/paymentmethod/set-default/${paymentMethodId}`,

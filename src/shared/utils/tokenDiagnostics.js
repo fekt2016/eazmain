@@ -1,78 +1,83 @@
 /**
  * Token Diagnostics Utility
- * Helps debug token storage and retrieval issues
+ * 
+ * SECURITY WARNING: This utility is deprecated and no longer functional.
+ * 
+ * With cookie-based authentication, tokens are stored in httpOnly cookies
+ * which are NOT accessible from JavaScript. This utility cannot check
+ * for tokens anymore.
+ * 
+ * @deprecated This utility no longer works with cookie-based authentication.
+ * Use browser DevTools > Application > Cookies to inspect httpOnly cookies.
+ * 
+ * For debugging authentication, use the useAuth hook:
+ * ```jsx
+ * import useAuth from './hooks/useAuth';
+ * const { userData, isLoading, error } = useAuth();
+ * ```
  */
+import logger from './logger';
 
 export const tokenDiagnostics = {
   // Check if token exists in localStorage
+  // SECURITY: This function no longer works with cookie-based authentication.
+  // Tokens are in httpOnly cookies which are not accessible from JavaScript.
   checkToken: () => {
-    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
-      console.warn('[TokenDiagnostics] Not in browser environment');
-      return null;
-    }
-
-    const token = localStorage.getItem('token');
-    console.log('[TokenDiagnostics] Token in localStorage:', token ? `Yes (${token.length} chars)` : 'No');
-    
-    if (token) {
-      try {
-        // Try to decode JWT (without verification)
-        const parts = token.split('.');
-        if (parts.length === 3) {
-          const payload = JSON.parse(atob(parts[1]));
-          console.log('[TokenDiagnostics] Token payload:', {
-            id: payload.id,
-            role: payload.role,
-            exp: new Date(payload.exp * 1000).toISOString(),
-            iat: new Date(payload.iat * 1000).toISOString(),
-          });
-          
-          // Check if token is expired
-          const now = Math.floor(Date.now() / 1000);
-          if (payload.exp < now) {
-            console.warn('[TokenDiagnostics] ⚠️ Token is expired!');
-            return { token, expired: true, payload };
-          }
-          console.log('[TokenDiagnostics] ✅ Token is valid');
-          return { token, expired: false, payload };
-        }
-      } catch (error) {
-        console.error('[TokenDiagnostics] Error parsing token:', error);
-      }
+    if (import.meta.env.DEV) {
+      logger.warn(
+        '[TokenDiagnostics] This utility is deprecated. ' +
+        'With cookie-based auth, tokens are in httpOnly cookies and not accessible from JavaScript. ' +
+        'Use useAuth hook or browser DevTools to check authentication status.'
+      );
     }
     
-    return { token, expired: false, payload: null };
+    // Return null - we cannot check for tokens in httpOnly cookies
+    return null;
+    
+    // Cannot check tokens in httpOnly cookies from JavaScript
+    return { token: null, expired: false, payload: null };
   },
 
   // Check all localStorage keys related to auth
+  // SECURITY: This function is deprecated. With cookie-based auth, tokens are not in localStorage.
   checkAllAuthStorage: () => {
-    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
-      return {};
+    if (import.meta.env.DEV) {
+      logger.warn(
+        '[TokenDiagnostics] checkAllAuthStorage is deprecated. ' +
+        'With cookie-based auth, tokens are in httpOnly cookies, not localStorage.'
+      );
     }
-
-    const authKeys = ['token', 'seller_token', 'admin_token', 'current_role'];
-    const result = {};
     
-    authKeys.forEach(key => {
-      const value = localStorage.getItem(key);
-      result[key] = value ? `Exists (${value.length} chars)` : 'Not found';
-    });
-    
-    console.log('[TokenDiagnostics] All auth storage:', result);
-    return result;
+    // Return empty object - tokens are not in localStorage anymore
+    return {
+      token: 'Not in localStorage (using httpOnly cookies)',
+      seller_token: 'Not in localStorage (using httpOnly cookies)',
+      admin_token: 'Not in localStorage (using httpOnly cookies)',
+      current_role: 'Not in localStorage (use useAuth hook)',
+    };
   },
 
   // Clear all auth tokens
+  // SECURITY: This function is deprecated. With cookie-based auth, tokens are in httpOnly cookies.
+  // To logout, use the logout function from useAuth hook which calls the backend logout endpoint.
   clearAllTokens: () => {
-    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
-      return;
+    if (import.meta.env.DEV) {
+      logger.warn(
+        '[TokenDiagnostics] clearAllTokens is deprecated. ' +
+        'With cookie-based auth, tokens are in httpOnly cookies. ' +
+        'Use logout() from useAuth hook to properly clear authentication.'
+      );
     }
-
-    localStorage.removeItem('token');
-    localStorage.removeItem('seller_token');
-    localStorage.removeItem('admin_token');
-    localStorage.removeItem('current_role');
-    console.log('[TokenDiagnostics] All tokens cleared');
+    
+    // Clear any legacy localStorage tokens (shouldn't exist, but clean up just in case)
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('seller_token');
+      localStorage.removeItem('admin_token');
+      localStorage.removeItem('current_role');
+    }
+    
+    // Note: httpOnly cookies can only be cleared by the server via logout endpoint
   },
 };
 

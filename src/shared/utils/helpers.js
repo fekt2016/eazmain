@@ -1,4 +1,5 @@
 import { jwtDecode } from "jwt-decode";
+import logger from './logger';
 
 export const formatCurrency = (value, currency = "USD") =>
   new Intl.NumberFormat("en", { style: "currency", currency: currency }).format(
@@ -51,29 +52,58 @@ export function formatTime(date) {
   }).format(new Date(date));
 }
 
+/**
+ * Extract role from a JWT token string
+ * 
+ * @param {string} token - JWT token string (not from localStorage)
+ * @returns {string} - User role or empty string
+ * 
+ * @deprecated This function is deprecated. Use useAuth hook instead:
+ * ```jsx
+ * import useAuth from './hooks/useAuth';
+ * const { userData } = useAuth();
+ * const role = userData?.data?.data?.role || userData?.data?.user?.role;
+ * ```
+ * 
+ * SECURITY: This function does not access localStorage.
+ * It only decodes a token string if provided as a parameter.
+ * With cookie-based auth, tokens are not accessible from JavaScript.
+ */
 export function returnRole(token) {
-  if (token) {
+  // SECURITY: This function no longer accesses localStorage.
+  // It only decodes a token string if provided as parameter.
+  // With cookie-based auth, tokens are in httpOnly cookies and not accessible from JS.
+  
+  if (!token || typeof token !== 'string') {
+    return "";
+  }
+  
+  try {
     const decodeToken = jwtDecode(token);
     const expireTime = new Date(decodeToken.exp) * 1000;
-    console.log("expireTime", expireTime);
+    
+    if (import.meta.env.DEV) {
+      logger.log("expireTime", expireTime);
+    }
 
     if (new Date(Date.now()) > expireTime) {
-      localStorage.removeItem("token");
+      // Token is expired - but we don't remove from localStorage (we don't use it)
       return "";
     } else {
-      return decodeToken;
+      return decodeToken.role;
     }
-  } else {
+  } catch (error) {
+    logger.error("Error decoding token in returnRole:", error);
     return "";
   }
 }
 
 export const generateSKU = ({ user, variants, category }) => {
-  console.log(category);
+  logger.log("Category for SKU:", category);
   const cate = category.slice(0, 3).toUpperCase();
   // Ensure we have valid values for all required fields
   if (!user?.id || !category || !variants) {
-    console.error("Missing required fields for SKU generation:", {
+    logger.error("Missing required fields for SKU generation:", {
       user,
       category,
       variants,
@@ -115,7 +145,7 @@ const networks = {
 
 export const validateGhanaPhone = (phone) => {
   const cleanedPhone = phone.replace(/\D/g, "");
-  console.log("cleanedPhone", cleanedPhone);
+  logger.log("cleanedPhone", cleanedPhone);
 
   // Validate length
   if (cleanedPhone.length < 10 || cleanedPhone.length > 12) {

@@ -18,6 +18,7 @@ import {
   useDeleteOrder,
 } from '../../shared/hooks/useOrder';
 import { useNavigate } from "react-router-dom";
+import logger from '../../shared/utils/logger';
 
 const OrdersPage = () => {
   const navigate = useNavigate();
@@ -75,7 +76,7 @@ const OrdersPage = () => {
   };
 
   const handleView = (orderId) => navigate(`/orders/${orderId}`);
-  const handleEdit = (orderId) => console.log("Edit order:", orderId);
+  const handleEdit = (orderId) => logger.debug("Edit order:", orderId);
   const handleDelete = (orderId) => {
     if (window.confirm("Are you sure you want to delete this order?")) {
       deleteOrder(orderId);

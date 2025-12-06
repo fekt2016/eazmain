@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { Link } from "react-router-dom";
 import { FaArrowRight, FaCheck, FaTruck, FaShieldAlt, FaAward } from "react-icons/fa";
 import { useEazShop } from "../../shared/hooks/useEazShop";
+import logger from "../../shared/utils/logger";
 import ProductCard from "../../shared/components/ProductCard";
 import Container from "../../shared/components/Container";
 import { PATHS } from "../../routes/routePaths";
@@ -30,7 +31,7 @@ const EazShopSection = () => {
   }, [products]);
 
   if (error) {
-    console.error("Error loading EazShop products:", error);
+    logger.error("Error loading EazShop products:", error);
     return null; // Fail silently
   }
 

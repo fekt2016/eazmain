@@ -58,7 +58,41 @@ const HomePage = () => {
   const { data: productsData, isLoading } = getProducts;
   const { data: sellersData, isLoading: isSellersLoading } = useGetFeaturedSellers({ limit: 8 });
 
-  const products = useMemo(() => productsData?.results || [], [productsData]);
+  const products = useMemo(() => {
+    if (!productsData) return [];
+    
+    // Handle nested data.data.data structure (from getAllProduct controller)
+    if (productsData.data?.data && Array.isArray(productsData.data.data)) {
+      return productsData.data.data;
+    }
+    
+    // Handle data.data.products
+    if (productsData.data?.products && Array.isArray(productsData.data.products)) {
+      return productsData.data.products;
+    }
+    
+    // Handle data.products
+    if (productsData.products && Array.isArray(productsData.products)) {
+      return productsData.products;
+    }
+    
+    // Handle data.results (if it's an array, not just a count)
+    if (productsData.results && Array.isArray(productsData.results)) {
+      return productsData.results;
+    }
+    
+    // Handle data.data as array
+    if (productsData.data && Array.isArray(productsData.data)) {
+      return productsData.data;
+    }
+    
+    // If productsData itself is an array
+    if (Array.isArray(productsData)) {
+      return productsData;
+    }
+    
+    return [];
+  }, [productsData]);
   const sellers = useMemo(() => sellersData || [], [sellersData]);
 
   const handleProductClick = useCallback((productId) => {

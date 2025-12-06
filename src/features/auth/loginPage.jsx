@@ -2,13 +2,16 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
 import { FaEnvelope, FaLock, FaPhone, FaArrowLeft } from "react-icons/fa";
+import { toast } from "react-toastify";
 import useAuth from '../../shared/hooks/useAuth';
 import { useMergeWishlists } from '../../shared/hooks/useWishlist';
 import { useCartActions } from '../../shared/hooks/useCart';
-import { ButtonSpinner, LoadingButton } from '../../shared/components/ButtonSpinner';
+import Button from '../../shared/components/Button';
 import { ErrorState } from '../../components/loading';
 import storage from '../../shared/utils/storage';
 import { devicesMax } from '../../shared/styles/breakpoint';
+import logger from '../../shared/utils/logger';
+import { sanitizeEmail, sanitizePhone, sanitizeText } from '../../shared/utils/sanitize';
 
 // Animations
 const fadeIn = keyframes`
@@ -28,6 +31,11 @@ export default function LoginPage() {
   const [step, setStep] = useState("credentials");
   const [otp, setOtp] = useState("");
   const [otpCountdown, setOtpCountdown] = useState(0);
+  // SECURITY: OTP rate limiting - prevent spam resend attempts
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendAttempts, setResendAttempts] = useState(0);
+  const MAX_RESEND_ATTEMPTS = 5; // Max 5 resend attempts per hour
+  const RESEND_COOLDOWN_SECONDS = 60; // 60 second cooldown between resends
   const { mutate: merge } = useMergeWishlists();
 
   const { syncCart } = useCartActions();
@@ -48,6 +56,17 @@ export default function LoginPage() {
     return () => clearInterval(timer);
   }, [otpCountdown]);
 
+  // SECURITY: OTP resend cooldown timer
+  useEffect(() => {
+    let timer;
+    if (resendCooldown > 0) {
+      timer = setInterval(() => {
+        setResendCooldown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
   const submitHandler = (e) => {
     e.preventDefault();
 
@@ -58,7 +77,7 @@ export default function LoginPage() {
           setOtpCountdown(120);
         },
         onError: (err) => {
-          console.error("OTP send failed:", err.message);
+          logger.error("OTP send failed:", err.message);
         },
       });
     } else {
@@ -66,16 +85,9 @@ export default function LoginPage() {
       const otpString = typeof otp === 'string' ? otp : (Array.isArray(otp) ? otp.join('') : String(otp || ''));
       
       if (!otpString || otpString.length !== 6) {
-        console.error("[Login] Invalid OTP format:", { otp, otpString, type: typeof otp });
+        logger.error("[Login] Invalid OTP format:", { otp, otpString, type: typeof otp });
         return;
       }
-      
-      console.log("[Login] Submitting OTP verification:", {
-        loginId: state.loginId,
-        otpLength: otpString.length,
-        hasPassword: !!state.password,
-        redirectTo,
-      });
       
       verifyOtpMutation(
         {
@@ -86,14 +98,14 @@ export default function LoginPage() {
         },
         {
           onSuccess: (data) => {
-            console.log("[Login] OTP verified successfully");
+            logger.debug("[Login] OTP verified successfully");
 
             merge();
             syncCart();
 
             const checkoutState = storage.restoreCheckoutState();
             if (checkoutState && redirectTo === '/checkout') {
-              console.log('[Login] Restoring checkout state');
+              logger.debug('[Login] Restoring checkout state');
             }
 
             const finalRedirect = data?.redirectTo || redirectTo || '/';
@@ -103,7 +115,7 @@ export default function LoginPage() {
             setOtp("");
           },
           onError: (err) => {
-            console.error("OTP verification failed:", {
+            logger.error("OTP verification failed:", {
               message: err.message,
               response: err.response?.data,
               status: err.response?.status,
@@ -113,7 +125,7 @@ export default function LoginPage() {
             
             // Handle network errors
             if (err.code === 'ERR_NETWORK' || err.message === 'Network Error') {
-              console.error("[Login] Network error - backend may be down or CORS issue");
+              logger.error("[Login] Network error - backend may be down or CORS issue");
               // You might want to show a toast/alert here
               return;
             }
@@ -146,12 +158,28 @@ export default function LoginPage() {
   };
 
   const handleResendOtp = () => {
+    // SECURITY: Rate limiting - prevent spam resend attempts
+    if (resendCooldown > 0) {
+      toast.warn(`Please wait ${resendCooldown} seconds before resending OTP`);
+      return;
+    }
+
+    if (resendAttempts >= MAX_RESEND_ATTEMPTS) {
+      toast.error('Too many resend attempts. Please try again later.');
+      return;
+    }
+
     sendOtpMutation(state.loginId, {
       onSuccess: () => {
         setOtpCountdown(120);
+        setResendCooldown(RESEND_COOLDOWN_SECONDS);
+        setResendAttempts((prev) => prev + 1);
+        toast.success('OTP resent successfully');
       },
       onError: (err) => {
-        console.error("Resend OTP failed:", err.message);
+        logger.error("Resend OTP failed:", err.message);
+        // SECURITY: Generic error message - don't reveal system details
+        toast.error('Unable to resend OTP. Please try again later.');
       },
     });
   };
@@ -199,9 +227,16 @@ export default function LoginPage() {
                       type={loginMethod === "email" ? "email" : "tel"}
                       id="loginId"
                       value={state.loginId}
-                      onChange={(e) => setState({ ...state, loginId: e.target.value })}
+                      onChange={(e) => {
+                        // SECURITY: Sanitize input based on login method
+                        const sanitized = loginMethod === "email" 
+                          ? sanitizeEmail(e.target.value)
+                          : sanitizePhone(e.target.value);
+                        setState({ ...state, loginId: sanitized });
+                      }}
                       placeholder={loginMethod === "email" ? "name@example.com" : "+233 XX XXX XXXX"}
                       required
+                      maxLength={loginMethod === "email" ? 255 : 20}
                     />
                   </InputWrapper>
                   <ToggleLink type="button" onClick={toggleLoginMethod}>
@@ -217,9 +252,14 @@ export default function LoginPage() {
                       type="password"
                       id="password"
                       value={state.password}
-                      onChange={(e) => setState({ ...state, password: e.target.value })}
+                      onChange={(e) => {
+                        // SECURITY: Limit password length to prevent DoS
+                        const sanitized = e.target.value.slice(0, 128);
+                        setState({ ...state, password: sanitized });
+                      }}
                       placeholder="Enter your password"
                       required
+                      maxLength={128}
                     />
                   </InputWrapper>
                   <ForgotPasswordLink to="/forgot-password">
@@ -275,35 +315,39 @@ export default function LoginPage() {
                       {(otpCountdown % 60).toString().padStart(2, "0")}
                     </ResendText>
                   ) : (
-                    <ResendButton
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="sm"
                       onClick={handleResendOtp}
-                      disabled={isSendingOtp}
+                      loading={isSendingOtp}
                     >
-                      {isSendingOtp ? "Sending..." : "Resend Code"}
-                    </ResendButton>
+                      Resend Code
+                    </Button>
                   )}
                 </ResendWrapper>
               </OtpContainer>
             )}
 
-            <SubmitButton
+            <Button
               type="submit"
-              disabled={step === "credentials" ? isSendingOtp : isVerifyingOtp || otp.length < 6}
+              variant="primary"
+              fullWidth
+              loading={isSendingOtp || isVerifyingOtp}
+              disabled={step === "credentials" ? false : otp.length < 6}
             >
-              {isSendingOtp || isVerifyingOtp ? (
-                <ButtonSpinner />
-              ) : step === "otp" ? (
-                "Verify & Login"
-              ) : (
-                "Sign In"
-              )}
-            </SubmitButton>
+              {step === "otp" ? "Verify & Login" : "Sign In"}
+            </Button>
 
             {step === "otp" && (
-              <BackButton type="button" onClick={() => setStep("credentials")}>
-                <FaArrowLeft /> Back to Login
-              </BackButton>
+              <Button 
+                type="button" 
+                variant="ghost" 
+                onClick={() => setStep("credentials")}
+                leftIcon={<FaArrowLeft />}
+              >
+                Back to Login
+              </Button>
             )}
           </StyledForm>
 

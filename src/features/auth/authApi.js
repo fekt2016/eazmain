@@ -1,4 +1,5 @@
 import api from '../../shared/services/api';
+import logger from '../../shared/utils/logger';
 
 const authApi = {
   sendOtp: async (loginId) => {
@@ -12,7 +13,7 @@ const authApi = {
       otp,
       password,
     });
-    console.log("verifyOtp response:", response);
+    logger.log("verifyOtp response:", response);
     return response;
   },
 
@@ -65,7 +66,7 @@ const authApi = {
       const response = await api.get("/users/profile");
       return response; // Return only the data payload
     } catch (err) {
-      console.log("API getProfile error", err);
+      logger.error("API getProfile error", err);
       throw err; // Important for React Query error handling
     }
   },
@@ -75,7 +76,7 @@ const authApi = {
   },
 
   deactivateAccount: async () => {
-    console.log("deactivateAccount");
+    logger.log("deactivateAccount");
     const response = await api.delete("/users/deleteMe");
     return response;
   },

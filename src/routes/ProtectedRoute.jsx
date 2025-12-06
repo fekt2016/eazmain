@@ -1,7 +1,8 @@
 import { Navigate } from "react-router-dom";
-import { memo, Suspense, useEffect, useMemo, useState } from "react";
+import { memo, Suspense, useMemo } from "react";
 import useAuth from '../shared/hooks/useAuth';
 import { LoadingState, PageSpinner, SpinnerContainer } from '../components/loading';
+import logger from '../shared/utils/logger';
 
 const ProtectedRoutes = ({ children }) => {
   const { userData, isLoading, error } = useAuth();
@@ -11,32 +12,21 @@ const ProtectedRoutes = ({ children }) => {
     );
   }, [userData]);
  
+  // FIX: Removed localAuthCheck state - it was causing unnecessary re-renders
+  // Use userData and isLoading directly instead
 
-  // Cookie-based auth: No need to check localStorage
-  // Authentication state is determined by useAuth hook which calls getCurrentUser()
-  // Browser automatically sends cookie via withCredentials: true
-  const [localAuthCheck, setLocalAuthCheck] = useState(() => {
-    // Always return true initially - let useAuth determine actual auth state
-    return true;
-  });
-
-  useEffect(() => {
-    // Update based on actual auth state from useAuth
-    if (!isLoading) {
-      setLocalAuthCheck(!!userData);
-    }
-  }, [isLoading, userData]);
-
-  if (localAuthCheck && isLoading) {
-    return <LoadingState message="Loading..." />;
-  }
-
+  // Show loading state only for auth check - not covered by GlobalLoading
+  // This prevents double spinners since auth queries don't have meta?.global
   if (isLoading) {
-    return <LoadingState message="Loading..." />;
+    return (
+      <SpinnerContainer fullScreen>
+        <PageSpinner />
+      </SpinnerContainer>
+    );
   }
 
   if (error) {
-    console.error("Error fetching user data:", error);
+    logger.error("Error fetching user data:", error);
     return (
       <Navigate
         to="/error"
@@ -45,7 +35,7 @@ const ProtectedRoutes = ({ children }) => {
       />
     );
   }
-  console.log;
+  // User authenticated and verified
   if (!user || user.role !== "user") {
     return <Navigate to="/login" replace />;
   }

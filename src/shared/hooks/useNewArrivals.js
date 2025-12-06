@@ -20,9 +20,28 @@ export const useGetNewArrivals = (options = {}) => {
 
   // Process and combine products
   const newArrivals = useMemo(() => {
-    // Get all products
-    const allProducts = productsData?.results || [];
-    const activeProducts = allProducts.filter(p => p.status === 'active');
+    // Get all products - handle different response structures
+    let allProducts = [];
+    if (productsData) {
+      if (Array.isArray(productsData)) {
+        allProducts = productsData;
+      } else if (Array.isArray(productsData.results)) {
+        allProducts = productsData.results;
+      } else if (Array.isArray(productsData.products)) {
+        allProducts = productsData.products;
+      } else if (Array.isArray(productsData.data?.products)) {
+        allProducts = productsData.data.products;
+      } else if (Array.isArray(productsData.data?.results)) {
+        allProducts = productsData.data.results;
+      }
+    }
+    
+    // Ensure allProducts is an array before filtering
+    if (!Array.isArray(allProducts)) {
+      allProducts = [];
+    }
+    
+    const activeProducts = allProducts.filter(p => p && p.status === 'active');
 
     // Get EazShop products
     let eazshopProducts = [];

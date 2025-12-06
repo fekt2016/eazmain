@@ -8,8 +8,9 @@ import StarRating from '../../shared/components/StarRating';
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useToggleFollow, useGetSellersFollowers } from '../../shared/hooks/useFollow';
 import { useAddHistoryItem } from '../../shared/hooks/useBrowserhistory';
-import { ButtonSpinner } from '../../components/loading';
+import LoadingSpinner from '../../shared/components/LoadingSpinner';
 import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
+import logger from '../../shared/utils/logger';
 
 const PublicSellerProfile = () => {
   const { id: sellerId } = useParams();
@@ -24,7 +25,33 @@ const PublicSellerProfile = () => {
   
   const { toggleFollow, isFollowing, isLoading: isFollowLoading } = useToggleFollow(sellerId);
   const { data: followerData, isLoading: isFollowersLoading } = useGetSellersFollowers(sellerId);
-  const { data: products, isLoading: isProductsLoading } = useGetAllPublicProductBySeller(sellerId);
+  const { data: productsData, isLoading: isProductsLoading, error: productsError } = useGetAllPublicProductBySeller(sellerId);
+  
+  const products = useMemo(() => {
+    console.log("🔍 [SellerPage] productsData:", productsData);
+    console.log("🔍 [SellerPage] productsError:", productsError);
+    console.log("🔍 [SellerPage] sellerId:", sellerId);
+    
+    if (!productsData) {
+      console.log("⚠️ [SellerPage] No productsData");
+      return [];
+    }
+    if (Array.isArray(productsData)) {
+      console.log("✅ [SellerPage] productsData is array:", productsData.length);
+      return productsData;
+    }
+    // Handle nested structures
+    if (productsData.data?.products && Array.isArray(productsData.data.products)) {
+      console.log("✅ [SellerPage] Found products at productsData.data.products:", productsData.data.products.length);
+      return productsData.data.products;
+    }
+    if (productsData.products && Array.isArray(productsData.products)) {
+      console.log("✅ [SellerPage] Found products at productsData.products:", productsData.products.length);
+      return productsData.products;
+    }
+    console.warn("⚠️ [SellerPage] Could not extract products array");
+    return [];
+  }, [productsData, productsError, sellerId]);
 
   const seller = useMemo(() => {
     return sellerData?.data?.data?.data || sellerData?.data?.seller || sellerData?.seller || sellerData?.data?.data;
@@ -73,7 +100,7 @@ const PublicSellerProfile = () => {
           url: window.location.href,
         });
       } catch (err) {
-        console.log('Error sharing:', err);
+        logger.error('Error sharing:', err);
       }
     } else {
       // Fallback: copy to clipboard
@@ -85,7 +112,7 @@ const PublicSellerProfile = () => {
   if (isSellerLoading || isProductsLoading) {
     return (
       <LoadingContainer>
-        <Spinner />
+        <LoadingSpinner size="lg" />
         <div>Loading seller profile...</div>
       </LoadingContainer>
     );
@@ -147,7 +174,7 @@ const PublicSellerProfile = () => {
                 disabled={isFollowLoading}
               >
                 {isFollowLoading ? (
-                  <ButtonSpinner size="sm" />
+                  <LoadingSpinner size="sm" />
                 ) : (
                   <FaHeart size={16} />
                 )}
@@ -283,14 +310,8 @@ const LoadingContainer = styled.div`
   color: #64748b;
 `;
 
-const Spinner = styled.div`
-  width: 40px;
-  height: 40px;
-  border: 3px solid #e2e8f0;
-  border-top: 3px solid #3b82f6;
-  border-radius: 50%;
-  animation: ${spin} 1s linear infinite;
-`;
+// DEPRECATED: Use LoadingSpinner from shared/components instead
+// const Spinner = styled.div`...` - REMOVED
 
 const NotFoundContainer = styled.div`
   display: flex;
@@ -310,7 +331,7 @@ const NotFoundIcon = styled.div`
 const BackButton = styled(Link)`
   margin-top: 1rem;
   padding: 0.75rem 1.5rem;
-  background: #3b82f6;
+  background: var(--color-primary-500, #ffc400);
   color: white;
   text-decoration: none;
   border-radius: 8px;
@@ -318,7 +339,7 @@ const BackButton = styled(Link)`
   transition: background 0.2s;
 
   &:hover {
-    background: #2563eb;
+    background: var(--color-primary-600, #e29800);
   }
 `;
 
@@ -744,7 +765,7 @@ const QuickAction = styled.button`
   color: #374151;
 
   &:hover {
-    background: #3b82f6;
+    background: var(--color-primary-500, #ffc400);
     color: white;
     transform: scale(1.1);
   }

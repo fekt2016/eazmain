@@ -17,7 +17,8 @@ const useProduct = () => {
         throw new Error("Failed to load products");
       }
     },
-    meta: { global: true },
+    // FIX: Removed meta: { global: true } - pages should show their own loading states
+    // This prevents double spinners (GlobalLoading + page-level loading)
     staleTime: 1000 * 60 * 5,
     retry: 2,
   });
@@ -63,16 +64,52 @@ const useProduct = () => {
     return useQuery({
       queryKey: ["products", sellerId],
       queryFn: async () => {
-        if (!sellerId) return [];
+        if (!sellerId) {
+          console.log("⚠️ [useGetAllPublicProductBySeller] No sellerId provided");
+          return [];
+        }
         try {
+          console.log("🔍 [useGetAllPublicProductBySeller] Fetching products for seller:", sellerId);
           const response = await productService.getAllPublicProductsBySeller(
             sellerId
           );
 
+          console.log("🔍 [useGetAllPublicProductBySeller] Response received:", response);
+          console.log("🔍 [useGetAllPublicProductBySeller] response.data:", response.data);
+          console.log("🔍 [useGetAllPublicProductBySeller] response.data?.products:", response.data?.products);
+          console.log("🔍 [useGetAllPublicProductBySeller] response.products:", response.products);
+          console.log("🔍 [useGetAllPublicProductBySeller] Is array?", Array.isArray(response));
+          console.log("🔍 [useGetAllPublicProductBySeller] response.status:", response.status);
+
           // Handle different response structures
-          return response.products || response.data?.products || response;
+          // Backend returns: { status: 'success', data: { products: [...] } }
+          // API service returns response.data which is: { status: 'success', data: { products: [...] } }
+          // So we need: response.data.products
+          if (response.data?.products && Array.isArray(response.data.products)) {
+            console.log("✅ [useGetAllPublicProductBySeller] Found products at response.data.products:", response.data.products.length);
+            return response.data.products;
+          }
+          // Fallback: check nested structure (in case Axios wraps it differently)
+          if (response.data?.data?.products && Array.isArray(response.data.data.products)) {
+            console.log("✅ [useGetAllPublicProductBySeller] Found products at response.data.data.products:", response.data.data.products.length);
+            return response.data.data.products;
+          }
+          // Direct products property
+          if (response.products && Array.isArray(response.products)) {
+            console.log("✅ [useGetAllPublicProductBySeller] Found products at response.products:", response.products.length);
+            return response.products;
+          }
+          // If response is already an array
+          if (Array.isArray(response)) {
+            console.log("✅ [useGetAllPublicProductBySeller] Response is array:", response.length);
+            return response;
+          }
+          console.warn("⚠️ [useGetAllPublicProductBySeller] Could not extract products array from response");
+          console.warn("⚠️ [useGetAllPublicProductBySeller] Response structure:", JSON.stringify(response, null, 2));
+          return [];
         } catch (error) {
           logger.error("Error fetching products:", error);
+          console.error("❌ [useGetAllPublicProductBySeller] Error:", error);
           return [];
         }
       },

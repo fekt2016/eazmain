@@ -471,12 +471,12 @@ const FilterHeader = styled.div`
   align-items: center;
   margin-bottom: 2rem;
   padding-bottom: 1.5rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--color-grey-200);
 
   h3 {
     font-size: 2rem;
     font-weight: 700;
-    color: #1e293b;
+    color: var(--color-grey-800);
     margin: 0;
   }
 `;
@@ -486,13 +486,13 @@ const CloseButton = styled.button`
   background: none;
   border: none;
   font-size: 2rem;
-  color: #64748b;
+  color: var(--color-grey-600);
   cursor: pointer;
   padding: 0.5rem;
   transition: color 0.3s ease;
 
   &:hover {
-    color: #1e293b;
+    color: var(--color-grey-800);
   }
 
   @media ${devicesMax.md} {
@@ -510,16 +510,16 @@ const FilterScroll = styled.div`
   }
 
   &::-webkit-scrollbar-track {
-    background: #f1f5f9;
+    background: var(--color-grey-100);
     border-radius: 3px;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+    background: var(--color-grey-300);
     border-radius: 3px;
 
     &:hover {
-      background: #94a3b8;
+      background: var(--color-grey-400);
     }
   }
 `;
@@ -534,7 +534,7 @@ const FilterSectionTitle = styled.div`
   justify-content: space-between;
   font-size: 1.4rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--color-grey-800);
   margin-bottom: 1rem;
 `;
 
@@ -546,7 +546,7 @@ const SearchInputWrapper = styled.div`
   svg {
     position: absolute;
     left: 1.2rem;
-    color: #94a3b8;
+    color: var(--color-grey-400);
     font-size: 1.4rem;
   }
 `;
@@ -554,20 +554,20 @@ const SearchInputWrapper = styled.div`
 const SearchInput = styled.input`
   width: 100%;
   padding: 1rem 1rem 1rem 4rem;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-grey-200);
   border-radius: 12px;
   font-size: 1.4rem;
   transition: all 0.3s ease;
-  background: #f8f9fa;
+  background: var(--color-grey-50);
 
   &:focus {
     outline: none;
-    border-color: #ffc400;
-    background: white;
+    border-color: var(--color-primary-500);
+    background: var(--color-white-0);
   }
 
   &::placeholder {
-    color: #94a3b8;
+    color: var(--color-grey-400);
   }
 `;
 
@@ -582,46 +582,46 @@ const RatingOption = styled.div`
   align-items: center;
   gap: 1rem;
   padding: 1rem;
-  border: 2px solid ${props => props.$active ? '#ffc400' : '#e2e8f0'};
+  border: 2px solid ${props => props.$active ? 'var(--color-primary-500)' : 'var(--color-grey-200)'};
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: ${props => props.$active ? '#fff9e6' : 'white'};
+  background: ${props => props.$active ? 'var(--color-yellow-100)' : 'var(--color-white-0)'};
 
   &:hover {
-    border-color: #ffc400;
-    background: #fff9e6;
+    border-color: var(--color-primary-500);
+    background: var(--color-yellow-100);
   }
 
   span {
     font-size: 1.4rem;
     font-weight: 600;
-    color: #1e293b;
+    color: var(--color-grey-800);
   }
 `;
 
 const LocationSelect = styled.select`
   width: 100%;
   padding: 1rem;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-grey-200);
   border-radius: 12px;
   font-size: 1.4rem;
-  background: #f8f9fa;
-  color: #1e293b;
+  background: var(--color-grey-50);
+  color: var(--color-grey-800);
   cursor: pointer;
   transition: all 0.3s ease;
 
   &:focus {
     outline: none;
-    border-color: #ffc400;
-    background: white;
+    border-color: var(--color-primary-500);
+    background: var(--color-white-0);
   }
 `;
 
 const ClearFiltersButton = styled.button`
   width: 100%;
   padding: 1.2rem;
-  background: linear-gradient(135deg, #ffc400 0%, #ffb300 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
   color: white;
   border: none;
   border-radius: 12px;
@@ -661,11 +661,11 @@ const ResultsInfo = styled.div`
 
 const ResultsCount = styled.p`
   font-size: 1.6rem;
-  color: #64748b;
+  color: var(--color-grey-600);
   margin-bottom: 1rem;
 
   strong {
-    color: #1e293b;
+    color: var(--color-grey-800);
     font-weight: 700;
   }
 `;
@@ -681,20 +681,20 @@ const FilterBadge = styled.div`
   align-items: center;
   gap: 0.5rem;
   padding: 0.6rem 1.2rem;
-  background: linear-gradient(135deg, #fff9e6 0%, #ffffff 100%);
+  background: linear-gradient(135deg, var(--color-yellow-100) 0%, var(--color-white-0) 100%);
   border: 1px solid rgba(255, 196, 0, 0.3);
   border-radius: 20px;
   font-size: 1.3rem;
-  color: #1e293b;
+  color: var(--color-grey-800);
   font-weight: 500;
 
   svg {
     cursor: pointer;
-    color: #64748b;
+    color: var(--color-grey-600);
     transition: color 0.3s ease;
 
     &:hover {
-      color: #1e293b;
+      color: var(--color-grey-800);
     }
   }
 `;
@@ -711,17 +711,17 @@ const MobileFilterButton = styled.button`
   gap: 0.5rem;
   padding: 1rem 1.5rem;
   background: white;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-grey-200);
   border-radius: 12px;
   font-size: 1.4rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--color-grey-800);
   cursor: pointer;
   transition: all 0.3s ease;
 
   &:hover {
-    border-color: #ffc400;
-    color: #ffc400;
+    border-color: var(--color-primary-500);
+    color: var(--color-primary-500);
   }
 
   @media ${devicesMax.md} {
@@ -735,11 +735,11 @@ const SortContainer = styled.div`
   gap: 0.75rem;
   padding: 1rem 1.5rem;
   background: white;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-grey-200);
   border-radius: 12px;
 
   svg {
-    color: #64748b;
+    color: var(--color-grey-600);
     font-size: 1.4rem;
   }
 `;
@@ -749,7 +749,7 @@ const SortSelect = styled.select`
   background: none;
   font-size: 1.4rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--color-grey-800);
   cursor: pointer;
   outline: none;
 `;
@@ -800,13 +800,13 @@ const ViewShopButton = styled.div`
   justify-content: center;
   gap: 0.5rem;
   padding: 1rem 1.5rem;
-  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  background: linear-gradient(135deg, var(--color-grey-50) 0%, var(--color-white-0) 100%);
   border-radius: 12px;
   font-size: 1.4rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--color-grey-800);
   transition: all 0.3s ease;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-grey-200);
 
   svg {
     transition: transform 0.3s ease;
@@ -821,7 +821,7 @@ const SellerAvatar = styled.img`
   border: 4px solid white;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  background: linear-gradient(135deg, #ffc400 0%, #ffb300 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
 `;
 
 const SellerCard = styled(Link)`
@@ -844,7 +844,7 @@ const SellerCard = styled(Link)`
     border-color: rgba(255, 196, 0, 0.3);
 
     ${ViewShopButton} {
-      background: linear-gradient(135deg, #ffc400 0%, #ffb300 100%);
+      background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
       transform: translateX(5px);
       color: white;
       border-color: rgba(255, 196, 0, 0.3);
@@ -863,12 +863,12 @@ const SellerCard = styled(Link)`
 const SellerCardHeader = styled.div`
   position: relative;
   padding: 2rem 2rem 1.5rem;
-  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  background: linear-gradient(135deg, var(--color-grey-50) 0%, var(--color-white-0) 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--color-grey-100);
 `;
 
 const SellerAvatarContainer = styled.div`
@@ -882,7 +882,7 @@ const VerifiedBadge = styled.div`
   right: 0;
   width: 32px;
   height: 32px;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, var(--color-green-500) 0%, var(--color-green-700) 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -900,7 +900,7 @@ const SellerHeaderContent = styled.div`
 const SellerName = styled.h3`
   font-size: 1.8rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--color-grey-800);
   margin: 0 0 0.75rem 0;
   line-height: 1.2;
   overflow: hidden;
@@ -919,7 +919,7 @@ const SellerRating = styled.div`
 const RatingText = styled.span`
   font-size: 1.4rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--color-grey-700);
 `;
 
 const SellerLocation = styled.div`
@@ -928,11 +928,11 @@ const SellerLocation = styled.div`
   justify-content: center;
   gap: 0.5rem;
   font-size: 1.2rem;
-  color: #64748b;
+  color: var(--color-grey-600);
   margin-top: 0.5rem;
 
   svg {
-    color: #94a3b8;
+    color: var(--color-grey-400);
   }
 `;
 
@@ -956,13 +956,13 @@ const StatItem = styled.div`
   gap: 0.75rem;
   flex: 1;
   padding: 1rem;
-  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  background: linear-gradient(135deg, var(--color-grey-50) 0%, var(--color-white-0) 100%);
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-grey-200);
   transition: all 0.3s ease;
 
   ${SellerCard}:hover & {
-    background: linear-gradient(135deg, #fff9e6 0%, #ffffff 100%);
+    background: linear-gradient(135deg, var(--color-yellow-100) 0%, var(--color-white-0) 100%);
     border-color: rgba(255, 196, 0, 0.2);
     transform: translateY(-2px);
   }
@@ -982,13 +982,13 @@ const StatContent = styled.div`
 const StatValue = styled.span`
   font-size: 1.8rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--color-grey-800);
   line-height: 1;
 `;
 
 const StatLabel = styled.span`
   font-size: 1.1rem;
-  color: #64748b;
+  color: var(--color-grey-600);
   font-weight: 500;
 `;
 
@@ -1001,7 +1001,7 @@ const ProductPreviewSection = styled.div`
 const PreviewLabel = styled.span`
   font-size: 1.2rem;
   font-weight: 600;
-  color: #64748b;
+  color: var(--color-grey-600);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 `;
@@ -1018,7 +1018,7 @@ const PreviewImageWrapper = styled.div`
   height: 70px;
   border-radius: 12px;
   overflow: hidden;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-grey-200);
   transition: all 0.3s ease;
   flex-shrink: 0;
 
@@ -1038,7 +1038,7 @@ const MoreProductsIndicator = styled.div`
   width: 70px;
   height: 70px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #ffc400 0%, #ffb300 100%);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1051,8 +1051,8 @@ const MoreProductsIndicator = styled.div`
 
 const SellerCardFooter = styled.div`
   padding: 1.5rem 2rem;
-  border-top: 1px solid #f1f5f9;
-  background: #fafbfc;
+  border-top: 1px solid var(--color-grey-100);
+  background: var(--color-grey-50);
 `;
 
 const EmptyState = styled.div`
@@ -1071,12 +1071,12 @@ const EmptyIcon = styled.div`
 const EmptyTitle = styled.h3`
   font-size: 2.4rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--color-grey-800);
   margin-bottom: 1rem;
 `;
 
 const EmptyText = styled.p`
   font-size: 1.6rem;
-  color: #64748b;
+  color: var(--color-grey-600);
 `;
 

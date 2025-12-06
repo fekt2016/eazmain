@@ -28,8 +28,25 @@ export const useGetDeals = (options = {}) => {
 
   // Process and combine products
   const deals = useMemo(() => {
-    // Get all products
-    const allProducts = productsData?.results || [];
+    // Get all products - handle nested data structure
+    let allProducts = [];
+    if (productsData) {
+      // Handle nested data.data.data structure (from getAllProduct controller)
+      if (productsData.data?.data && Array.isArray(productsData.data.data)) {
+        allProducts = productsData.data.data;
+      } else if (productsData.data?.products && Array.isArray(productsData.data.products)) {
+        allProducts = productsData.data.products;
+      } else if (productsData.products && Array.isArray(productsData.products)) {
+        allProducts = productsData.products;
+      } else if (productsData.results && Array.isArray(productsData.results)) {
+        allProducts = productsData.results;
+      } else if (productsData.data && Array.isArray(productsData.data)) {
+        allProducts = productsData.data;
+      } else if (Array.isArray(productsData)) {
+        allProducts = productsData;
+      }
+    }
+    
     const activeProducts = allProducts.filter(p => p.status === 'active');
 
     // Get EazShop products

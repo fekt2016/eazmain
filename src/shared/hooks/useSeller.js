@@ -44,9 +44,9 @@ export const useGetSellerById = (sellerId) => {
     },
     onSettled: (data, error) => {
       if (error) {
-        console.warn(`Error fetching seller ${sellerId}:`, error);
+        logger.warn(`Error fetching seller ${sellerId}:`, error);
       } else {
-        console.log(`Successfully fetched seller ${sellerId}`, data);
+        logger.log(`Successfully fetched seller ${sellerId}`, data);
       }
     },
   });

@@ -10,7 +10,7 @@ const SearchResult = lazy(() => import("../features/search/SearchResult"));
 const Partners = lazy(() => import("../features/Partners"));
 const Press = lazy(() => import("../features/Press"));
 const AboutPage = lazy(() => import("../pages/about/AboutPage"));
-const NotificationPage = lazy(() => import("../features/profile/NotificationPage"));
+const BuyerNotificationsPage = lazy(() => import("../pages/notifications/BuyerNotificationsPage"));
 const PermissionPage = lazy(() => import("../features/profile/PermissionPage"));
 const FollowPage = lazy(() => import("../features/profile/FollowPage"));
 const Creditbalance = lazy(() => import("../features/profile/Creditbalance"));
@@ -44,6 +44,7 @@ const PartnerPage = lazy(() => import("../pages/partner/PartnerPage"));
 const CareersPage = lazy(() => import("../pages/careers/CareersPage"));
 const ShippingInfoPage = lazy(() => import("../pages/shipping/ShippingInfoPage"));
 const NewArrivalsPage = lazy(() => import("../pages/new-arrivals/NewArrivalsPage"));
+const HelpCenterTabsPage = lazy(() => import("../pages/help/HelpCenterTabsPage"));
 const OrderList = lazy(() => import("../features/orders/OrderList"));
 const OrderDetail = lazy(() => import("../features/orders/OrderDetail"));
 const TrackingPage = lazy(() => import("../features/orders/TrackingPage"));
@@ -219,6 +220,14 @@ const MainRoutes = () => {
         element={
           <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
             <NewArrivalsPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.HELP}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <HelpCenterTabsPage />
           </Suspense>
         }
       />
@@ -586,7 +595,7 @@ const MainRoutes = () => {
           element={
             <ProtectedRoute allowedStatuses={["active", "verified"]}>
               <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-                <NotificationPage />
+                <BuyerNotificationsPage />
               </Suspense>
             </ProtectedRoute>
           }
