@@ -16,22 +16,34 @@ import {
 } from 'react-icons/fa';
 import { useNotifications, useMarkAsRead, useDeleteNotification } from '../hooks/notifications/useNotifications';
 import { PATHS } from '../../routes/routePaths';
+import useAuth from '../hooks/useAuth';
 
 const NotificationDropdown = ({ unreadCount }) => {
+  // CRITICAL FIX: All hooks must be called before any conditional returns
+  // This prevents "Rendered more hooks than during the previous render" error
+  
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+  
+  // CRITICAL FIX: Check auth state before fetching notifications
+  // Only fetch notifications if user is authenticated and auth is ready
+  const { isAuthenticated, isLoading: isAuthLoading, userData } = useAuth();
+  const user = userData?.data?.data || userData?.data?.user || userData?.user || userData;
+  const isAuthReady = !isAuthLoading && isAuthenticated && user;
 
-  const { data: notificationsData } = useNotifications({ 
-    limit: 5
-    // Show recent notifications (both read and unread)
+  // Fetch notifications - backend should NOT filter, we filter on frontend
+  // CRITICAL FIX: Only fetch when auth is ready to prevent 401 errors
+  // STEP 1: Fetch recent notifications (limit 20 to ensure we get unread)
+  const { data: notificationsData, error: notificationsError } = useNotifications({ 
+    limit: 20, // Increased to ensure we get unread notifications
+    sort: '-createdAt', // Most recent first
   });
   const markAsRead = useMarkAsRead();
   const deleteNotification = useDeleteNotification();
 
-  const notifications = notificationsData?.data?.notifications || [];
-
   // Close dropdown when clicking outside
+  // CRITICAL FIX: This hook must be called before any conditional returns
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -47,6 +59,87 @@ const NotificationDropdown = ({ unreadCount }) => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isOpen]);
+
+  // Debug: Log unreadCount to verify it's being passed correctly
+  // CRITICAL FIX: This hook must be called before any conditional returns
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[EazMain NotificationDropdown] 🔔 unreadCount prop:', {
+        unreadCount,
+        type: typeof unreadCount,
+        isNumber: typeof unreadCount === 'number',
+        isGreaterThanZero: unreadCount > 0,
+        willShowBadge: unreadCount > 0,
+      });
+    }
+  }, [unreadCount]);
+
+  const allNotifications = notificationsData?.data?.notifications || [];
+
+  // STEP 2: Dropdown selection logic (FRONTEND)
+  // IMPORTANT: NEVER mix unread + read in dropdown
+  // Unread always wins if at least one exists
+  const dropdownNotifications = (() => {
+    // Filter and sort unread notifications (most recent first)
+    // Use isRead field (backend standard)
+    const unread = allNotifications
+      .filter(n => !n.isRead) // Only check isRead field
+      .sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0);
+        const dateB = new Date(b.createdAt || 0);
+        return dateB - dateA; // Descending (most recent first)
+      });
+
+    // Filter and sort read notifications (most recent first)
+    // Only used when ALL notifications are read
+    const read = allNotifications
+      .filter(n => n.isRead) // Only check isRead field
+      .sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0);
+        const dateB = new Date(b.createdAt || 0);
+        return dateB - dateA; // Descending (most recent first)
+      });
+
+    // Debug logging (development only)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[NotificationDropdown] 📊 Notification filtering:', {
+        totalNotifications: allNotifications.length,
+        unreadCount: unread.length,
+        readCount: read.length,
+        unreadIds: unread.map(n => ({ id: n._id, title: n.title, isRead: n.isRead })),
+        readIds: read.slice(0, 3).map(n => ({ id: n._id, title: n.title, isRead: n.isRead })),
+        willShowUnread: unread.length > 0,
+      });
+    }
+
+    // Display logic: unread first, then read ONLY if no unread exist
+    const N = 5; // Maximum notifications to show in dropdown
+    if (unread.length > 0) {
+      // Show unread only - never mix with read
+      return unread.slice(0, N);
+    } else {
+      // Fallback to read only when ALL are read
+      return read.slice(0, N);
+    }
+  })();
+
+  // CRITICAL FIX: Don't render notification links if auth is not ready
+  // This prevents navigation attempts when user is not authenticated
+  // Also prevents errors from triggering redirects
+  // NOTE: All hooks are called above, so this conditional return is safe
+  if (!isAuthReady) {
+    // Still show the bell icon, but disable dropdown functionality
+    return (
+      <DropdownContainer ref={dropdownRef}>
+        <IconButton onClick={() => {}} title="Notifications" disabled>
+          <FaBell />
+          {unreadCount > 0 && (
+            <NotificationBadge>{unreadCount > 99 ? '99+' : unreadCount}</NotificationBadge>
+          )}
+        </IconButton>
+      </DropdownContainer>
+    );
+  }
 
   const getNotificationIcon = (type) => {
     switch (type) {
@@ -99,18 +192,39 @@ const NotificationDropdown = ({ unreadCount }) => {
     return date.toLocaleDateString();
   };
 
+  // STEP 2: Click handler - Navigate immediately, mark as read in background
   const handleNotificationClick = (notification) => {
-    if (!notification.read) {
-      markAsRead.mutate(notification._id);
+    console.log('[NotificationDropdown] 🔔 Notification clicked:', {
+      id: notification._id,
+      type: notification.type,
+      read: notification.read,
+      isRead: notification.isRead,
+      actionUrl: notification.actionUrl,
+      metadata: notification.metadata,
+    });
+
+    // CRITICAL FIX: Verify auth is still valid before navigating
+    // This prevents navigation to protected routes when auth is lost
+    if (!isAuthReady) {
+      console.warn('[NotificationDropdown] ⚠️ Auth not ready, cannot navigate');
+      setIsOpen(false);
+      return;
     }
 
+    // Close dropdown immediately
     setIsOpen(false);
 
-    // Navigate based on actionUrl or metadata
+    // STEP 2.1: Navigate immediately - don't wait for markAsRead
+    // Navigation must NOT wait for API response
     let targetPath = null;
+    let routeParams = null;
 
     try {
-      if (notification.actionUrl) {
+      // Check if notification has route and params (new format)
+      if (notification.route) {
+        targetPath = notification.route;
+        routeParams = notification.params || {};
+      } else if (notification.actionUrl) {
         // Use actionUrl from backend
         targetPath = notification.actionUrl;
       } else if (notification.metadata?.orderId) {
@@ -122,35 +236,46 @@ const NotificationDropdown = ({ unreadCount }) => {
       }
 
       if (targetPath) {
-        console.log('[NotificationDropdown] Navigating to:', targetPath, 'from notification:', {
-          id: notification._id,
-          type: notification.type,
-          actionUrl: notification.actionUrl,
-          metadata: notification.metadata
-        });
-        navigate(targetPath);
+        console.log('[NotificationDropdown] ✅ Navigating immediately to:', targetPath, routeParams);
+        // Navigate immediately - don't wait for markAsRead
+        if (routeParams && Object.keys(routeParams).length > 0) {
+          navigate(targetPath, { state: routeParams });
+        } else {
+          navigate(targetPath);
+        }
       } else {
-        console.warn('[NotificationDropdown] No valid navigation path for notification:', notification);
+        console.warn('[NotificationDropdown] ⚠️ No valid navigation path for notification:', notification);
         // Fallback to home page
         navigate(PATHS.HOME);
       }
     } catch (error) {
-      console.error('[NotificationDropdown] Error navigating:', error, 'notification:', notification);
+      console.error('[NotificationDropdown] ❌ Error navigating:', error, 'notification:', notification);
       // Fallback to home page on error
       navigate(PATHS.HOME);
     }
-  };
 
-  // Debug: Log unreadCount to verify it's being passed correctly
-  useEffect(() => {
-    console.log('[EazMain NotificationDropdown] 🔔 unreadCount prop:', {
-      unreadCount,
-      type: typeof unreadCount,
-      isNumber: typeof unreadCount === 'number',
-      isGreaterThanZero: unreadCount > 0,
-      willShowBadge: unreadCount > 0,
-    });
-  }, [unreadCount]);
+    // STEP 3: Mark as read in background - don't block navigation
+    // CRITICAL UX RULE: Fire mark-as-read mutation in background
+    // Navigation already happened, so this is fire-and-forget
+    const isUnread = !notification.isRead; // Use isRead field (backend standard)
+    if (isUnread) {
+      console.log('[NotificationDropdown] 📝 Marking notification as read in background:', notification._id);
+      // Fire-and-forget: don't wait for response
+      // Optimistic update will handle UI immediately
+      markAsRead.mutate(notification._id, {
+        onError: (error) => {
+          console.error('[NotificationDropdown] ❌ Failed to mark notification as read:', error);
+          console.warn('[NotificationDropdown] ⚠️ Navigation succeeded despite markAsRead failure');
+          // CRITICAL: Don't redirect to login on markAsRead failure
+          // The error is already flagged as isNotificationError in api.js
+          // Navigation already succeeded, so don't interfere
+        },
+        onSuccess: () => {
+          console.log('[NotificationDropdown] ✅ Notification marked as read successfully');
+        },
+      });
+    }
+  };
 
   return (
     <DropdownContainer ref={dropdownRef}>
@@ -171,16 +296,18 @@ const NotificationDropdown = ({ unreadCount }) => {
           </DropdownHeader>
 
           <NotificationsList>
-            {notifications.length === 0 ? (
+            {dropdownNotifications.length === 0 ? (
               <EmptyState>
                 <FaBell />
                 <p>No new notifications</p>
               </EmptyState>
             ) : (
-              notifications.map((notification) => (
+              dropdownNotifications.map((notification) => {
+                const isUnread = !notification.isRead; // Use isRead field (backend standard)
+                return (
                 <NotificationItem
                   key={notification._id}
-                  unread={!notification.read}
+                  unread={isUnread}
                   onClick={() => handleNotificationClick(notification)}
                 >
                   <IconWrapper color={getNotificationColor(notification.type)}>
@@ -192,7 +319,7 @@ const NotificationDropdown = ({ unreadCount }) => {
                     <NotificationTime>{formatTime(notification.createdAt)}</NotificationTime>
                   </NotificationContent>
                   <NotificationActions>
-                    {!notification.read && <UnreadDot />}
+                    {isUnread && <UnreadDot />}
                     <DeleteButton
                       onClick={(e) => {
                         e.stopPropagation();
@@ -206,14 +333,24 @@ const NotificationDropdown = ({ unreadCount }) => {
                     </DeleteButton>
                   </NotificationActions>
                 </NotificationItem>
-              ))
+                );
+              })
             )}
           </NotificationsList>
 
           <DropdownFooter>
             <ViewAllButton onClick={() => {
+              // STEP 5: View all notifications - navigate without refetching auth
+              // CRITICAL FIX: Verify auth is ready before navigating
+              if (!isAuthReady) {
+                console.warn('[NotificationDropdown] ⚠️ Auth not ready, cannot navigate to notifications page');
+                setIsOpen(false);
+                return;
+              }
               setIsOpen(false);
-              navigate(PATHS.NOTIFICATION);
+              console.log('[NotificationDropdown] 📋 Navigating to notifications page');
+              // Navigate immediately - don't refetch auth, don't clear token
+              navigate(PATHS.NOTIFICATION || PATHS.NOTIFICATIONS || '/notifications');
             }}>
               View All Notifications <FaChevronRight />
             </ViewAllButton>
@@ -235,15 +372,16 @@ const IconButton = styled.button`
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  cursor: pointer;
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
   font-size: 18px;
   color: var(--color-grey-700, #374151);
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
+  opacity: ${props => props.disabled ? 0.5 : 1};
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: var(--color-grey-100, #f3f4f6);
     color: var(--color-primary-500, #007bff);
   }

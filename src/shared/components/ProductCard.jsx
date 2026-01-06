@@ -17,6 +17,8 @@ import {
   getProductTotalStock,
 } from '../utils/productHelpers';
 import { highlightSearchTerm } from '../utils/searchUtils.jsx';
+import logger from '../utils/logger';
+import { toast } from 'react-toastify';
 
 // Helper function to get grid image - MUST use product.images ONLY
 const getGridImage = (product) => {
@@ -25,6 +27,33 @@ const getGridImage = (product) => {
   }
   // Fallback placeholder
   return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600"%3E%3Crect width="600" height="600" fill="%23f0f0f0"/%3E%3Ctext x="50%25" y="50%25" font-family="Arial" font-size="24" fill="%23999" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E';
+};
+
+/**
+ * Resolve default SKU for product card quick-add
+ * CRITICAL: ProductCard = auto-select default SKU
+ * 
+ * @param {Object} product - Product object with variants
+ * @returns {string|null} - Default variant SKU or null if no variants
+ */
+const resolveDefaultSku = (product) => {
+  if (!product?.variants || product.variants.length === 0) {
+    return null;
+  }
+
+  // Priority: active variant → first variant with SKU
+  const activeVariant = product.variants.find(v => v.status === "active" && v.sku);
+  if (activeVariant?.sku) {
+    return activeVariant.sku.trim().toUpperCase();
+  }
+
+  // Fallback: first variant with SKU
+  const firstVariantWithSku = product.variants.find(v => v.sku);
+  if (firstVariantWithSku?.sku) {
+    return firstVariantWithSku.sku.trim().toUpperCase();
+  }
+
+  return null;
 };
 
 export default function ProductCard({
@@ -56,10 +85,64 @@ export default function ProductCard({
   const isProcessingRef = useRef(false);
 
   const handleAddToCart = useCallback((product) => {
-    addToCart({
-      product,
+    // CRITICAL: Resolve default SKU for ProductCard quick-add
+    let sku = null;
+    
+    if (product.variants?.length > 0) {
+      sku = resolveDefaultSku(product);
+      
+      if (!sku) {
+        logger.error("[PRODUCT_CARD_ADD] No SKU found for variant product:", {
+          productId: product._id,
+          productName: product.name,
+          variants: product.variants?.map(v => ({
+            id: v._id,
+            sku: v.sku,
+            status: v.status,
+          })) || [],
+        });
+        toast.error("Please select product options");
+        return;
+      }
+    }
+
+    // CRITICAL: HARD LOG before addToCart
+    logger.log("[PRODUCT_CARD_ADD]", {
+      productId: product._id,
+      productName: product.name,
+      sku,
       quantity: 1,
+      hasVariants: product.variants?.length > 0,
+      variants: product.variants?.map(v => ({
+        id: v._id,
+        sku: v.sku,
+        status: v.status,
+      })) || [],
     });
+
+    addToCart(
+      {
+        product,
+        quantity: 1,
+        variantSku: sku, // Pass default SKU - ProductCard auto-selects default variant
+      },
+      {
+        onError: (error) => {
+          // Handle SKU_REQUIRED error specifically
+          if (error?.code === 'SKU_REQUIRED' || error?.message?.includes('variant')) {
+            toast.error("Please select product options", {
+              position: "top-right",
+              autoClose: 3000,
+            });
+          } else {
+            toast.error(error?.message || "Failed to add product to cart", {
+              position: "top-right",
+              autoClose: 3000,
+            });
+          }
+        },
+      }
+    );
   }, [addToCart]);
 
   // Debounced wishlist toggle to prevent rapid clicks
@@ -107,6 +190,7 @@ export default function ProductCard({
   // Check product status
   const isDraft = product.status === 'draft';
   const isInactive = product.status === 'inactive';
+  const isOutOfStock = product.status === 'out_of_stock';
   
   // Check condition (if not new)
   const showCondition = product.condition && product.condition !== 'new';
@@ -172,7 +256,7 @@ export default function ProductCard({
           {showBadges && (
             <BadgeContainer>
               {/* Priority: Out of Stock > Coming Soon > Discontinued > Status > EazShop > Discount > New > Trending > Free Shipping > Condition */}
-              {totalStock === 0 && !isComingSoon && (
+              {(totalStock === 0 || isOutOfStock) && !isComingSoon && (
                 <OutOfStockBadge>Out of Stock</OutOfStockBadge>
               )}
               {isComingSoon && (

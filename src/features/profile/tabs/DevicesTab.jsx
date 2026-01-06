@@ -17,8 +17,14 @@ const DevicesTab = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ["deviceSessions"],
     queryFn: async () => {
-      const response = await api.get("/sessions/my-devices");
-      return response.data;
+      try {
+        const response = await api.get("/sessions/my-devices");
+        return response.data;
+      } catch (error) {
+        // Log error for debugging
+        console.error("Failed to load devices:", error);
+        throw error;
+      }
     },
   });
 
@@ -50,7 +56,8 @@ const DevicesTab = () => {
     },
   });
 
-  const devices = data?.data?.sessions || data?.sessions || [];
+  // Backend returns: { status: 'success', data: { devices: [...], count: number } }
+  const devices = data?.data?.devices || [];
 
   if (isLoading) return <LoadingState message="Loading devices..." />;
   if (error) return <ErrorState message="Failed to load devices" />;
@@ -118,15 +125,22 @@ const DevicesTab = () => {
                 <DeviceIcon>{getDeviceIcon(device.deviceType)}</DeviceIcon>
                 <DeviceDetails>
                   <DeviceName>
-                    {device.deviceType || "Unknown"} Device
+                    {device.device || device.deviceType || "Unknown"} Device
                   </DeviceName>
                   <DeviceMeta>
-                    <span>{device.userAgent || "Unknown browser"}</span>
+                    <span>{device.browser || "Unknown browser"}</span>
+                    {device.os && (
+                      <>
+                        <span>•</span>
+                        <span>{device.os}</span>
+                      </>
+                    )}
                     <span>•</span>
                     <span>{device.location || "Unknown location"}</span>
                   </DeviceMeta>
                   <DeviceTime>
                     Last active: {formatDate(device.lastActivity)}
+                    {device.isCurrentDevice && " • Current Device"}
                   </DeviceTime>
                 </DeviceDetails>
               </DeviceInfo>

@@ -29,23 +29,19 @@ export const sanitizeCouponCode = (code) => {
              .substring(0, 50); // Max length
 };
 
-// SECURITY: Sanitize email (basic validation)
+// SECURITY: Sanitize email (removes dangerous content, but allows incomplete emails while typing)
 export const sanitizeEmail = (email) => {
   if (typeof email !== 'string') return '';
   
-  const sanitized = email.trim()
-                         .toLowerCase()
-                         .replace(/<[^>]*>/g, '')
-                         .replace(/javascript:/gi, '')
-                         .replace(/on\w+\s*=/gi, '')
+  // Only sanitize dangerous content, don't validate format (validation happens on submit)
+  const sanitized = email
+                         .replace(/<[^>]*>/g, '') // Remove HTML tags
+                         .replace(/javascript:/gi, '') // Remove javascript: protocol
+                         .replace(/on\w+\s*=/gi, '') // Remove event handlers
                          .substring(0, 255); // Max email length
   
-  // Basic email format validation
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(sanitized)) {
-    return '';
-  }
-  
+  // Don't trim or convert to lowercase while typing - let user type freely
+  // Don't validate format - that happens on form submission
   return sanitized;
 };
 

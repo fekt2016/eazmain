@@ -44,6 +44,69 @@ import LoadingSpinner from "../../shared/components/LoadingSpinner";
 // Helper functions
 // ────────────────────────────────────────────────
 
+/**
+ * Resolve SKU from cart item
+ * CRITICAL: Variants are identified by SKU - never by object, never by ID
+ * 
+ * @param {Object} cartItem - Cart item with product and variant information
+ * @returns {string|null} - SKU string or null if not found
+ */
+const resolveSkuFromCartItem = (cartItem) => {
+  // Case 1: variantSku field (preferred - new contract)
+  if (cartItem.variantSku) {
+    return cartItem.variantSku.trim().toUpperCase();
+  }
+
+  // Case 2: variant object with SKU (backward compatibility)
+  if (cartItem.variant?.sku) {
+    return cartItem.variant.sku.trim().toUpperCase();
+  }
+
+  // Case 3: variant ID → resolve from product variants (backward compatibility)
+  if (cartItem.variant && Array.isArray(cartItem.product?.variants)) {
+    const variantId = typeof cartItem.variant === 'string' 
+      ? cartItem.variant 
+      : (cartItem.variant._id || cartItem.variant.id);
+    
+    if (variantId) {
+      const found = cartItem.product.variants.find(
+        (v) => {
+          const vId = v._id?.toString ? v._id.toString() : String(v._id);
+          const searchId = variantId.toString ? variantId.toString() : String(variantId);
+          return vId === searchId;
+        }
+      );
+      if (found?.sku) {
+        return found.sku.trim().toUpperCase();
+      }
+    }
+  }
+
+  // Case 4: variantId field (string ID) - backward compatibility
+  if (cartItem.variantId && Array.isArray(cartItem.product?.variants)) {
+    const found = cartItem.product.variants.find(
+      (v) => {
+        const vId = v._id?.toString ? v._id.toString() : String(v._id);
+        const searchId = cartItem.variantId.toString ? cartItem.variantId.toString() : String(cartItem.variantId);
+        return vId === searchId;
+      }
+    );
+    if (found?.sku) {
+      return found.sku.trim().toUpperCase();
+    }
+  }
+
+  // Case 5: single-variant product auto-assignment
+  if (Array.isArray(cartItem.product?.variants) && cartItem.product.variants.length === 1) {
+    const sku = cartItem.product.variants[0].sku;
+    if (sku) {
+      return sku.trim().toUpperCase();
+    }
+  }
+
+  return null;
+};
+
 const normalizeApiResponse = (response) => {
   // Handle null/undefined
   if (!response) {
@@ -152,7 +215,7 @@ const validateNewAddress = (newAddress) => {
     newAddress.city &&
     !["ACCRA", "TEMA"].includes(newAddress.city.toUpperCase())
   ) {
-    errors.city = "EazShop currently delivers only in Accra and Tema";
+    errors.city = "Saysay currently delivers only in Accra and Tema";
   }
 
   // Ghana phone validation
@@ -230,7 +293,27 @@ const CheckoutPage = () => {
 
   // Credit balance data
   const creditBalance = useMemo(() => {
-    return walletData?.data?.wallet?.balance || 0;
+    // Use availableBalance first (what user can actually spend), then fallback to balance
+    const availableBalance = walletData?.data?.wallet?.availableBalance ?? 
+                             walletData?.data?.wallet?.balance ?? 
+                             0;
+    
+    // DEBUG: Log wallet balance details for troubleshooting
+    if ((typeof __DEV__ !== 'undefined' && __DEV__) || process.env.NODE_ENV !== 'production') {
+      if (walletData) {
+        logger.debug('[CheckoutPage] 💰 Wallet balance details:', {
+          availableBalance: walletData?.data?.wallet?.availableBalance,
+          balance: walletData?.data?.wallet?.balance,
+          holdAmount: walletData?.data?.wallet?.holdAmount,
+          calculatedAvailableBalance: walletData?.data?.wallet?.balance 
+            ? Math.max(0, (walletData.data.wallet.balance || 0) - (walletData.data.wallet.holdAmount || 0))
+            : 0,
+          finalCreditBalance: availableBalance,
+        });
+      }
+    }
+    
+    return availableBalance;
   }, [walletData]);
 
   // Address form state
@@ -273,11 +356,50 @@ const CheckoutPage = () => {
 
   const products = useMemo(
     () =>
-      (rawItems || []).map((item) => ({
-      product: item.product,
-      quantity: item.quantity,
-      variant: item.variant,
-      })),
+      (rawItems || []).map((item) => {
+        // CRITICAL: Extract sku (standardized field name) with backward compatibility
+        let sku = item.sku || item.variantSku || null;
+        
+        // Backward compatibility: If sku missing, try to resolve from variant
+        if (!sku && item.variant) {
+          // Case 1: variant object with SKU
+          if (typeof item.variant === 'object' && item.variant !== null && item.variant.sku) {
+            sku = item.variant.sku.trim().toUpperCase();
+          }
+          // Case 2: variant ID - resolve from product variants
+          else if (Array.isArray(item.product?.variants)) {
+            const variantId = typeof item.variant === 'string' 
+              ? item.variant 
+              : (item.variant._id?.toString ? item.variant._id.toString() : String(item.variant._id || item.variant));
+            
+            if (variantId) {
+              const found = item.product.variants.find(
+                (v) => {
+                  const vId = v._id?.toString ? v._id.toString() : String(v._id);
+                  return vId === variantId;
+                }
+              );
+              if (found?.sku) {
+                sku = found.sku.trim().toUpperCase();
+              }
+            }
+          }
+        }
+        
+        // Case 3: Single-variant product auto-assignment
+        if (!sku && Array.isArray(item.product?.variants) && item.product.variants.length === 1) {
+          const variantSku = item.product.variants[0].sku;
+          if (variantSku) {
+            sku = variantSku.trim().toUpperCase();
+          }
+        }
+        
+        return {
+          product: item.product,
+          quantity: item.quantity,
+          sku: sku, // Standardized field name - SKU is the unit of commerce
+        };
+      }),
     [rawItems]
   );
 
@@ -340,12 +462,12 @@ const CheckoutPage = () => {
   const getfund = basePrice * 0.025;
   const covidLevy = basePrice * 0.01;
   
-  const roundedBasePrice = round(basePrice);
-  const roundedVAT = round(vat);
-  const roundedNHIL = round(nhil);
-  const roundedGETFund = round(getfund);
-  const roundedCovidLevy = round(covidLevy);
-  const totalTax = round(vat + nhil + getfund);
+  // const roundedBasePrice = round(basePrice);
+  // const roundedVAT = round(vat);
+  // const roundedNHIL = round(nhil);
+  // const roundedGETFund = round(getfund);
+  // const roundedCovidLevy = round(covidLevy);
+  // const totalTax = round(vat + nhil + getfund);
   
   // SECURITY: Use backend total if available, otherwise calculate for display
   // Backend MUST validate this amount before processing payment
@@ -354,7 +476,20 @@ const CheckoutPage = () => {
   // Credit balance calculations
   const hasInsufficientBalance = useMemo(() => {
     if (paymentMethod !== "credit_balance") return false;
-    return creditBalance < total;
+    const isInsufficient = creditBalance < total;
+    
+    // DEBUG: Log balance check details
+    if ((typeof __DEV__ !== 'undefined' && __DEV__) || process.env.NODE_ENV !== 'production') {
+      logger.debug('[CheckoutPage] 💰 Balance check:', {
+        creditBalance,
+        total,
+        isInsufficient,
+        shortfall: total - creditBalance,
+        paymentMethod,
+      });
+    }
+    
+    return isInsufficient;
   }, [paymentMethod, creditBalance, total]);
 
   const shippingItems = useMemo(
@@ -772,34 +907,53 @@ const CheckoutPage = () => {
 
     setFormError("");
 
-    // SECURITY: Send product IDs and quantities only - backend MUST fetch prices from database
+    // SECURITY: Send product IDs, SKUs, and quantities only - backend MUST fetch prices from database
     // Frontend prices are for display only and MUST NOT be trusted
-    const orderItems = products.map((product) => {
-      // SECURITY: Validate quantity
-      const validatedQuantity = validateQuantity(product.quantity, product.product.stock || 999);
-      
-      // SECURITY: Do NOT send price from frontend - backend will fetch from database
-      // Price here is only for reference/logging, backend ignores it
-      const displayPrice = product.product.variants?.find(
-        (v) => v._id === product.variant || v._id?.toString() === product.variant?.toString()
-      )?.price || product.product.defaultPrice || product.product.price || 0;
+    let orderItems;
+    try {
+      orderItems = products.map((product) => {
+        // SECURITY: Validate quantity
+        const validatedQuantity = validateQuantity(product.quantity, product.product.stock || 999);
+        
+        // CRITICAL: Use sku directly from cart item - NO resolution logic
+        const sku = product.sku || null;
+        
+        // Guardrail: If product has variants and SKU is missing, show error
+        const hasVariants = product.product.variants && product.product.variants.length > 0;
+        if (hasVariants && !sku) {
+          logger.error("SKU missing for variant product:", {
+            productId: product.product._id,
+            productName: product.product.name,
+            variantCount: product.product.variants.length,
+          });
+          throw new Error(`Please re-select product options for "${product.product.name}" before checkout`);
+        }
 
-      if (!displayPrice || displayPrice === 0) {
-        logger.warn("Product price not found (backend will fetch):", {
-          productId: product.product._id,
-          productName: product.product.name,
-          variant: product.variant,
-        });
-      }
+        // SECURITY: Do NOT send price from frontend - backend will fetch from database
+        // Price here is only for reference/logging, backend ignores it
+        const displayPrice = sku 
+          ? product.product.variants?.find((v) => v.sku && v.sku.toUpperCase() === sku.toUpperCase())?.price
+          : (product.product.defaultPrice || product.product.price || 0);
 
-      return {
-        product: product.product._id,
-        quantity: validatedQuantity, // SECURITY: Validated quantity
-        // SECURITY: Do NOT trust frontend price - backend MUST fetch from database
-        // price field removed - backend calculates from database
-        variant: product.variant,
-      };
-    });
+        if (!displayPrice || displayPrice === 0) {
+          logger.warn("Product price not found (backend will fetch):", {
+            productId: product.product._id,
+            productName: product.product.name,
+            sku: sku || 'N/A',
+          });
+        }
+
+        return {
+          product: product.product._id,
+          quantity: validatedQuantity,
+          sku: sku || undefined, // Only include SKU if it exists
+        };
+      });
+    } catch (skuError) {
+      logger.error("SKU validation error:", skuError);
+      setFormError(skuError.message || "Please re-select product options before checkout");
+      return;
+    }
 
     const orderData = {
       address: selectedAddressId,
@@ -833,9 +987,8 @@ const CheckoutPage = () => {
           return;
         }
 
-        // Clear cart after successful order creation (for all payment methods)
-        clearCart();
-        queryClient.invalidateQueries("cart");
+        // NOTE: Cart will be cleared after order confirmation (in OrderConfirmationPage)
+        // This ensures cart is only cleared after payment is verified
 
         if (paymentMethod === "mobile_money") {
           try {
@@ -897,6 +1050,14 @@ const CheckoutPage = () => {
             logger.error(`[CheckoutPage] ❌ CRITICAL: Current port is ${currentPort}, expected 5173 (eazmain)`);
             logger.error(`[CheckoutPage] Current URL: ${window.location.href}`);
             logger.error(`[CheckoutPage] This should not happen - you may be in the wrong app!`);
+          }
+          
+          // CRITICAL: Invalidate wallet balance immediately for UI update (if wallet payment)
+          if (paymentMethod === "credit_balance" || paymentMethod === "wallet") {
+            logger.log('[CheckoutPage] 💰 Wallet payment detected - invalidating wallet balance');
+            queryClient.invalidateQueries({ queryKey: ['wallet', 'balance'] });
+            queryClient.invalidateQueries({ queryKey: ['creditBalance'] });
+            queryClient.refetchQueries({ queryKey: ['wallet', 'balance'] });
           }
           
           // Build URL with query parameter (same format as Paystack redirect)

@@ -36,6 +36,35 @@ const authApi = {
     return response;
   },
 
+  // ==================================================
+  // UNIFIED EMAIL-ONLY PASSWORD RESET FLOW
+  // ==================================================
+  
+  /**
+   * Request Password Reset (Email Only)
+   * POST /api/v1/users/forgot-password
+   * Body: { email: "user@example.com" }
+   */
+  requestPasswordReset: async (email) => {
+    const response = await api.post("/users/forgot-password", { email });
+    return response.data;
+  },
+
+  /**
+   * Reset Password with Token
+   * POST /api/v1/users/reset-password
+   * Body: { token: "reset_token", newPassword: "newpass123", confirmPassword: "newpass123" }
+   */
+  resetPasswordWithToken: async (token, newPassword, confirmPassword) => {
+    const response = await api.post("/users/reset-password", {
+      token,
+      newPassword,
+      confirmPassword,
+    });
+    return response.data;
+  },
+
+  // Legacy OTP-based methods (deprecated - kept for backward compatibility)
   sendPasswordResetOtp: async (loginId) => {
     const response = await api.post("/users/forgot-password", { loginId });
     return response.data;
@@ -47,7 +76,6 @@ const authApi = {
     });
     return response.data;
   },
-
   resetPassword: async (loginId, newPassword, resetToken = null) => {
     const payload = { loginId, newPassword };
     if (resetToken) {

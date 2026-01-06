@@ -184,7 +184,7 @@ export default function Footer() {
         <FooterBottom>
           <BottomContent>
             <Copyright>
-              © {new Date().getFullYear()} EazShop. All rights reserved.
+              © {new Date().getFullYear()} Saysay. All rights reserved.
             </Copyright>
             
             <LegalLinks>

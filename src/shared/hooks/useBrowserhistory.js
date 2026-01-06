@@ -24,13 +24,34 @@ export const useAddHistoryItem = () => {
     mutationFn: async (data) => {
       try {
         const response = await browswerHistoryApi.addHistoryItem(data);
+        
+        // Handle skipped responses (duplicate views within 24h)
+        // This is NOT an error - it's expected behavior
+        if (response?.data?.skipped === true) {
+          // Return response but don't log as success (it was skipped)
+          // This prevents React Query from treating it as an error
+          return response;
+        }
+        
         return response;
       } catch (error) {
-        logger.error(error);
+        // Only log actual errors (network failures, 500, auth issues, etc.)
+        // Duplicate views are now handled gracefully and won't reach here
+        logger.error("Failed to add history item:", error);
+        throw error; // Re-throw to trigger onError for real errors
       }
     },
     onSuccess: (data) => {
-      logger.log("history item added successfully!!!", data);
+      // Only log success if item was actually added (not skipped)
+      if (data?.data?.skipped !== true) {
+        logger.log("History item added successfully", data);
+      }
+      // Silently handle skipped responses - no logging needed
+    },
+    onError: (error) => {
+      // Only log real errors (network, 500, etc.)
+      // Duplicate views should never reach here now
+      logger.error("Error adding history item:", error);
     },
   });
 };

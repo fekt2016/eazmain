@@ -20,11 +20,37 @@ const browserHistoryApi = {
   addHistoryItem: async (item) => {
     try {
       const response = await api.post("/history", item);
+      
+      // Handle skipped responses gracefully (not an error)
+      // Backend returns 200 with skipped: true for duplicate views within 24h
+      if (response?.data?.skipped === true) {
+        // Return the response as-is - this is a successful operation
+        // that was intentionally skipped, not an error
+        return response;
+      }
+      
       return response;
     } catch (error) {
-      throw new Error(
-        error.response?.data?.message || "Failed to add history item"
-      );
+      // Only throw for actual errors (network, 500, auth, etc.)
+      // 400 errors for duplicates are now handled by backend returning 200 with skipped flag
+      const status = error.response?.status;
+      const errorMessage = error.response?.data?.message || "Failed to add history item";
+      
+      // If it's a 400 and the message indicates duplicate, treat as skipped
+      // (This is a fallback in case backend hasn't been updated yet)
+      if (status === 400 && errorMessage.includes('already viewed')) {
+        return {
+          data: {
+            status: 'success',
+            skipped: true,
+            reason: 'ALREADY_VIEWED',
+            message: errorMessage,
+          },
+        };
+      }
+      
+      // Throw for all other errors
+      throw new Error(errorMessage);
     }
   },
 

@@ -2,6 +2,25 @@ import api from './api';
 import logger from '../utils/logger';
 
 const authApi = {
+  // Login with email + password (new flow - no OTP)
+  login: async (email, password) => {
+    logger.log("[authApi] login called with:", { email, password: password ? '***' : 'missing' });
+    const response = await api.post("/users/login", { email, password });
+    logger.log("[authApi] login response:", response.data?.status || 'success');
+    return response;
+  },
+
+  // Verify 2FA code for login
+  verify2FALogin: async (loginSessionId, twoFactorCode) => {
+    logger.log("[authApi] verify2FALogin called");
+    const response = await api.post("/users/verify-2fa-login", {
+      loginSessionId,
+      twoFactorCode,
+    });
+    logger.log("[authApi] verify2FALogin response:", response.data?.status || 'success');
+    return response;
+  },
+
   sendOtp: async (loginId) => {
     const response = await api.post("/users/send-otp", { loginId });
     return response;

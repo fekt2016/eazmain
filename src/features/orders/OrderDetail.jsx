@@ -32,6 +32,18 @@ import Button from '../../shared/components/Button';
 const OrderDetail = () => {
   const { id: orderId } = useParams();
   const navigate = useNavigate();
+  
+  // Guard against missing orderId
+  if (!orderId) {
+    return (
+      <ErrorState
+        title="Order ID Missing"
+        message="Order ID is required. Please go back and try again."
+        onRetry={() => navigate(-1)}
+      />
+    );
+  }
+  
   const { data: orderData, isLoading, isError, refetch } = useGetUserOrderById(orderId);
   const order = useMemo(() => orderData?.order, [orderData]);
 logger.log("order", order);
@@ -176,7 +188,7 @@ logger.log("order", order);
 
   const handleItemSelection = (itemId, checked) => {
     if (checked) {
-      const item = order.orderItems.find(i => (i._id || i.id) === itemId);
+      const item = (order?.orderItems || []).find(i => (i._id || i.id) === itemId);
       if (item) {
         setSelectedItems(prev => ({
           ...prev,
@@ -198,7 +210,7 @@ logger.log("order", order);
   };
 
   const handleItemQuantityChange = (itemId, quantity) => {
-    const item = order.orderItems.find(i => (i._id || i.id) === itemId);
+    const item = (order?.orderItems || []).find(i => (i._id || i.id) === itemId);
     if (item && quantity > 0 && quantity <= item.quantity) {
       setSelectedItems(prev => ({
         ...prev,
@@ -363,10 +375,10 @@ logger.log("order", order);
   if (!order) return <EmptyState title="Order not found" message="The order you're looking for doesn't exist." />;
 
   // Calculate grand total (tax is already included in subtotal for VAT-inclusive pricing)
-  const subtotal = order.sellerOrder.reduce((total, sellerOrder) => total + (sellerOrder.subtotal || 0), 0);
-  const totalShipping = order.shippingCost || order.sellerOrder.reduce((total, sellerOrder) => total + (sellerOrder.shippingCost || 0), 0);
+  const subtotal = (order?.sellerOrder || []).reduce((total, sellerOrder) => total + (sellerOrder.subtotal || 0), 0);
+  const totalShipping = order.shippingCost || (order?.sellerOrder || []).reduce((total, sellerOrder) => total + (sellerOrder.shippingCost || 0), 0);
   // Get COVID levy from order (for tracking only, NOT added to customer total - will be deducted from seller at withdrawal)
-  const totalCovidLevy = order.totalCovidLevy || order.sellerOrder.reduce((total, sellerOrder) => total + (sellerOrder.totalCovidLevy || 0), 0);
+  const totalCovidLevy = order.totalCovidLevy || (order?.sellerOrder || []).reduce((total, sellerOrder) => total + (sellerOrder.totalCovidLevy || 0), 0);
   // Grand total: subtotal + shipping (COVID levy NOT included)
   const grandTotal = order.totalPrice || (subtotal + totalShipping);
 
@@ -644,7 +656,7 @@ logger.log("order", order);
               {order.shippingBreakdown && order.shippingBreakdown.length > 0 && (
                 <ShippingBreakdownSection>
                   <BreakdownTitle>Shipping Breakdown</BreakdownTitle>
-                  {order.shippingBreakdown.map((breakdown, index) => (
+                  {(order?.shippingBreakdown || []).map((breakdown, index) => (
                     <BreakdownItem key={index}>
                       <BreakdownLabel>Seller {index + 1}</BreakdownLabel>
                       <BreakdownValue>
@@ -702,12 +714,12 @@ logger.log("order", order);
         <RightColumn>
           <SectionHeader>
             <h2>Order Items</h2>
-            <span>{order.sellerOrder.length} seller(s)</span>
+            <span>{(order?.sellerOrder || []).length} seller(s)</span>
           </SectionHeader>
 
           {/* Seller Orders - Mobile Card Layout */}
           <SellerOrdersGrid>
-            {order.sellerOrder.map((sellerOrder) => (
+            {(order?.sellerOrder || []).map((sellerOrder) => (
               <SellerCard key={sellerOrder._id}>
                 <SellerHeader>
                   <SellerAvatar>
@@ -721,7 +733,7 @@ logger.log("order", order);
 
                 {/* Order Items - Mobile Cards */}
                 <OrderItemsList>
-                  {order.orderItems.map((item, index) => {
+                  {(order?.orderItems || []).map((item, index) => {
                     // Check if order is completed or delivered (not just shipped)
                     const isCompleted = order.status === 'completed' || 
                                        order.status === 'delivered' ||

@@ -11,9 +11,26 @@ import { useAddHistoryItem } from '../../shared/hooks/useBrowserhistory';
 import LoadingSpinner from '../../shared/components/LoadingSpinner';
 import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 import logger from '../../shared/utils/logger';
+import { getProductTotalStock } from '../../shared/utils/productHelpers';
+import { useGetBestSellers } from '../../shared/hooks/useBestSellers';
+import { ErrorState } from '../../components/loading';
+import Container from '../../shared/components/Container';
 
 const PublicSellerProfile = () => {
   const { id: sellerId } = useParams();
+  
+  // Guard against missing sellerId
+  if (!sellerId) {
+    return (
+      <Container>
+        <ErrorState
+          title="Seller ID Missing"
+          message="Seller ID is required. Please go back and try again."
+        />
+      </Container>
+    );
+  }
+  
   const { useGetAllPublicProductBySeller } = useProduct();
   const [imageError, setImageError] = useState(false);
 
@@ -26,6 +43,13 @@ const PublicSellerProfile = () => {
   const { toggleFollow, isFollowing, isLoading: isFollowLoading } = useToggleFollow(sellerId);
   const { data: followerData, isLoading: isFollowersLoading } = useGetSellersFollowers(sellerId);
   const { data: productsData, isLoading: isProductsLoading, error: productsError } = useGetAllPublicProductBySeller(sellerId);
+  
+  // Get similar sellers (best sellers excluding current seller)
+  const { data: bestSellersData, isLoading: isSimilarSellersLoading } = useGetBestSellers({
+    sort: 'orders',
+    page: 1,
+    limit: 10,
+  });
   
   const products = useMemo(() => {
     console.log("🔍 [SellerPage] productsData:", productsData);
@@ -69,6 +93,27 @@ const PublicSellerProfile = () => {
   const followers = useMemo(() => {
     return followerData?.data.follows || [];
   }, [followerData]);
+
+  // Get unique categories from seller's products
+  const sellerCategories = useMemo(() => {
+    if (!products || products.length === 0) return [];
+    const categories = new Set();
+    products.forEach((product) => {
+      if (product?.category?._id) categories.add(product.category._id);
+      if (product?.parentCategory?._id) categories.add(product.parentCategory._id);
+      if (product?.category) categories.add(product.category);
+      if (product?.parentCategory) categories.add(product.parentCategory);
+    });
+    return Array.from(categories);
+  }, [products]);
+
+  // Get similar sellers (filter out current seller and limit to 6)
+  const similarSellers = useMemo(() => {
+    if (!bestSellersData?.sellers) return [];
+    return bestSellersData.sellers
+      .filter((s) => s._id !== sellerId && s.id !== sellerId)
+      .slice(0, 6);
+  }, [bestSellersData, sellerId]);
 
   const hasRecordedHistory = useRef(false);
   const addHistoryItem = useAddHistoryItem();
@@ -273,7 +318,7 @@ const PublicSellerProfile = () => {
                     
                     <ProductFooter>
                       <StarRating rating={product?.rating || 0} size={14} />
-                      {product?.quantity > 0 ? (
+                      {getProductTotalStock(product) > 0 ? (
                         <StockBadge $inStock={true}>In Stock</StockBadge>
                       ) : (
                         <StockBadge $inStock={false}>Out of Stock</StockBadge>
@@ -286,6 +331,55 @@ const PublicSellerProfile = () => {
           )}
         </MainContent>
       </MainLayout>
+
+      {/* Similar Sellers Section */}
+      {similarSellers.length > 0 && (
+        <SimilarSellersSection>
+          <SimilarSellersHeader>
+            <SimilarSellersTitle>Similar Sellers</SimilarSellersTitle>
+            <SimilarSellersSubtitle>Other top sellers you might like</SimilarSellersSubtitle>
+          </SimilarSellersHeader>
+          
+          {isSimilarSellersLoading ? (
+            <LoadingContainer>
+              <LoadingSpinner size="md" />
+            </LoadingContainer>
+          ) : (
+            <SimilarSellersGrid>
+              {similarSellers.map((similarSeller) => (
+                <SimilarSellerCard 
+                  key={similarSeller._id || similarSeller.id} 
+                  to={`/seller/${similarSeller._id || similarSeller.id}`}
+                >
+                  <SimilarSellerAvatar 
+                    src={similarSeller.avatar || '/default-avatar.png'} 
+                    alt={similarSeller.shopName || similarSeller.name}
+                  />
+                  <SimilarSellerInfo>
+                    <SimilarSellerName>
+                      {similarSeller.shopName || similarSeller.name || 'Seller'}
+                    </SimilarSellerName>
+                    <SimilarSellerRating>
+                      <StarRating 
+                        rating={similarSeller.rating || similarSeller.ratings?.average || 0} 
+                        size={12} 
+                      />
+                      <SimilarSellerRatingText>
+                        {(similarSeller.rating || similarSeller.ratings?.average || 0).toFixed(1)}
+                      </SimilarSellerRatingText>
+                    </SimilarSellerRating>
+                    <SimilarSellerStats>
+                      <StatText>
+                        {similarSeller.totalOrders || similarSeller.orderCount || 0} orders
+                      </StatText>
+                    </SimilarSellerStats>
+                  </SimilarSellerInfo>
+                </SimilarSellerCard>
+              ))}
+            </SimilarSellersGrid>
+          )}
+        </SimilarSellersSection>
+      )}
     </ProfileContainer>
   );
 };
@@ -296,7 +390,6 @@ export default PublicSellerProfile;
 const ProfileContainer = styled.div`
   min-height: 100vh;
   background: #f8fafc;
-  background: red;
   width: 100%;
 `;
 
@@ -550,6 +643,7 @@ const MainLayout = styled.div`
     grid-template-columns: 1fr;
     gap: 1.5rem;
   }
+    
 `;
 
 const Sidebar = styled.aside`
@@ -700,13 +794,15 @@ const ProductGrid = styled.div`
 `;
 
 const ProductCard = styled(Link)`
-  background: white;
+  background: #ffffff;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
   text-decoration: none;
   color: inherit;
+  display: flex;
+  flex-direction: column;
 
   &:hover {
     transform: translateY(-4px);
@@ -828,4 +924,106 @@ const EmptyState = styled.div`
 const EmptyIcon = styled.div`
   font-size: 3rem;
   margin-bottom: 1rem;
+`;
+
+// Similar Sellers Section Styles
+const SimilarSellersSection = styled.section`
+  max-width: 1200px;
+  margin: 4rem auto 2rem;
+  padding: 0 1rem;
+`;
+
+const SimilarSellersHeader = styled.div`
+  margin-bottom: 2rem;
+  text-align: center;
+`;
+
+const SimilarSellersTitle = styled.h2`
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+`;
+
+const SimilarSellersSubtitle = styled.p`
+  color: #64748b;
+  font-size: 0.95rem;
+`;
+
+const SimilarSellersGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+  }
+`;
+
+const SimilarSellerCard = styled(Link)`
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  }
+`;
+
+const SimilarSellerAvatar = styled.img`
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #e2e8f0;
+  margin-bottom: 1rem;
+  background: #f1f5f9;
+`;
+
+const SimilarSellerInfo = styled.div`
+  width: 100%;
+`;
+
+const SimilarSellerName = styled.h3`
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+`;
+
+const SimilarSellerRating = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+`;
+
+const SimilarSellerRatingText = styled.span`
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+`;
+
+const SimilarSellerStats = styled.div`
+  margin-top: 0.5rem;
+`;
+
+const StatText = styled.p`
+  font-size: 0.75rem;
+  color: #64748b;
 `;

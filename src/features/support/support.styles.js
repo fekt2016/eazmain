@@ -347,39 +347,4 @@ export const QuickLink = styled.a`
   }
 `;
 
-// Chat CTA Section
-export const ChatSection = styled.section`
-  background: linear-gradient(135deg, var(--color-grey-50) 0%, var(--color-white-0) 100%);
-  border-radius: var(--border-radius-xl);
-  padding: var(--spacing-xl);
-  text-align: center;
-  margin-bottom: var(--spacing-2xl);
-  border: 1px solid var(--color-grey-200);
-`;
-
-export const ChatButton = styled.button`
-  background: ${props => props.$bgColor || 'var(--color-primary-500)'};
-  color: var(--color-white-0);
-  border: none;
-  padding: var(--spacing-md) var(--spacing-xl);
-  border-radius: var(--border-radius-md);
-  font-size: var(--font-size-md);
-  font-weight: var(--font-semibold);
-  cursor: pointer;
-  transition: all var(--transition-base);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  margin-top: var(--spacing-md);
-  
-  &:hover {
-    background: ${props => props.$hoverColor || 'var(--color-primary-600)'};
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-  }
-  
-  &:active {
-    transform: translateY(0);
-  }
-`;
 

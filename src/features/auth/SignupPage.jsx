@@ -10,6 +10,7 @@ import { ButtonSpinner, ErrorState } from '../../components/loading';
 import { spin } from '../../shared/styles/animations';
 import { devicesMax } from '../../shared/styles/breakpoint';
 import logger from '../../shared/utils/logger';
+import Button from '../../shared/components/Button';
 
 // Animations
 const fadeIn = keyframes`

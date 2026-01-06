@@ -27,7 +27,7 @@ export default function PaymentMethodPage() {
   const [activeTab, setActiveTab] = useState("mobile_money");
   
   const { mutateAsync: createPaymentMethod } = useCreatePaymentMethod();
-  const { data: paymentMethodData, refetch: refetchPaymentMethods } = useGetPaymentMethods();
+  const { data: paymentMethodData, isLoading, isError, refetch: refetchPaymentMethods } = useGetPaymentMethods();
   const { mutateAsync: deletePaymentMethod } = useDeletePaymentMethod();
   const { mutateAsync: setDefaultMethod } = useSetDefaultPaymentMethod();
 
@@ -159,6 +159,28 @@ export default function PaymentMethodPage() {
   const defaultMethodsCount = paymentMethods.filter(method => method.isDefault).length;
   const mobileMoneyMethods = paymentMethods.filter(method => method.type === "mobile_money").length;
   const bankMethods = paymentMethods.filter(method => method.type === "bank_transfer").length;
+
+  // Handle loading state
+  if (isLoading) {
+    return (
+      <PageContainer>
+        <div data-testid="loading-state">Loading payment methods...</div>
+      </PageContainer>
+    );
+  }
+
+  // Handle error state
+  if (isError) {
+    return (
+      <PageContainer>
+        <div data-testid="error-state">
+          <h2>Error loading payment methods</h2>
+          <p>Failed to load payment methods. Please try again.</p>
+          <button onClick={() => refetchPaymentMethods()}>Retry</button>
+        </div>
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer>
@@ -466,8 +488,10 @@ export default function PaymentMethodPage() {
                       </MethodName>
                       <MethodNumber>
                         {method.type === "mobile_money"
-                          ? method.mobileNumber.replace("+233", "0")
-                          : `••••${method.accountNumber.slice(-4)}`}
+                          ? method.mobileNumber?.replace("+233", "0") || ""
+                          : method.accountNumber 
+                            ? `••••${method.accountNumber.slice(-4)}`
+                            : "••••"}
                       </MethodNumber>
                       {method.type === "bank_transfer" && (
                         <MethodAccountName>{method.accountName}</MethodAccountName>

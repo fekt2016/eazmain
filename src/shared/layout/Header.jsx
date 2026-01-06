@@ -122,9 +122,22 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
   }, [searchTerm]);
 
   const user = useMemo(() => {
-    return (
-      userData?.data?.data || userData?.data?.user || userData?.user || null
-    );
+    // Handle different response structures:
+    // - After login: userData is the user object directly
+    // - After getCurrentUser: userData might be { data: {...user} } or { data: { data: {...user} } }
+    // - After refetch: userData could be either structure
+    const extractedUser = userData?.data?.data || userData?.data?.user || userData?.user || userData || null;
+    
+    // Debug logging in development
+    if (process.env.NODE_ENV === 'development' && extractedUser) {
+      console.log('[Header] User extracted:', {
+        hasPhoto: !!extractedUser?.photo,
+        photo: extractedUser?.photo,
+        userId: extractedUser?.id || extractedUser?._id
+      });
+    }
+    
+    return extractedUser;
   }, [userData]);
 
 
@@ -434,12 +447,15 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
                         <UserAvatar>
                           {user?.photo ? (
                             <AvatarImage 
-                              src={getAvatarUrl(user.photo)} 
+                              src={`${getAvatarUrl(user.photo)}?t=${Date.now()}`} 
                               alt={user?.name || 'User'}
-                              key={`avatar-${user?.photo}-${user?._id || user?.id}`} // Force re-render when photo or user changes
+                              key={`avatar-${user?.photo}-${user?._id || user?.id}-${Date.now()}`} // Force re-render when photo or user changes
                               onError={(e) => {
                                 // Fallback to initials if image fails to load
                                 e.target.style.display = 'none';
+                              }}
+                              onLoad={() => {
+                                console.log('✅ [Header] Avatar loaded:', getAvatarUrl(user.photo));
                               }}
                             />
                           ) : (

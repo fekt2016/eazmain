@@ -17,11 +17,24 @@ import {
 import { useParams } from "react-router-dom";
 import { useGetProductReviews } from '../../shared/hooks/useReview';
 import useAuth from '../../shared/hooks/useAuth';
-import { LoadingState } from '../../components/loading';
+import { LoadingState, ErrorState } from '../../components/loading';
 import { devicesMax } from '../../shared/styles/breakpoint';
+import Container from '../../shared/components/Container';
 
 export default function CustomerReviewPage() {
   const { id: productId } = useParams();
+  
+  // Guard against missing productId
+  if (!productId) {
+    return (
+      <Container>
+        <ErrorState
+          title="Product ID Missing"
+          message="Product ID is required. Please go back and try again."
+        />
+      </Container>
+    );
+  }
   
   const { data: reviewData, isLoading } = useGetProductReviews(productId);
   const { userData } = useAuth();

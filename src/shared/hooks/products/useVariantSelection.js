@@ -25,12 +25,15 @@ export const useVariantSelection = (variants = [], product = null) => {
   /**
    * Match selected attributes to a variant
    * Returns the variant that matches all selected attributes, or null
+   * Supports partial matching - variant can have more attributes than selected
    */
   const matchVariant = useCallback((attributes, variantList = variants) => {
     if (!variantList.length || !Object.keys(attributes).length) {
       return null;
     }
 
+    // For complete selection, find exact match (all attributes match)
+    // For partial selection, find variants that contain all selected attributes
     return variantList.find((variant) => {
       // Check if variant matches all selected attributes
       const matchesAllAttributes = Object.entries(attributes).every(([key, value]) => {
@@ -44,12 +47,9 @@ export const useVariantSelection = (variants = [], product = null) => {
         return variant.attributes?.some((attr) => attr.key === key);
       });
 
-      // Ensure variant has exactly the same number of attributes as selected
-      const variantAttributeCount = variant.attributes?.length || 0;
-      const selectedAttributeCount = Object.keys(attributes).length;
-      const hasSameAttributeCount = variantAttributeCount === selectedAttributeCount;
-
-      return matchesAllAttributes && hasAllAttributeKeys && hasSameAttributeCount;
+      // Match if variant contains all selected attributes (subset matching)
+      // Removed hasSameAttributeCount check to support partial selections
+      return matchesAllAttributes && hasAllAttributeKeys;
     }) || null;
   }, [variants]);
 
@@ -108,12 +108,21 @@ export const useVariantSelection = (variants = [], product = null) => {
   // Update selected variant when attributes change
   useEffect(() => {
     if (Object.keys(selectedAttributes).length > 0) {
-      const matched = matchVariant(selectedAttributes);
-      setSelectedVariant(matched);
+      // Only match if all attributes are selected (complete selection)
+      // For partial selection, we'll use findMatchingVariants to show available options
+      const allAttributesSelected = attributeKeys.every(key => selectedAttributes[key]);
+      
+      if (allAttributesSelected) {
+        const matched = matchVariant(selectedAttributes);
+        setSelectedVariant(matched);
+      } else {
+        // Partial selection - don't set selectedVariant yet
+        setSelectedVariant(null);
+      }
     } else {
       setSelectedVariant(null);
     }
-  }, [selectedAttributes, matchVariant]);
+  }, [selectedAttributes, matchVariant, attributeKeys]);
 
   /**
    * Select an attribute value
@@ -126,6 +135,24 @@ export const useVariantSelection = (variants = [], product = null) => {
   }, []);
 
   /**
+   * Find all variants matching partial or complete selection
+   * Returns array of variants that contain all selected attributes
+   */
+  const findMatchingVariants = useCallback((attributes = selectedAttributes) => {
+    if (!variants.length || !Object.keys(attributes).length) {
+      return [];
+    }
+
+    return variants.filter((variant) => {
+      return Object.entries(attributes).every(([key, value]) => {
+        return variant.attributes?.some(
+          (attr) => attr.key === key && attr.value === value
+        );
+      });
+    });
+  }, [variants, selectedAttributes]);
+
+  /**
    * Check if an option is disabled (would lead to no matching variant)
    * Note: We allow selection even if variant is out of stock - stock status is shown after selection
    */
@@ -136,22 +163,22 @@ export const useVariantSelection = (variants = [], product = null) => {
       [attributeName]: value,
     };
 
-    // Find the variant that would match
-    const potentialVariant = matchVariant(potentialAttributes);
+    // Find all variants that match this potential selection
+    const matchingVariants = findMatchingVariants(potentialAttributes);
 
     // Option is disabled ONLY if:
     // 1. No variant matches this combination, OR
-    // 2. The matching variant is inactive
+    // 2. All matching variants are inactive
     // We do NOT disable based on stock - allow selection and show stock status after
-    if (!potentialVariant) return true;
-    if (potentialVariant.status === 'inactive') return true;
+    if (matchingVariants.length === 0) return true;
+    if (matchingVariants.every(v => v.status === 'inactive')) return true;
 
     return false;
-  }, [selectedAttributes, matchVariant]);
+  }, [selectedAttributes, findMatchingVariants]);
 
   /**
    * Compute available options for an attribute
-   * Returns options with availability and stock info
+   * Returns options with availability status (available/outOfStock/unavailable) and stock info
    */
   const computeAvailableOptions = useCallback((attributeKey) => {
     if (!variants.length) return [];
@@ -172,33 +199,64 @@ export const useVariantSelection = (variants = [], product = null) => {
         [attributeKey]: value,
       };
 
-      // Find the variant that would match
-      const potentialVariant = matchVariant(potentialAttributes, variants);
-
-      // Determine availability and stock
-      const variantStock = potentialVariant?.stock || 0;
-      const isVariantActive = potentialVariant?.status !== 'inactive';
-      const hasStock = variantStock > 0;
+      // Find all variants matching this potential selection
+      const matchingVariants = findMatchingVariants(potentialAttributes);
       
-      // Option is available if variant exists, is active, and has stock
-      // This is used for visual indication, but doesn't prevent selection
-      const isAvailable = potentialVariant !== null && isVariantActive && hasStock;
+      // For complete selection (all attributes selected), find exact match
+      const allAttributesSelected = attributeKeys.every(key => 
+        potentialAttributes[key] !== undefined
+      );
       
-      // Option is disabled ONLY if it would lead to no variant or inactive variant
-      // We allow selection even if out of stock - stock status shown after selection
+      let potentialVariant = null;
+      let variantStock = 0;
+      let isVariantActive = false;
+      let availabilityStatus = 'unavailable'; // 'available' | 'outOfStock' | 'unavailable'
+      
+      if (allAttributesSelected && matchingVariants.length > 0) {
+        // Complete selection - find exact match
+        potentialVariant = matchVariant(potentialAttributes, variants);
+        variantStock = potentialVariant?.stock || 0;
+        isVariantActive = potentialVariant?.status !== 'inactive';
+        
+        if (potentialVariant && isVariantActive) {
+          availabilityStatus = variantStock > 0 ? 'available' : 'outOfStock';
+        }
+      } else if (matchingVariants.length > 0) {
+        // Partial selection - check if any matching variant is available
+        const availableVariants = matchingVariants.filter(v => 
+          v.status !== 'inactive' && (v.stock || 0) > 0
+        );
+        const outOfStockVariants = matchingVariants.filter(v => 
+          v.status !== 'inactive' && (v.stock || 0) === 0
+        );
+        
+        if (availableVariants.length > 0) {
+          availabilityStatus = 'available';
+          // Use first available variant for stock display
+          variantStock = availableVariants[0].stock || 0;
+          isVariantActive = true;
+        } else if (outOfStockVariants.length > 0) {
+          availabilityStatus = 'outOfStock';
+          isVariantActive = true;
+        }
+      }
+      
+      // Option is disabled ONLY if no variant exists or all are inactive
       const isDisabled = isOptionDisabled(attributeKey, value);
 
       return {
         value,
-        isAvailable,
+        availabilityStatus, // 'available' | 'outOfStock' | 'unavailable'
+        isAvailable: availabilityStatus === 'available',
         isDisabled,
         isSelected: selectedAttributes[attributeKey] === value,
         variant: potentialVariant,
+        matchingVariants, // All variants matching this option
         stock: variantStock,
         isActive: isVariantActive,
       };
     });
-  }, [variants, selectedAttributes, matchVariant, isOptionDisabled]);
+  }, [variants, selectedAttributes, matchVariant, isOptionDisabled, findMatchingVariants, attributeKeys]);
 
   /**
    * Clear selection (reset to default)
@@ -230,6 +288,16 @@ export const useVariantSelection = (variants = [], product = null) => {
     return summaryParts;
   }, [selectedVariant, selectedAttributes]);
 
+  // Check if all attributes are selected
+  const allAttributesSelected = useMemo(() => {
+    return attributeKeys.length > 0 && attributeKeys.every(key => selectedAttributes[key]);
+  }, [attributeKeys, selectedAttributes]);
+
+  // Get missing attributes
+  const missingAttributes = useMemo(() => {
+    return attributeKeys.filter(key => !selectedAttributes[key]);
+  }, [attributeKeys, selectedAttributes]);
+
   return {
     // State
     selectedAttributes,
@@ -238,6 +306,8 @@ export const useVariantSelection = (variants = [], product = null) => {
     
     // Computed values
     attributeKeys,
+    allAttributesSelected,
+    missingAttributes,
     
     // Methods
     selectAttribute,
@@ -245,6 +315,7 @@ export const useVariantSelection = (variants = [], product = null) => {
     computeAvailableOptions,
     isOptionDisabled,
     matchVariant,
+    findMatchingVariants,
     clearSelection,
     
     // Helpers

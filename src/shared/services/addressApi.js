@@ -60,6 +60,15 @@ const addressApi = {
       throw error;
     }
   },
+  setDefaultAddress: async (addressId) => {
+    try {
+      const response = await api.patch(`/address/${addressId}/set-default`);
+      return response;
+    } catch (error) {
+      logger.error("Error setting default address:", error);
+      throw error;
+    }
+  },
   lookupDigitalAddress: async (digitalAddress) => {
     try {
       const response = await api.post(`/address/lookup-digital`, {

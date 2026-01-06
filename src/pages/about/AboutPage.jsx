@@ -56,7 +56,7 @@ import {
 } from './about.styles';
 
 /**
- * Premium About Us Page for EazWorld/EazShop
+ * Premium About Us Page for Saysay
  * Modern, polished design inspired by Shopify, Stripe, Notion, and Airbnb
  */
 const AboutPage = () => {
@@ -64,7 +64,7 @@ const AboutPage = () => {
   useDynamicPageTitle({
     title: 'About Us • EazWorld',
     description: 'Learn more about EazWorld, our mission, vision, and story. Building the future of e-commerce, logistics, and technology for Africa and the world.',
-    keywords: 'EazWorld, EazShop, about us, company story, mission, vision, e-commerce, marketplace, Africa',
+    keywords: 'Saysay, about us, company story, mission, vision, e-commerce, marketplace, Africa',
     defaultTitle: 'About Us • EazWorld',
     defaultDescription: 'Learn more about EazWorld, our mission, vision, and story.',
   });
@@ -131,12 +131,12 @@ const AboutPage = () => {
     },
     {
       year: '2024',
-      title: 'EazShop Marketplace Launched',
-      description: 'We launched EazShop, a comprehensive online marketplace connecting buyers and sellers across Ghana and beyond.',
+      title: 'Saysay Marketplace Launched',
+      description: 'We launched Saysay, a comprehensive online marketplace connecting buyers and sellers across Ghana and beyond.',
     },
     {
       year: '2024',
-      title: 'EazSeller & EazAdmin Portals Built',
+      title: 'Seller & Admin Portals Built',
       description: 'We developed powerful seller and admin dashboards to streamline operations and empower our partners.',
     },
     {
@@ -212,11 +212,11 @@ const AboutPage = () => {
             </p>
             <ul>
               <li>
-                <strong>EazShop</strong> — A leading online marketplace connecting buyers and sellers
+                <strong>Saysay</strong> — A leading online marketplace connecting buyers and sellers
                 with secure transactions, fast delivery, and exceptional customer service.
               </li>
               <li>
-                <strong>EazSeller</strong> — A powerful seller dashboard that helps merchants manage
+                <strong>Seller Portal</strong> — A powerful seller dashboard that helps merchants manage
                 products, orders, finances, and grow their online business.
               </li>
               <li>

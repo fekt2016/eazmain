@@ -1,18 +1,18 @@
 /**
- * SEO Configuration for EazMain (Customer-Facing Storefront)
+ * SEO Configuration for Saysay (Customer-Facing Storefront)
  * Centralized SEO metadata for all public pages
  */
 
-const BASE_URL = (typeof process !== 'undefined' && process.env?.REACT_APP_FRONTEND_URL) || window.location.origin || 'https://eazshop.com';
-const DEFAULT_IMAGE = `${BASE_URL}/images/eazshop-og-image.jpg`;
-const DEFAULT_DESCRIPTION = 'Shop the best products from trusted sellers on EazShop - Ghana\'s leading online marketplace';
+const BASE_URL = (typeof process !== 'undefined' && process.env?.REACT_APP_FRONTEND_URL) || window.location.origin || 'https://saysay.com';
+const DEFAULT_IMAGE = `${BASE_URL}/images/saysay-og-image.jpg`;
+const DEFAULT_DESCRIPTION = 'Shop the best products from trusted sellers on Saysay - Ghana\'s leading online marketplace';
 
 const seoConfig = {
   // ────────────────────────────────────────────────
   // Home Page
   // ────────────────────────────────────────────────
   home: {
-    title: 'EazShop - Ghana\'s Leading Online Marketplace',
+    title: 'Saysay - Ghana\'s Leading Online Marketplace',
     description: 'Discover thousands of products from verified sellers. Fast delivery, secure payments, and excellent customer service.',
     keywords: 'online shopping, ecommerce, Ghana, marketplace, buy online, shop Ghana',
     image: DEFAULT_IMAGE,
@@ -21,7 +21,7 @@ const seoConfig = {
     jsonLd: {
       '@context': 'https://schema.org',
       '@type': 'Organization',
-      name: 'EazShop',
+      name: 'Saysay',
       url: BASE_URL,
       logo: `${BASE_URL}/images/logo.png`,
       description: 'Ghana\'s leading online marketplace connecting buyers and sellers',
@@ -50,10 +50,10 @@ const seoConfig = {
     const productImage = productData.imageCover || productData.image || DEFAULT_IMAGE;
     const productPrice = productData.price || productData.defaultPrice || 0;
     const productName = productData.name || 'Product';
-    const productDescription = productData.description || `${productName} - Available on EazShop`;
+    const productDescription = productData.description || `${productName} - Available on Saysay`;
 
     return {
-      title: `${productName} - Buy Online | EazShop`,
+      title: `${productName} - Buy Online | Saysay`,
       description: productDescription.substring(0, 160),
       keywords: `${productName}, buy online, Ghana, ${productData.category?.name || ''}`,
       image: productImage,
@@ -67,7 +67,7 @@ const seoConfig = {
         image: productImage,
         brand: {
           '@type': 'Brand',
-          name: productData.seller?.shopName || productData.seller?.name || 'EazShop Seller',
+          name: productData.seller?.shopName || productData.seller?.name || 'Saysay Seller',
         },
         offers: {
           '@type': 'Offer',
@@ -79,7 +79,7 @@ const seoConfig = {
             : 'https://schema.org/OutOfStock',
           seller: {
             '@type': 'Organization',
-            name: productData.seller?.shopName || productData.seller?.name || 'EazShop Seller',
+            name: productData.seller?.shopName || productData.seller?.name || 'Saysay Seller',
           },
         },
         aggregateRating: productData.ratingsAverage ? {
@@ -99,12 +99,12 @@ const seoConfig = {
 
     const categoryUrl = `${BASE_URL}/categories/${categoryData._id || categoryData.id}`;
     const categoryName = categoryData.name || 'Category';
-    const categoryDescription = categoryData.description || `Browse ${categoryName} products on EazShop`;
+    const categoryDescription = categoryData.description || `Browse ${categoryName} products on Saysay`;
 
     return {
-      title: `${categoryName} - Shop Online | EazShop`,
+      title: `${categoryName} - Shop Online | Saysay`,
       description: categoryDescription.substring(0, 160),
-      keywords: `${categoryName}, products, buy online, Ghana, EazShop`,
+      keywords: `${categoryName}, products, buy online, Ghana, Saysay`,
       image: categoryData.image || DEFAULT_IMAGE,
       type: 'website',
       canonical: categoryUrl,
@@ -130,12 +130,12 @@ const seoConfig = {
 
     const sellerUrl = `${BASE_URL}/sellers/${sellerInfo._id || sellerInfo.id}`;
     const shopName = sellerInfo.shopName || sellerInfo.name || 'Seller Shop';
-    const shopDescription = sellerInfo.description || `Shop from ${shopName} on EazShop`;
+    const shopDescription = sellerInfo.description || `Shop from ${shopName} on Saysay`;
 
     return {
-      title: `${shopName} - Shop on EazShop`,
+      title: `${shopName} - Shop on Saysay`,
       description: shopDescription.substring(0, 160),
-      keywords: `${shopName}, seller, shop, EazShop, Ghana`,
+      keywords: `${shopName}, seller, shop, Saysay, Ghana`,
       image: sellerInfo.image || DEFAULT_IMAGE,
       type: 'website',
       canonical: sellerUrl,
@@ -154,9 +154,9 @@ const seoConfig = {
   // Wishlist
   // ────────────────────────────────────────────────
   wishlist: {
-    title: 'My Wishlist - EazShop',
-    description: 'View and manage your saved products on EazShop',
-    keywords: 'wishlist, saved products, favorites, EazShop',
+    title: 'My Wishlist - Saysay',
+    description: 'View and manage your saved products on Saysay',
+    keywords: 'wishlist, saved products, favorites, Saysay',
     image: DEFAULT_IMAGE,
     type: 'website',
     canonical: `${BASE_URL}/wishlist`,
@@ -167,9 +167,9 @@ const seoConfig = {
   // Cart
   // ────────────────────────────────────────────────
   cart: {
-    title: 'Shopping Cart - EazShop',
+    title: 'Shopping Cart - Saysay',
     description: 'Review your cart items before checkout',
-    keywords: 'shopping cart, cart, checkout, EazShop',
+    keywords: 'shopping cart, cart, checkout, Saysay',
     image: DEFAULT_IMAGE,
     type: 'website',
     canonical: `${BASE_URL}/cart`,
@@ -180,9 +180,9 @@ const seoConfig = {
   // Checkout
   // ────────────────────────────────────────────────
   checkout: {
-    title: 'Checkout - EazShop',
-    description: 'Complete your purchase securely on EazShop',
-    keywords: 'checkout, payment, order, EazShop',
+    title: 'Checkout - Saysay',
+    description: 'Complete your purchase securely on Saysay',
+    keywords: 'checkout, payment, order, Saysay',
     image: DEFAULT_IMAGE,
     type: 'website',
     canonical: `${BASE_URL}/checkout`,
@@ -193,9 +193,9 @@ const seoConfig = {
   // Order Success
   // ────────────────────────────────────────────────
   orderSuccess: {
-    title: 'Order Confirmed - EazShop',
+    title: 'Order Confirmed - Saysay',
     description: 'Your order has been successfully placed',
-    keywords: 'order confirmation, order success, EazShop',
+    keywords: 'order confirmation, order success, Saysay',
     image: DEFAULT_IMAGE,
     type: 'website',
     canonical: `${BASE_URL}/order-confirmation`,
@@ -208,9 +208,9 @@ const seoConfig = {
   orderDetail: (orderData) => {
     if (!orderData) {
       return {
-        title: 'Order Details - EazShop',
+        title: 'Order Details - Saysay',
         description: 'View your order details and tracking information',
-        keywords: 'order details, order tracking, my orders, EazShop',
+        keywords: 'order details, order tracking, my orders, Saysay',
         image: DEFAULT_IMAGE,
         type: 'website',
         canonical: `${BASE_URL}/orders`,
@@ -227,9 +227,9 @@ const seoConfig = {
     const totalPrice = orderData.totalPrice || 0;
 
     return {
-      title: `Order ${orderNumber} - Order Details | EazShop`,
+      title: `Order ${orderNumber} - Order Details | Saysay`,
       description: `View details for order ${orderNumber} placed on ${orderDate}. Status: ${orderStatus}. Total: GH₵${totalPrice.toFixed(2)}`,
-      keywords: `order ${orderNumber}, order details, order tracking, ${orderStatus}, EazShop`,
+      keywords: `order ${orderNumber}, order details, order tracking, ${orderStatus}, Saysay`,
       image: DEFAULT_IMAGE,
       type: 'website',
       canonical: orderUrl,
@@ -241,9 +241,9 @@ const seoConfig = {
   // Help Center
   // ────────────────────────────────────────────────
   helpCenter: {
-    title: 'Help Center - EazShop',
-    description: 'Get help with your orders, account, and more on EazShop',
-    keywords: 'help, support, FAQ, customer service, EazShop',
+    title: 'Help Center - Saysay',
+    description: 'Get help with your orders, account, and more on Saysay',
+    keywords: 'help, support, FAQ, customer service, Saysay',
     image: DEFAULT_IMAGE,
     type: 'website',
     canonical: `${BASE_URL}/help`,
@@ -253,9 +253,9 @@ const seoConfig = {
   // Login
   // ────────────────────────────────────────────────
   login: {
-    title: 'Login - EazShop',
-    description: 'Sign in to your EazShop account',
-    keywords: 'login, sign in, account, EazShop',
+    title: 'Login - Saysay',
+    description: 'Sign in to your Saysay account',
+    keywords: 'login, sign in, account, Saysay',
     image: DEFAULT_IMAGE,
     type: 'website',
     canonical: `${BASE_URL}/login`,
@@ -266,9 +266,9 @@ const seoConfig = {
   // Signup
   // ────────────────────────────────────────────────
   signup: {
-    title: 'Sign Up - EazShop',
-    description: 'Create a new EazShop account to start shopping',
-    keywords: 'sign up, register, create account, EazShop',
+    title: 'Sign Up - Saysay',
+    description: 'Create a new Saysay account to start shopping',
+    keywords: 'sign up, register, create account, Saysay',
     image: DEFAULT_IMAGE,
     type: 'website',
     canonical: `${BASE_URL}/signup`,
@@ -279,9 +279,9 @@ const seoConfig = {
   // Blog (Future)
   // ────────────────────────────────────────────────
   blog: {
-    title: 'Blog - EazShop',
-    description: 'Read the latest news, tips, and updates from EazShop',
-    keywords: 'blog, news, tips, EazShop',
+    title: 'Blog - Saysay',
+    description: 'Read the latest news, tips, and updates from Saysay',
+    keywords: 'blog, news, tips, Saysay',
     image: DEFAULT_IMAGE,
     type: 'website',
     canonical: `${BASE_URL}/blog`,
@@ -293,11 +293,11 @@ const seoConfig = {
   search: (query) => {
     const searchQuery = query || '';
     return {
-      title: searchQuery ? `Search Results for "${searchQuery}" - EazShop` : 'Search Products - EazShop',
+      title: searchQuery ? `Search Results for "${searchQuery}" - Saysay` : 'Search Products - Saysay',
       description: searchQuery 
-        ? `Find products matching "${searchQuery}" on EazShop`
-        : 'Search for products on EazShop',
-      keywords: `search, ${searchQuery}, products, EazShop`,
+        ? `Find products matching "${searchQuery}" on Saysay`
+        : 'Search for products on Saysay',
+      keywords: `search, ${searchQuery}, products, Saysay`,
       image: DEFAULT_IMAGE,
       type: 'website',
       canonical: `${BASE_URL}/search${searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : ''}`,
@@ -308,9 +308,9 @@ const seoConfig = {
   // About Us
   // ────────────────────────────────────────────────
   about: {
-    title: 'About Us - EazShop',
-    description: 'Learn about EazShop - Ghana\'s leading online marketplace connecting buyers and sellers',
-    keywords: 'about us, EazShop, Ghana marketplace, online shopping',
+    title: 'About Us - Saysay',
+    description: 'Learn about Saysay - Ghana\'s leading online marketplace connecting buyers and sellers',
+    keywords: 'about us, Saysay, Ghana marketplace, online shopping',
     image: DEFAULT_IMAGE,
     type: 'website',
     canonical: `${BASE_URL}/about`,
@@ -320,9 +320,9 @@ const seoConfig = {
   // Contact Us
   // ────────────────────────────────────────────────
   contact: {
-    title: 'Contact Us - EazShop',
-    description: 'Get in touch with EazShop customer support. We\'re here to help with your questions and concerns',
-    keywords: 'contact, support, customer service, help, EazShop',
+    title: 'Contact Us - Saysay',
+    description: 'Get in touch with Saysay customer support. We\'re here to help with your questions and concerns',
+    keywords: 'contact, support, customer service, help, Saysay',
     image: DEFAULT_IMAGE,
     type: 'website',
     canonical: `${BASE_URL}/contact`,
@@ -332,9 +332,9 @@ const seoConfig = {
   // Partners
   // ────────────────────────────────────────────────
   partners: {
-    title: 'Partners - EazShop',
-    description: 'Partner with EazShop to grow your business. Join our network of trusted sellers',
-    keywords: 'partners, business partners, sellers, EazShop',
+    title: 'Partners - Saysay',
+    description: 'Partner with Saysay to grow your business. Join our network of trusted sellers',
+    keywords: 'partners, business partners, sellers, Saysay',
     image: DEFAULT_IMAGE,
     type: 'website',
     canonical: `${BASE_URL}/partners`,
@@ -344,9 +344,9 @@ const seoConfig = {
   // Forgot Password
   // ────────────────────────────────────────────────
   forgotPassword: {
-    title: 'Forgot Password - EazShop',
-    description: 'Reset your EazShop account password',
-    keywords: 'forgot password, reset password, account recovery, EazShop',
+    title: 'Forgot Password - Saysay',
+    description: 'Reset your Saysay account password',
+    keywords: 'forgot password, reset password, account recovery, Saysay',
     image: DEFAULT_IMAGE,
     type: 'website',
     canonical: `${BASE_URL}/forgot-password`,
@@ -360,9 +360,9 @@ const seoConfig = {
     if (!productData) return seoConfig.home;
     const productName = productData.name || 'Product';
     return {
-      title: `${productName} Reviews - EazShop`,
-      description: `Read customer reviews and ratings for ${productName} on EazShop`,
-      keywords: `${productName}, reviews, ratings, customer reviews, EazShop`,
+      title: `${productName} Reviews - Saysay`,
+      description: `Read customer reviews and ratings for ${productName} on Saysay`,
+      keywords: `${productName}, reviews, ratings, customer reviews, Saysay`,
       image: productData.imageCover || DEFAULT_IMAGE,
       type: 'website',
       canonical: `${BASE_URL}/products/${productData._id || productData.id}/reviews`,
@@ -373,9 +373,9 @@ const seoConfig = {
   // Support
   // ────────────────────────────────────────────────
   support: {
-    title: 'Support - EazShop',
-    description: 'Get help and support for your EazShop account, orders, and more',
-    keywords: 'support, help, customer service, FAQ, EazShop',
+    title: 'Support - Saysay',
+    description: 'Get help and support for your Saysay account, orders, and more',
+    keywords: 'support, help, customer service, FAQ, Saysay',
     image: DEFAULT_IMAGE,
     type: 'website',
     canonical: `${BASE_URL}/support`,
@@ -386,9 +386,9 @@ const seoConfig = {
   // Profile Pages (Personal - noIndex)
   // ────────────────────────────────────────────────
   profile: {
-    title: 'My Profile - EazShop',
-    description: 'Manage your EazShop account profile and settings',
-    keywords: 'profile, account, settings, EazShop',
+    title: 'My Profile - Saysay',
+    description: 'Manage your Saysay account profile and settings',
+    keywords: 'profile, account, settings, Saysay',
     image: DEFAULT_IMAGE,
     type: 'website',
     canonical: `${BASE_URL}/profile`,
@@ -396,9 +396,9 @@ const seoConfig = {
   },
 
   addresses: {
-    title: 'My Addresses - EazShop',
-    description: 'Manage your shipping addresses on EazShop',
-    keywords: 'addresses, shipping address, delivery address, EazShop',
+    title: 'My Addresses - Saysay',
+    description: 'Manage your shipping addresses on Saysay',
+    keywords: 'addresses, shipping address, delivery address, Saysay',
     image: DEFAULT_IMAGE,
     type: 'website',
     canonical: `${BASE_URL}/profile/addresses`,
@@ -406,9 +406,9 @@ const seoConfig = {
   },
 
   paymentMethods: {
-    title: 'Payment Methods - EazShop',
-    description: 'Manage your payment methods on EazShop',
-    keywords: 'payment methods, payment, cards, EazShop',
+    title: 'Payment Methods - Saysay',
+    description: 'Manage your payment methods on Saysay',
+    keywords: 'payment methods, payment, cards, Saysay',
     image: DEFAULT_IMAGE,
     type: 'website',
     canonical: `${BASE_URL}/profile/payment-methods`,
@@ -416,9 +416,9 @@ const seoConfig = {
   },
 
   notifications: {
-    title: 'Notifications - EazShop',
-    description: 'View your notifications on EazShop',
-    keywords: 'notifications, alerts, messages, EazShop',
+    title: 'Notifications - Saysay',
+    description: 'View your notifications on Saysay',
+    keywords: 'notifications, alerts, messages, Saysay',
     image: DEFAULT_IMAGE,
     type: 'website',
     canonical: `${BASE_URL}/notifications`,
@@ -426,9 +426,9 @@ const seoConfig = {
   },
 
   orders: {
-    title: 'My Orders - EazShop',
-    description: 'View and track your orders on EazShop',
-    keywords: 'orders, my orders, order history, EazShop',
+    title: 'My Orders - Saysay',
+    description: 'View and track your orders on Saysay',
+    keywords: 'orders, my orders, order history, Saysay',
     image: DEFAULT_IMAGE,
     type: 'website',
     canonical: `${BASE_URL}/orders`,
@@ -436,9 +436,9 @@ const seoConfig = {
   },
 
   browserHistory: {
-    title: 'Browse History - EazShop',
-    description: 'View your browsing history on EazShop',
-    keywords: 'browse history, recently viewed, EazShop',
+    title: 'Browse History - Saysay',
+    description: 'View your browsing history on Saysay',
+    keywords: 'browse history, recently viewed, Saysay',
     image: DEFAULT_IMAGE,
     type: 'website',
     canonical: `${BASE_URL}/profile/browser-history`,
@@ -446,9 +446,9 @@ const seoConfig = {
   },
 
   followed: {
-    title: 'Followed Sellers - EazShop',
-    description: 'View sellers you follow on EazShop',
-    keywords: 'followed, sellers, following, EazShop',
+    title: 'Followed Sellers - Saysay',
+    description: 'View sellers you follow on Saysay',
+    keywords: 'followed, sellers, following, Saysay',
     image: DEFAULT_IMAGE,
     type: 'website',
     canonical: `${BASE_URL}/profile/followed`,
@@ -456,9 +456,9 @@ const seoConfig = {
   },
 
   coupons: {
-    title: 'My Coupons - EazShop',
-    description: 'View and manage your coupons and discount codes on EazShop',
-    keywords: 'coupons, discount codes, promo codes, EazShop',
+    title: 'My Coupons - Saysay',
+    description: 'View and manage your coupons and discount codes on Saysay',
+    keywords: 'coupons, discount codes, promo codes, Saysay',
     image: DEFAULT_IMAGE,
     type: 'website',
     canonical: `${BASE_URL}/profile/coupons`,
@@ -469,9 +469,9 @@ const seoConfig = {
   // Error Pages
   // ────────────────────────────────────────────────
   notFound: {
-    title: 'Page Not Found - EazShop',
+    title: 'Page Not Found - Saysay',
     description: 'The page you are looking for does not exist',
-    keywords: '404, not found, error, EazShop',
+    keywords: '404, not found, error, Saysay',
     image: DEFAULT_IMAGE,
     type: 'website',
     canonical: `${BASE_URL}/404`,
@@ -479,9 +479,9 @@ const seoConfig = {
   },
 
   error: {
-    title: 'Error - EazShop',
+    title: 'Error - Saysay',
     description: 'An error occurred. Please try again later.',
-    keywords: 'error, EazShop',
+    keywords: 'error, Saysay',
     image: DEFAULT_IMAGE,
     type: 'website',
     canonical: `${BASE_URL}/error`,

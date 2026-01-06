@@ -5,6 +5,7 @@ import { FaArrowLeft, FaPaperclip, FaSpinner, FaUser, FaUserShield } from 'react
 import styled from 'styled-components';
 import { useTicketDetail, useReplyToTicket } from '../../shared/hooks/useSupport';
 import { STATUS_COLORS, PRIORITY_COLORS } from './supportTypes';
+import { ErrorState } from '../../components/loading';
 
 const Container = styled.div`
   max-width: 100rem;
@@ -209,6 +210,19 @@ const ErrorState = styled.div`
  */
 const TicketDetailPage = () => {
   const { id } = useParams();
+  
+  // Guard against missing ticket id
+  if (!id) {
+    return (
+      <Container>
+        <ErrorState
+          title="Ticket ID Missing"
+          message="Ticket ID is required. Please go back and try again."
+        />
+      </Container>
+    );
+  }
+  
   const navigate = useNavigate();
   const [replyMessage, setReplyMessage] = useState('');
 

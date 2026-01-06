@@ -6,8 +6,9 @@ import api from '../api';
  */
 
 // Get all notifications for the authenticated user
+// Backend should NOT filter - we filter on frontend
 export const getNotifications = async (params = {}) => {
-  const { type, read, page = 1, limit = 50 } = params;
+  const { type, read, page = 1, limit = 50, sort = '-createdAt' } = params;
   const queryParams = new URLSearchParams();
   
   if (type) queryParams.append('type', type);
@@ -17,6 +18,7 @@ export const getNotifications = async (params = {}) => {
   }
   queryParams.append('page', page);
   queryParams.append('limit', limit);
+  if (sort) queryParams.append('sort', sort);
 
   const response = await api.get(`/notifications?${queryParams.toString()}`);
   return response.data;
@@ -66,6 +68,20 @@ export const markAllAsRead = async () => {
 // Delete a notification
 export const deleteNotification = async (id) => {
   const response = await api.delete(`/notifications/${id}`);
+  return response.data;
+};
+
+// Delete multiple notifications by IDs
+export const deleteMultipleNotifications = async (ids) => {
+  const response = await api.delete('/notifications/bulk', {
+    data: { ids },
+  });
+  return response.data;
+};
+
+// Delete all notifications for the authenticated user
+export const deleteAllNotifications = async () => {
+  const response = await api.delete('/notifications/all');
   return response.data;
 };
 

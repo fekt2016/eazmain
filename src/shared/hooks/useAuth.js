@@ -19,17 +19,86 @@ const useAuth = () => {
       try {
         // Cookie is automatically sent by browser via withCredentials: true
         // No need to read from localStorage
-        const response = await authApi.getCurrentUser(); 
-        return response;
+        const response = await authApi.getCurrentUser();
+        logger.log("[useAuth] getCurrentUser response:", { 
+          hasResponse: !!response,
+          hasData: !!response?.data,
+          status: response?.data?.status 
+        });
+        // getCurrentUser returns axios response: { data: { status: 'success', data: {...user} } }
+        // Extract user from response.data.data (backend structure) or response.data (if already extracted)
+        const responseData = response?.data || response;
+        const user = responseData?.data || responseData?.user || responseData;
+        logger.log("[useAuth] getCurrentUser extracted user:", { 
+          hasUser: !!user,
+          hasPhoto: !!user?.photo,
+          userId: user?.id || user?._id
+        });
+        return user;
       } catch (error) {
         // Only clear auth data after server confirms 401 (not on network errors)
+        // FIX: Do NOT clear auth on notification endpoint failures
+        // Notification endpoints might fail due to cookie issues, but user might still be authenticated
         if (error.response?.status === 401) {
-          logger.warn("[useAuth] Server confirmed 401 - clearing auth data");
-          // Clear any stale auth data
-          queryClient.setQueryData(["auth"], null);
+          // Check if this is a notification endpoint error (flagged in api.js)
+          if (error.isNotificationError) {
+            // 401 on notification endpoint = might be cookie issue, not auth failure
+            if ((typeof __DEV__ !== 'undefined' && __DEV__) || process.env.NODE_ENV !== 'production') {
+              logger.debug("[useAuth] 401 on notification endpoint - NOT clearing auth data");
+              logger.debug("[useAuth] User session may still be valid. Cookie might not be sent properly.");
+            }
+            // CRITICAL FIX: Return cached user data instead of null
+            // This prevents ProtectedRoute from redirecting when notification endpoints fail
+            const cachedUser = queryClient.getQueryData(["auth"]);
+            if (cachedUser) {
+              if ((typeof __DEV__ !== 'undefined' && __DEV__) || process.env.NODE_ENV !== 'production') {
+                logger.debug("[useAuth] Returning cached user data despite notification endpoint failure");
+              }
+              return cachedUser;
+            }
+            // If no cached data, return null but don't clear cache
+            return null;
+          }
+
+          // Only clear auth for actual auth endpoint failures
+          const url = error.config?.url || '';
+          const isAuthEndpoint = url.includes('/auth/me') || url.includes('/auth/current-user');
+          
+          if (isAuthEndpoint) {
+            // 401 on auth endpoint = user is not authenticated (normal state, not an error)
+            if ((typeof __DEV__ !== 'undefined' && __DEV__) || process.env.NODE_ENV !== 'production') {
+              logger.debug("[useAuth] User unauthenticated (401) on auth endpoint - clearing auth data");
+            }
+            // Clear any stale auth data
+            queryClient.setQueryData(["auth"], null);
+          } else {
+            // 401 on non-auth endpoint = might be temporary or session issue
+            if ((typeof __DEV__ !== 'undefined' && __DEV__) || process.env.NODE_ENV !== 'production') {
+              logger.debug("[useAuth] 401 on non-auth endpoint - NOT clearing auth data");
+              logger.debug("[useAuth] Endpoint:", url);
+            }
+            // CRITICAL FIX: Return cached user data for non-auth endpoint failures
+            // This prevents ProtectedRoute from redirecting when other endpoints fail
+            const cachedUser = queryClient.getQueryData(["auth"]);
+            if (cachedUser) {
+              if ((typeof __DEV__ !== 'undefined' && __DEV__) || process.env.NODE_ENV !== 'production') {
+                logger.debug("[useAuth] Returning cached user data despite non-auth endpoint failure");
+              }
+              return cachedUser;
+            }
+          }
         } else {
           // For network errors, don't clear auth - might be temporary
-          logger.warn("[useAuth] Network error (not 401) - keeping auth state");
+          if ((typeof __DEV__ !== 'undefined' && __DEV__) || process.env.NODE_ENV !== 'production') {
+            logger.debug("[useAuth] Network error (not 401) - keeping auth state");
+          }
+          // CRITICAL FIX: Return cached user data on network errors
+          // This prevents ProtectedRoute from redirecting during network issues
+          const cachedUser = queryClient.getQueryData(["auth"]);
+          if (cachedUser) {
+            logger.warn("[useAuth] Returning cached user data during network error");
+            return cachedUser;
+          }
         }
 
         return null;
@@ -80,19 +149,101 @@ const useAuth = () => {
   // Note: Token is now stored in HTTP-only cookie, not localStorage
   const handleAuthSuccess = (response) => {
     // Extract user from response (token is in cookie, not in response)
+    // authApi.login returns axios response, so response.data contains backend response
+    // Backend returns: { status: 'success', token, user: {...} }
     const responseData = response?.data || response;
-    const user = responseData?.data?.user || responseData?.data?.data || responseData?.user || null;
+    const user = responseData?.user || responseData?.data?.user || null;
 
     if (user) {
       // Update React Query cache with user data
+      // Match the structure that getCurrentUser returns: { status: 'success', data: {...user} }
+      // But we'll store just the user object to match what Header expects
       queryClient.setQueryData(["auth"], user);
-      logger.log("[useAuth] User authenticated - cookie set by backend");
+      // Invalidate and refetch auth query to ensure fresh data (including avatar)
+      queryClient.invalidateQueries({ queryKey: ["auth"] });
+      // Also refetch to ensure cookie is read and state is synced
+      queryClient.refetchQueries({ queryKey: ["auth"] });
+      logger.log("[useAuth] User authenticated - cookie set by backend", { 
+        userId: user.id || user._id,
+        hasPhoto: !!user.photo,
+        photo: user.photo 
+      });
+      // Console log user data for debugging
+      console.log('👤 [Login] User logged in:', {
+        id: user.id || user._id,
+        email: user.email,
+        name: user.name || user.firstName,
+        role: user.role,
+        photo: user.photo,
+        fullUser: user,
+      });
+    } else {
+      logger.warn("[useAuth] handleAuthSuccess: No user data found in response", response);
+      console.warn("⚠️ [Login] No user data in response:", response);
+      console.warn("⚠️ [Login] Full response structure:", JSON.stringify(response, null, 2));
     }
 
     return user;
   };
 
   // Auth operations
+  const login = useMutation({
+    mutationFn: ({ email, password }) => authApi.login(email, password),
+    onSuccess: (response) => {
+      logger.log("[useAuth] Login mutation onSuccess called", { 
+        hasData: !!response?.data,
+        status: response?.data?.status,
+        hasUser: !!response?.data?.user 
+      });
+      
+      // Check if 2FA is required
+      if (response?.data?.requires2FA || response?.data?.status === '2fa_required') {
+        logger.log("[useAuth] 2FA required for login");
+        return { requires2FA: true, ...response.data };
+      }
+      
+      // Login successful - handle normally
+      const user = handleAuthSuccess(response);
+      
+      if (!user) {
+        logger.error("[useAuth] Login successful but no user data extracted", response);
+        console.error("❌ [Login] Login successful but no user data found in response:", response);
+      } else {
+        // Refetch notifications after successful login
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        logger.log("[useAuth] Notifications invalidated after login");
+      }
+      
+      return user;
+    },
+    onError: (error) => {
+      logger.error("[useAuth] Login mutation error", error);
+      console.error("❌ [Login] Login mutation error:", error);
+    },
+  });
+
+  const verify2FALogin = useMutation({
+    mutationFn: ({ loginSessionId, twoFactorCode }) => 
+      authApi.verify2FALogin(loginSessionId, twoFactorCode),
+    onSuccess: (response) => {
+      const user = handleAuthSuccess(response);
+      // Additional logging for 2FA login
+      if (user) {
+        console.log('👤 [2FA Login] User logged in via 2FA:', {
+          id: user.id || user._id,
+          email: user.email,
+          name: user.name || user.firstName,
+          role: user.role,
+          fullUser: user,
+        });
+        // Refetch notifications after successful 2FA login
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        logger.log("[useAuth] Notifications invalidated after 2FA login");
+      }
+      return user;
+    },
+  });
+
   const sendOtp = useMutation({
     mutationFn: (loginId) => authApi.sendOtp(loginId),
     onSuccess: handleAuthSuccess,
@@ -186,6 +337,11 @@ const useAuth = () => {
       // Backend clears the cookie, we just clear local state
       queryClient.removeQueries(["auth"]);
       queryClient.removeQueries(["profile"]);
+      // SECURITY: Clear notification cache and cancel active queries on logout
+      queryClient.removeQueries(["notifications"]);
+      queryClient.removeQueries(["notification-settings"]);
+      queryClient.cancelQueries({ queryKey: ["notifications"] });
+      queryClient.cancelQueries({ queryKey: ["notification-settings"] });
       // No need to remove token from localStorage - we're using cookies now
 
       // Reset cart state
@@ -193,7 +349,7 @@ const useAuth = () => {
       queryClient.setQueryData(["cart", false], { products: [] });
       localStorage.removeItem("guestCart");
 
-      logger.log("[useAuth] Logged out - cookie cleared by backend");
+      logger.log("[useAuth] Logged out - cookie cleared by backend, notification cache cleared");
       navigate("/");
     },
   });
@@ -427,6 +583,56 @@ const useAuth = () => {
       }
     },
   });
+  // ==================================================
+  // UNIFIED EMAIL-ONLY PASSWORD RESET FLOW
+  // ==================================================
+  
+  /**
+   * Request Password Reset (Email Only)
+   * Sends reset link to user's email
+   */
+  const requestPasswordReset = useMutation({
+    mutationFn: async (email) => {
+      const response = await authApi.requestPasswordReset(email);
+      return response;
+    },
+    onSuccess: (data) => {
+      logger.log("Password reset request sent:", data);
+    },
+    onError: (error) => {
+      logger.error("Error requesting password reset:", error);
+    },
+  });
+
+  /**
+   * Reset Password with Token
+   * Resets password using token from email link
+   */
+  const resetPasswordWithToken = useMutation({
+    mutationFn: async ({ token, newPassword, confirmPassword }) => {
+      const response = await authApi.resetPasswordWithToken(
+        token,
+        newPassword,
+        confirmPassword
+      );
+      return response;
+    },
+    onSuccess: (data) => {
+      logger.log("Password reset successful:", data);
+      // Navigate to login page with success message
+      navigate("/login", {
+        state: {
+          message:
+            "Password reset successfully. Please login with your new password.",
+        },
+      });
+    },
+    onError: (error) => {
+      logger.error("Error resetting password:", error);
+    },
+  });
+
+  // Legacy OTP-based methods (deprecated - kept for backward compatibility)
   const sendPasswordResetOtp = useMutation({
     mutationFn: async (loginId) => {
       const response = await authApi.sendPasswordResetOtp(loginId);
@@ -434,11 +640,9 @@ const useAuth = () => {
     },
     onSuccess: (data) => {
       logger.log("Password reset OTP sent:", data);
-      // You can handle UI updates or state changes here
     },
     onError: (error) => {
       logger.error("Error sending password reset OTP:", error);
-      // Handle error UI updates
     },
   });
   const verifyPasswordResetOtp = useMutation({
@@ -448,9 +652,6 @@ const useAuth = () => {
     },
     onSuccess: (data) => {
       logger.log("Password reset OTP verified:", data);
-      // SECURITY: Reset token should be in httpOnly cookie, not localStorage
-      // Backend should set reset token in httpOnly cookie for security
-      // Do NOT store reset token in localStorage (XSS vulnerability)
     },
     onError: (error) => {
       logger.error("Error verifying password reset OTP:", error);
@@ -458,21 +659,15 @@ const useAuth = () => {
   });
   const resetPassword = useMutation({
     mutationFn: async ({ loginId, newPassword, resetToken }) => {
-      // SECURITY: Reset token should come from httpOnly cookie set by backend
-      // If backend requires it in request, it should be extracted from cookie server-side
-      // For now, pass resetToken if provided (backend should handle cookie extraction)
       const response = await authApi.resetPassword(
         loginId,
         newPassword,
-        resetToken // Backend should prefer cookie over this parameter
+        resetToken
       );
       return response;
     },
     onSuccess: (data) => {
       logger.log("Password reset successful:", data);
-      // SECURITY: No need to clear localStorage - token was never stored there
-      // Backend clears the reset token cookie after successful reset
-      // Navigate to login page with success message
       navigate("/login", {
         state: {
           message:
@@ -499,6 +694,8 @@ const useAuth = () => {
     isBuyer: !userData?.role || userData?.role === "buyer",
 
     // Auth operations
+    login,
+    verify2FALogin,
     sendOtp,
     verifyOtp,
     register,
@@ -511,6 +708,10 @@ const useAuth = () => {
     // refetchProfile,
 
     //password reset
+    // Unified email-only password reset
+    requestPasswordReset,
+    resetPasswordWithToken,
+    // Legacy OTP-based (deprecated)
     sendPasswordResetOtp,
     resetPassword,
     verifyPasswordResetOtp,
@@ -541,6 +742,8 @@ const useAuth = () => {
     isProfileLoading,
 
     // Granular loading states
+    isLoggingIn: login.isPending,
+    isVerifying2FALogin: verify2FALogin.isPending,
     isUpdatingProfile: updateProfile.isPending,
     isChangingPassword: changePassword.isPending,
     isDeactivatingAccount: deactivateAccount.isPending,

@@ -18,6 +18,7 @@ import { orderService } from "../../shared/services/orderApi";
 import { LoadingState, ErrorState } from "../../components/loading";
 import useDynamicPageTitle from "../../shared/hooks/useDynamicPageTitle";
 import logger from "../../shared/utils/logger";
+import Container from "../../shared/components/Container";
 
 const TrackingPage = () => {
   const { trackingNumber } = useParams();
@@ -25,6 +26,19 @@ const TrackingPage = () => {
   const [orderData, setOrderData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Guard against missing trackingNumber
+  if (!trackingNumber) {
+    return (
+      <Container>
+        <ErrorState
+          title="Tracking Number Missing"
+          message="Tracking number is required. Please go back and try again."
+          onRetry={() => navigate(-1)}
+        />
+      </Container>
+    );
+  }
 
   useDynamicPageTitle({
     title: "Track Order",

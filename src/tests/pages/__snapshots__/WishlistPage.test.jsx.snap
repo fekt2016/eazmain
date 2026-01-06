@@ -1,0 +1,101 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`WishlistPage matches snapshot for wishlist with products 1`] = `
+<div
+  class="sc-bRKDuR bbPMZM"
+>
+  <div
+    class="sc-hvigdm bQcCFb"
+  >
+    <div
+      class="sc-fhHczv huwHvE"
+    >
+      <h1
+        class="sc-ggWZvA fLcptf"
+      >
+        Your Wishlist
+      </h1>
+      <p
+        class="sc-dTvVRJ dmGJBs"
+      >
+        2
+         item
+        s
+         saved for later
+      </p>
+    </div>
+    <div
+      class="sc-dYwGCk bYhmOz"
+    >
+      <div
+        data-testid="product-card-product1"
+      >
+        <div
+          data-testid="product-name"
+        >
+          Product 1
+        </div>
+        <div
+          data-testid="product-price"
+        >
+          GH₵
+          100
+        </div>
+        <div
+          data-testid="show-wishlist-button"
+        >
+          false
+        </div>
+        <div
+          data-testid="show-remove-button"
+        >
+          true
+        </div>
+        <button
+          aria-label="Remove product"
+          data-testid="remove-button-product1"
+        >
+          Remove
+        </button>
+      </div>
+      <div
+        data-testid="product-card-product2"
+      >
+        <div
+          data-testid="product-name"
+        >
+          Product 2
+        </div>
+        <div
+          data-testid="product-price"
+        >
+          GH₵
+          100
+        </div>
+        <div
+          data-testid="show-wishlist-button"
+        >
+          false
+        </div>
+        <div
+          data-testid="show-remove-button"
+        >
+          true
+        </div>
+        <button
+          aria-label="Remove product"
+          data-testid="remove-button-product2"
+        >
+          Remove
+        </button>
+      </div>
+    </div>
+    <a
+      class="sc-lgpSej dGNyZG"
+      href="/"
+    >
+      Continue Shopping
+    </a>
+  </div>
+</div>
+`;

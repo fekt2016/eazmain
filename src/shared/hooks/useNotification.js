@@ -1,14 +1,25 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import notificationApi from '../services/notificationApi';
 import logger from '../utils/logger';
+import useAuth from './useAuth';
 
+/**
+ * Hook to get notification settings
+ * SECURITY: Only runs when user is authenticated
+ */
 export function useNotificationSettings() {
+  const { isAuthenticated, userData } = useAuth();
+  
+  // Ensure enabled is always a boolean - explicitly check isAuthenticated is true
+  const isEnabled = Boolean(isAuthenticated === true && userData);
+  
   return useQuery({
     queryKey: ["notification-settings"],
     queryFn: async () => {
       const response = await notificationApi.getUserSettings();
       return response;
     },
+    enabled: isEnabled, // Only run when authenticated
     onSuccess: () => {
       logger.log("[API] Notification settings fetched");
     },

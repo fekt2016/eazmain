@@ -16,10 +16,33 @@ const FollowPage = lazy(() => import("../features/profile/FollowPage"));
 const Creditbalance = lazy(() => import("../features/profile/Creditbalance"));
 const AddMoneyPage = lazy(() => import("../features/wallet/AddMoneyPage"));
 const TopupSuccessPage = lazy(() => import("../features/wallet/TopupSuccessPage"));
-const AddressPage = lazy(() => import("../features/profile/AddressPage"));
+// Import AddressPage directly to avoid lazy loading issues
+// If lazy loading is needed, use the commented version below
+import AddressPage from "../features/profile/AddressPage";
+
+// Alternative: Lazy load with error handling (uncomment if needed)
+// const AddressPage = lazy(async () => {
+//   try {
+//     const module = await import("../features/profile/AddressPage");
+//     return module;
+//   } catch (error) {
+//     console.error('[MainRoutes] Failed to dynamically import AddressPage:', error);
+//     // Return a fallback component that shows an error message
+//     return {
+//       default: () => (
+//         <div style={{ padding: '2rem', textAlign: 'center' }}>
+//           <h2>Failed to load Address Page</h2>
+//           <p>Please refresh the page or contact support if the issue persists.</p>
+//           <button onClick={() => window.location.reload()}>Refresh Page</button>
+//         </div>
+//       )
+//     };
+//   }
+// });
 const SignupPage = lazy(() => import("../features/auth/SignupPage"));
 const LoginPage = lazy(() => import("../features/auth/loginPage"));
-const ProtectedRoute = lazy(() => import("../routes/ProtectedRoute"));
+// Import ProtectedRoute directly (not lazy) since it's a wrapper component used frequently
+import ProtectedRoute from "../routes/ProtectedRoute";
 const MainLayout = lazy(() => import("../shared/layout/MainLayout"));
 const HomePage = lazy(() => import("../features/products/HomePage"));
 const ProductDetail = lazy(() => import("../features/products/ProductDetail"));
@@ -49,7 +72,8 @@ const OrderList = lazy(() => import("../features/orders/OrderList"));
 const OrderDetail = lazy(() => import("../features/orders/OrderDetail"));
 const TrackingPage = lazy(() => import("../features/orders/TrackingPage"));
 const ReviewPage = lazy(() => import("../features/products/ReviewPage"));
-const Dashboard = lazy(() => import("../shared/layout/Dashboard"));
+// Import Dashboard directly (not lazy) since it's a layout wrapper used frequently
+import Dashboard from "../shared/layout/Dashboard";
 const SellerPage = lazy(() => import("../features/products/SellerPage"));
 const SellersListPage = lazy(() => import("../features/sellers/SellersListPage"));
 const CouponPage = lazy(() => import("../features/products/CouponPage"));
@@ -57,6 +81,7 @@ const BrowserhistoryPage = lazy(() => import("../features/profile/Browserhistory
 const PaymentMethodPage = lazy(() => import("../features/profile/PaymentMethodPage"));
 const WishListPage = lazy(() => import("../features/wishlist/WishlistPage"));
 const ForgotPasswordPage = lazy(() => import("../features/auth/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("../features/auth/ResetPasswordPage"));
 const VerifyAccountPage = lazy(() => import("../features/auth/VerifyAccountPage"));
 const BestSellersPage = lazy(() => import("../pages/best-sellers/BestSellersPage"));
 const DealsPage = lazy(() => import("../pages/deals/DealsPage"));
@@ -99,6 +124,14 @@ const MainRoutes = () => {
       element={
         <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
           <VerifyAccountPage />
+        </Suspense>
+      }
+    />
+    <Route
+      path={PATHS.FORGOT}
+      element={
+        <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+          <ForgotPasswordPage />
         </Suspense>
       }
     />
@@ -336,10 +369,10 @@ const MainRoutes = () => {
         }
       />
       <Route
-        path={PATHS.FORGOT}
+        path="/reset-password"
         element={
           <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <ForgotPasswordPage />
+            <ResetPasswordPage />
           </Suspense>
         }
       />
@@ -435,9 +468,7 @@ const MainRoutes = () => {
           path={PATHS.ADDRESS}
           element={
             <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-                <AddressPage />
-              </Suspense>
+              <AddressPage />
             </ProtectedRoute>
           }
         />
@@ -446,9 +477,7 @@ const MainRoutes = () => {
           path={PATHS.ADDRESSES_SHORT}
           element={
             <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-                <AddressPage />
-              </Suspense>
+              <AddressPage />
             </ProtectedRoute>
           }
         />

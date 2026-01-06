@@ -113,7 +113,7 @@ const CreditBalance = () => {
       <BalanceCard>
         <BalanceLabel>Available Balance</BalanceLabel>
         <BalanceAmount>
-          GH&#x20B5;{wallet.balance?.toFixed(2) || "0.00"}
+          GH&#x20B5;{(wallet.availableBalance ?? wallet.balance ?? 0).toFixed(2)}
         </BalanceAmount>
         <BalanceInfo>
           <InfoItem>

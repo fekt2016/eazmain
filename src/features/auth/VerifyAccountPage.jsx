@@ -16,10 +16,26 @@ import { ButtonSpinner, ErrorState } from "../../components/loading";
 import { devicesMax } from "../../shared/styles/breakpoint";
 import { toast } from "react-toastify";
 import logger from "../../shared/utils/logger";
+import Logo from "../../shared/components/Logo";
+import Button from "../../shared/components/Button";
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
+`;
+
+// Styled Components (defined before component to ensure availability)
+const LogoWrapper = styled.div`
+  margin-bottom: var(--spacing-xl);
+  
+  /* Override logo colors for white text on dark background */
+  svg {
+    color: var(--color-white-0) !important;
+  }
+  
+  span {
+    color: var(--color-white-0) !important;
+  }
 `;
 
 export default function VerifyAccountPage() {
@@ -203,9 +219,15 @@ export default function VerifyAccountPage() {
         <FormSection>
           <FormContainer>
             <ErrorState message="Email or phone number is required for verification" />
-            <BackButton onClick={() => navigate("/signup")}>
-              <FaArrowLeft /> Back to Signup
-            </BackButton>
+            <Button
+              type="button"
+              variant="outline"
+              fullWidth
+              onClick={() => navigate("/signup")}
+              leftIcon={<FaArrowLeft />}
+            >
+              Back to Signup
+            </Button>
           </FormContainer>
         </FormSection>
       </PageContainer>
@@ -217,10 +239,12 @@ export default function VerifyAccountPage() {
       <ImageSection>
         <Overlay />
         <ImageContent>
-          <BrandLogo to="/">EazShop</BrandLogo>
+          <LogoWrapper>
+            <Logo to="/" variant="default" />
+          </LogoWrapper>
           <HeroText>
-            <h1>Verify Identity</h1>
-            <p>Enter the 6-digit code sent to your {email ? "email" : "phone"}</p>
+            <h1>Verify Your Account</h1>
+            <p>Enter the 6-digit verification code sent to your {email ? "email" : "phone"}</p>
           </HeroText>
         </ImageContent>
       </ImageSection>
@@ -259,20 +283,16 @@ export default function VerifyAccountPage() {
               {error && <ErrorMessage>{error}</ErrorMessage>}
 
               <ButtonGroup>
-                <SubmitButton
+                <Button
                   type="submit"
+                  variant="primary"
+                  fullWidth
+                  loading={verifyAccount.isPending}
                   disabled={(Array.isArray(otp) ? otp.join("") : String(otp || "")).length !== 6 || verifyAccount.isPending}
+                  leftIcon={!verifyAccount.isPending && <FaCheckCircle />}
                 >
-                  {verifyAccount.isPending ? (
-                    <>
-                      <ButtonSpinner size="sm" /> Verifying...
-                    </>
-                  ) : (
-                    <>
-                      <FaCheckCircle /> Verify Account
-                    </>
-                  )}
-                </SubmitButton>
+                  {verifyAccount.isPending ? "Verifying..." : "Verify Account"}
+                </Button>
               </ButtonGroup>
 
               <ResendSection>
@@ -282,28 +302,29 @@ export default function VerifyAccountPage() {
                     {(countdown % 60).toString().padStart(2, "0")}
                   </ResendText>
                 ) : (
-                  <ResendButton
+                  <Button
                     type="button"
+                    variant="ghost"
                     onClick={handleResend}
                     disabled={resendOtp.isPending}
+                    loading={resendOtp.isPending}
+                    leftIcon={!resendOtp.isPending && <FaPaperPlane />}
                   >
-                    {resendOtp.isPending ? (
-                      <>
-                        <ButtonSpinner size="sm" /> Sending...
-                      </>
-                    ) : (
-                      <>
-                        <FaPaperPlane /> Resend Code
-                      </>
-                    )}
-                  </ResendButton>
+                    {resendOtp.isPending ? "Sending..." : "Resend Code"}
+                  </Button>
                 )}
               </ResendSection>
             </OtpForm>
 
-            <BackButton onClick={() => navigate("/signup")}>
-              <FaArrowLeft /> Back to Signup
-            </BackButton>
+            <Button
+              type="button"
+              variant="outline"
+              fullWidth
+              onClick={() => navigate("/signup")}
+              leftIcon={<FaArrowLeft />}
+            >
+              Back to Signup
+            </Button>
           </VerificationCard>
         </FormContainer>
       </FormSection>
@@ -315,24 +336,27 @@ export default function VerifyAccountPage() {
 const PageContainer = styled.div`
   display: flex;
   min-height: 100vh;
+  background: var(--color-white-0);
   animation: ${fadeIn} 0.3s ease-in;
 
-  @media ${devicesMax.tablet} {
+  @media ${devicesMax.md} {
     flex-direction: column;
   }
 `;
 
 const ImageSection = styled.div`
   flex: 1;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   position: relative;
+  background-image: url('https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?q=80&w=2070&auto=format&fit=crop');
+  background-size: cover;
+  background-position: center;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--spacing-xl);
 
-  @media ${devicesMax.tablet} {
-    min-height: 40vh;
+  @media ${devicesMax.md} {
+    display: none;
   }
 `;
 
@@ -342,35 +366,33 @@ const Overlay = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.2);
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.7));
 `;
 
 const ImageContent = styled.div`
   position: relative;
-  z-index: 1;
-  text-align: center;
-  color: white;
-`;
-
-const BrandLogo = styled.a`
-  font-size: 2rem;
-  font-weight: bold;
-  color: white;
-  text-decoration: none;
-  display: block;
-  margin-bottom: 2rem;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 `;
 
 const HeroText = styled.div`
+  color: var(--color-white-0);
+  animation: ${fadeIn} 1s ease-out;
+  
   h1 {
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
-    font-weight: 700;
+    font-size: var(--font-size-4xl);
+    font-weight: var(--font-bold);
+    margin-bottom: var(--spacing-md);
+    line-height: 1.2;
   }
-
+  
   p {
-    font-size: 1.1rem;
+    font-size: var(--font-size-lg);
     opacity: 0.9;
+    max-width: 400px;
   }
 `;
 
@@ -379,30 +401,57 @@ const FormSection = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
-  background: #f8f9fa;
+  padding: var(--spacing-xl);
+  background: var(--color-grey-50);
+  overflow-y: auto;
+  
+  @media ${devicesMax.md} {
+    padding: var(--spacing-md);
+  }
 `;
 
 const FormContainer = styled.div`
   width: 100%;
   max-width: 500px;
-  animation: ${fadeIn} 0.5s ease-in;
+  background: var(--color-white-0);
+  padding: var(--spacing-xl);
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--shadow-md);
+  animation: ${fadeIn} 0.6s ease-out;
+  
+  @media ${devicesMax.sm} {
+    padding: var(--spacing-lg) var(--spacing-md);
+    box-shadow: none;
+    background: transparent;
+  }
 `;
 
 const VerificationCard = styled.div`
-  background: white;
-  border-radius: 12px;
-  padding: 2.5rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-
-  @media ${devicesMax.mobile} {
-    padding: 1.5rem;
-  }
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
 `;
 
 const Header = styled.div`
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: var(--spacing-lg);
+  
+  h2 {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-bold);
+    color: var(--color-grey-900);
+    margin-bottom: var(--spacing-xs);
+  }
+  
+  p {
+    color: var(--color-grey-600);
+    font-size: var(--font-size-md);
+    
+    strong {
+      color: var(--color-grey-900);
+      font-weight: var(--font-semibold);
+    }
+  }
 `;
 
 const IconWrapper = styled.div`
@@ -411,153 +460,78 @@ const IconWrapper = styled.div`
   justify-content: center;
   width: 64px;
   height: 64px;
-  border-radius: 50%;
-  background: #667eea;
-  color: white;
-  margin-bottom: 1rem;
+  border-radius: var(--border-radius-cir);
+  background: var(--gradient-primary);
+  color: var(--color-white-0);
+  margin-bottom: var(--spacing-md);
+  box-shadow: var(--shadow-sm);
 `;
 
 const OtpForm = styled.form`
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--spacing-lg);
 `;
 
 const OtpInputGroup = styled.div`
   display: flex;
-  gap: 0.75rem;
+  gap: var(--spacing-sm);
   justify-content: center;
-  margin: 1rem 0;
+  margin: var(--spacing-md) 0;
 `;
 
 const OtpInput = styled.input`
   width: 50px;
   height: 60px;
   text-align: center;
-  font-size: 1.5rem;
-  font-weight: bold;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  transition: all 0.2s;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-bold);
+  border: 2px solid var(--color-grey-300);
+  border-radius: var(--border-radius-lg);
+  background: var(--color-white-0);
+  color: var(--color-grey-900);
+  transition: var(--transition-base);
 
   &:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 3px rgba(255, 196, 0, 0.1);
   }
 
-  @media ${devicesMax.mobile} {
+  @media ${devicesMax.sm} {
     width: 45px;
     height: 55px;
-    font-size: 1.25rem;
+    font-size: var(--font-size-lg);
   }
 `;
 
 const ErrorMessage = styled.div`
-  color: #e74c3c;
-  font-size: 0.9rem;
+  color: var(--color-red-700);
+  font-size: var(--font-size-sm);
   text-align: center;
-  padding: 0.75rem;
-  background: #fee;
-  border-radius: 6px;
-  border: 1px solid #fcc;
+  padding: var(--spacing-sm);
+  background: var(--color-red-100);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--color-red-500);
 `;
 
 const ButtonGroup = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-`;
-
-const SubmitButton = styled.button`
-  width: 100%;
-  padding: 1rem;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  transition: all 0.2s;
-
-  &:hover:not(:disabled) {
-    background: #5568d3;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
+  gap: var(--spacing-sm);
 `;
 
 const ResendSection = styled.div`
   text-align: center;
-  margin-top: 1rem;
+  margin-top: var(--spacing-sm);
 `;
 
 const ResendText = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  color: #7f8c8d;
-  font-size: 0.9rem;
-`;
-
-const ResendButton = styled.button`
-  background: none;
-  border: none;
-  color: #667eea;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin: 0 auto;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  transition: all 0.2s;
-
-  &:hover:not(:disabled) {
-    background: #f0f0f0;
-    text-decoration: underline;
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-`;
-
-const BackButton = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-top: 1.5rem;
-  padding: 0.75rem;
-  background: none;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  color: #667eea;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  width: 100%;
-  transition: all 0.2s;
-
-  &:hover {
-    background: #f8f9fa;
-    border-color: #667eea;
-  }
+  gap: var(--spacing-xs);
+  color: var(--color-grey-600);
+  font-size: var(--font-size-sm);
 `;
 

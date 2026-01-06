@@ -19,7 +19,7 @@ const paymentApi = {
   initializePaystack: async (orderId, email) => {
     try {
       // SECURITY: Do NOT send amount from frontend - backend calculates it from order
-      const response = await api.post("/payment/initialize-paystack", {
+      const response = await api.post("/payment/paystack/initialize", {
         orderId,
         email,
         // amount is NOT sent - backend calculates from order total
@@ -35,6 +35,29 @@ const paymentApi = {
       return response.data;
     } catch (error) {
       logger.error("[paymentApi] Payment initialization error:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      throw error;
+    }
+  },
+
+  // Verify Paystack payment after redirect
+  verifyPaystackPayment: async (reference, orderId) => {
+    try {
+      logger.log("[paymentApi] Verifying Paystack payment:", { reference, orderId });
+      const response = await api.get("/payment/paystack/verify", {
+        params: {
+          reference,
+          orderId,
+        },
+      });
+
+      logger.log("[paymentApi] Payment verification successful");
+      return response.data;
+    } catch (error) {
+      logger.error("[paymentApi] Payment verification error:", {
         message: error.message,
         response: error.response?.data,
         status: error.response?.status,

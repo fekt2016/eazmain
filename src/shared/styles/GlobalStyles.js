@@ -34,7 +34,30 @@ const GlobalStyles = createGlobalStyle`
   --color-primary-700: #bb6c02; 
   --color-primary-800: #985308;
   --color-primary-900: #7c440b;
- 
+  
+
+
+  --color-secondary-50: #0F1A2A;
+  --color-secondary-100: #1E2A3B;
+  --color-secondary-200: #2E3A4B;
+  --color-secondary-300: #3E4A5B;
+  --color-secondary-400: #4E5A6B;
+  --color-secondary-500: #5E6A7B;
+  --color-secondary-600: #6E7A8B;
+  --color-secondary-700: #7E8A9B;
+  --color-secondary-800: #8E9AAB;
+  --color-secondary-900: #9EAABC;
+
+  --color-accent-50: #FF5733;
+  --color-accent-100: #FF6744;
+  --color-accent-200: #FF7755;
+  --color-accent-300: #FF8766;
+  --color-accent-400: #FF9777;
+  --color-accent-500: #FFA788;
+  --color-accent-600: #FFB799;
+  --color-accent-700: #FFC7AA;
+  --color-accent-800: #FFD7BB;
+  --color-accent-900: #FFE7CC;
   
 
   --color-orange-0: orange;

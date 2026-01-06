@@ -57,10 +57,10 @@ export const useUpdateAddress = () => {
 export const useSetDefaultAddress = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (addressData) => addressApi.setDefaultAddress(addressData),
+    mutationFn: (addressId) => addressApi.setDefaultAddress(addressId),
     onSuccess(data) {
-      logger.log("Address updated:", data);
-      queryClient.getQueryData(["address"]);
+      logger.log("Default address updated:", data);
+      queryClient.invalidateQueries(["address"]);
     },
   });
 };

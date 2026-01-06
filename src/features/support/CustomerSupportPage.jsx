@@ -48,8 +48,6 @@ import {
   SectionTitle,
   LinksGrid,
   QuickLink,
-  ChatSection,
-  ChatButton,
 } from './support.styles';
 import ContactFormModal from './ContactFormModal';
 
@@ -239,15 +237,6 @@ const CustomerSupportPage = () => {
     setSelectedDepartment(null);
   };
 
-  const handleChatSupport = () => {
-    // Trigger existing chat widget
-    if (window.chatWidget) {
-      window.chatWidget.open();
-    } else {
-      // Fallback: show alert or redirect
-      alert('Chat support will be available soon. Please use the contact form.');
-    }
-  };
 
   // Animation variants
   const containerVariants = {
@@ -456,42 +445,19 @@ const CustomerSupportPage = () => {
           <p style={{ color: 'var(--color-grey-600)', marginBottom: 'var(--spacing-md)' }}>
             View and manage all your support tickets
           </p>
-          <ChatButton
+          <CardButton
             as={Link}
             to={PATHS.SUPPORT_TICKETS}
             $bgColor="#ffc400"
             $hoverColor="#e29800"
-            style={{ textDecoration: 'none' }}
+            style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
           >
             <FaTicketAlt />
             View My Tickets
-          </ChatButton>
+          </CardButton>
         </div>
       </motion.section>
 
-      {/* Live Chat CTA */}
-      <ChatSection id="contact">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.4 }}
-        >
-          <h3 style={{ fontSize: 'var(--font-size-xl)', marginBottom: 'var(--spacing-sm)' }}>
-            Need Immediate Assistance?
-          </h3>
-          <p style={{ color: 'var(--color-grey-600)', marginBottom: 'var(--spacing-md)' }}>
-            Chat with our support agents in real-time for instant help
-          </p>
-          <ChatButton
-            onClick={handleChatSupport}
-            $bgColor="#ffc400"
-            $hoverColor="#e29800"
-          >
-            <FaComments />
-            Chat With Support Agent
-          </ChatButton>
-        </motion.div>
-      </ChatSection>
 
         {/* Contact Form Modal */}
         <ContactFormModal

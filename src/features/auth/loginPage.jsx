@@ -24,122 +24,116 @@ export default function LoginPage() {
   const [searchParams] = useSearchParams();
 
   const [state, setState] = useState({
-    loginId: "",
+    email: "",
     password: "",
   });
-  const [loginMethod, setLoginMethod] = useState("email");
-  const [step, setStep] = useState("credentials");
-  const [otp, setOtp] = useState("");
-  const [otpCountdown, setOtpCountdown] = useState(0);
-  // SECURITY: OTP rate limiting - prevent spam resend attempts
-  const [resendCooldown, setResendCooldown] = useState(0);
-  const [resendAttempts, setResendAttempts] = useState(0);
-  const MAX_RESEND_ATTEMPTS = 5; // Max 5 resend attempts per hour
-  const RESEND_COOLDOWN_SECONDS = 60; // 60 second cooldown between resends
+  const [step, setStep] = useState("credentials"); // 'credentials', '2fa'
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [loginSessionId, setLoginSessionId] = useState(null);
   const { mutate: merge } = useMergeWishlists();
 
   const { syncCart } = useCartActions();
-  const { sendOtp, verifyOtp } = useAuth();
+  const { login, verify2FALogin, sendOtp, verifyOtp } = useAuth();
+  const { mutate: loginMutation, isPending: isLoggingIn, error: loginError } = login;
+  const { mutate: verify2FALoginMutation, isPending: isVerifying2FA, error: verify2FAError } = verify2FALogin;
   const { mutate: sendOtpMutation, isPending: isSendingOtp, error: sendOtpError } = sendOtp;
   const { mutate: verifyOtpMutation, isPending: isVerifyingOtp, error: verifyOtpError } = verifyOtp;
 
   // Get redirectTo from URL params or storage
   const redirectTo = searchParams.get('redirectTo') || storage.getRedirect() || '/';
 
-  useEffect(() => {
-    let timer;
-    if (otpCountdown > 0) {
-      timer = setInterval(() => {
-        setOtpCountdown((prev) => prev - 1);
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [otpCountdown]);
-
-  // SECURITY: OTP resend cooldown timer
-  useEffect(() => {
-    let timer;
-    if (resendCooldown > 0) {
-      timer = setInterval(() => {
-        setResendCooldown((prev) => prev - 1);
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [resendCooldown]);
 
   const submitHandler = (e) => {
     e.preventDefault();
 
     if (step === "credentials") {
-      sendOtpMutation(state.loginId, {
-        onSuccess: () => {
-          setStep("otp");
-          setOtpCountdown(120);
-        },
-        onError: (err) => {
-          logger.error("OTP send failed:", err.message);
-        },
-      });
-    } else {
-      // Ensure OTP is a string and not empty
-      const otpString = typeof otp === 'string' ? otp : (Array.isArray(otp) ? otp.join('') : String(otp || ''));
+      // Validate email format before submitting
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const trimmedEmail = state.email.trim().toLowerCase();
       
-      if (!otpString || otpString.length !== 6) {
-        logger.error("[Login] Invalid OTP format:", { otp, otpString, type: typeof otp });
+      if (!trimmedEmail || !emailRegex.test(trimmedEmail)) {
+        toast.error('Please enter a valid email address');
         return;
       }
       
-      verifyOtpMutation(
+      if (!state.password) {
+        toast.error('Please enter your password');
+        return;
+      }
+      
+      // New login flow: email + password
+      loginMutation(
+        { email: trimmedEmail, password: state.password },
         {
-          loginId: state.loginId,
-          otp: otpString,
-          password: state.password,
-          redirectTo,
-        },
-        {
-          onSuccess: (data) => {
-            logger.debug("[Login] OTP verified successfully");
+          onSuccess: (response) => {
+            logger.debug("[Login] onSuccess called", { 
+              hasResponse: !!response,
+              hasData: !!response?.data,
+              status: response?.data?.status,
+              is2FA: response?.data?.requires2FA || response?.data?.status === '2fa_required'
+            });
+            
+            // Extract data from axios response
+            // response is the full axios response: { data: {...}, status: 200, ... }
+            const responseData = response?.data || response;
+            
+            // Check if 2FA is required
+            if (responseData?.requires2FA || responseData?.status === '2fa_required') {
+              logger.debug("[Login] 2FA required");
+              setLoginSessionId(responseData.loginSessionId);
+              setStep("2fa");
+            } else {
+              // Login successful - extract user from response
+              // Backend returns: { status: 'success', token, user: {...} }
+              // The mutation's onSuccess in useAuth.js already processed this and updated cache
+              // But we need to extract user from the response here
+              const user = responseData?.user;
+              
+              if (!user || (!user.id && !user._id)) {
+                console.error("❌ [Login] Login successful but no user data received:", response);
+                console.error("❌ [Login] Response data structure:", responseData);
+                toast.error('Login successful but user data is missing. Please refresh the page.');
+                return;
+              }
+              
+              logger.debug("[Login] Login successful");
+              console.log('👤 [Login] User logged in:', {
+                id: user.id || user._id,
+                email: user.email,
+                name: user.name || user.firstName,
+                role: user.role,
+                fullUser: user,
+              });
+              
+              merge();
+              syncCart();
 
-            merge();
-            syncCart();
+              const checkoutState = storage.restoreCheckoutState();
+              if (checkoutState && redirectTo === '/checkout') {
+                logger.debug('[Login] Restoring checkout state');
+              }
 
-            const checkoutState = storage.restoreCheckoutState();
-            if (checkoutState && redirectTo === '/checkout') {
-              logger.debug('[Login] Restoring checkout state');
+              const finalRedirect = redirectTo || '/';
+              console.log('🚀 [Login] Navigating to:', finalRedirect);
+              navigate(finalRedirect);
+
+              setState({ email: "", password: "" });
             }
-
-            const finalRedirect = data?.redirectTo || redirectTo || '/';
-            navigate(finalRedirect);
-
-            setState({ loginId: "", password: "" });
-            setOtp("");
           },
           onError: (err) => {
-            logger.error("OTP verification failed:", {
+            logger.error("Login failed:", {
               message: err.message,
               response: err.response?.data,
               status: err.response?.status,
-              code: err.code,
-              config: err.config,
             });
             
-            // Handle network errors
-            if (err.code === 'ERR_NETWORK' || err.message === 'Network Error') {
-              logger.error("[Login] Network error - backend may be down or CORS issue");
-              // You might want to show a toast/alert here
-              return;
-            }
-            
-            // ✅ Handle unverified account - redirect to verification page
+            // Handle unverified account
             if (err.response?.status === 403) {
               const errorMessage = err.response?.data?.message || err.message;
               if (errorMessage.includes('not verified') || errorMessage.includes('verify')) {
-                // Extract email or phone from loginId
-                const isEmail = state.loginId.includes('@');
                 navigate('/verify-account', {
                   state: {
-                    email: isEmail ? state.loginId : null,
-                    phone: !isEmail ? state.loginId : null,
+                    email: state.email,
                     message: errorMessage || 'Please verify your account to continue',
                   },
                 });
@@ -149,39 +143,67 @@ export default function LoginPage() {
           },
         }
       );
+    } else if (step === "2fa") {
+      // Verify 2FA code
+      if (!twoFactorCode || twoFactorCode.length !== 6) {
+        toast.error('Please enter a valid 6-digit 2FA code');
+        return;
+      }
+
+      if (!loginSessionId) {
+        toast.error('Login session expired. Please login again.');
+        setStep("credentials");
+        return;
+      }
+
+      verify2FALoginMutation(
+        { loginSessionId, twoFactorCode },
+        {
+          onSuccess: (response) => {
+            logger.debug("[Login] 2FA verified, login successful");
+            // Extract data from axios response
+            // response is the full axios response: { data: {...}, status: 200, ... }
+            const responseData = response?.data || response;
+            // Backend returns: { status: 'success', token, user: {...} }
+            const user = responseData?.user;
+            
+            if (!user || (!user.id && !user._id)) {
+              console.error("❌ [2FA Login] 2FA verified but no user data received:", response);
+              console.error("❌ [2FA Login] Response data structure:", responseData);
+              toast.error('2FA verified but user data is missing. Please refresh the page.');
+              return;
+            }
+            
+            console.log('👤 [2FA Login] User logged in via 2FA:', {
+              id: user.id || user._id,
+              email: user.email,
+              name: user.name || user.firstName,
+              role: user.role,
+              fullUser: user,
+            });
+            merge();
+            syncCart();
+
+            const checkoutState = storage.restoreCheckoutState();
+            if (checkoutState && redirectTo === '/checkout') {
+              logger.debug('[Login] Restoring checkout state');
+            }
+
+            navigate(redirectTo || '/');
+            setState({ email: "", password: "" });
+            setTwoFactorCode("");
+            setLoginSessionId(null);
+          },
+          onError: (err) => {
+            logger.error("2FA verification failed:", {
+              message: err.message,
+              response: err.response?.data,
+              status: err.response?.status,
+            });
+          },
+        }
+      );
     }
-  };
-
-  const toggleLoginMethod = () => {
-    setLoginMethod(loginMethod === "email" ? "phone" : "email");
-    setState({ ...state, loginId: "" });
-  };
-
-  const handleResendOtp = () => {
-    // SECURITY: Rate limiting - prevent spam resend attempts
-    if (resendCooldown > 0) {
-      toast.warn(`Please wait ${resendCooldown} seconds before resending OTP`);
-      return;
-    }
-
-    if (resendAttempts >= MAX_RESEND_ATTEMPTS) {
-      toast.error('Too many resend attempts. Please try again later.');
-      return;
-    }
-
-    sendOtpMutation(state.loginId, {
-      onSuccess: () => {
-        setOtpCountdown(120);
-        setResendCooldown(RESEND_COOLDOWN_SECONDS);
-        setResendAttempts((prev) => prev + 1);
-        toast.success('OTP resent successfully');
-      },
-      onError: (err) => {
-        logger.error("Resend OTP failed:", err.message);
-        // SECURITY: Generic error message - don't reveal system details
-        toast.error('Unable to resend OTP. Please try again later.');
-      },
-    });
   };
 
   return (
@@ -200,48 +222,40 @@ export default function LoginPage() {
       <FormSection>
         <FormContainer>
           <Header>
-            <h2>{step === "otp" ? "Verify Identity" : "Sign In"}</h2>
+            <h2>{step === "2fa" ? "Two-Factor Authentication" : "Sign In"}</h2>
             <p>
-              {step === "otp"
-                ? `Enter the code sent to your ${loginMethod}`
-                : "Enter your details to access your account"}
+              {step === "2fa"
+                ? "Enter your 2FA code from your authenticator app"
+                : "Enter your email and password to access your account"}
             </p>
           </Header>
 
-          {(sendOtpError || verifyOtpError) && (
-            <ErrorState message={(sendOtpError || verifyOtpError)?.message || "Authentication failed"} />
+          {(loginError || verify2FAError || sendOtpError || verifyOtpError) && (
+            <ErrorState message={(loginError || verify2FAError || sendOtpError || verifyOtpError)?.message || "Authentication failed"} />
           )}
 
           <StyledForm onSubmit={submitHandler}>
             {step === "credentials" ? (
               <>
                 <InputGroup>
-                  <Label htmlFor="loginId">
-                    {loginMethod === "email" ? "Email Address" : "Phone Number"}
-                  </Label>
+                  <Label htmlFor="email">Email Address</Label>
                   <InputWrapper>
-                    <InputIcon>
-                      {loginMethod === "email" ? <FaEnvelope /> : <FaPhone />}
-                    </InputIcon>
+                    <InputIcon><FaEnvelope /></InputIcon>
                     <Input
-                      type={loginMethod === "email" ? "email" : "tel"}
-                      id="loginId"
-                      value={state.loginId}
+                      type="email"
+                      id="email"
+                      value={state.email}
                       onChange={(e) => {
-                        // SECURITY: Sanitize input based on login method
-                        const sanitized = loginMethod === "email" 
-                          ? sanitizeEmail(e.target.value)
-                          : sanitizePhone(e.target.value);
-                        setState({ ...state, loginId: sanitized });
+                        // Only sanitize dangerous content, allow user to type freely
+                        const sanitized = sanitizeEmail(e.target.value);
+                        setState({ ...state, email: sanitized });
                       }}
-                      placeholder={loginMethod === "email" ? "name@example.com" : "+233 XX XXX XXXX"}
+                      placeholder="name@example.com"
                       required
-                      maxLength={loginMethod === "email" ? 255 : 20}
+                      maxLength={255}
+                      autoComplete="email"
                     />
                   </InputWrapper>
-                  <ToggleLink type="button" onClick={toggleLoginMethod}>
-                    Use {loginMethod === "email" ? "phone number" : "email"} instead
-                  </ToggleLink>
                 </InputGroup>
 
                 <InputGroup>
@@ -253,13 +267,14 @@ export default function LoginPage() {
                       id="password"
                       value={state.password}
                       onChange={(e) => {
-                        // SECURITY: Limit password length to prevent DoS
+                        // Limit length but allow typing
                         const sanitized = e.target.value.slice(0, 128);
                         setState({ ...state, password: sanitized });
                       }}
                       placeholder="Enter your password"
                       required
                       maxLength={128}
+                      autoComplete="current-password"
                     />
                   </InputWrapper>
                   <ForgotPasswordLink to="/forgot-password">
@@ -269,63 +284,45 @@ export default function LoginPage() {
               </>
             ) : (
               <OtpContainer>
+                <h3 style={{ marginBottom: '16px', textAlign: 'center' }}>Two-Factor Authentication</h3>
+                <p style={{ marginBottom: '24px', textAlign: 'center', color: '#666' }}>
+                  Enter the 6-digit code from your authenticator app (Google Authenticator, Authy, etc.)
+                </p>
                 <OtpInputs>
                   {[...Array(6)].map((_, index) => {
-                    // Convert string OTP to array for display
-                    const otpArray = otp.split('').slice(0, 6);
+                    const codeArray = twoFactorCode.split('').slice(0, 6);
                     return (
                       <OtpInput
                         key={index}
                         type="text"
                         maxLength={1}
-                        value={otpArray[index] || ""}
+                        value={codeArray[index] || ""}
                         onChange={(e) => {
-                          const value = e.target.value.replace(/\D/g, ''); // Only digits
-                          if (value.length > 1) return; // Only allow single digit
+                          const value = e.target.value.replace(/\D/g, '');
+                          if (value.length > 1) return;
                           
-                          const newOtpArray = [...otpArray];
-                          newOtpArray[index] = value;
-                          const newOtp = newOtpArray.join('');
-                          setOtp(newOtp);
+                          const newCodeArray = [...codeArray];
+                          newCodeArray[index] = value;
+                          const newCode = newCodeArray.join('');
+                          setTwoFactorCode(newCode);
                           
-                          // Auto-focus next input
                           if (value && index < 5) {
-                            const nextInput = document.getElementById(`otp-${index + 1}`);
+                            const nextInput = document.getElementById(`2fa-${index + 1}`);
                             if (nextInput) nextInput.focus();
                           }
                         }}
                         onKeyDown={(e) => {
-                          // Handle backspace
-                          if (e.key === 'Backspace' && !otpArray[index] && index > 0) {
-                            const prevInput = document.getElementById(`otp-${index - 1}`);
+                          if (e.key === 'Backspace' && !codeArray[index] && index > 0) {
+                            const prevInput = document.getElementById(`2fa-${index - 1}`);
                             if (prevInput) prevInput.focus();
                           }
                         }}
-                        id={`otp-${index}`}
+                        id={`2fa-${index}`}
                         autoFocus={index === 0}
                       />
                     );
                   })}
                 </OtpInputs>
-
-                <ResendWrapper>
-                  {otpCountdown > 0 ? (
-                    <ResendText>
-                      Resend code in {Math.floor(otpCountdown / 60)}:
-                      {(otpCountdown % 60).toString().padStart(2, "0")}
-                    </ResendText>
-                  ) : (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleResendOtp}
-                      loading={isSendingOtp}
-                    >
-                      Resend Code
-                    </Button>
-                  )}
-                </ResendWrapper>
               </OtpContainer>
             )}
 
@@ -333,17 +330,21 @@ export default function LoginPage() {
               type="submit"
               variant="primary"
               fullWidth
-              loading={isSendingOtp || isVerifyingOtp}
-              disabled={step === "credentials" ? false : otp.length < 6}
+              loading={isLoggingIn || isVerifying2FA}
+              disabled={step === "credentials" ? false : twoFactorCode.length < 6}
             >
-              {step === "otp" ? "Verify & Login" : "Sign In"}
+              {step === "2fa" ? "Verify 2FA & Login" : "Sign In"}
             </Button>
 
-            {step === "otp" && (
+            {step === "2fa" && (
               <Button 
                 type="button" 
                 variant="ghost" 
-                onClick={() => setStep("credentials")}
+                onClick={() => {
+                  setStep("credentials");
+                  setTwoFactorCode("");
+                  setLoginSessionId(null);
+                }}
                 leftIcon={<FaArrowLeft />}
               >
                 Back to Login
@@ -377,6 +378,7 @@ const ImageSection = styled.div`
   flex-direction: column;
   justify-content: space-between;
   padding: 40px;
+  
   
   @media ${devicesMax.md} {
     display: none;

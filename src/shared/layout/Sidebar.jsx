@@ -22,6 +22,7 @@ import useAuth from '../hooks/useAuth';
 import { getAvatarUrl } from '../utils/avatarUtils';
 import { useUnreadCount } from '../hooks/notifications/useNotifications';
 import { useWalletBalance } from '../hooks/useWallet';
+import { useGetUserOrders, getOrderStructure } from '../hooks/useOrder';
 import { useMemo } from 'react';
 
 import { PATHS } from '../../routes/routePaths';
@@ -40,7 +41,13 @@ const SideBar = ({ $isOpen, onClose }) => {
     return walletData?.data?.wallet || { balance: 0, availableBalance: 0 };
   }, [walletData]);
   
-  const balance = wallet.balance || 0;
+  // Use availableBalance first (what user can actually spend), then fallback to balance
+  const balance = wallet.availableBalance ?? wallet.balance ?? 0;
+
+  // Get order count
+  const { data: ordersData } = useGetUserOrders();
+  const orders = useMemo(() => getOrderStructure(ordersData) || [], [ordersData]);
+  const orderCount = orders.length;
 
   const location = useLocation();
 
@@ -50,7 +57,7 @@ const SideBar = ({ $isOpen, onClose }) => {
   };
 
   const navItems = [
-    { path: PATHS.ORDERS, icon: <FaShoppingBag />, label: "Orders", badge: 3 },
+    { path: PATHS.ORDERS, icon: <FaShoppingBag />, label: "Orders", badge: orderCount > 0 ? orderCount : null },
     { path: PATHS.REVIEWS, icon: <FaStar />, label: "My Reviews" },
     { path: PATHS.ADDRESS, icon: <FaMapMarkerAlt />, label: "Addresses" },
     { path: PATHS.CREDIT, icon: <FaMoneyBill />, label: "Balance", amount: isBalanceLoading ? "..." : `GH₵${balance.toFixed(2)}` },
@@ -72,26 +79,10 @@ const SideBar = ({ $isOpen, onClose }) => {
 
   return (
     <SidebarContainer $isOpen={$isOpen}>
-      {/* User Profile */}
-      <UserSection>
-        <UserAvatar>
-          {user?.photo ? (
-            <AvatarImage src={getAvatarUrl(user.photo)} alt={user?.name || "User"} />
-          ) : (
-            <FaUserCircle />
-          )}
-          <OnlineIndicator />
-        </UserAvatar>
-        <UserInfo>
-          <UserName>{user?.name || "Alex Morgan"}</UserName>
-          <UserTier>Premium Member</UserTier>
-        </UserInfo>
-      </UserSection>
-
       {/* Quick Stats */}
       <StatsSection>
         <StatItem>
-          <StatValue>12</StatValue>
+          <StatValue>{orderCount}</StatValue>
           <StatLabel>Orders</StatLabel>
         </StatItem>
         <StatDivider />
@@ -243,6 +234,7 @@ const UserSection = styled.div`
   padding: var(--spacing-lg);
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--spacing-md);
   background: var(--color-grey-50);
   margin: var(--spacing-md) var(--spacing-lg);
@@ -453,22 +445,24 @@ const NavItem = styled(NavLink)`
   }
 
   &.active {
-    background: var(--color-primary-500);
-    color: var(--color-white-0);
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    background: var(--color-primary-50);
+    color: var(--color-primary-700);
+    border-left: 4px solid var(--color-primary-600);
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
     
     ${NavIcon} {
-      color: var(--color-white-0);
+      color: var(--color-primary-600);
     }
     
     ${NavArrow} {
-      color: var(--color-white-0);
+      color: var(--color-primary-600);
       opacity: 1;
     }
     
     ${NotificationBadge} {
-      background: var(--color-white-0);
-      color: var(--color-primary-500);
+      background: var(--color-primary-600);
+      color: var(--color-white-0);
     }
   }
 `;
@@ -533,17 +527,11 @@ const LogoutIcon = styled.span`
   display: flex;
   align-items: center;
   min-width: 2.4rem;
-  
-  @media ${devicesMax.lg} {
-    margin-right: 0;
-  }
 `;
 
 const LogoutText = styled.span`
   font-size: 1.4rem;
   font-weight: 500;
-  
-  @media ${devicesMax.lg} {
-    display: none;
-  }
+  flex: 1;
+  text-align: left;
 `;

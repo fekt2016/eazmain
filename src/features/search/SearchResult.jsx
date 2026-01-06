@@ -4,7 +4,7 @@ import styled, { css } from "styled-components";
 import { FaFilter, FaChevronDown, FaChevronUp, FaTimes, FaSortAmountDown, FaSearch, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { useSearchResults } from '../../shared/hooks/useSearch';
 import ProductCard from '../../shared/components/ProductCard';
-import { LoadingState, SkeletonGrid } from '../../components/loading';
+import { LoadingState, SkeletonGrid, ErrorState } from '../../components/loading';
 import { spin, fadeIn } from '../../shared/styles/animations';
 import Container from '../../shared/components/Container';
 import { devicesMax } from '../../shared/styles/breakpoint';
@@ -81,18 +81,50 @@ export default function SearchResultsPage() {
     return () => clearTimeout(timeoutId);
   }, [filters, sortBy]); // Only depend on filters and sortBy, not urlParams to avoid loops
 
-  const { data: productData, isLoading } = useSearchResults(queryParams);
+  const { data: productData, isLoading, error } = useSearchResults(queryParams);
 
-  // Extract products and pagination info
-  const { products, totalProducts, currentPage, totalPages } = useMemo(() => {
-    const data = productData?.data || productData || {};
+  // Extract products and pagination info with explicit fallbacks
+  // Backend now provides all pagination logic including visiblePages
+  // Backend response structure: { success: true, data: products[], totalProducts, currentPage, totalPages, pagination }
+  // React Query returns: { data: response.data, ... } where response.data is the backend response
+  const { products, totalProducts, currentPage, totalPages, pagination } = useMemo(() => {
+    // productData is the backend response: { success: true, data: products[], ... }
+    // Handle both direct response and nested response structures
+    const data = productData || {};
+    
+    // Products can be at data.data (if nested) or data (if direct array) or data.data (if backend wraps it)
+    let productsArray = [];
+    if (Array.isArray(data.data)) {
+      productsArray = data.data;
+    } else if (Array.isArray(data)) {
+      productsArray = data;
+    } else if (data.data?.data && Array.isArray(data.data.data)) {
+      productsArray = data.data.data;
+    }
+    
     return {
-      products: data.data || [],
+      products: productsArray,
       totalProducts: data.totalProducts || data.results || 0,
-      currentPage: data.currentPage || 1,
-      totalPages: data.totalPages || 1,
+      currentPage: data.currentPage || data.pagination?.page || 1,
+      totalPages: data.totalPages || data.pagination?.totalPages || 1,
+      pagination: data.pagination || null, // Backend-provided pagination metadata
     };
   }, [productData]);
+
+  // Derive explicit state flags from raw data for test-safe rendering
+  // CRITICAL: These must be computed from the extracted values, not from productData directly
+  const productsArray = Array.isArray(products) ? products : [];
+  const totalPagesValue = typeof totalPages === 'number' ? totalPages : 0;
+  
+  // Explicit boolean flags - no implicit truthiness
+  const hasProducts = productsArray.length > 0;
+  const hasPagination = totalPagesValue > 1;
+  
+  // UI state flags - mutually exclusive and explicit
+  const showError = !isLoading && !!error;
+  const showEmptyState = !isLoading && !hasProducts && !error;
+  const showProductsGrid = !isLoading && hasProducts && !error;
+  const showPagination = !isLoading && hasPagination && !error;
 
   const searchQuery = urlParams.q || "";
   
@@ -127,13 +159,43 @@ export default function SearchResultsPage() {
     setSortBy(newSortBy);
   };
 
+  // Use backend-provided pagination metadata (all logic done in backend)
+  // visiblePages array contains page numbers and 'ellipsis-start'/'ellipsis-end' strings
+  const visiblePages = useMemo(() => {
+    if (pagination?.visiblePages) {
+      return pagination.visiblePages;
+    }
+    // Fallback for backward compatibility (shouldn't happen with new backend)
+    if (totalPagesValue <= 1) return [];
+    if (totalPagesValue <= 5) {
+      return Array.from({ length: totalPagesValue }, (_, i) => i + 1);
+    }
+    return [1, 'ellipsis-start', currentPage, 'ellipsis-end', totalPagesValue];
+  }, [pagination, totalPagesValue, currentPage]);
+
+  // Scroll to top when page changes (declarative, testable approach)
+  // Watch urlParams.page (from URL) to catch page changes immediately when URL changes
+  // This ensures scrolling happens as soon as the URL changes, before API data updates
+  const pageFromUrl = urlParams.page || 1;
+  
+  useEffect(() => {
+    // Scroll to top whenever the page in the URL changes
+    // This includes initial mount (which is fine - ensures user starts at top)
+    // and subsequent page changes (which is the main use case)
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [pageFromUrl]);
+
   const handlePageChange = (newPage) => {
+    // Validate page number before navigation
+    if (newPage < 1 || newPage > totalPagesValue) {
+      return;
+    }
     const newUrl = buildSearchUrl({
       ...urlParams,
       page: newPage,
     });
-    navigate(`/search?${newUrl}`);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigate(`/search?${newUrl}`, { replace: true });
+    // Scroll is now handled by useEffect watching currentPage
   };
 
   return (
@@ -141,13 +203,13 @@ export default function SearchResultsPage() {
       <Container>
         <SearchHeader>
           <HeaderContent>
-            <SearchTitle>
+            <SearchTitle data-testid="search-title">
               Results for <span>"{searchQuery}"</span>
             </SearchTitle>
-            <ResultCount>
+            <ResultCount data-testid="search-result-count">
               {totalProducts > 0 ? (
                 <>
-                  Showing {products.length} of {totalProducts} {totalProducts === 1 ? 'item' : 'items'}
+                  Showing {productsArray.length} of {totalProducts} {totalProducts === 1 ? 'item' : 'items'}
                 </>
               ) : (
                 'No items found'
@@ -297,14 +359,32 @@ export default function SearchResultsPage() {
               </SortContainer>
             </ControlsHeader>
 
-            {isLoading ? (
-              <ProductsGrid>
+            {/* Loading State */}
+            {isLoading && (
+              <ProductsGrid data-testid="search-loading-grid">
                 {Array.from({ length: 8 }).map((_, idx) => (
                   <SkeletonLoader key={idx} height="380px" borderRadius="16px" />
                 ))}
               </ProductsGrid>
-            ) : products.length === 0 ? (
-              <EmptyState>
+            )}
+
+            {/* Error State - Show when error occurs */}
+            {showError && (
+              <ErrorState
+                data-testid="search-error-state"
+                title="Error Loading Search Results"
+                message={error?.message || "We encountered an error while loading search results. Please try again."}
+                action={
+                  <button onClick={() => window.location.reload()}>
+                    Retry
+                  </button>
+                }
+              />
+            )}
+
+            {/* Empty State - Decoupled from products rendering */}
+            {showEmptyState && (
+              <EmptyState data-testid="search-empty-state">
                 <EmptyIcon>
                   <FaSearch />
                 </EmptyIcon>
@@ -323,62 +403,72 @@ export default function SearchResultsPage() {
                   </ul>
                 </EmptySuggestions>
               </EmptyState>
-            ) : (
-              <>
-                <ProductsGrid>
-                  {products.map((product) => (
-                    <ProductCard
-                      key={product._id}
-                      product={product}
-                      highlightTerm={searchQuery}
-                    />
-                  ))}
-                </ProductsGrid>
+            )}
+
+            {/* Products Grid - Decoupled from pagination */}
+            {/* CRITICAL: Only render when showProductsGrid is true and hasProducts is true */}
+            {showProductsGrid && hasProducts && (
+              <ProductsGrid data-testid="search-products-grid">
+                {productsArray.map((product) => (
+                  <ProductCard
+                    key={product._id}
+                    product={product}
+                    highlightTerm={searchQuery}
+                  />
+                ))}
+              </ProductsGrid>
+            )}
+            
+            {/* Pagination - Decoupled from products rendering */}
+            {/* CRITICAL: Only render when showPagination is true and totalPagesValue > 1 */}
+            {showPagination && hasPagination && (
+              <PaginationContainer data-testid="search-pagination">
+                <PaginationButton
+                  data-testid="pagination-prev"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  aria-label="Previous page"
+                >
+                  <FaChevronLeft /> Previous
+                </PaginationButton>
                 
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <PaginationContainer>
-                    <PaginationButton
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1}
-                    >
-                      <FaChevronLeft /> Previous
-                    </PaginationButton>
+                <PageNumbers data-testid="pagination-numbers">
+                  {visiblePages.map((page, index) => {
+                    // Handle ellipsis (backend provides 'ellipsis-start' or 'ellipsis-end')
+                    if (page === 'ellipsis-start' || page === 'ellipsis-end') {
+                      return (
+                        <Ellipsis key={`ellipsis-${index}`} data-testid="pagination-ellipsis">
+                          ...
+                        </Ellipsis>
+                      );
+                    }
                     
-                    <PageNumbers>
-                      {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                        let pageNum;
-                        if (totalPages <= 5) {
-                          pageNum = i + 1;
-                        } else if (currentPage <= 3) {
-                          pageNum = i + 1;
-                        } else if (currentPage >= totalPages - 2) {
-                          pageNum = totalPages - 4 + i;
-                        } else {
-                          pageNum = currentPage - 2 + i;
-                        }
-                        
-                        return (
-                          <PageNumber
-                            key={pageNum}
-                            $active={pageNum === currentPage}
-                            onClick={() => handlePageChange(pageNum)}
-                          >
-                            {pageNum}
-                          </PageNumber>
-                        );
-                      })}
-                    </PageNumbers>
-                    
-                    <PaginationButton
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                    >
-                      Next <FaChevronRight />
-                    </PaginationButton>
-                  </PaginationContainer>
-                )}
-              </>
+                    // Handle page number (backend provides numeric page numbers)
+                    const pageNum = typeof page === 'number' ? page : parseInt(page);
+                    return (
+                      <PageNumber
+                        key={pageNum}
+                        data-testid={`pagination-page-${pageNum}`}
+                        $active={pageNum === currentPage}
+                        onClick={() => handlePageChange(pageNum)}
+                        aria-label={`Go to page ${pageNum}`}
+                        aria-current={pageNum === currentPage ? 'page' : undefined}
+                      >
+                        {pageNum}
+                      </PageNumber>
+                    );
+                  })}
+                </PageNumbers>
+                
+                <PaginationButton
+                  data-testid="pagination-next"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPagesValue}
+                  aria-label="Next page"
+                >
+                  Next <FaChevronRight />
+                </PaginationButton>
+              </PaginationContainer>
             )}
           </ProductsSection>
         </MainLayout>
@@ -912,4 +1002,15 @@ const PageNumber = styled.button`
     background: ${(props) => (props.$active ? 'var(--color-primary-hover)' : 'var(--color-bg-light)')};
     border-color: var(--color-primary);
   }
+`;
+
+const Ellipsis = styled.span`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  color: var(--color-text-light);
+  font-size: 1.4rem;
+  user-select: none;
 `;

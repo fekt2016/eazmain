@@ -11,9 +11,23 @@ import Container from '../../shared/components/Container';
 import { devicesMax } from '../../shared/styles/breakpoint';
 import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 import { fadeIn, slideUp } from '../../shared/styles/animations';
+import { ErrorState } from '../../components/loading';
 
 export default function CategoryPage() {
   const { id } = useParams();
+  
+  // Guard against missing category id
+  if (!id) {
+    return (
+      <Container>
+        <ErrorState
+          title="Category ID Missing"
+          message="Category ID is required. Please go back and try again."
+        />
+      </Container>
+    );
+  }
+  
   const [showFilters, setShowFilters] = useState(false);
   const [sortOption, setSortOption] = useState("");
   const [priceRange, setPriceRange] = useState([0, 5000]);

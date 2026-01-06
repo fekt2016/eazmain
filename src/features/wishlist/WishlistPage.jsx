@@ -40,9 +40,10 @@ const WishlistPage = () => {
     
     // Map wishlist items to products, handling both structures
     return wishlistItems
+      .filter(Boolean) // Remove any null/undefined items first
       .map((item) => {
         // If item has a product property (populated), use item.product
-        if (item.product && typeof item.product === 'object') {
+        if (item && item.product && typeof item.product === 'object') {
           return item.product;
         }
         // Otherwise, item is already the product

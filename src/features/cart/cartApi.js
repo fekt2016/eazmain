@@ -36,8 +36,17 @@ const cartApi = {
   },
 
   clearCart: async () => {
-    await api.delete("/cart");
-    return [];
+    const response = await api.delete("/cart");
+    // Backend returns: { data: null, status: 'success' } for 204
+    // Return proper structure for empty cart
+    return { 
+      status: 'success', 
+      data: { 
+        cart: { 
+          products: [] 
+        } 
+      } 
+    };
   },
 };
 

@@ -8,12 +8,23 @@ export const getOrderStructure = (orderData) => {
   // Processing order data structure
   if (!orderData) return [];
 
-  if (orderData?.data?.data?.orderss) {
-    return orderData?.data?.data?.orders;
+  // Handle various response structures from backend
+  // Backend returns: { status: 'success', data: { orders: [...] } }
+  if (orderData?.data?.data?.orders) {
+    return orderData.data.data.orders;
   }
   if (orderData?.data?.orders) {
-    return orderData?.data?.orders;
+    return orderData.data.orders;
   }
+  // Fallback: if orders is at root level
+  if (Array.isArray(orderData?.orders)) {
+    return orderData.orders;
+  }
+  if (Array.isArray(orderData?.data)) {
+    return orderData.data;
+  }
+  // Return empty array if no orders found
+  return [];
 };
 export const useGetSellerOrder = (orderId) => {
   return useQuery({
@@ -100,6 +111,34 @@ export const useCreateOrder = () => {
     onSuccess: (data) => {
       logger.log("order created successfully!!!", data);
       queryClient.invalidateQueries({ queryKey: ["orders"] });
+      
+      // CRITICAL: Invalidate wallet balance if order was paid with credit balance
+      // This ensures the UI updates immediately to show the deducted amount
+      const order = data?.data?.order || data?.order || data?.data || data;
+      const paymentMethod = order?.paymentMethod;
+      const isWalletPayment = paymentMethod === 'credit_balance' || paymentMethod === 'wallet';
+      
+      if (isWalletPayment) {
+        logger.log('[useCreateOrder] 💰 Wallet payment detected - invalidating wallet balance');
+        queryClient.invalidateQueries({ queryKey: ['wallet', 'balance'] });
+        queryClient.invalidateQueries({ queryKey: ['creditBalance'] });
+        // Immediately refetch to update UI
+        queryClient.refetchQueries({ queryKey: ['wallet', 'balance'] });
+      }
+      
+      // CRITICAL: Invalidate product queries to refresh sold counts and stock
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["product"] });
+      // Invalidate all product-related queries
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey;
+          return (
+            (Array.isArray(key) && key[0] === 'products') ||
+            (Array.isArray(key) && key[0] === 'product')
+          );
+        },
+      });
     },
     onError: (error) => {
       logger.error("Order fetch failed:", error.message);

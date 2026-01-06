@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import discountApi from '../services/discountApi';
-export const UseGetDislayDiscount = () => {
+
+export const useGetDisplayDiscount = () => {
   return useQuery({
     queryKey: ["discount"],
     queryFn: async () => {

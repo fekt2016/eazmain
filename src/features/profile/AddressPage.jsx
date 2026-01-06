@@ -628,7 +628,7 @@ const AddressManagementPage = () => {
           {savedAddresses.length > 0 ? (
             <AddressGrid>
               {savedAddresses.map((address) => (
-                <AddressCard key={address.id} $isDefault={address.isDefault}>
+                <AddressCard key={address.id || address._id || `address-${address.streetAddress}-${address.city}`} $isDefault={address.isDefault}>
                   {address.isDefault && (
                     <DefaultBadge>
                       <FaStar />
@@ -643,7 +643,7 @@ const AddressManagementPage = () => {
                     </AddressInfo>
                     <ActionButtons>
                       <SetDefaultButton
-                        onClick={() => handleSetDefault(address.id)}
+                        onClick={() => handleSetDefault(address.id || address._id)}
                         title={address.isDefault ? "Default address" : "Set as default"}
                         disabled={isSettingDefault || address.isDefault}
                         $isDefault={address.isDefault}
@@ -659,7 +659,7 @@ const AddressManagementPage = () => {
                       <Button
                         variant="danger"
                         iconOnly
-                        onClick={() => handleDeleteAddress(address.id)}
+                        onClick={() => handleDeleteAddress(address.id || address._id)}
                         loading={isDeleting}
                         ariaLabel="Delete address"
                         title="Delete address"
@@ -1063,7 +1063,7 @@ const ButtonGroup = styled.div`
   }
 `;
 
-const Button = styled.button`
+const StyledButton = styled.button`
   padding: 1.2rem 2.4rem;
   border-radius: 12px;
   font-size: 1.4rem;
@@ -1078,7 +1078,7 @@ const Button = styled.button`
   }
 `;
 
-const SaveButton = styled(Button)`
+const SaveButton = styled(StyledButton)`
   background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
   color: var(--color-white-0);
   border: none;
@@ -1089,7 +1089,7 @@ const SaveButton = styled(Button)`
   }
 `;
 
-const CancelButton = styled(Button)`
+const CancelButton = styled(StyledButton)`
   background: var(--color-white-0);
   color: var(--color-grey-700);
   border: 1px solid var(--color-grey-300);
