@@ -68,6 +68,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "jest-util": "^29.7.0",
     "playwright": "^1.57.0",
+    "terser": "^5.44.1",
     "vite": "^7.0.4"
   }
 }

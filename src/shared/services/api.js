@@ -244,10 +244,10 @@ api.interceptors.request.use(async (config) => {
     if (!isPublicRoute(normalizedPath, method)) {
       try {
         // If we already have a token, use it immediately
-        if (csrfToken) {
-          config.headers['X-CSRF-Token'] = csrfToken;
-          logger.debug(`[API] CSRF token added to ${method.toUpperCase()} ${normalizedPath}`);
-        } else {
+    if (csrfToken) {
+      config.headers['X-CSRF-Token'] = csrfToken;
+      logger.debug(`[API] CSRF token added to ${method.toUpperCase()} ${normalizedPath}`);
+    } else {
           // Try to fetch token with a short timeout
           // Use Promise.race to ensure we don't wait too long
           const token = await Promise.race([

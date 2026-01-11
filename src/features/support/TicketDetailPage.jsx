@@ -197,14 +197,6 @@ const LoadingState = styled.div`
   color: #64748b;
 `;
 
-const ErrorState = styled.div`
-  text-align: center;
-  padding: 6rem 2rem;
-  background: #ffffff;
-  border-radius: 1.2rem;
-  border: 1px solid #e2e8f0;
-`;
-
 /**
  * Ticket Detail Page (Buyer)
  */
@@ -289,10 +281,10 @@ const TicketDetailPage = () => {
   if (error || !ticket) {
     return (
       <Container>
-        <ErrorState>
-          <h3>Ticket not found</h3>
-          <p>The ticket you're looking for doesn't exist or you don't have permission to view it.</p>
-        </ErrorState>
+        <ErrorState
+          title="Ticket not found"
+          message="The ticket you're looking for doesn't exist or you don't have permission to view it."
+        />
       </Container>
     );
   }
