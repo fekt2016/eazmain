@@ -7,7 +7,7 @@ import "swiper/css";
 import "swiper/css/effect-fade";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
-import { FaArrowRight, FaStar, FaShieldAlt, FaTruck, FaHeadset, FaEnvelope } from "react-icons/fa";
+import { FaArrowRight, FaArrowLeft, FaStar, FaShieldAlt, FaTruck, FaHeadset, FaEnvelope } from "react-icons/fa";
 
 import useProduct from '../../shared/hooks/useProduct';
 import useCategory from '../../shared/hooks/useCategory';
@@ -183,7 +183,10 @@ const HomePage = () => {
           speed={1000}
           autoplay={{ delay: 5000, disableOnInteraction: false }}
           pagination={{ clickable: true }}
-          navigation
+          navigation={{
+            nextEl: '.swiper-button-next-custom',
+            prevEl: '.swiper-button-prev-custom',
+          }}
           loop
           className="hero-swiper"
         >
@@ -205,6 +208,12 @@ const HomePage = () => {
             </SwiperSlide>
           ))}
         </Swiper>
+        <button className="swiper-button-prev-custom" aria-label="Previous slide" type="button">
+          <FaArrowLeft />
+        </button>
+        <button className="swiper-button-next-custom" aria-label="Next slide" type="button">
+          <FaArrowRight />
+        </button>
       </HeroSection>
 
       {/* Features / Trust Section */}
@@ -477,10 +486,12 @@ const HeroSection = styled.div`
   height: 600px;
   width: 100%;
   position: relative;
+  overflow: hidden; /* Ensure content doesn't overflow */
 
   .hero-swiper {
     width: 100%;
     height: 100%;
+    position: relative;
     
     .swiper-pagination-bullet {
       width: 12px;
@@ -494,19 +505,95 @@ const HeroSection = styled.div`
     }
     
     .swiper-button-next, .swiper-button-prev {
-      color: white;
-      background: rgba(255,255,255,0.1);
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      backdrop-filter: blur(5px);
-      transition: all 0.3s;
-      &:hover {
-        background: rgba(255,255,255,0.3);
+      display: none !important; /* Hide default buttons completely */
+      
+      /* Remove any default text/content */
+      &::after {
+        display: none !important;
+        content: none !important;
       }
-      &:after {
-        font-size: 20px;
+      
+      /* Hide any text spans */
+      span {
+        display: none !important;
       }
+    }
+  }
+  
+  /* Navigation buttons styled at HeroSection level since they're siblings of Swiper */
+  .swiper-button-next-custom, .swiper-button-prev-custom {
+    position: absolute !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    z-index: 999 !important; /* Very high z-index to ensure it's above all content */
+    color: white !important;
+    background: rgba(255,255,255,0.1) !important;
+    width: 50px !important;
+    height: 50px !important;
+    border-radius: 50% !important;
+    border: none !important;
+    backdrop-filter: blur(5px) !important;
+    transition: all 0.3s !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    text-indent: -9999px !important;
+    overflow: visible !important;
+    pointer-events: auto !important;
+    
+    /* Ensure only SVG/icon is visible */
+    svg {
+      display: block !important;
+      width: 20px !important;
+      height: 20px !important;
+      flex-shrink: 0 !important;
+      position: relative !important;
+      z-index: 1000 !important;
+    }
+    
+    /* Hide any text content */
+    &::before,
+    &::after {
+      display: none !important;
+      content: none !important;
+    }
+    
+    &:hover {
+      background: rgba(255,255,255,0.3) !important;
+    }
+    &:active {
+      transform: translateY(-50%) scale(0.95) !important;
+    }
+  }
+  
+  .swiper-button-prev-custom {
+    left: 20px !important;
+  }
+  
+  .swiper-button-next-custom {
+    right: 20px !important;
+  }
+  
+  @media (max-width: 768px) {
+    .swiper-button-next-custom, .swiper-button-prev-custom {
+      width: 40px !important;
+      height: 40px !important;
+      font-size: 16px !important;
+      svg {
+        width: 16px !important;
+        height: 16px !important;
+      }
+    }
+    .swiper-button-prev-custom {
+      left: 10px !important;
+    }
+    .swiper-button-next-custom {
+      right: 10px !important;
     }
   }
 

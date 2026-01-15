@@ -3,9 +3,8 @@ import logger from "../utils/logger";
 
 // API configuration
 // SECURITY: Use environment variables for API URLs
+// Priority: VITE_API_BASE_URL > VITE_API_URL (backward compat) > production default
 const API_CONFIG = {
-  DEVELOPMENT: import.meta.env.VITE_API_URL || "http://localhost:4000/api/v1",
-  PRODUCTION: import.meta.env.VITE_API_URL || "https://eazworld.com/api/v1",
   TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT || "60000", 10), // 60 seconds (reduced from 500s for better UX)
 };
 
@@ -64,24 +63,34 @@ const PUBLIC_GET_ENDPOINTS = [
 ];
 
 // Helper functions
+// Determine base URL based on environment variable or defaults
+// Priority: VITE_API_BASE_URL > VITE_API_URL (backward compat) > production default
 const getBaseURL = () => {
-  // SECURITY: Use environment variable if available (highest priority)
-  // This prevents hardcoded URLs and allows different environments
-  let baseURL;
-  if (import.meta.env.VITE_API_URL) {
-    baseURL = import.meta.env.VITE_API_URL;
-  } else if (
-    typeof window !== 'undefined' &&
-    (window.location.hostname === "localhost" ||
-    window.location.hostname === "127.0.0.1")
-  ) {
-    baseURL = API_CONFIG.DEVELOPMENT;
-  } else {
-    baseURL = API_CONFIG.PRODUCTION;
+  // Check for API_BASE_URL environment variable (highest priority)
+  // Supports both VITE_API_BASE_URL and VITE_API_URL for backward compatibility
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
+  
+  if (apiBaseUrl) {
+    // Remove trailing slashes and ensure /api/v1 is appended if not present
+    let url = apiBaseUrl.trim().replace(/\/+$/, '');
+    
+    // If URL doesn't already include /api/v1, append it
+    if (!url.includes('/api/v1')) {
+      url = `${url}/api/v1`;
+    }
+    
+    return url;
   }
   
-  // Remove trailing slash to avoid double slashes when combining with paths
-  return baseURL.replace(/\/+$/, '');
+  // Local development detection
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+      return "http://localhost:4000/api/v1";
+    }
+  }
+  
+  // Production: Default to https://api.saiisai.com/api/v1
+  return "https://api.saiisai.com/api/v1";
 };
 
 const getRelativePath = (url) => {
@@ -212,6 +221,7 @@ if (import.meta.env.DEV) {
     timeout: API_CONFIG.TIMEOUT,
     withCredentials: true,
     env: {
+      VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL || 'not set',
       VITE_API_URL: import.meta.env.VITE_API_URL || 'not set',
       MODE: import.meta.env.MODE,
     },
