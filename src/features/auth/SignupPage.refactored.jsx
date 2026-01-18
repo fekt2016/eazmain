@@ -27,7 +27,6 @@ export default function SignupPage() {
     register,
     handleSubmit,
     watch,
-    trigger,
     formState: { errors, isSubmitting },
     setError: setFormError,
     clearErrors,
@@ -78,7 +77,6 @@ export default function SignupPage() {
   };
 
   const onSubmit = async (data) => {
-    console.log("onsubmit",data);  
     clearErrors("root");
 
     try {
@@ -102,28 +100,8 @@ export default function SignupPage() {
         },
         onError: (error) => {
           logger.error("Registration error:", error);
-          
-          // Extract error response data
-          const errorResponse = error.response?.data || {};
-          const errorMessage = errorResponse.message || error.message || "Registration failed. Please try again.";
-          
-          // Handle field-level errors from backend (409 for duplicates, 400 for validation)
-          if (errorResponse.fieldErrors) {
-            Object.keys(errorResponse.fieldErrors).forEach((field) => {
-              setFormError(field, {
-                type: "server",
-                message: errorResponse.fieldErrors[field],
-              });
-            });
-          }
-          
-          // Set general error if no field errors or for non-validation errors
-          if (!errorResponse.fieldErrors || Object.keys(errorResponse.fieldErrors).length === 0) {
-            setFormError("root", { message: errorMessage });
-          } else {
-            // Still show general message for context
-            setFormError("root", { message: errorMessage });
-          }
+          const errorMessage = error.message || "Registration failed. Please try again.";
+          setFormError("root", { message: errorMessage });
         },
       });
     } catch (err) {
@@ -142,7 +120,7 @@ export default function SignupPage() {
       <ImageSection>
         <Overlay />
         <ImageContent>
-          <BrandLogo to="/">Saiisai</BrandLogo>
+          <BrandLogo to="/">EazShop</BrandLogo>
           <HeroText>
             <h1>Join Our Community</h1>
             <p>Create an account to unlock exclusive features and personalized recommendations.</p>
@@ -232,21 +210,9 @@ export default function SignupPage() {
               label="I agree with the"
               linkTo="/terms"
               linkText="privacy policy & terms"
-              checked={watch("check")}
               error={errors.check?.message}
               required
-              {...(() => {
-                const { onChange, ...rest } = register("check", VALIDATION_RULES.check);
-                return {
-                  ...rest,
-                  onChange: async (e) => {
-                    // Call React Hook Form's onChange to update form state
-                    onChange(e);
-                    // Trigger validation immediately to show error if unchecked
-                    await trigger("check");
-                  },
-                };
-              })()}
+              {...register("check", VALIDATION_RULES.check)}
             />
 
             <Button 

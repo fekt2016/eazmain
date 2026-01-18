@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { Link } from "react-router-dom";
 
 /**
- * Saysay Logo Component
+ * Saiisai Logo Component
  * Can be used as a standalone logo or as a link to home
  */
 const Logo = ({ 
@@ -43,7 +43,7 @@ const Logo = ({
       </LogoIcon>
       {variant !== "icon" && (
         <LogoText $variant={variant}>
-          <LogoTextPrimary>Saysay</LogoTextPrimary>
+          <LogoTextPrimary>Saiisai</LogoTextPrimary>
         </LogoText>
       )}
     </LogoContainer>

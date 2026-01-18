@@ -64,9 +64,27 @@ const PUBLIC_GET_ENDPOINTS = [
 
 // Helper functions
 // Determine base URL based on environment variable or defaults
-// Priority: VITE_API_BASE_URL > VITE_API_URL (backward compat) > production default
+// Priority: Localhost detection > VITE_API_BASE_URL > VITE_API_URL > production default
 const getBaseURL = () => {
-  // Check for API_BASE_URL environment variable (highest priority)
+  // STRICT LOCAL DEV: Always use localhost in development mode
+  const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
+  
+  // Local development detection (highest priority)
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      console.log('[getBaseURL] 🔒 Detected localhost - forcing http://localhost:4000/api/v1');
+      return "http://localhost:4000/api/v1";
+    }
+  }
+  
+  // If in development mode, default to localhost (even if env var is set to production)
+  if (isDevelopment) {
+    console.warn('[getBaseURL] ⚠️ Development mode detected - using localhost (ignoring env vars if set to production)');
+    return "http://localhost:4000/api/v1";
+  }
+  
+  // Check for API_BASE_URL environment variable
   // Supports both VITE_API_BASE_URL and VITE_API_URL for backward compatibility
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
   
@@ -74,19 +92,21 @@ const getBaseURL = () => {
     // Remove trailing slashes and ensure /api/v1 is appended if not present
     let url = apiBaseUrl.trim().replace(/\/+$/, '');
     
+    // Force HTTP for localhost URLs (even if env var has https)
+    if (url.includes('localhost') || url.includes('127.0.0.1') || url.includes(':4000')) {
+      url = url.replace(/^https:\/\//i, 'http://');
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'http://' + url.replace(/^\/\//, '');
+      }
+      console.log('[getBaseURL] 🔒 Forced HTTP for localhost:', url);
+    }
+    
     // If URL doesn't already include /api/v1, append it
     if (!url.includes('/api/v1')) {
       url = `${url}/api/v1`;
     }
     
     return url;
-  }
-  
-  // Local development detection
-  if (typeof window !== 'undefined') {
-    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-      return "http://localhost:4000/api/v1";
-    }
   }
   
   // Production: Default to https://api.saiisai.com/api/v1
@@ -230,6 +250,19 @@ if (import.meta.env.DEV) {
 
 // Request interceptor
 api.interceptors.request.use(async (config) => {
+  // CRITICAL: Always use fresh baseURL from getBaseURL() to ensure localhost in dev
+  const freshBaseURL = getBaseURL();
+  config.baseURL = freshBaseURL;
+  
+  // Force HTTP for localhost URLs
+  if (config.baseURL && (config.baseURL.includes('localhost') || config.baseURL.includes('127.0.0.1') || config.baseURL.includes(':4000'))) {
+    config.baseURL = config.baseURL.replace(/^https:\/\//i, 'http://');
+    if (!config.baseURL.startsWith('http://') && !config.baseURL.startsWith('https://')) {
+      config.baseURL = 'http://' + config.baseURL.replace(/^\/\//, '');
+    }
+    console.log('[API Request Interceptor] 🔒 Forced HTTP baseURL:', config.baseURL);
+  }
+  
   const relativePath = getRelativePath(config.url);
   const normalizedPath = normalizePath(relativePath);
   const method = config.method ? config.method.toLowerCase() : "get";

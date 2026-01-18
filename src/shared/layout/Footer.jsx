@@ -42,34 +42,6 @@ export default function Footer() {
               and seamless shopping. Discover quality, style, and convenience all in one place.
             </BrandDescription>
           </BrandSection>
-
-          <NewsletterSection>
-            <NewsletterTitle>Stay Updated</NewsletterTitle>
-            <NewsletterDescription>
-              Get exclusive access to new collections and special discounts.
-            </NewsletterDescription>
-            <NewsletterForm onSubmit={handleSubmit}>
-              <InputWrapper>
-                <NewsletterInput
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-                <SubscribeButton 
-                  type="submit" 
-                  disabled={isSubscribing}
-                >
-                  {isSubscribing ? (
-                    <ButtonSpinner size="sm" />
-                  ) : (
-                    "Subscribe"
-                  )}
-                </SubscribeButton>
-              </InputWrapper>
-            </NewsletterForm>
-          </NewsletterSection>
         </FooterTop>
 
         {/* Middle Section - Links */}
@@ -281,7 +253,7 @@ const LogoWrapper = styled.div`
 `;
 
 const BrandTagline = styled.span`
-  font-size: 1.1rem;
+  font-size: 1.5rem;
   color: rgba(255, 255, 255, 0.7);
   font-weight: 500;
   letter-spacing: 0.5px;
@@ -291,7 +263,7 @@ const BrandTagline = styled.span`
 const BrandDescription = styled.p`
   color: rgba(255, 255, 255, 0.6);
   line-height: 1.8;
-  font-size: 1rem;
+  font-size: 1.2rem;
   margin: 0;
   max-width: 450px;
   font-weight: 400;
@@ -304,7 +276,7 @@ const NewsletterSection = styled.div`
 `;
 
 const NewsletterTitle = styled.h3`
-  font-size: 1.6rem;
+  font-size: 1.8rem;
   font-weight: 700;
   color: #ffffff;
   margin: 0;
@@ -424,7 +396,7 @@ const LinkColumn = styled.div`
 `;
 
 const ColumnTitle = styled.h3`
-  font-size: 1.3rem;
+  font-size: 2rem;
   font-weight: 700;
   color: #ffffff;
   margin: 0;
@@ -452,7 +424,7 @@ const LinkList = styled.div`
 const LinkItem = styled(Link)`
   color: rgba(255, 255, 255, 0.7);
   text-decoration: none;
-  font-size: 1rem;
+  font-size: 1.3rem;
   transition: all 0.3s ease;
   padding: 0.5rem 0;
   position: relative;
@@ -493,7 +465,7 @@ const SocialLink = styled.a`
   gap: 1.2rem;
   color: rgba(255, 255, 255, 0.7);
   text-decoration: none;
-  font-size: 1rem;
+  font-size: 1.3rem;
   transition: all 0.3s ease;
   padding: 0.8rem 1rem;
   border-radius: 8px;
@@ -568,9 +540,9 @@ const LegalLinks = styled.div`
 `;
 
 const LegalLink = styled(Link)`
-  color: rgba(255, 255, 255, 0.6);
+  // color: rgba(255, 255, 255, 0.6);
   text-decoration: none;
-  font-size: 0.95rem;
+  // font-size: 1.2rem;
   transition: all 0.3s ease;
   font-weight: 400;
   position: relative;
@@ -607,16 +579,16 @@ const PaymentMethodsSection = styled.div`
   }
 `;
 
-const PaymentSectionTitle = styled.h4`
+const PaymentSectionTitle = styled.h2`
   color: rgba(255, 255, 255, 0.9);
-  font-size: 1rem;
+  font-size: 2rem;
   font-weight: 600;
   margin: 0 0 1.2rem 0;
   text-align: center;
   letter-spacing: 0.5px;
 
   @media (max-width: 768px) {
-    font-size: 0.95rem;
+    font-size: 1.5rem;
     margin-bottom: 1rem;
   }
 `;
@@ -624,7 +596,7 @@ const PaymentSectionTitle = styled.h4`
 const PaymentMethodsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1.2rem;
+  gap: 1rem;
   align-items: center;
   justify-items: center;
   max-width: 800px;
@@ -646,7 +618,7 @@ const PaymentMethod = styled.div`
   flex-direction: column;
   align-items: center;
   gap: 0.6rem;
-  padding: 1rem 0.8rem;
+  padding: 1.2rem 0.8rem;
   background: rgba(255, 255, 255, 0.03);
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -681,7 +653,7 @@ const PaymentMethodIcon = styled.div`
   transition: all 0.3s ease;
 
   svg {
-    font-size: 1.5rem;
+    font-size: 1.7rem;
   }
 
   ${PaymentMethod}:hover & {
@@ -695,7 +667,7 @@ const PaymentMethodIcon = styled.div`
     height: 3rem;
     
     svg {
-      font-size: 1.4rem;
+      font-size: 1.7rem;
     }
   }
 `;
@@ -713,7 +685,7 @@ const PaymentMethodLabel = styled.span`
   }
 
   @media (max-width: 768px) {
-    font-size: 0.85rem;
+    font-size: 1.3rem;
   }
 `;
 
@@ -730,14 +702,14 @@ const SecuritySection = styled.div`
 
 const SecuritySectionTitle = styled.h4`
   color: rgba(255, 255, 255, 0.95);
-  font-size: 1rem;
+  font-size: 1.7rem;
   font-weight: 600;
   margin: 0 0 1.2rem 0;
   text-align: center;
   letter-spacing: 0.5px;
 
   @media (max-width: 768px) {
-    font-size: 0.95rem;
+    font-size: 1.7rem;
     margin-bottom: 1rem;
   }
 `;

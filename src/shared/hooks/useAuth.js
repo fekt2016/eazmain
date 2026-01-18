@@ -29,12 +29,27 @@ const useAuth = () => {
         // Extract user from response.data.data (backend structure) or response.data (if already extracted)
         const responseData = response?.data || response;
         const user = responseData?.data || responseData?.user || responseData;
-        logger.log("[useAuth] getCurrentUser extracted user:", { 
-          hasUser: !!user,
-          hasPhoto: !!user?.photo,
-          userId: user?.id || user?._id
-        });
-        return user;
+        
+        // Validate that we have a real user object (not just an empty object or null)
+        const hasValidUser = user && 
+                            typeof user === 'object' && 
+                            !Array.isArray(user) &&
+                            (user.id || user._id) &&
+                            (user.email || user.name || user.phone); // At least one identifying field
+        
+        if (hasValidUser) {
+          logger.log("[useAuth] getCurrentUser extracted user:", { 
+            hasUser: true,
+            hasPhoto: !!user?.photo,
+            userId: user?.id || user?._id
+          });
+          return user;
+        } else {
+          // No valid user found - clear any stale cache and return null
+          logger.log("[useAuth] getCurrentUser - no valid user found, clearing cache");
+          queryClient.setQueryData(["auth"], null);
+          return null;
+        }
       } catch (error) {
         // Only clear auth data after server confirms 401 (not on network errors)
         // FIX: Do NOT clear auth on notification endpoint failures

@@ -127,9 +127,12 @@ export default function LoginPage() {
               status: err.response?.status,
             });
             
-            // Handle unverified account
+            // Extract error message from response
+            const errorResponse = err.response?.data || {};
+            let errorMessage = errorResponse.message || err.message || "Login failed. Please try again.";
+            
+            // Handle unverified account (403)
             if (err.response?.status === 403) {
-              const errorMessage = err.response?.data?.message || err.message;
               if (errorMessage.includes('not verified') || errorMessage.includes('verify')) {
                 navigate('/verify-account', {
                   state: {
@@ -140,6 +143,14 @@ export default function LoginPage() {
                 return;
               }
             }
+            
+            // Handle authentication errors (401) - show user-friendly message
+            if (err.response?.status === 401) {
+              errorMessage = "Invalid email or password. Please check your credentials and try again.";
+            }
+            
+            // Show error to user via toast
+            toast.error(errorMessage);
           },
         }
       );
@@ -211,7 +222,7 @@ export default function LoginPage() {
       <ImageSection>
         <Overlay />
         <ImageContent>
-          <BrandLogo to="/">EazShop</BrandLogo>
+          <BrandLogo to="/">Saiisai</BrandLogo>
           <HeroText>
             <h1>Welcome Back</h1>
             <p>Discover a world of premium products and exclusive deals.</p>
