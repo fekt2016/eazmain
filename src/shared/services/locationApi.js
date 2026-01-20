@@ -18,11 +18,13 @@ const locationApi = {
 
   /**
    * Reverse geocode GPS coordinates to physical address
-   * GET /api/v1/location/reverse-geocode?lat=...&lng=...
+   * POST /api/v1/location/reverse-geocode
+   * Body: { lat, lng }
    */
   reverseGeocode: async (lat, lng) => {
-    const response = await api.get('/location/reverse-geocode', {
-      params: { lat, lng },
+    const response = await api.post('/location/reverse-geocode', {
+      lat,
+      lng,
     });
     return response.data;
   },

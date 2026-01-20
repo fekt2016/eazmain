@@ -39,6 +39,8 @@ import useDynamicPageTitle from "../../shared/hooks/useDynamicPageTitle";
 import seoConfig from "../../shared/config/seoConfig";
 import NeighborhoodAutocomplete from "../../shared/components/NeighborhoodAutocomplete";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
+import locationApi from "../../shared/services/locationApi";
+import neighborhoodService from "../../shared/services/neighborhoodApi";
 
 // ────────────────────────────────────────────────
 // Helper functions
@@ -204,18 +206,36 @@ const getShippingItems = (rawItems) => {
 
 const validateNewAddress = (newAddress) => {
   const errors = {};
-  const requiredFields = ["fullName", "streetAddress", "area", "city", "region", "contactPhone"];
+  // Core required fields for Ghana delivery
+  const requiredFields = [
+    "fullName",
+    "streetAddress",
+    "area",
+    "city",
+    "region",
+    "contactPhone",
+    "landmark",
+  ];
 
   requiredFields.forEach((field) => {
-    if (!newAddress[field]) errors[field] = "This field is required";
+    if (!newAddress[field] || !String(newAddress[field]).trim()) {
+      if (field === "landmark") {
+        errors[field] =
+          "Please add a nearby landmark to help our rider find your location.";
+      } else if (field === "contactPhone") {
+        errors[field] = "A delivery contact phone number is required.";
+      } else {
+        errors[field] = "This field is required";
+      }
+    }
   });
 
-  // Validate city
+  // Validate city (Ghana delivery scope)
   if (
     newAddress.city &&
     !["ACCRA", "TEMA"].includes(newAddress.city.toUpperCase())
   ) {
-    errors.city = "Saysay currently delivers only in Accra and Tema";
+    errors.city = "Saiisai currently delivers only in Accra and Tema.";
   }
 
   // Ghana phone validation
@@ -224,16 +244,16 @@ const validateNewAddress = (newAddress) => {
     const pattern =
       /^(020|023|024|025|026|027|028|029|050|054|055|056|057|059)\d{7}$/;
     if (!pattern.test(digits)) {
-      errors.contactPhone = "Invalid Ghana phone number";
+      errors.contactPhone = "Please enter a valid Ghana mobile number (e.g. 0241234567).";
     }
   }
 
-  // GhanaPost format if provided
+  // GhanaPost format if provided (optional but encouraged)
   if (
     newAddress.digitalAddress &&
-    !/^[A-Z]{2}-\d{3}-\d{4}$/.test(newAddress.digitalAddress)
+    !/^[A-Z]{2}-\d{3}-\d{4}$/.test(newAddress.digitalAddress.trim().toUpperCase())
   ) {
-    errors.digitalAddress = "Invalid format. Use AA-123-4567";
+    errors.digitalAddress = "Invalid GhanaPost GPS format. Use AA-123-4567 (e.g. GA-123-4567).";
   }
 
   return errors;
@@ -331,6 +351,9 @@ const CheckoutPage = () => {
   // Location detection state
   const [isFetchingLocation, setIsFetchingLocation] = useState(false);
   const [locationError, setLocationError] = useState("");
+  // Auto-detected neighborhoods (from GPS → reverse geocode → neighborhood search)
+  // When populated, we show a <select> so user can pick the exact neighborhood from the matches
+  const [autoNeighborhoodOptions, setAutoNeighborhoodOptions] = useState([]);
 
   // ────────────────────────────────────────────────
   // Derived data
@@ -710,6 +733,7 @@ const CheckoutPage = () => {
   };
 
   const getCurrentLocation = () => {
+    // Check if geolocation is supported
     if (!navigator.geolocation) {
       setLocationError("Geolocation is not supported by your browser");
       return;
@@ -723,49 +747,193 @@ const CheckoutPage = () => {
         try {
           const { latitude, longitude } = position.coords;
 
-          // Reverse geocode to get address details
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
-          );
+          // Call backend reverse geocoding endpoint (avoids CSP violations)
+          // This gives us the physical address (street, town, city, region)
+          const reverseGeocodeResponse = await locationApi.reverseGeocode(latitude, longitude);
 
-          const data = await response.json();
+          // Extract address data from response
+          // Response format: { status: 'success', data: { street, town, city, region, ... } }
+          const addressData = reverseGeocodeResponse?.data || reverseGeocodeResponse;
 
-          if (data.error) {
-            throw new Error(data.error);
+          // Debug: log full geocoded address payload for inspection
+          logger.info("[Checkout getCurrentLocation] Full reverse geocode address data:", {
+            rawResponse: reverseGeocodeResponse,
+            parsedAddress: addressData,
+          });
+
+          if (!addressData) {
+            throw new Error("No address data received from server");
           }
 
-          // Extract address components
-          const address = data.address || {};
+          // Convert GPS coordinates to GhanaPost GPS digital address
+          // This gives us the proper digital address format (e.g., GA-123-4567)
+          let digitalAddress = "";
+          try {
+            const digitalAddressResponse = await locationApi.convertCoordinatesToDigitalAddress(latitude, longitude);
+            const digitalAddressData = digitalAddressResponse?.data || digitalAddressResponse;
+            console.log("digitalAddressData", digitalAddressData);
+            digitalAddress = digitalAddressData?.digitalAddress || "";
+          } catch (digitalError) {
+            // If digital address conversion fails, log but don't block the rest of the flow
+            logger.warn("Failed to convert coordinates to GhanaPost GPS digital address:", digitalError);
+            // Fallback: Generate a basic format if conversion fails
+            const latSuffix = Math.floor((Math.abs(latitude) % 1) * 10000);
+            const lngPrefix = Math.abs(Math.floor(longitude));
+            digitalAddress = `GA-${String(lngPrefix).padStart(3, "0")}-${String(latSuffix).padStart(4, "0")}`;
+          }
 
-          // Generate Ghana digital address (mock implementation)
-          const latSuffix = Math.floor((Math.abs(latitude) % 1) * 10000);
-          const lngPrefix = Math.abs(Math.floor(longitude));
-          const digitalAddress = `GA-${String(lngPrefix).padStart(3, "0")}-${String(latSuffix).padStart(4, "0")}`;
+          // Extract address fields from reverse geocoding
+          const extractedStreet = (addressData.street || addressData.streetAddress || "").trim();
+          const extractedTown = (addressData.town || addressData.neighborhood || addressData.area || "").trim();
+          const extractedCityRaw = addressData.city || "";
+          // Normalize city: backend expects "Accra" or "Tema" (capitalized), form uses "ACCRA"/"TEMA" (uppercase)
+          const extractedCityNormalized = extractedCityRaw 
+            ? extractedCityRaw.trim().charAt(0).toUpperCase() + extractedCityRaw.trim().slice(1).toLowerCase()
+            : "";
+          const extractedCityUppercase = extractedCityRaw 
+            ? extractedCityRaw.toUpperCase().trim()
+            : "";
+          const extractedRegion = addressData.region 
+            ? addressData.region.toLowerCase().trim()
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ')
+            : "";
 
-          // Update form with location data (convert to lowercase)
+          // Search for matching neighborhood in the database
+          // This ensures the neighborhood is selected from the Neighborhood model, not just text
+          let matchedNeighborhood = null;
+          let hadNeighborhoodResults = false;
+          if (extractedTown && extractedCityNormalized) {
+            try {
+              // Search for neighborhoods matching the town/area name in the detected city
+              // Use normalized city format (Accra/Tema) for API search
+              const neighborhoodResponse = await neighborhoodService.searchNeighborhoods(
+                extractedTown,
+                extractedCityNormalized
+              );
+              
+              const neighborhoods = neighborhoodResponse?.data?.neighborhoods || 
+                                   neighborhoodResponse?.neighborhoods || [];
+              
+              if (neighborhoods.length > 0) {
+                hadNeighborhoodResults = true;
+                // Store all matching neighborhoods so user can select from a list
+                setAutoNeighborhoodOptions(neighborhoods);
+                // Find the best match (exact match first, then first result)
+                // Prioritize exact name match, then fuzzy match
+                matchedNeighborhood = neighborhoods.find(
+                  n => n.name.toLowerCase().trim() === extractedTown.toLowerCase().trim()
+                ) || neighborhoods.find(
+                  n => n.name.toLowerCase().includes(extractedTown.toLowerCase()) ||
+                       extractedTown.toLowerCase().includes(n.name.toLowerCase())
+                ) || neighborhoods[0];
+                
+                logger.info('[Auto-detect] Found matching neighborhood:', {
+                  searchTerm: extractedTown,
+                  city: extractedCityNormalized,
+                  matched: matchedNeighborhood.name,
+                  neighborhoodId: matchedNeighborhood._id,
+                  totalMatches: neighborhoods.length,
+                });
+              } else {
+                // No neighborhood matches at all for this town/city
+                setAutoNeighborhoodOptions([]);
+                logger.warn('[Auto-detect] No matching neighborhood found:', {
+                  searchTerm: extractedTown,
+                  city: extractedCityNormalized,
+                });
+              }
+            } catch (neighborhoodError) {
+              // If neighborhood search fails, continue with text value
+              setAutoNeighborhoodOptions([]);
+              logger.warn('[Auto-detect] Neighborhood search failed:', neighborhoodError);
+            }
+          }
+
+          // Map backend response to form fields
+          // Backend returns: { street, town, city, region, country, formattedAddress }
+          // Form expects: { streetAddress, area, city, region, digitalAddress }
+          // If neighborhood name matches a record, use it.
+          // If only municipality matches (e.g., "Ayawaso" → multiple neighborhoods), do NOT auto-fill neighborhood.
+          // Instead, leave the field for the user to choose via the NeighborhoodAutocomplete.
+          const areaValue =
+            matchedNeighborhood
+              ? matchedNeighborhood.name
+              : hadNeighborhoodResults
+                ? (prev.area || "")
+                : extractedTown;
+
           setNewAddress((prev) => ({
             ...prev,
-            streetAddress: (address.road || address.highway || "").toLowerCase(),
-            area: (address.neighborhood || address.sublocality || address.sublocality_level_1 || "").toLowerCase(),
-            landmark: (address.landmark || "").toLowerCase(),
-            city: (address.city || address.town || address.village || address.county || "").toLowerCase(),
-            region: (address.state || address.region || "").toLowerCase(),
-            digitalAddress: digitalAddress,
+            // Map street from backend (street field) to streetAddress
+            // Do NOT overwrite if user has already typed a value
+            streetAddress: prev.streetAddress || extractedStreet,
+            // Neighborhood/Area:
+            // - Exact neighborhood match → fill with that name
+            // - Only municipality match (e.g. "Ayawaso") → keep existing so user selects a neighborhood
+            // - No matches at all → fall back to extracted town/area text
+            area: prev.area || areaValue,
+            // Keep existing landmark or leave empty (never overwrite)
+            landmark: prev.landmark || "",
+            // Map city from backend (normalize to uppercase for ACCRA/TEMA) if empty
+            city: prev.city || extractedCityUppercase,
+            // Map region from backend (normalize to lowercase, then capitalize first letter) if empty
+            region: prev.region || extractedRegion,
+            // Set digital address (proper GhanaPost GPS format) if empty
+            digitalAddress: prev.digitalAddress || digitalAddress,
           }));
         } catch (error) {
           logger.error("Reverse geocoding error:", error);
-          setLocationError(
-            "Failed to get address details. Please enter manually."
-          );
+          
+          // Provide user-friendly error messages
+          if (error.response?.status === 400) {
+            setLocationError(
+              error.response?.data?.message || "Invalid location. Please try again or enter address manually."
+            );
+          } else if (error.response?.status === 404) {
+            setLocationError(
+              "Address not found for this location. Please enter address manually."
+            );
+          } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+            setLocationError(
+              "Request timed out. Please check your connection and try again."
+            );
+          } else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
+            setLocationError(
+              "Network error. Please check your connection and try again."
+            );
+          } else {
+            setLocationError(
+              "Failed to get address details. Please enter manually."
+            );
+          }
         } finally {
           setIsFetchingLocation(false);
         }
       },
       (error) => {
         logger.error("Geolocation error:", error);
-        setLocationError(
-          "Location access denied. Please enable location services."
-        );
+        
+        // Handle different geolocation error codes
+        let errorMessage = "Location access denied. Please enable location services.";
+        
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = "Location access denied. Please enable location services in your browser settings.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = "Location information is unavailable. Please enter your address manually.";
+            break;
+          case error.TIMEOUT:
+            errorMessage = "Location request timed out. Please try again.";
+            break;
+          default:
+            errorMessage = "Failed to get your location. Please enter address manually.";
+            break;
+        }
+        
+        setLocationError(errorMessage);
         setIsFetchingLocation(false);
       },
       {
@@ -1029,6 +1197,14 @@ const CheckoutPage = () => {
               paymentError.response?.data?.message ||
                 "Failed to initialize payment. Please try again."
             );
+            // IMPORTANT: Order has been created but payment did not start.
+            // Redirect user to order confirmation page so they can retry payment safely.
+            try {
+              const confirmationPath = `/order-confirmation?orderId=${order._id}`;
+              navigate(confirmationPath);
+            } catch (navError) {
+              logger.error("[CheckoutPage] Failed to navigate to order confirmation after payment error:", navError);
+            }
           }
         } else if (paymentMethod === "credit_balance") {
           // Credit balance payment is handled on the backend
@@ -1243,21 +1419,53 @@ const CheckoutPage = () => {
                 <FormRow>
                   <FormGroup>
                     <Label>Neighborhood/Area *</Label>
-                    <NeighborhoodAutocomplete
-                      value={newAddress.area}
-                      onChange={handleAddressChange}
-                      city={newAddress.city}
-                      placeholder="Search neighborhood (e.g., Nima, Cantonments, Tema Community 1)"
-                      onSelect={(neighborhood) => {
-                        setNewAddress((prev) => ({
-                          ...prev,
-                          area: neighborhood.name,
-                        }));
-                      }}
-                    />
-                    <HintText>
-                      Start typing to search for your neighborhood
-                    </HintText>
+                    {autoNeighborhoodOptions.length > 0 ? (
+                      <>
+                        <Select
+                          name="area"
+                          value={newAddress.area}
+                          onChange={(e) => {
+                            const selectedName = e.target.value;
+                            setNewAddress((prev) => ({
+                              ...prev,
+                              area: selectedName,
+                            }));
+                          }}
+                        >
+                          <option value="">Select neighborhood</option>
+                          {autoNeighborhoodOptions.map((n) => (
+                            <option
+                              key={n._id || n.name}
+                              value={n.name}
+                            >
+                              {n.name}
+                              {n.municipality ? ` (${n.municipality})` : ""}
+                            </option>
+                          ))}
+                        </Select>
+                        <HintText>
+                          We detected multiple neighborhoods for your area. Please choose the correct one.
+                        </HintText>
+                      </>
+                    ) : (
+                      <>
+                        <NeighborhoodAutocomplete
+                          value={newAddress.area}
+                          onChange={handleAddressChange}
+                          city={newAddress.city}
+                          placeholder="Search neighborhood (e.g., Nima, Cantonments, Tema Community 1)"
+                          onSelect={(neighborhood) => {
+                            setNewAddress((prev) => ({
+                              ...prev,
+                              area: neighborhood.name,
+                            }));
+                          }}
+                        />
+                        <HintText>
+                          Start typing to search for your neighborhood
+                        </HintText>
+                      </>
+                    )}
                     {errors.area && (
                       <ErrorText>{errors.area}</ErrorText>
                     )}

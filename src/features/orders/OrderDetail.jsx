@@ -19,6 +19,7 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import { useGetUserOrderById, useRequestRefund, useGetRefundStatus } from '../../shared/hooks/useOrder';
+import { usePaystackPayment } from '../../shared/hooks/usePaystackPayment';
 import { LoadingState, ErrorState, EmptyState } from '../../components/loading';
 import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 import { PATHS } from '../../routes/routePaths';
@@ -67,6 +68,7 @@ logger.log("order", order);
   const [refundMode, setRefundMode] = useState('items'); // 'items' or 'whole'
 
   const { mutate: requestRefund, isPending: isRefundPending } = useRequestRefund();
+  const { initializePaystackPayment } = usePaystackPayment();
   const { data: refundStatusData } = useGetRefundStatus(orderId);
   const refundStatus = useMemo(() => refundStatusData?.refund, [refundStatusData]);
 
@@ -109,6 +111,59 @@ logger.log("order", order);
 
   const currentStage = getCurrentStage();
 
+  // Determine if order is eligible for retry payment
+  const canRetryPayment = useMemo(() => {
+    if (!order) return false;
+    const paymentMethod = order.paymentMethod;
+    const isCashOnDelivery =
+      paymentMethod === 'payment_on_delivery' ||
+      paymentMethod === 'Cash on Delivery' ||
+      paymentMethod === 'cod';
+    const isWalletPayment =
+      paymentMethod === 'credit_balance' ||
+      paymentMethod === 'wallet' ||
+      paymentMethod === 'account_balance';
+    const isPaystackPayment = !isCashOnDelivery && !isWalletPayment;
+    const isUnpaid =
+      !order.paymentStatus ||
+      order.paymentStatus === 'pending' ||
+      order.paymentStatus === 'failed';
+    const isNotCancelled =
+      order.status !== 'cancelled' && order.orderStatus !== 'cancelled';
+    return isPaystackPayment && isUnpaid && isNotCancelled;
+  }, [order]);
+
+  const [payNowError, setPayNowError] = useState('');
+  const [isPayNowLoading, setIsPayNowLoading] = useState(false);
+
+  const handlePayNow = async () => {
+    if (!order) return;
+    setPayNowError('');
+    setIsPayNowLoading(true);
+    try {
+      const email =
+        order.user?.email ||
+        order.shippingAddress?.contactEmail ||
+        order.shippingAddress?.email ||
+        '';
+
+      const { redirectTo } = await initializePaystackPayment({
+        orderId,
+        email,
+      });
+
+      window.location.href = redirectTo;
+    } catch (error) {
+      console.error('[OrderDetail] Pay Now error:', error);
+      setPayNowError(
+        error?.response?.data?.message ||
+          error?.message ||
+          'Failed to initialize payment. Please try again.'
+      );
+    } finally {
+      setIsPayNowLoading(false);
+    }
+  };
 
   const handleDeleteOrder = () => {
     logger.log("Deleting order:", orderId);
@@ -422,6 +477,23 @@ logger.log("order", order);
             )}
           </MetaItem>
         </HeaderMeta>
+
+        {/* Pay Now / Retry Payment */}
+        {canRetryPayment && (
+          <PayNowBanner>
+            <PayNowBannerText>
+              This order was created but payment has not been completed.
+            </PayNowBannerText>
+            {payNowError && <PayNowBannerError>{payNowError}</PayNowBannerError>}
+            <PayNowBannerButton
+              type="button"
+              onClick={handlePayNow}
+              disabled={isPayNowLoading}
+            >
+              {isPayNowLoading ? 'Redirecting to Paystack...' : 'Pay Now'}
+            </PayNowBannerButton>
+          </PayNowBanner>
+        )}
       </HeaderSection>
 
       {/* Main Content Grid */}
@@ -1255,6 +1327,45 @@ const OrderNumber = styled.div`
 
   svg {
     color: var(--color-primary-500);
+  }
+`;
+
+const PayNowBanner = styled.div`
+  margin-top: var(--spacing-md);
+  padding: 1.2rem 1.6rem;
+  border-radius: var(--border-radius-md);
+  background-color: #fff7ed;
+  border: 1px solid #fed7aa;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+`;
+
+const PayNowBannerText = styled.p`
+  margin: 0;
+  font-size: 1.4rem;
+  color: #7b341e;
+`;
+
+const PayNowBannerError = styled.p`
+  margin: 0;
+  font-size: 1.3rem;
+  color: #dc2626;
+`;
+
+const PayNowBannerButton = styled(Button)`
+  align-self: flex-start;
+  background-color: #2563eb;
+  color: #ffffff;
+
+  &:hover {
+    background-color: #1d4ed8;
   }
 `;
 

@@ -11,12 +11,13 @@ import {
   FaSpinner,
   FaBox,
 } from "react-icons/fa";
-import { useMemo, useEffect, useRef } from "react";
+import { useMemo, useEffect, useRef, useState } from "react";
 import { useCartActions } from "../../shared/hooks/useCart";
 import { useQueryClient } from "@tanstack/react-query";
 import useDynamicPageTitle from "../../shared/hooks/useDynamicPageTitle";
 import seoConfig from "../../shared/config/seoConfig";
 import { useOrderConfirmation } from "../../shared/hooks/useOrderConfirmation";
+import { usePaystackPayment } from "../../shared/hooks/usePaystackPayment";
 
 /**
  * OrderConfirmationPage Component
@@ -37,6 +38,9 @@ const OrderConfirmationPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { clearCart } = useCartActions();
+  const { initializePaystackPayment } = usePaystackPayment();
+  const [payNowError, setPayNowError] = useState("");
+  const [isPayNowLoading, setIsPayNowLoading] = useState(false);
 
   const orderFromState = location.state?.order || location.state;
   
@@ -187,6 +191,55 @@ const OrderConfirmationPage = () => {
       order?.paymentMethod === "account_balance"
     );
   }, [order?.paymentMethod]);
+
+  /**
+   * Determine if order is eligible for retry payment
+   * Only for Paystack/mobile_money orders that are still unpaid/pending.
+   */
+  const canRetryPayment = useMemo(() => {
+    if (!order) return false;
+    const isPaystackPayment =
+      order.paymentMethod === "mobile_money" ||
+      order.paymentMethod === "paystack" ||
+      (!isCashOnDelivery && !isWalletPayment);
+    const isUnpaid =
+      !order.paymentStatus ||
+      order.paymentStatus === "pending" ||
+      order.paymentStatus === "failed";
+    const isNotCancelled =
+      order.status !== "cancelled" && order.orderStatus !== "cancelled";
+    return isPaystackPayment && isUnpaid && isNotCancelled;
+  }, [order, isCashOnDelivery, isWalletPayment]);
+
+  const handlePayNow = async () => {
+    if (!order) return;
+    setPayNowError("");
+    setIsPayNowLoading(true);
+    try {
+      const orderId = order._id || order.id || order.orderId;
+      const email =
+        order.user?.email ||
+        shippingAddress?.contactEmail ||
+        shippingAddress?.email ||
+        "";
+
+      const { redirectTo } = await initializePaystackPayment({
+        orderId,
+        email,
+      });
+
+      window.location.href = redirectTo;
+    } catch (error) {
+      console.error("[OrderConfirmationPage] Pay Now error:", error);
+      setPayNowError(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to initialize payment. Please try again."
+      );
+    } finally {
+      setIsPayNowLoading(false);
+    }
+  };
 
   /**
    * Safe cart clearing - only after successful verification or COD/wallet confirmation
@@ -460,6 +513,26 @@ const OrderConfirmationPage = () => {
               soon. You&apos;ll receive an email with tracking information.
             </p>
           </PaymentNotice>
+
+          {/* Pay Now / Retry Payment */}
+          {canRetryPayment && (
+            <PayNowSection>
+              <PayNowTitle>Payment Pending</PayNowTitle>
+              <PayNowText>
+                Your order was created, but payment has not been completed. You can pay securely now to confirm your order.
+              </PayNowText>
+              {payNowError && (
+                <PayNowError>{payNowError}</PayNowError>
+              )}
+              <PayNowButton
+                type="button"
+                onClick={handlePayNow}
+                disabled={isPayNowLoading}
+              >
+                {isPayNowLoading ? "Redirecting to Paystack..." : "Pay Now"}
+              </PayNowButton>
+            </PayNowSection>
+          )}
         </OrderSummarySection>
 
         <OrderDetailsSection>
@@ -1036,6 +1109,41 @@ const ViewOrdersButton = styled(Button)`
   &:hover {
     background: #e9f5e9;
     transform: translateY(-2px);
+  }
+`;
+
+const PayNowSection = styled.div`
+  margin-top: 2.4rem;
+  padding: 1.6rem 2rem;
+  border-radius: 0.8rem;
+  background-color: #fff7ed;
+  border: 1px solid #fed7aa;
+`;
+
+const PayNowTitle = styled.h3`
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: #c05621;
+  margin-bottom: 0.8rem;
+`;
+
+const PayNowText = styled.p`
+  font-size: 1.4rem;
+  color: #7b341e;
+  margin-bottom: 1.2rem;
+`;
+
+const PayNowError = styled.p`
+  font-size: 1.3rem;
+  color: #dc2626;
+  margin-bottom: 1rem;
+`;
+
+const PayNowButton = styled(Button)`
+  background-color: #2563eb;
+  color: #ffffff;
+  &:hover {
+    background-color: #1d4ed8;
   }
 `;
 

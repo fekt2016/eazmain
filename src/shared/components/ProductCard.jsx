@@ -304,7 +304,7 @@ export default function ProductCard({
 
         {/* Product Info */}
         <ProductInfo $layout={layout}>
-          <ProductCategory>{product.category?.name || "Category"}</ProductCategory>
+          {/* <ProductCategory>{product.category?.name || "Category"}</ProductCategory> */}
           
           {/* Brand */}
           {product.brand && (
