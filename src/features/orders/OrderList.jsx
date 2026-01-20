@@ -82,6 +82,7 @@ const OrdersPage = () => {
   };
 
   const handleView = (orderId) => navigate(`/orders/${orderId}`);
+  const handleEdit = (orderId) => logger.debug("Edit order:", orderId);
   const handleDelete = (orderId) => {
     if (window.confirm("Are you sure you want to delete this order?")) {
       setAlertMessage("");
@@ -289,6 +290,13 @@ const OrdersPage = () => {
                             <FaEye />
                           </ActionButton>
                           <ActionButton 
+                            $variant="edit"
+                            onClick={() => handleEdit(order.id)}
+                            title="Edit Order"
+                          >
+                            <FaEdit />
+                          </ActionButton>
+                          <ActionButton 
                             $variant="delete"
                             onClick={() => handleDelete(order.id)}
                             title="Delete Order"
@@ -354,6 +362,14 @@ const OrdersPage = () => {
                       >
                         <FaEye />
                         <span>View</span>
+                      </ActionButton>
+                      <ActionButton 
+                        $variant="edit"
+                        onClick={() => handleEdit(order.id)}
+                        title="Edit Order"
+                      >
+                        <FaEdit />
+                        <span>Edit</span>
                       </ActionButton>
                       <ActionButton 
                         $variant="delete"

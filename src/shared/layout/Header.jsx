@@ -264,7 +264,12 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
         <Container>
           <TopBarContent>
             <TopLinks>
-              <TopLink href="https://seller.eazshop.com" target="_blank">
+              <TopLink
+                as="a"
+                href="https://seller.saiisai.com"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <FaStore />
                 <span>Become a Seller</span>
               </TopLink>
