@@ -16,9 +16,10 @@ import {
   useGetUserOrders,
   getOrderStructure,
   useDeleteOrder,
-} from '../../shared/hooks/useOrder';
+} from "../../shared/hooks/useOrder";
 import { useNavigate } from "react-router-dom";
-import logger from '../../shared/utils/logger';
+import logger from "../../shared/utils/logger";
+import AlertModal from "../../shared/components/AlertModal";
 
 const OrdersPage = () => {
   const navigate = useNavigate();
@@ -30,6 +31,11 @@ const OrdersPage = () => {
   });
   const { data: ordersData } = useGetUserOrders();
   const { mutate: deleteOrder } = useDeleteOrder();
+
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertVariant, setAlertVariant] = useState("info");
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
 
   const orders = getOrderStructure(ordersData);
 
@@ -76,10 +82,43 @@ const OrdersPage = () => {
   };
 
   const handleView = (orderId) => navigate(`/orders/${orderId}`);
-  const handleEdit = (orderId) => logger.debug("Edit order:", orderId);
   const handleDelete = (orderId) => {
     if (window.confirm("Are you sure you want to delete this order?")) {
-      deleteOrder(orderId);
+      setAlertMessage("");
+      setIsAlertOpen(false);
+      deleteOrder(orderId, {
+        onSuccess: (response) => {
+          const message =
+            response?.data?.message ||
+            response?.message ||
+            "Order updated successfully.";
+          setAlertTitle("Order updated");
+          setAlertVariant("success");
+          setAlertMessage(message);
+          setIsAlertOpen(true);
+        },
+        onError: (error) => {
+          const backendMessage =
+            error?.response?.data?.message ||
+            error?.message ||
+            "Failed to update order.";
+
+          // Provide a clearer explanation for paid / processing orders
+          if (backendMessage === "This order can no longer be cancelled.") {
+            setAlertTitle("Order cannot be cancelled");
+            setAlertVariant("error");
+            setAlertMessage(
+              "This order has already been paid or is being processed and can no longer be cancelled."
+            );
+          } else {
+            setAlertTitle("Order update failed");
+            setAlertVariant("error");
+            setAlertMessage(backendMessage);
+          }
+
+          setIsAlertOpen(true);
+        },
+      });
     }
   };
 
@@ -143,6 +182,15 @@ const OrdersPage = () => {
           </FilterSelect>
         </FilterWrapper>
       </ControlsSection>
+
+      {/* Delete / cancel feedback modal */}
+      <AlertModal
+        isOpen={isAlertOpen}
+        onClose={() => setIsAlertOpen(false)}
+        title={alertTitle}
+        message={alertMessage}
+        variant={alertVariant}
+      />
 
       {/* Orders Content */}
       <ContentSection>
@@ -241,13 +289,6 @@ const OrdersPage = () => {
                             <FaEye />
                           </ActionButton>
                           <ActionButton 
-                            $variant="edit"
-                            onClick={() => handleEdit(order.id)}
-                            title="Edit Order"
-                          >
-                            <FaEdit />
-                          </ActionButton>
-                          <ActionButton 
                             $variant="delete"
                             onClick={() => handleDelete(order.id)}
                             title="Delete Order"
@@ -313,14 +354,6 @@ const OrdersPage = () => {
                       >
                         <FaEye />
                         <span>View</span>
-                      </ActionButton>
-                      <ActionButton 
-                        $variant="edit"
-                        onClick={() => handleEdit(order.id)}
-                        title="Edit Order"
-                      >
-                        <FaEdit />
-                        <span>Edit</span>
                       </ActionButton>
                       <ActionButton 
                         $variant="delete"

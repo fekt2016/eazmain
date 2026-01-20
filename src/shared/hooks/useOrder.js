@@ -192,10 +192,22 @@ export const useDeleteOrder = () => {
       const response = await orderService.deleteOrder(id);
       return response;
     },
-    onSuccess: () => {
-      logger.log("Order deleted successfully");
+    onSuccess: (response) => {
+      const message =
+        response?.data?.message ||
+        response?.message ||
+        "Order updated successfully";
+
+      logger.log("[useDeleteOrder] Success:", message);
+
       queryClient.invalidateQueries({ queryKey: ["order"] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
+    },
+    onError: (error) => {
+      const backendMessage =
+        error?.response?.data?.message || error?.message || "Failed to update order";
+
+      logger.error("[useDeleteOrder] Error:", backendMessage, error);
     },
   });
 };
