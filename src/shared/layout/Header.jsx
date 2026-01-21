@@ -582,6 +582,80 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
           </MobileSearchSection>
         </Container>
       </MainHeader>
+
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && !onToggleSidebar && (
+        <MobileMenu onClick={() => setIsMobileMenuOpen(false)}>
+          <MobileMenuContent onClick={(e) => e.stopPropagation()}>
+            {/* Become a Seller - Top Link */}
+            <MobileMenuItem
+              href="https://seller.saiisai.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              $highlight
+            >
+              <FaStore />
+              <span>Become a Seller</span>
+            </MobileMenuItem>
+
+            {/* Navigation Links */}
+            <MobileMenuItemLink to={PATHS.HOME} onClick={() => setIsMobileMenuOpen(false)}>
+              <span>Home</span>
+            </MobileMenuItemLink>
+            <MobileMenuItemLink to={PATHS.CATEGORIES} onClick={() => setIsMobileMenuOpen(false)}>
+              <span>Categories</span>
+            </MobileMenuItemLink>
+            <MobileMenuItemLink to={PATHS.OFFERS} onClick={() => setIsMobileMenuOpen(false)}>
+              <span>Offers</span>
+            </MobileMenuItemLink>
+            <MobileMenuItemLink to={PATHS.BEST_SELLERS} onClick={() => setIsMobileMenuOpen(false)}>
+              <span>Best Sellers</span>
+            </MobileMenuItemLink>
+            <MobileMenuItemLink to={PATHS.SUPPORT} onClick={() => setIsMobileMenuOpen(false)}>
+              <FaHeadset />
+              <span>24/7 Support</span>
+            </MobileMenuItemLink>
+
+            {/* User Actions */}
+            {user ? (
+              <>
+                <MobileMenuDivider />
+                <MobileMenuItemLink to={PATHS.PROFILE} onClick={() => setIsMobileMenuOpen(false)}>
+                  <FaUser />
+                  <span>My Profile</span>
+                </MobileMenuItemLink>
+                <MobileMenuItemLink to={PATHS.ORDERS} onClick={() => setIsMobileMenuOpen(false)}>
+                  <span>My Orders</span>
+                </MobileMenuItemLink>
+                <MobileMenuItemLink to={PATHS.WISHLIST} onClick={() => setIsMobileMenuOpen(false)}>
+                  <FaHeart />
+                  <span>Wishlist</span>
+                  {wishlistCount > 0 && <MobileBadge>{wishlistCount}</MobileBadge>}
+                </MobileMenuItemLink>
+                <MobileMenuItemLink to={PATHS.CART} onClick={() => setIsMobileMenuOpen(false)}>
+                  <FaShoppingCart />
+                  <span>Cart</span>
+                  {cartCount > 0 && <MobileBadge>{cartCount}</MobileBadge>}
+                </MobileMenuItemLink>
+                <MobileMenuDivider />
+                <MobileMenuItemButton
+                  onClick={() => { logoutHandler(); setIsMobileMenuOpen(false); }}
+                >
+                  <span>Logout</span>
+                </MobileMenuItemButton>
+              </>
+            ) : (
+              <>
+                <MobileMenuDivider />
+                <MobileMenuItemLink to={PATHS.LOGIN} onClick={() => setIsMobileMenuOpen(false)}>
+                  <FaUser />
+                  <span>Login / Register</span>
+                </MobileMenuItemLink>
+              </>
+            )}
+          </MobileMenuContent>
+        </MobileMenu>
+      )}
     </ModernHeader>
   );
 }
@@ -1210,4 +1284,116 @@ const DropdownItem = styled(Link)`
     color: var(--color-primary-500);
     padding-left: 2.5rem;
   }
+`;
+
+// Mobile Menu Styled Components
+const MobileMenu = styled.div`
+  position: fixed;
+  top: 70px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  animation: fadeIn 0.3s ease;
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @media (min-width: 769px) {
+    display: none;
+  }
+`;
+
+const MobileMenuContent = styled.div`
+  background: var(--color-white-0);
+  width: 100%;
+  max-height: calc(100vh - 70px);
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  animation: ${slideDown} 0.3s ease;
+`;
+
+const mobileMenuItemStyles = `
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.6rem 2rem;
+  color: var(--color-grey-700);
+  text-decoration: none;
+  font-size: 1.5rem;
+  font-weight: 500;
+  border-bottom: 1px solid var(--color-grey-100);
+  transition: all 0.3s ease;
+  font-family: var(--font-heading);
+  position: relative;
+  cursor: pointer;
+  border: none;
+  width: 100%;
+  text-align: left;
+
+  &:hover {
+    background: var(--color-grey-50);
+    color: var(--color-primary-500);
+    padding-left: 2.5rem;
+  }
+
+  svg {
+    font-size: 1.8rem;
+    flex-shrink: 0;
+  }
+
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const MobileMenuItem = styled.a`
+  ${mobileMenuItemStyles}
+  background: ${props => props.$highlight 
+    ? 'linear-gradient(135deg, var(--color-brand-500) 0%, var(--color-brand-700) 100%)' 
+    : 'transparent'
+  };
+  color: ${props => props.$highlight ? 'var(--color-white-0)' : 'var(--color-grey-700)'};
+
+  &:hover {
+    background: ${props => props.$highlight 
+      ? 'linear-gradient(135deg, var(--color-brand-600) 0%, var(--color-brand-800) 100%)' 
+      : 'var(--color-grey-50)'
+    };
+    color: ${props => props.$highlight ? 'var(--color-white-0)' : 'var(--color-primary-500)'};
+    padding-left: ${props => props.$highlight ? '2rem' : '2.5rem'};
+  }
+`;
+
+const MobileMenuItemLink = styled(Link)`
+  ${mobileMenuItemStyles}
+`;
+
+const MobileMenuItemButton = styled.button`
+  ${mobileMenuItemStyles}
+`;
+
+const MobileMenuDivider = styled.div`
+  height: 1px;
+  background: var(--color-grey-200);
+  margin: 0.5rem 0;
+`;
+
+const MobileBadge = styled.span`
+  margin-left: auto;
+  background: linear-gradient(135deg, var(--color-red-600) 0%, var(--color-red-700) 100%);
+  color: var(--color-white-0);
+  font-size: 1.2rem;
+  font-weight: 600;
+  padding: 0.3rem 0.8rem;
+  border-radius: 1.2rem;
+  min-width: 2.4rem;
+  text-align: center;
 `;
