@@ -6,7 +6,6 @@ import useAuth from '../../shared/hooks/useAuth';
 import { useMergeWishlists } from '../../shared/hooks/useWishlist';
 import { useCartActions } from '../../shared/hooks/useCart';
 import Button from '../../shared/components/Button';
-import { ErrorState } from '../../components/loading';
 import storage from '../../shared/utils/storage';
 import { devicesMax } from '../../shared/styles/breakpoint';
 import logger from '../../shared/utils/logger';
@@ -45,22 +44,6 @@ export default function LoginPage() {
 
   // Get redirectTo from URL params or storage
   const redirectTo = searchParams.get('redirectTo') || storage.getRedirect() || '/';
-
-  // Normalize any auth-related error into a friendly, user-facing message
-  const rawAuthError = loginError || verify2FAError || sendOtpError || verifyOtpError;
-  const authErrorMessage = rawAuthError
-    ? (() => {
-        const backendMessage =
-          rawAuthError.response?.data?.message || rawAuthError.message || "";
-        const lower = backendMessage.toLowerCase();
-
-        if (lower.includes("invalid email or password")) {
-          return "Invalid email or password. Please check your details and try again.";
-        }
-
-        return backendMessage || "We couldn’t sign you in. Please try again.";
-      })()
-    : null;
 
   const submitHandler = (e) => {
     e.preventDefault();
@@ -306,10 +289,6 @@ export default function LoginPage() {
                 : "Enter your email and password to access your account"}
             </p>
           </Header>
-
-          {authErrorMessage && (
-            <ErrorState message={authErrorMessage} />
-          )}
 
           <StyledForm onSubmit={submitHandler}>
             {step === "credentials" ? (
