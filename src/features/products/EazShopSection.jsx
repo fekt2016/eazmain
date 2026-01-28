@@ -16,17 +16,64 @@ const EazShopSection = () => {
 
   const products = useMemo(() => {
     if (!eazshopProducts) return [];
+    
+    let productsList = [];
     // Handle different response structures
-    if (Array.isArray(eazshopProducts)) return eazshopProducts;
-    if (eazshopProducts?.products) return eazshopProducts.products;
-    if (eazshopProducts?.data?.products) return eazshopProducts.data.products;
-    return [];
+    if (Array.isArray(eazshopProducts)) {
+      productsList = eazshopProducts;
+    } else if (eazshopProducts?.products) {
+      productsList = eazshopProducts.products;
+    } else if (eazshopProducts?.data?.products) {
+      productsList = eazshopProducts.data.products;
+    }
+    
+    // CRITICAL: Filter out deleted products and unapproved products (final safety check)
+    return productsList.filter(product => {
+      if (!product) return false;
+      // Exclude deleted products
+      if (product.isDeleted === true || 
+          product.isDeletedByAdmin === true || 
+          product.isDeletedBySeller === true ||
+          product.status === 'archived' ||
+          product.status === 'inactive') {
+        console.warn('[EazShopSection] Filtered out deleted product:', product._id, product.name);
+        return false;
+      }
+      
+      // CRITICAL: Only show products that have been approved by admin
+      if (product.moderationStatus && product.moderationStatus !== 'approved') {
+        console.warn('[EazShopSection] Filtered out unapproved product:', product._id, product.name, 'moderationStatus:', product.moderationStatus);
+        return false;
+      }
+      
+      // NOTE: We no longer check isVisible - approved products are visible regardless
+      
+      return true;
+    });
   }, [eazshopProducts]);
 
-  // Show only active products, limit to 8
+  // Show only active, non-deleted, approved products, limit to 8
   const displayProducts = useMemo(() => {
     return products
-      .filter(product => product.status === 'active' && product.isEazShopProduct)
+      .filter(product => {
+        // Must be EazShop product
+        if (!product.isEazShopProduct) return false;
+        // Must be active
+        if (product.status !== 'active') return false;
+        // CRITICAL: Exclude deleted products (client-side safety check)
+        if (product.isDeleted === true || 
+            product.isDeletedByAdmin === true || 
+            product.isDeletedBySeller === true ||
+            product.status === 'archived') {
+          return false;
+        }
+        // CRITICAL: Only show approved products
+        if (product.moderationStatus && product.moderationStatus !== 'approved') {
+          return false;
+        }
+        // NOTE: We no longer check isVisible - approved products are visible regardless
+        return true;
+      })
       .slice(0, 8);
   }, [products]);
 

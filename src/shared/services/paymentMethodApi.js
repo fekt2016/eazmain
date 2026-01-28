@@ -62,11 +62,9 @@ const paymentMethodApi = {
   setDefaultPaymentMethod: async (paymentMethodId) => {
     logger.log("Setting default payment method:", paymentMethodId);
     try {
+      // Backend route is /set-Default/:id (capital D) and doesn't need body
       const response = await api.patch(
-        `/paymentmethod/set-default/${paymentMethodId}`,
-        {
-          paymentMethodId,
-        }
+        `/paymentmethod/set-Default/${paymentMethodId}`
       );
       return response.data;
     } catch (error) {

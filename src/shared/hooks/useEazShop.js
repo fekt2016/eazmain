@@ -12,13 +12,26 @@ export const useEazShop = () => {
       queryFn: async () => {
         try {
           const response = await eazshopService.getEazShopProducts();
-          return response.data?.products || [];
+          // CRITICAL: Additional client-side filter to ensure deleted products are excluded
+          const products = response.data?.products || [];
+          return products.filter(product => {
+            // Exclude deleted products
+            if (product.isDeleted === true || 
+                product.isDeletedByAdmin === true || 
+                product.isDeletedBySeller === true ||
+                product.status === 'archived') {
+              return false;
+            }
+            return true;
+          });
         } catch (error) {
           logger.error('Failed to fetch EazShop products:', error);
           throw new Error('Failed to load EazShop products');
         }
       },
-      staleTime: 1000 * 60 * 5, // 5 minutes
+      staleTime: 1000 * 30, // Reduced to 30 seconds for faster updates after deletion
+      cacheTime: 1000 * 60 * 2, // Keep in cache for 2 minutes
+      refetchOnWindowFocus: true, // Refetch when window regains focus
       retry: 2,
     });
 

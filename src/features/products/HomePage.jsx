@@ -61,37 +61,60 @@ const HomePage = () => {
   const products = useMemo(() => {
     if (!productsData) return [];
     
+    let productsList = [];
+    
     // Handle nested data.data.data structure (from getAllProduct controller)
     if (productsData.data?.data && Array.isArray(productsData.data.data)) {
-      return productsData.data.data;
+      productsList = productsData.data.data;
     }
-    
     // Handle data.data.products
-    if (productsData.data?.products && Array.isArray(productsData.data.products)) {
-      return productsData.data.products;
+    else if (productsData.data?.products && Array.isArray(productsData.data.products)) {
+      productsList = productsData.data.products;
     }
-    
     // Handle data.products
-    if (productsData.products && Array.isArray(productsData.products)) {
-      return productsData.products;
+    else if (productsData.products && Array.isArray(productsData.products)) {
+      productsList = productsData.products;
     }
-    
     // Handle data.results (if it's an array, not just a count)
-    if (productsData.results && Array.isArray(productsData.results)) {
-      return productsData.results;
+    else if (productsData.results && Array.isArray(productsData.results)) {
+      productsList = productsData.results;
     }
-    
     // Handle data.data as array
-    if (productsData.data && Array.isArray(productsData.data)) {
-      return productsData.data;
+    else if (productsData.data && Array.isArray(productsData.data)) {
+      productsList = productsData.data;
     }
-    
     // If productsData itself is an array
-    if (Array.isArray(productsData)) {
-      return productsData;
+    else if (Array.isArray(productsData)) {
+      productsList = productsData;
     }
     
-    return [];
+    // CRITICAL: Filter out deleted products and unapproved products (client-side safety check)
+    // Backend should already filter these via buildBuyerSafeQuery, but this ensures no deleted/unapproved products are shown
+    return productsList.filter(product => {
+      // Exclude products deleted by admin or seller
+      if (product.isDeleted === true || 
+          product.isDeletedByAdmin === true || 
+          product.isDeletedBySeller === true ||
+          product.status === 'archived') {
+        return false;
+      }
+      
+      // CRITICAL: Only show products that have been approved by admin
+      // Backend buildBuyerSafeQuery requires: moderationStatus: 'approved'
+      // Frontend safety check: Ensure moderationStatus is 'approved' if it exists
+      if (product.moderationStatus && product.moderationStatus !== 'approved') {
+        return false;
+      }
+      
+      // NOTE: We no longer check isVisible - approved products are visible regardless of seller verification
+      
+      // Additional check: Ensure status is active or out_of_stock (backend also filters this)
+      if (product.status && !['active', 'out_of_stock'].includes(product.status)) {
+        return false;
+      }
+      
+      return true;
+    });
   }, [productsData]);
   const sellers = useMemo(() => sellersData || [], [sellersData]);
 

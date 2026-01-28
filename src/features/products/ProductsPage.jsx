@@ -99,11 +99,27 @@ const ProductsPage = () => {
     // Add EazShop products if not already included (only if eazshopProducts is an array)
     if (Array.isArray(eazshopProducts)) {
       eazshopProducts.forEach(eazProduct => {
-        if (!products.find(p => p._id === eazProduct._id)) {
+        // CRITICAL: Only add non-deleted EazShop products
+        if (!eazProduct.isDeleted && 
+            !eazProduct.isDeletedByAdmin && 
+            !eazProduct.isDeletedBySeller &&
+            eazProduct.status !== 'archived' &&
+            !products.find(p => p._id === eazProduct._id)) {
           products.push(eazProduct);
         }
       });
     }
+
+    // CRITICAL: Filter out deleted products (client-side safety check)
+    products = products.filter(product => {
+      if (product.isDeleted === true || 
+          product.isDeletedByAdmin === true || 
+          product.isDeletedBySeller === true ||
+          product.status === 'archived') {
+        return false;
+      }
+      return true;
+    });
 
     // Filter by EazShop only if requested
     if (showEazShopOnly) {
@@ -182,7 +198,16 @@ const ProductsPage = () => {
               </HeaderLeft>
             </EazShopHeader>
             <EazShopGrid>
-              {eazshopProducts.slice(0, 8).map((product) => (
+              {eazshopProducts
+                .filter(product => {
+                  // CRITICAL: Exclude deleted products
+                  return !product.isDeleted && 
+                         !product.isDeletedByAdmin && 
+                         !product.isDeletedBySeller &&
+                         product.status !== 'archived';
+                })
+                .slice(0, 8)
+                .map((product) => (
                 <ProductCard
                   key={product._id || product.id}
                   product={product}

@@ -63,31 +63,52 @@ export const useUnreadCount = () => {
   
   // CRITICAL FIX: Only enable when auth is ready (not loading) and user exists
   // This prevents 401 errors during auth initialization
+  // Also check that userData is not null/undefined (not just falsy)
+  const hasValidUser = user && 
+                      typeof user === 'object' && 
+                      !Array.isArray(user) &&
+                      (user.id || user._id) &&
+                      (user.email || user.name || user.phone); // At least one identifying field
+  
   const isEnabled = Boolean(
     !isAuthLoading && // Auth must be ready (not loading)
     isAuthenticated === true && // User must be authenticated
-    user && // User data must exist
-    (user.id || user._id) // User must have an ID
+    hasValidUser // User must be valid
   );
   
   const query = useQuery({
     queryKey: ['notifications', 'unread'],
     queryFn: async () => {
       console.log('[EazMain useUnreadCount] 🔄 Query function called');
-      const data = await getUnreadCount();
-      console.log('[EazMain useUnreadCount] ✅ Query function returned:', {
-        data,
-        unreadCount: data?.data?.unreadCount,
-        status: data?.status,
-      });
-      // Ensure response structure is consistent
-      // Normalize the response to always have the same structure
-      return {
-        status: data?.status || 'success',
-        data: {
-          unreadCount: data?.data?.unreadCount ?? data?.unreadCount ?? 0,
-        },
-      };
+      try {
+        const data = await getUnreadCount();
+        console.log('[EazMain useUnreadCount] ✅ Query function returned:', {
+          data,
+          unreadCount: data?.data?.unreadCount,
+          status: data?.status,
+        });
+        // Ensure response structure is consistent
+        // Normalize the response to always have the same structure
+        return {
+          status: data?.status || 'success',
+          data: {
+            unreadCount: data?.data?.unreadCount ?? data?.unreadCount ?? 0,
+          },
+        };
+      } catch (error) {
+        // If 401, user is not authenticated - return zero count instead of throwing
+        if (error?.response?.status === 401) {
+          console.log('[EazMain useUnreadCount] ⚠️ 401 error - user not authenticated, returning zero count');
+          return {
+            status: 'success',
+            data: {
+              unreadCount: 0,
+            },
+          };
+        }
+        // Re-throw other errors
+        throw error;
+      }
     },
     enabled: isEnabled, // Only run when authenticated and user exists
     staleTime: 0, // Always consider stale to ensure fresh data
@@ -95,6 +116,15 @@ export const useUnreadCount = () => {
     refetchOnWindowFocus: true, // Refetch when window regains focus
     refetchInterval: isEnabled ? 30000 : false, // Only poll when authenticated
     refetchIntervalInBackground: false, // Don't refetch when tab is in background
+    retry: (failureCount, error) => {
+      // CRITICAL FIX: Don't retry on 401 errors (auth failure)
+      // This prevents infinite retry loops when auth is invalid
+      if (error?.response?.status === 401) {
+        return false;
+      }
+      // Retry network errors up to 2 times
+      return failureCount < 2;
+    },
   });
 
   // Debug logging
