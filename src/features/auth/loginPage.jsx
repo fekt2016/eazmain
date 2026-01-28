@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
 import { FaEnvelope, FaLock, FaPhone, FaArrowLeft } from "react-icons/fa";
-import { toast } from "react-toastify";
 import useAuth from '../../shared/hooks/useAuth';
 import { useMergeWishlists } from '../../shared/hooks/useWishlist';
 import { useCartActions } from '../../shared/hooks/useCart';
@@ -27,6 +26,11 @@ export default function LoginPage() {
     email: "",
     password: "",
   });
+  const [fieldErrors, setFieldErrors] = useState({
+    email: "",
+    password: "",
+    twoFactorCode: "",
+  });
   const [step, setStep] = useState("credentials"); // 'credentials', '2fa'
   const [twoFactorCode, setTwoFactorCode] = useState("");
   const [loginSessionId, setLoginSessionId] = useState(null);
@@ -42,25 +46,62 @@ export default function LoginPage() {
   // Get redirectTo from URL params or storage
   const redirectTo = searchParams.get('redirectTo') || storage.getRedirect() || '/';
 
+  // Normalize any auth-related error into a friendly, user-facing message
+  const rawAuthError = loginError || verify2FAError || sendOtpError || verifyOtpError;
+  const authErrorMessage = rawAuthError
+    ? (() => {
+        const backendMessage =
+          rawAuthError.response?.data?.message || rawAuthError.message || "";
+        const lower = backendMessage.toLowerCase();
+
+        if (lower.includes("invalid email or password")) {
+          return "Invalid email or password. Please check your details and try again.";
+        }
+
+        return backendMessage || "We couldn’t sign you in. Please try again.";
+      })()
+    : null;
 
   const submitHandler = (e) => {
     e.preventDefault();
+
+    // Clear previous field errors before validating
+    setFieldErrors({
+      email: "",
+      password: "",
+      twoFactorCode: "",
+    });
 
     if (step === "credentials") {
       // Validate email format before submitting
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       const trimmedEmail = state.email.trim().toLowerCase();
-      
-      if (!trimmedEmail || !emailRegex.test(trimmedEmail)) {
-        toast.error('Please enter a valid email address');
+
+      if (!trimmedEmail) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          email: "Please enter your email address.",
+        }));
         return;
       }
-      
+
+      if (!emailRegex.test(trimmedEmail)) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          email:
+            "That doesn’t look like a valid email. Please check and try again (e.g. name@example.com).",
+        }));
+        return;
+      }
+
       if (!state.password) {
-        toast.error('Please enter your password');
+        setFieldErrors((prev) => ({
+          ...prev,
+          password: "Please enter your password.",
+        }));
         return;
       }
-      
+
       // New login flow: email + password
       loginMutation(
         { email: trimmedEmail, password: state.password },
@@ -76,7 +117,7 @@ export default function LoginPage() {
             // Extract data from axios response
             // response is the full axios response: { data: {...}, status: 200, ... }
             const responseData = response?.data || response;
-            
+
             // Check if 2FA is required
             if (responseData?.requires2FA || responseData?.status === '2fa_required') {
               logger.debug("[Login] 2FA required");
@@ -88,14 +129,18 @@ export default function LoginPage() {
               // The mutation's onSuccess in useAuth.js already processed this and updated cache
               // But we need to extract user from the response here
               const user = responseData?.user;
-              
+
               if (!user || (!user.id && !user._id)) {
                 console.error("❌ [Login] Login successful but no user data received:", response);
                 console.error("❌ [Login] Response data structure:", responseData);
-                toast.error('Login successful but user data is missing. Please refresh the page.');
+                setFieldErrors((prev) => ({
+                  ...prev,
+                  password:
+                    "Login successful but user data is missing. Please refresh the page and try again.",
+                }));
                 return;
               }
-              
+
               logger.debug("[Login] Login successful");
               console.log('👤 [Login] User logged in:', {
                 id: user.id || user._id,
@@ -129,8 +174,9 @@ export default function LoginPage() {
             
             // Extract error message from response
             const errorResponse = err.response?.data || {};
-            let errorMessage = errorResponse.message || err.message || "Login failed. Please try again.";
-            
+            let errorMessage =
+              errorResponse.message || err.message || "Login failed. Please try again.";
+
             // Handle unverified account (403)
             if (err.response?.status === 403) {
               if (errorMessage.includes('not verified') || errorMessage.includes('verify')) {
@@ -143,26 +189,36 @@ export default function LoginPage() {
                 return;
               }
             }
-            
+
             // Handle authentication errors (401) - show user-friendly message
             if (err.response?.status === 401) {
-              errorMessage = "Invalid email or password. Please check your credentials and try again.";
+              errorMessage =
+                "Invalid email or password. Please check your credentials and try again.";
             }
-            
-            // Show error to user via toast
-            toast.error(errorMessage);
+
+            // Show error message under password field
+            setFieldErrors((prev) => ({
+              ...prev,
+              password: errorMessage,
+            }));
           },
         }
       );
     } else if (step === "2fa") {
       // Verify 2FA code
       if (!twoFactorCode || twoFactorCode.length !== 6) {
-        toast.error('Please enter a valid 6-digit 2FA code');
+        setFieldErrors((prev) => ({
+          ...prev,
+          twoFactorCode: "Please enter a valid 6-digit 2FA code.",
+        }));
         return;
       }
 
       if (!loginSessionId) {
-        toast.error('Login session expired. Please login again.');
+        setFieldErrors((prev) => ({
+          ...prev,
+          twoFactorCode: "Your login session has expired. Please sign in again.",
+        }));
         setStep("credentials");
         return;
       }
@@ -181,7 +237,11 @@ export default function LoginPage() {
             if (!user || (!user.id && !user._id)) {
               console.error("❌ [2FA Login] 2FA verified but no user data received:", response);
               console.error("❌ [2FA Login] Response data structure:", responseData);
-              toast.error('2FA verified but user data is missing. Please refresh the page.');
+              setFieldErrors((prev) => ({
+                ...prev,
+                twoFactorCode:
+                  "2FA verified but user data is missing. Please refresh the page and try again.",
+              }));
               return;
             }
             
@@ -211,6 +271,12 @@ export default function LoginPage() {
               response: err.response?.data,
               status: err.response?.status,
             });
+
+            setFieldErrors((prev) => ({
+              ...prev,
+              twoFactorCode:
+                "That code didn’t work. Please check the 6-digit code from your authenticator app and try again.",
+            }));
           },
         }
       );
@@ -241,8 +307,8 @@ export default function LoginPage() {
             </p>
           </Header>
 
-          {(loginError || verify2FAError || sendOtpError || verifyOtpError) && (
-            <ErrorState message={(loginError || verify2FAError || sendOtpError || verifyOtpError)?.message || "Authentication failed"} />
+          {authErrorMessage && (
+            <ErrorState message={authErrorMessage} />
           )}
 
           <StyledForm onSubmit={submitHandler}>
@@ -260,6 +326,9 @@ export default function LoginPage() {
                         // Only sanitize dangerous content, allow user to type freely
                         const sanitized = sanitizeEmail(e.target.value);
                         setState({ ...state, email: sanitized });
+                        if (fieldErrors.email) {
+                          setFieldErrors((prev) => ({ ...prev, email: "" }));
+                        }
                       }}
                       placeholder="name@example.com"
                       required
@@ -267,6 +336,9 @@ export default function LoginPage() {
                       autoComplete="email"
                     />
                   </InputWrapper>
+                  {fieldErrors.email && (
+                    <FieldError>{fieldErrors.email}</FieldError>
+                  )}
                 </InputGroup>
 
                 <InputGroup>
@@ -281,6 +353,9 @@ export default function LoginPage() {
                         // Limit length but allow typing
                         const sanitized = e.target.value.slice(0, 128);
                         setState({ ...state, password: sanitized });
+                        if (fieldErrors.password) {
+                          setFieldErrors((prev) => ({ ...prev, password: "" }));
+                        }
                       }}
                       placeholder="Enter your password"
                       required
@@ -291,6 +366,9 @@ export default function LoginPage() {
                   <ForgotPasswordLink to="/forgot-password">
                     Forgot password?
                   </ForgotPasswordLink>
+                  {fieldErrors.password && (
+                    <FieldError>{fieldErrors.password}</FieldError>
+                  )}
                 </InputGroup>
               </>
             ) : (
@@ -321,6 +399,13 @@ export default function LoginPage() {
                             const nextInput = document.getElementById(`2fa-${index + 1}`);
                             if (nextInput) nextInput.focus();
                           }
+
+                          if (fieldErrors.twoFactorCode) {
+                            setFieldErrors((prev) => ({
+                              ...prev,
+                              twoFactorCode: "",
+                            }));
+                          }
                         }}
                         onKeyDown={(e) => {
                           if (e.key === 'Backspace' && !codeArray[index] && index > 0) {
@@ -334,6 +419,11 @@ export default function LoginPage() {
                     );
                   })}
                 </OtpInputs>
+                {fieldErrors.twoFactorCode && (
+                  <FieldError style={{ textAlign: "center" }}>
+                    {fieldErrors.twoFactorCode}
+                  </FieldError>
+                )}
               </OtpContainer>
             )}
 
@@ -536,6 +626,11 @@ const Input = styled.input`
   &::placeholder {
     color: #aaa;
   }
+`;
+
+const FieldError = styled.span`
+  color: #ef4444;
+  font-size: 12px;
 `;
 
 const ToggleLink = styled.button`

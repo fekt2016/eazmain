@@ -151,9 +151,9 @@ class ErrorBoundary extends React.Component {
             <ErrorIcon>
               <FaExclamationTriangle />
             </ErrorIcon>
-            <ErrorTitle>Something went wrong</ErrorTitle>
+            <ErrorTitle>We hit an unexpected error</ErrorTitle>
             <ErrorMessage>
-              We're sorry, but something unexpected happened. Our team has been notified and is working on a fix.
+              We’re sorry, but an unexpected error occurred. Our team has been notified and is working on a fix.
             </ErrorMessage>
 
             {import.meta.env.DEV && this.state.error && (

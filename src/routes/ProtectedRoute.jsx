@@ -10,8 +10,23 @@ const ProtectedRoutes = ({ children }) => {
   const queryClient = useQueryClient();
   
   const user = useMemo(() => {
+    if (!userData) return null;
+
+    // Most common case: useAuth already returns a plain user object
+    if (
+      typeof userData === "object" &&
+      !Array.isArray(userData) &&
+      (userData.id || userData._id)
+    ) {
+      return userData;
+    }
+
+    // Backwards‑compatibility for older response shapes
     return (
-      userData?.data?.data || userData?.data?.user || userData?.user || null
+      userData?.data?.data ||
+      userData?.data?.user ||
+      userData?.user ||
+      null
     );
   }, [userData]);
   
@@ -100,12 +115,13 @@ const ProtectedRoutes = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
   
-  // Block admin and seller from buyer routes (they should use their own apps)
-  // Allow: buyer, user, undefined, null (all are valid buyer roles)
+  // Block admin and seller from buyer routes (they should use their own apps),
+  // but do NOT send them back to the login page if they are already authenticated.
+  // Instead, send them to a dedicated unauthorized page.
   const blockedRoles = ["admin", "seller"];
   if (activeUser.role && blockedRoles.includes(activeUser.role)) {
-    logger.warn("[ProtectedRoute] User role", activeUser.role, "not allowed on buyer routes, redirecting to login");
-    return <Navigate to="/login" replace />;
+    logger.warn("[ProtectedRoute] User role", activeUser.role, "not allowed on buyer routes, redirecting to unauthorized page");
+    return <Navigate to="/unauthorized" replace />;
   }
 
   // ✅ CRITICAL: Check if account is verified before allowing access
