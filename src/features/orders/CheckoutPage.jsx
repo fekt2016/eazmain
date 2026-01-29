@@ -38,7 +38,6 @@ import { ErrorState, LoadingState } from "../../components/loading";
 import useDynamicPageTitle from "../../shared/hooks/useDynamicPageTitle";
 import seoConfig from "../../shared/config/seoConfig";
 import NeighborhoodAutocomplete from "../../shared/components/NeighborhoodAutocomplete";
-import { useGetNeighborhoodsByCity } from "../../shared/hooks/useNeighborhoods";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import locationApi from "../../shared/services/locationApi";
 import neighborhoodService from "../../shared/services/neighborhoodApi";
@@ -355,12 +354,6 @@ const CheckoutPage = () => {
   // Auto-detected neighborhoods (from GPS → reverse geocode → neighborhood search)
   // When populated, we show a <select> so user can pick the exact neighborhood from the matches
   const [autoNeighborhoodOptions, setAutoNeighborhoodOptions] = useState([]);
-
-  // Fetch neighborhoods for the selected city (for manual selection)
-  const { data: cityNeighborhoods = [], isLoading: isLoadingNeighborhoods } = useGetNeighborhoodsByCity(
-    newAddress.city,
-    !!newAddress.city
-  );
 
   // ────────────────────────────────────────────────
   // Derived data
@@ -712,11 +705,6 @@ const CheckoutPage = () => {
     }
 
     if (name === "digitalAddress") {
-      // Clear location error when user starts typing manually
-      if (locationError) {
-        setLocationError("");
-      }
-      
       const cleaned = value
         .replace(/[^a-zA-Z0-9]/g, "")
         .toUpperCase()
@@ -927,21 +915,21 @@ const CheckoutPage = () => {
       (error) => {
         logger.error("Geolocation error:", error);
         
-        // Handle different geolocation error codes with user-friendly messages
-        let errorMessage = "";
+        // Handle different geolocation error codes
+        let errorMessage = "Location access denied. Please enable location services.";
         
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            errorMessage = "Location access was denied. You can still enter your digital address manually below.";
+            errorMessage = "Location access denied. Please enable location services in your browser settings.";
             break;
           case error.POSITION_UNAVAILABLE:
-            errorMessage = "Could not detect your location. Please enter your digital address manually (e.g., GA-123-4567).";
+            errorMessage = "Location information is unavailable. Please enter your address manually.";
             break;
           case error.TIMEOUT:
-            errorMessage = "Location detection timed out. Please try again or enter your address manually.";
+            errorMessage = "Location request timed out. Please try again.";
             break;
           default:
-            errorMessage = "Location detection failed. Please enter your digital address manually.";
+            errorMessage = "Failed to get your location. Please enter address manually.";
             break;
         }
         
@@ -1431,40 +1419,52 @@ const CheckoutPage = () => {
                 <FormRow>
                   <FormGroup>
                     <Label>Neighborhood/Area *</Label>
-                    <Select
-                      name="area"
-                      value={newAddress.area}
-                      onChange={(e) => {
-                        const selectedName = e.target.value;
-                        setNewAddress((prev) => ({
-                          ...prev,
-                          area: selectedName,
-                        }));
-                      }}
-                      disabled={!newAddress.city}
-                      required
-                    >
-                      <option value="">
-                        {!newAddress.city 
-                          ? "Select a city first" 
-                          : isLoadingNeighborhoods 
-                          ? "Loading neighborhoods..." 
-                          : "Select neighborhood"}
-                      </option>
-                      {cityNeighborhoods.map((n) => (
-                        <option
-                          key={n._id || n.name}
-                          value={n.name}
+                    {autoNeighborhoodOptions.length > 0 ? (
+                      <>
+                        <Select
+                          name="area"
+                          value={newAddress.area}
+                          onChange={(e) => {
+                            const selectedName = e.target.value;
+                            setNewAddress((prev) => ({
+                              ...prev,
+                              area: selectedName,
+                            }));
+                          }}
                         >
-                          {n.name}
-                          {n.municipality ? ` (${n.municipality})` : ""}
-                        </option>
-                      ))}
-                    </Select>
-                    {newAddress.city && cityNeighborhoods.length === 0 && !isLoadingNeighborhoods && (
-                      <HintText style={{ color: '#f59e0b' }}>
-                        No neighborhoods found for {newAddress.city}. You can enter a custom area.
-                      </HintText>
+                          <option value="">Select neighborhood</option>
+                          {autoNeighborhoodOptions.map((n) => (
+                            <option
+                              key={n._id || n.name}
+                              value={n.name}
+                            >
+                              {n.name}
+                              {n.municipality ? ` (${n.municipality})` : ""}
+                            </option>
+                          ))}
+                        </Select>
+                        <HintText>
+                          We detected multiple neighborhoods for your area. Please choose the correct one.
+                        </HintText>
+                      </>
+                    ) : (
+                      <>
+                        <NeighborhoodAutocomplete
+                          value={newAddress.area}
+                          onChange={handleAddressChange}
+                          city={newAddress.city}
+                          placeholder="Search neighborhood (e.g., Nima, Cantonments, Tema Community 1)"
+                          onSelect={(neighborhood) => {
+                            setNewAddress((prev) => ({
+                              ...prev,
+                              area: neighborhood.name,
+                            }));
+                          }}
+                        />
+                        <HintText>
+                          Start typing to search for your neighborhood
+                        </HintText>
+                      </>
                     )}
                     {errors.area && (
                       <ErrorText>{errors.area}</ErrorText>
@@ -1516,7 +1516,17 @@ const CheckoutPage = () => {
                 </FormRow>
                 <FormRow>
                   <FormGroup>
-                    <Label>Digital Address</Label>
+                    <Label>
+                      Digital Address
+                      <LocationButton
+                        type="button"
+                        onClick={getCurrentLocation}
+                        disabled={isFetchingLocation}
+                      >
+                        <FaSearchLocation />
+                        {isFetchingLocation ? "Detecting..." : "Auto-detect"}
+                      </LocationButton>
+                    </Label>
                     <Input
                       type="text"
                       name="digitalAddress"
@@ -1527,6 +1537,7 @@ const CheckoutPage = () => {
                     {errors.digitalAddress && (
                       <ErrorText>{errors.digitalAddress}</ErrorText>
                     )}
+                    {locationError && <ErrorText>{locationError}</ErrorText>}
                     <HintText>
                       Format: AA-123-4567 (e.g., GA-123-4567)
                     </HintText>
@@ -2167,17 +2178,6 @@ const HintText = styled.span`
   font-size: var(--font-size-xs);
   display: block;
   margin-top: var(--spacing-xs);
-`;
-
-const LocationWarning = styled.span`
-  color: var(--color-orange-600, #ea580c);
-  font-size: var(--font-size-xs);
-  display: block;
-  margin-top: var(--spacing-xs);
-  padding: 0.5rem 0.75rem;
-  background: var(--color-orange-50, #fff7ed);
-  border-radius: 4px;
-  border-left: 3px solid var(--color-orange-500, #f97316);
 `;
 
 const SecurityBadge = styled.div`

@@ -142,6 +142,13 @@ const OrderConfirmationPage = () => {
     // - Wallet/Credit balance orders don't require payment reference (payment is immediate)
     // - Paystack/mobile_money orders require payment reference for verification
     // - If order is still loading, be lenient (don't fail yet - might be COD or wallet)
+    const orderIsLoaded = !!order && !!order.paymentMethod;
+    
+    // If order is not loaded yet, allow through (will validate once loaded)
+    if (!orderIsLoaded) {
+      return { isValid: true, error: null };
+    }
+    
     const isCOD = order?.paymentMethod === "payment_on_delivery" || 
                   order?.paymentMethod === "Cash on Delivery" ||
                   order?.paymentMethod === "cod";
@@ -150,11 +157,20 @@ const OrderConfirmationPage = () => {
                            order?.paymentMethod === "wallet" ||
                            order?.paymentMethod === "account_balance";
     
-    // Only require payment reference for Paystack/mobile_money payments
-    // COD and wallet payments don't need external payment references
-    const orderIsLoaded = !!order && !!order.paymentMethod;
-    const isPaystackPayment = orderIsLoaded && !isCOD && !isWalletPayment;
-    const requiresPaymentReference = isPaystackPayment && !paymentReference;
+    // Only require payment reference for unpaid Paystack/mobile_money payments.
+    // COD and wallet payments don't need external payment references.
+    const isPaystackPayment = !isCOD && !isWalletPayment;
+
+    // If the order already appears paid, we can treat the link as valid even
+    // if the reference is missing (e.g. user opened the page from email/history).
+    const isAlreadyPaid =
+      order.paymentStatus === "completed" ||
+      order.paymentStatus === "paid" ||
+      order.isPaid ||
+      !!order.paidAt;
+
+    const requiresPaymentReference =
+      isPaystackPayment && !paymentReference && !isAlreadyPaid;
     
     if (requiresPaymentReference) {
       return {

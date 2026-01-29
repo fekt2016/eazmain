@@ -1,12 +1,9 @@
 /**
  * SEO Configuration for Saiisai (Customer-Facing Storefront)
  * Centralized SEO metadata for all public pages
- * Production: set VITE_FRONTEND_URL=https://saiisai.com so canonicals/OG use production URL.
  */
-const BASE_URL =
-  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FRONTEND_URL) ||
-  (typeof window !== 'undefined' && window?.location?.origin) ||
-  'https://saiisai.com';
+
+const BASE_URL = (typeof process !== 'undefined' && process.env?.REACT_APP_FRONTEND_URL) || window.location.origin || 'https://saiisai.com';
 const DEFAULT_IMAGE = `${BASE_URL}/images/saiisai-og-image.jpg`;
 const DEFAULT_DESCRIPTION = 'Shop the best products from trusted sellers on Saiisai - Ghana\'s leading online marketplace';
 

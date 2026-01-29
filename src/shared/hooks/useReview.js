@@ -13,18 +13,6 @@ export const useGetProductReviews = (productId, options = {}) => {
     ...options,
   });
 };
-
-export const useGetMyReviews = (params = {}, options = {}) => {
-  return useQuery({
-    queryKey: ["myReviews", params],
-    queryFn: async () => {
-      const response = await reviewApi.getMyReviews(params);
-      logger.log("My reviews response", response);
-      return response;
-    },
-    ...options,
-  });
-};
 export const useCreateReview = () => {
   const queryClient = useQueryClient();
   return useMutation({

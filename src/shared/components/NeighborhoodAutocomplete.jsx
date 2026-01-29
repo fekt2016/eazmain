@@ -1,13 +1,13 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import { FaSearch, FaCheck, FaChevronDown } from 'react-icons/fa';
-import { useSearchNeighborhoods, useGetNeighborhoodsByCity } from '../hooks/useNeighborhoods';
+import { FaSearch, FaCheck } from 'react-icons/fa';
+import { useSearchNeighborhoods } from '../hooks/useNeighborhoods';
 
 const NeighborhoodAutocomplete = ({ 
   value, 
   onChange, 
   city, 
-  placeholder = "Select or search neighborhood...",
+  placeholder = "Search neighborhood...",
   onSelect,
   disabled = false 
 }) => {
@@ -17,39 +17,11 @@ const NeighborhoodAutocomplete = ({
   const wrapperRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Fetch all neighborhoods for the city when dropdown opens
-  const { data: allNeighborhoods = [], isLoading: isLoadingAll } = useGetNeighborhoodsByCity(
-    city,
-    isOpen && !!city
-  );
-
-  // Also search when user types (for better results)
-  const { data: searchResults = [], isLoading: isSearching } = useSearchNeighborhoods(
+  const { data: neighborhoods = [], isLoading } = useSearchNeighborhoods(
     query,
     city,
     isOpen && query.length >= 2
   );
-
-  // Combine and filter neighborhoods
-  const displayedNeighborhoods = useMemo(() => {
-    // If user is searching (query >= 2 chars), prioritize search results
-    if (query.length >= 2 && searchResults.length > 0) {
-      return searchResults;
-    }
-    
-    // If user typed something but less than 2 chars, filter the full list locally
-    if (query.length > 0 && allNeighborhoods.length > 0) {
-      const lowerQuery = query.toLowerCase();
-      return allNeighborhoods.filter(n => 
-        n.name.toLowerCase().includes(lowerQuery)
-      );
-    }
-    
-    // Otherwise show all neighborhoods for the city
-    return allNeighborhoods;
-  }, [query, searchResults, allNeighborhoods]);
-
-  const isLoading = isLoadingAll || isSearching;
 
   useEffect(() => {
     setQuery(value || '');
@@ -87,22 +59,14 @@ const NeighborhoodAutocomplete = ({
   };
 
   const handleFocus = () => {
-    // Open dropdown on focus (show all neighborhoods)
-    setIsOpen(true);
-  };
-
-  const toggleDropdown = () => {
-    if (!disabled) {
-      setIsOpen(!isOpen);
-      if (!isOpen) {
-        inputRef.current?.focus();
-      }
+    if (query.length >= 2) {
+      setIsOpen(true);
     }
   };
 
   return (
     <Wrapper ref={wrapperRef}>
-      <InputWrapper onClick={toggleDropdown}>
+      <InputWrapper>
         <SearchIcon>
           <FaSearch />
         </SearchIcon>
@@ -116,50 +80,35 @@ const NeighborhoodAutocomplete = ({
           disabled={disabled}
           autoComplete="off"
         />
-        {selectedNeighborhood ? (
+        {selectedNeighborhood && (
           <SelectedIcon>
             <FaCheck />
           </SelectedIcon>
-        ) : (
-          <DropdownIcon $isOpen={isOpen}>
-            <FaChevronDown />
-          </DropdownIcon>
         )}
       </InputWrapper>
       
-      {isOpen && (
+      {isOpen && query.length >= 2 && (
         <Dropdown>
           {isLoading ? (
-            <DropdownItem $noHover>Loading neighborhoods...</DropdownItem>
-          ) : !city ? (
-            <DropdownItem $noHover>Please select a city first</DropdownItem>
-          ) : displayedNeighborhoods.length === 0 ? (
-            <DropdownItem $noHover>
-              {query.length > 0 ? 'No neighborhoods found' : 'No neighborhoods available'}
-            </DropdownItem>
+            <DropdownItem>Searching...</DropdownItem>
+          ) : neighborhoods.length === 0 ? (
+            <DropdownItem $noHover>No neighborhoods found</DropdownItem>
           ) : (
-            <>
-              {displayedNeighborhoods.length > 10 && query.length === 0 && (
-                <DropdownHint>
-                  Showing {displayedNeighborhoods.length} neighborhoods. Start typing to filter.
-                </DropdownHint>
-              )}
-              {displayedNeighborhoods.map((neighborhood) => (
-                <DropdownItem
-                  key={neighborhood._id || neighborhood.id}
-                  onClick={() => handleSelect(neighborhood)}
-                  $selected={selectedNeighborhood?._id === neighborhood._id}
-                >
-                  <NeighborhoodName>{neighborhood.name}</NeighborhoodName>
-                  {neighborhood.city && (
-                    <NeighborhoodCity>{neighborhood.city}</NeighborhoodCity>
-                  )}
-                  {neighborhood.assignedZone && (
-                    <NeighborhoodZone>Zone {neighborhood.assignedZone}</NeighborhoodZone>
-                  )}
-                </DropdownItem>
-              ))}
-            </>
+            neighborhoods.map((neighborhood) => (
+              <DropdownItem
+                key={neighborhood._id || neighborhood.id}
+                onClick={() => handleSelect(neighborhood)}
+                $selected={selectedNeighborhood?._id === neighborhood._id}
+              >
+                <NeighborhoodName>{neighborhood.name}</NeighborhoodName>
+                {neighborhood.city && (
+                  <NeighborhoodCity>{neighborhood.city}</NeighborhoodCity>
+                )}
+                {neighborhood.assignedZone && (
+                  <NeighborhoodZone>Zone {neighborhood.assignedZone}</NeighborhoodZone>
+                )}
+              </DropdownItem>
+            ))
           )}
         </Dropdown>
       )}
@@ -195,16 +144,6 @@ const SelectedIcon = styled.div`
   color: #10b981;
   z-index: 1;
   pointer-events: none;
-`;
-
-const DropdownIcon = styled.div`
-  position: absolute;
-  right: 1rem;
-  color: #6b7280;
-  z-index: 1;
-  pointer-events: none;
-  transition: transform 0.2s ease;
-  transform: ${props => props.$isOpen ? 'rotate(180deg)' : 'rotate(0deg)'};
 `;
 
 const Input = styled.input`
@@ -274,15 +213,6 @@ const DropdownItem = styled.div`
     color: #6b7280;
     font-style: italic;
   `}
-`;
-
-const DropdownHint = styled.div`
-  padding: 0.75rem 1.5rem;
-  font-size: 1.2rem;
-  color: #6b7280;
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
-  font-style: italic;
 `;
 
 const NeighborhoodName = styled.span`

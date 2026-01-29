@@ -51,9 +51,9 @@ logger.log("order", order);
 
   useDynamicPageTitle({
     title: "Order Details",
-    dynamicTitle: order && `Order #${order._id?.slice(-8) || order._id} | Saiisai`,
+    dynamicTitle: order && `Order #${order._id?.slice(-8) || order._id} | EazShop`,
     description: "Track your order in real-time.",
-    defaultTitle: "Saiisai Orders",
+    defaultTitle: "EazShop Orders",
   });
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -123,17 +123,14 @@ logger.log("order", order);
       paymentMethod === 'credit_balance' ||
       paymentMethod === 'wallet' ||
       paymentMethod === 'account_balance';
-    // Allow Pay Now for all non-wallet methods (including Cash on Delivery),
-    // so buyers can complete payment later via Paystack even if the order
-    // was originally created as "payment_on_delivery".
-    const isPaystackEligible = !isWalletPayment;
+    const isPaystackPayment = !isCashOnDelivery && !isWalletPayment;
     const isUnpaid =
       !order.paymentStatus ||
       order.paymentStatus === 'pending' ||
       order.paymentStatus === 'failed';
     const isNotCancelled =
       order.status !== 'cancelled' && order.orderStatus !== 'cancelled';
-    return isPaystackEligible && isUnpaid && isNotCancelled;
+    return isPaystackPayment && isUnpaid && isNotCancelled;
   }, [order]);
 
   const [payNowError, setPayNowError] = useState('');
@@ -471,16 +468,9 @@ logger.log("order", order);
           <MetaItem>
             <strong>Status:</strong> 
             <StatusBadge $status={status || order.status || order.orderStatus || 'pending'}>
-              {(status || order.status || order.orderStatus || 'pending')
-                .charAt(0)
-                .toUpperCase() +
-                (status || order.status || order.orderStatus || 'pending').slice(1)}
+              {(status || order.status || order.orderStatus || 'pending').charAt(0).toUpperCase() + (status || order.status || order.orderStatus || 'pending').slice(1)}
             </StatusBadge>
-            {/* Treat both "completed" and "paid" (or presence of paidAt/isPaid) as payment completed */}
-            {(order.paymentStatus === 'completed' ||
-              order.paymentStatus === 'paid' ||
-              order.isPaid ||
-              !!order.paidAt) && (
+            {order.paymentStatus === 'completed' && (
               <PaymentStatusBadge>
                 Payment Completed
               </PaymentStatusBadge>
@@ -652,9 +642,9 @@ logger.log("order", order);
                   <InfoLabel>Delivery Method</InfoLabel>
                   <InfoValue>
                     {order.deliveryMethod === 'pickup_center' 
-                      ? 'Pickup from Saiisai Center'
+                      ? 'Pickup from EazShop Center'
                       : order.deliveryMethod === 'dispatch'
-                      ? 'Saiisai Dispatch Rider'
+                      ? 'EazShop Dispatch Rider'
                       : order.deliveryMethod === 'seller_delivery'
                       ? "Seller's Own Delivery"
                       : 'Standard Delivery'}
@@ -776,24 +766,9 @@ logger.log("order", order);
                 <InfoItem>
                   <InfoLabel>Status</InfoLabel>
                   <InfoValue>
-                    {(() => {
-                      const isPaid =
-                        order.paymentStatus === 'completed' ||
-                        order.paymentStatus === 'paid' ||
-                        order.isPaid ||
-                        !!order.paidAt;
-                      const label =
-                        isPaid && order.paymentStatus === 'refunded'
-                          ? 'Refunded'
-                          : isPaid
-                          ? 'Paid'
-                          : 'Pending';
-                      return (
-                        <PaymentStatus $paid={isPaid}>
-                          {label}
-                        </PaymentStatus>
-                      );
-                    })()}
+                    <PaymentStatus $paid={order.paymentStatus === 'completed' || order.isPaid}>
+                      {order.paymentStatus === 'completed' ? "Paid" : order.paymentStatus === 'pending' ? "Pending" : order.isPaid ? "Paid" : "Pending"}
+                    </PaymentStatus>
                   </InfoValue>
                 </InfoItem>
                 {order.paidAt && (

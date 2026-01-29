@@ -21,9 +21,6 @@ import {
   FaSearchLocation
 } from "react-icons/fa";
 
-// Import hooks for neighborhoods
-import { useGetNeighborhoodsByCity } from "../../shared/hooks/useNeighborhoods";
-
 // Import your React Query hooks
 import {
   useGetUserAddress,
@@ -79,26 +76,14 @@ const AddressManagementPage = () => {
     digitalAddress: "",
     isDefault: false,
   });
-  
-  // Fetch neighborhoods for the selected city
-  const { data: neighborhoods = [], isLoading: isLoadingNeighborhoods } = useGetNeighborhoodsByCity(
-    formData.city,
-    !!formData.city
-  );
  
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
 
     // Clear digital address error when user starts typing
-    if (name === "digitalAddress") {
-      if (digitalAddressError) {
-        setDigitalAddressError("");
-      }
-      // Also clear location error when user types manually
-      if (locationError) {
-        setLocationError("");
-      }
+    if (name === "digitalAddress" && digitalAddressError) {
+      setDigitalAddressError("");
     }
 
     // Convert input values to lowercase (except special fields)
@@ -185,26 +170,9 @@ const AddressManagementPage = () => {
       },
       (error) => {
         logger.error("Geolocation error:", error);
-        
-        // Handle different geolocation error codes with user-friendly messages
-        let errorMessage = "";
-        
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage = "Location access was denied. You can still enter your digital address manually below.";
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = "Could not detect your location. Please enter your digital address manually (e.g., GA-123-4567).";
-            break;
-          case error.TIMEOUT:
-            errorMessage = "Location detection timed out. Please try again or enter your address manually.";
-            break;
-          default:
-            errorMessage = "Location detection failed. Please enter your digital address manually.";
-            break;
-        }
-        
-        setLocationError(errorMessage);
+        setLocationError(
+          "Location access denied. Please enable location services."
+        );
         setIsFetchingLocation(false);
       },
       {
@@ -472,32 +440,18 @@ const AddressManagementPage = () => {
                     <FaMapPin />
                     Area/Town *
                   </Label>
-                  <Select
+                  <Input
+                    type="text"
                     name="area"
                     value={formData.area}
                     onChange={handleInputChange}
-                    disabled={isCreating || isUpdating || !formData.city}
+                    placeholder="e.g., Nima, Cantonments, Tema Community 1"
                     required
-                  >
-                    <option value="">
-                      {!formData.city 
-                        ? "Select a city first" 
-                        : isLoadingNeighborhoods 
-                        ? "Loading neighborhoods..." 
-                        : "Select neighborhood"}
-                    </option>
-                    {neighborhoods.map((n) => (
-                      <option key={n._id || n.name} value={n.name}>
-                        {n.name}
-                        {n.municipality ? ` (${n.municipality})` : ""}
-                      </option>
-                    ))}
-                  </Select>
-                  {formData.city && neighborhoods.length === 0 && !isLoadingNeighborhoods && (
-                    <HelpText style={{ color: '#f59e0b' }}>
-                      No neighborhoods found for {formData.city}. You can type a custom area below.
-                    </HelpText>
-                  )}
+                    disabled={isCreating || isUpdating}
+                  />
+                  <HelpText>
+                    Enter your neighborhood/area name (e.g., Nima, Osu, Tema Community 1)
+                  </HelpText>
                 </FormGroup>
 
                 <FormGroup>
@@ -519,6 +473,14 @@ const AddressManagementPage = () => {
                   <Label>
                     <FaCompass />
                     Digital Address
+                    <LocationButton
+                      type="button"
+                      onClick={getCurrentLocation}
+                      disabled={isFetchingLocation || formData.country !== "Ghana"}
+                    >
+                      <FaSearchLocation />
+                      {isFetchingLocation ? "Detecting..." : "Auto-detect"}
+                    </LocationButton>
                   </Label>
                   <Input
                     type="text"
@@ -531,6 +493,7 @@ const AddressManagementPage = () => {
                   {digitalAddressError && (
                     <ErrorText>{digitalAddressError}</ErrorText>
                   )}
+                  {locationError && <ErrorText>{locationError}</ErrorText>}
                   <HelpText>
                     {formData.country === "Ghana"
                       ? "Format: GA-123-4567 (Ghana Post GPS)"
@@ -1477,17 +1440,6 @@ const HelpText = styled.span`
   font-size: 1.2rem;
   margin-top: 0.4rem;
   display: block;
-`;
-
-const LocationWarning = styled.span`
-  color: var(--color-orange-600, #ea580c);
-  font-size: 1.2rem;
-  display: block;
-  margin-top: 0.4rem;
-  padding: 0.5rem 0.75rem;
-  background: var(--color-orange-50, #fff7ed);
-  border-radius: 4px;
-  border-left: 3px solid var(--color-orange-500, #f97316);
 `;
 
 const RetryButton = styled.button`

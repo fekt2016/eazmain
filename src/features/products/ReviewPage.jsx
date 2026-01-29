@@ -15,7 +15,7 @@ import {
   FaExclamationTriangle
 } from "react-icons/fa";
 import { useParams } from "react-router-dom";
-import { useGetProductReviews, useGetMyReviews } from '../../shared/hooks/useReview';
+import { useGetProductReviews } from '../../shared/hooks/useReview';
 import useAuth from '../../shared/hooks/useAuth';
 import { LoadingState, ErrorState } from '../../components/loading';
 import { devicesMax } from '../../shared/styles/breakpoint';
@@ -24,32 +24,32 @@ import Container from '../../shared/components/Container';
 export default function CustomerReviewPage() {
   const { id: productId } = useParams();
   
-  // Use different hooks based on whether we have a productId
-  // When productId is present: show reviews for that product filtered to current user
-  // When productId is absent: show all reviews by the current user (My Reviews page)
-  const { data: productReviewData, isLoading: isProductLoading } = useGetProductReviews(productId, {
-    enabled: !!productId,
-  });
-  const { data: myReviewData, isLoading: isMyReviewsLoading } = useGetMyReviews({}, {
-    enabled: !productId,
-  });
+  // Guard against missing productId
+  if (!productId) {
+    return (
+      <Container>
+        <ErrorState
+          title="Product ID Missing"
+          message="Product ID is required. Please go back and try again."
+        />
+      </Container>
+    );
+  }
+  
+  const { data: reviewData, isLoading } = useGetProductReviews(productId);
+  const { userData } = useAuth();
 
-  const isLoading = productId ? isProductLoading : isMyReviewsLoading;
+  const user = userData?.user || userData?.data || null;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const reviews = reviewData?.data?.data.reviews || [];
 
-  // Get reviews based on mode
+  // Filter to only show current user's reviews
   const userReviews = useMemo(() => {
-    if (productId) {
-      // Product-specific mode: filter product reviews to current user
-      const reviews = productReviewData?.data?.data?.reviews || [];
-      // For product reviews, we show all reviews (not just user's)
-      // The original behavior filtered to user's reviews, but that may not be intended
-      // Let's keep showing user's reviews for the product
-      return reviews;
-    } else {
-      // My Reviews mode: all reviews are already user's reviews
-      return myReviewData?.data?.data?.reviews || [];
-    }
-  }, [productId, productReviewData, myReviewData]);
+    if (!user || !reviews.length) return [];
+    return reviews.filter(
+      (review) => review.user._id === user.id || review.user === user.id
+    );
+  }, [user, reviews]);
 
   // Calculate review stats
   const reviewStats = useMemo(() => {
@@ -158,28 +158,22 @@ export default function CustomerReviewPage() {
 
             <ReviewGrid>
               {userReviews.map((review) => {
-                const reviewDate = review.reviewDate || review.createdAt;
-                const status = getReviewStatus(reviewDate);
-                const productImage = review.product?.imageCover || review.product?.image || '/placeholder-product.png';
-                const productName = review.product?.name || 'Product';
-                const reviewText = review.review || review.comment || '';
+                const status = getReviewStatus(review.reviewDate);
                 
                 return (
                   <ReviewCard key={review._id}>
                     <CardHeader>
                       <ProductImage
-                        src={productImage}
-                        alt={productName}
+                        src={review.product.image}
+                        alt={review.product.name}
                       />
                       <ProductInfo>
-                        <ProductName>{productName}</ProductName>
+                        <ProductName>{review.product.name}</ProductName>
                         <ProductMeta>
-                          {review.order?.orderNumber && (
-                            <MetaItem>
-                              <FaCalendar />
-                              <span>Order #{review.order.orderNumber}</span>
-                            </MetaItem>
-                          )}
+                          <MetaItem>
+                            <FaCalendar />
+                            <span>Ordered {new Date(review.orderDate).toLocaleDateString()}</span>
+                          </MetaItem>
                         </ProductMeta>
                       </ProductInfo>
                       <ReviewStatus $type={status.type}>
@@ -198,14 +192,14 @@ export default function CustomerReviewPage() {
                         <QuoteIcon>
                           <FaQuoteLeft />
                         </QuoteIcon>
-                        {reviewText}
+                        {review.comment}
                       </ReviewContentText>
                     </ReviewBody>
 
                     <CardFooter>
                       <ReviewDate>
                         <FaClock />
-                        Reviewed on {reviewDate ? new Date(reviewDate).toLocaleDateString() : 'N/A'}
+                        Reviewed on {new Date(review.reviewDate).toLocaleDateString()}
                       </ReviewDate>
                       <ActionButtons>
                         <EditButton>

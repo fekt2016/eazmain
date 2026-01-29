@@ -2,7 +2,6 @@ import api from "./api";
 
 const reviewApi = {
   getProductReviews: (productId) => api.get(`/product/${productId}/reviews`),
-  getMyReviews: (params = {}) => api.get('/review/my-reviews', { params }),
   get: (id) => api.get(`/review/${id}`),
   createReview: (data) => {
     // Handle FormData for image uploads

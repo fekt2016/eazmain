@@ -42,9 +42,9 @@ const TrackingPage = () => {
 
   useDynamicPageTitle({
     title: "Track Order",
-    dynamicTitle: trackingNumber && `Track Order ${trackingNumber} | Saiisai`,
+    dynamicTitle: trackingNumber && `Track Order ${trackingNumber} | EazShop`,
     description: "Track your order status and delivery",
-    defaultTitle: "Track Order | Saiisai",
+    defaultTitle: "Track Order | EazShop",
   });
 
   useEffect(() => {
@@ -604,9 +604,9 @@ const TrackingPage = () => {
                     <InfoLabel>Delivery Method</InfoLabel>
                     <InfoValue>
                       {orderData.deliveryMethod === 'pickup_center' 
-                        ? 'Pickup from Saiisai Center'
+                        ? 'Pickup from EazShop Center'
                         : orderData.deliveryMethod === 'dispatch'
-                        ? 'Saiisai Dispatch Rider'
+                        ? 'EazShop Dispatch Rider'
                         : orderData.deliveryMethod === 'seller_delivery'
                         ? "Seller's Own Delivery"
                         : orderData.deliveryMethod.split('_').map(word => 
@@ -643,7 +643,7 @@ const TrackingPage = () => {
                         Pickup Center
                       </InfoLabel>
                       <InfoValue>
-                        <strong>{orderData.pickupCenter.pickupName || 'Saiisai Pickup Center'}</strong>
+                        <strong>{orderData.pickupCenter.pickupName || 'EazShop Pickup Center'}</strong>
                       </InfoValue>
                     </InfoRow>
                     {orderData.pickupCenter.address && (
