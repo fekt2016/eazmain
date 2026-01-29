@@ -138,7 +138,7 @@ const NotFoundPage = () => {
   useDynamicPageTitle({
     title: '404 - Page Not Found',
     description: 'The page you are looking for does not exist.',
-    defaultTitle: '404 - Page Not Found | EazShop',
+    defaultTitle: '404 - Page Not Found | Saiisai',
   });
 
   const handleGoBack = () => {

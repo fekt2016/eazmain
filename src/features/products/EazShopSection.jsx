@@ -87,7 +87,7 @@ const EazShopSection = () => {
       <Section>
         <Container>
           <SectionHeader>
-            <SectionTitle>EazShop Official Store</SectionTitle>
+            <SectionTitle>Saiisai Official Store</SectionTitle>
           </SectionHeader>
           <LoadingGrid>
             {[1, 2, 3, 4].map(i => (
@@ -124,7 +124,7 @@ const EazShopSection = () => {
               </TrustBadge>
             </BadgeContainer>
             <TitleContainer>
-              <SectionTitle>EazShop Official Store</SectionTitle>
+              <SectionTitle>Saiisai Official Store</SectionTitle>
               <SectionSubtitle>
                 Trusted • Verified • Fast Delivery
               </SectionSubtitle>

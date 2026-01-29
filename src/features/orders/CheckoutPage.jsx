@@ -1496,7 +1496,7 @@ const CheckoutPage = () => {
                     </Select>
                     {errors.city && <ErrorText>{errors.city}</ErrorText>}
                     <HintText>
-                      EazShop currently delivers only in Accra and Tema
+                      Saiisai currently delivers only in Accra and Tema
                     </HintText>
                   </FormGroup>
                   <FormGroup>
@@ -1590,7 +1590,7 @@ const CheckoutPage = () => {
           <SectionHeader>
             <SectionTitle>Delivery Method</SectionTitle>
             <InfoText>
-              EazShop currently delivers only in Accra and Tema
+              Saiisai currently delivers only in Accra and Tema
             </InfoText>
           </SectionHeader>
 
@@ -1609,7 +1609,7 @@ const CheckoutPage = () => {
                 </DeliveryIcon>
                 <DeliveryInfo>
                   <DeliveryTitle $selected={deliveryMethod === "pickup_center"}>
-                    Pickup from EazShop Center
+                    Pickup from Saiisai Center
                   </DeliveryTitle>
                   <DeliveryDescription>
                     Collect your order from one of our pickup centers. Free or
@@ -1724,10 +1724,10 @@ const CheckoutPage = () => {
                 </DeliveryIcon>
                 <DeliveryInfo>
                   <DeliveryTitle $selected={deliveryMethod === "dispatch"}>
-                    EazShop Dispatch Rider
+                    Saiisai Dispatch Rider
                   </DeliveryTitle>
                   <DeliveryDescription>
-                    Fast delivery by EazShop&apos;s own dispatch riders.
+                    Fast delivery by Saiisai&apos;s own dispatch riders.
                     Calculated based on location and item type.
                   </DeliveryDescription>
                 </DeliveryInfo>
@@ -1748,9 +1748,9 @@ const CheckoutPage = () => {
             {/* Shipping Options - Only show when dispatch is selected */}
             {deliveryMethod === "dispatch" && buyerCity && (
               <>
-                {/* EazShop Dispatch Rider Shipping Options */}
+                {/* Saiisai Dispatch Rider Shipping Options */}
                 <DispatchShippingSection>
-                  {/* <DispatchShippingTitle>EazShop Dispatch Rider</DispatchShippingTitle> */}
+                  {/* <DispatchShippingTitle>Saiisai Dispatch Rider</DispatchShippingTitle> */}
                   <ShippingOptions
                   weight={null} // Will be calculated from items
                   city={buyerCity}

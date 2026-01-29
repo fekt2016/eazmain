@@ -52,8 +52,9 @@ const SideBar = ({ $isOpen, onClose }) => {
   const location = useLocation();
 
   const handleLogout = () => {
-    logout();
-    navigate("/login");
+    logout.mutate(undefined, {
+      onSettled: () => navigate("/login"),
+    });
   };
 
   const navItems = [

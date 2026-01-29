@@ -84,10 +84,10 @@ const PublicSellerProfile = () => {
   // SEO - Set page title based on seller data
   useDynamicPageTitle({
     title: "Seller Store",
-    dynamicTitle: seller?.shopName && `${seller.shopName} — Shop on EazShop`,
+    dynamicTitle: seller?.shopName && `${seller.shopName} — Shop on Saiisai`,
     dynamicDescription: seller?.description || seller?.bio,
-    defaultTitle: "EazShop",
-    defaultDescription: "Shop from trusted sellers on EazShop",
+    defaultTitle: "Saiisai",
+    defaultDescription: "Shop from trusted sellers on Saiisai",
   });
 
   const followers = useMemo(() => {

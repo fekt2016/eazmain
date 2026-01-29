@@ -13,6 +13,14 @@ export const useGetProductReviews = (productId, options = {}) => {
     ...options,
   });
 };
+
+export const useGetMyReviews = (params = {}, options = {}) => {
+  return useQuery({
+    queryKey: ["reviews", "my-reviews", params],
+    queryFn: () => reviewApi.getMyReviews(params),
+    ...options,
+  });
+};
 export const useCreateReview = () => {
   const queryClient = useQueryClient();
   return useMutation({

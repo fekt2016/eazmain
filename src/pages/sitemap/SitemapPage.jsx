@@ -34,10 +34,10 @@ const SitemapPage = () => {
   // SEO
   useDynamicPageTitle({
     title: 'Sitemap | EazWorld',
-    description: 'Explore all pages and resources across EazWorld, EazShop, EazSeller, and EazAdmin platforms.',
-    keywords: 'sitemap, pages, navigation, EazWorld, EazShop, EazSeller, EazAdmin',
+    description: 'Explore all pages and resources across EazWorld, Saiisai, EazSeller, and EazAdmin platforms.',
+    keywords: 'sitemap, pages, navigation, EazWorld, Saiisai, EazSeller, EazAdmin',
     defaultTitle: 'Sitemap | EazWorld',
-    defaultDescription: 'Explore all pages and resources across EazWorld, EazShop, EazSeller, and EazAdmin platforms.',
+    defaultDescription: 'Explore all pages and resources across EazWorld, Saiisai, EazSeller, and EazAdmin platforms.',
   });
 
   // Sitemap sections data

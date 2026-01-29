@@ -26,7 +26,7 @@ export const useEazShop = () => {
           });
         } catch (error) {
           logger.error('Failed to fetch EazShop products:', error);
-          throw new Error('Failed to load EazShop products');
+          throw new Error('Failed to load Saiisai products');
         }
       },
       staleTime: 1000 * 30, // Reduced to 30 seconds for faster updates after deletion

@@ -47,15 +47,15 @@ import {
 } from './help.styles';
 
 /**
- * Help Center Page for EazShop
+ * Help Center Page for Saiisai
  * Provides help resources, FAQs, and support information
  */
 const HelpCenterPage = () => {
   // SEO
   useDynamicPageTitle({
-    title: 'Help Center - EazShop',
+    title: 'Help Center - Saiisai',
     description: 'Get help with your orders, account, payments, shipping, and more. Find answers to frequently asked questions.',
-    defaultTitle: 'Help Center - EazShop',
+    defaultTitle: 'Help Center - Saiisai',
     defaultDescription: 'Get help with your orders, account, payments, shipping, and more.',
   });
 

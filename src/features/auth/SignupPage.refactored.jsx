@@ -120,7 +120,7 @@ export default function SignupPage() {
       <ImageSection>
         <Overlay />
         <ImageContent>
-          <BrandLogo to="/">EazShop</BrandLogo>
+          <BrandLogo to="/">Saiisai</BrandLogo>
           <HeroText>
             <h1>Join Our Community</h1>
             <p>Create an account to unlock exclusive features and personalized recommendations.</p>

@@ -415,24 +415,27 @@ api.interceptors.response.use(
       const fullURL = error.config?.url 
         ? `${error.config.baseURL || baseURL}${error.config.url}` 
         : 'unknown';
-      
-      logger.error("[API] Network error - check if backend is running:", {
-        url: error.config?.url,
-        baseURL: error.config?.baseURL || baseURL,
-        fullURL,
-        method: error.config?.method,
-        errorCode: error.code,
-        errorMessage: error.message,
-      });
-      
-      // In development, provide helpful debugging info
-      if (import.meta.env.DEV) {
-        console.error('[API] 💡 Debugging Network Error:');
-        console.error(`  1. Backend URL: ${baseURL}`);
-        console.error(`  2. Full request URL: ${fullURL}`);
-        console.error(`  3. Check if backend is running: curl ${baseURL.replace('/api/v1', '')}/health`);
-        console.error(`  4. Check browser console for CORS errors`);
-        console.error(`  5. Verify VITE_API_URL in .env file (if set)`);
+
+      // Notification endpoints (e.g. unread count) are non-critical; log gently so UI can show 0 and retry
+      if (isNotification) {
+        logger.warn("[API] Backend unreachable for notification request - will retry. If backend is starting, this is normal.", { url: error.config?.url });
+      } else {
+        logger.error("[API] Network error - check if backend is running:", {
+          url: error.config?.url,
+          baseURL: error.config?.baseURL || baseURL,
+          fullURL,
+          method: error.config?.method,
+          errorCode: error.code,
+          errorMessage: error.message,
+        });
+        if (import.meta.env.DEV) {
+          console.error('[API] 💡 Debugging Network Error:');
+          console.error(`  1. Backend URL: ${baseURL}`);
+          console.error(`  2. Full request URL: ${fullURL}`);
+          console.error(`  3. Check if backend is running: curl ${baseURL.replace('/api/v1', '')}/health`);
+          console.error(`  4. Check browser console for CORS errors`);
+          console.error(`  5. Verify VITE_API_URL in .env file (if set)`);
+        }
       }
     } else {
       logger.error("[API] Error:", {

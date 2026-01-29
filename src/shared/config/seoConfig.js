@@ -26,9 +26,9 @@ const seoConfig = {
       logo: `${BASE_URL}/images/logo.png`,
       description: 'Ghana\'s leading online marketplace connecting buyers and sellers',
       sameAs: [
-        'https://www.facebook.com/eazshop',
-        'https://www.twitter.com/eazshop',
-        'https://www.instagram.com/eazshop',
+        'https://www.facebook.com/saiisai',
+        'https://www.twitter.com/saiisai',
+        'https://www.instagram.com/saiisai',
       ],
       contactPoint: {
         '@type': 'ContactPoint',

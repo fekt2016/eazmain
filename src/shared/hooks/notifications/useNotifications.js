@@ -106,6 +106,16 @@ export const useUnreadCount = () => {
             },
           };
         }
+        // If network error (backend unreachable), return zero count so UI doesn't break
+        if (error?.code === 'ERR_NETWORK' || !error?.response) {
+          console.warn('[EazMain useUnreadCount] ⚠️ Network error - backend may be down, returning zero count');
+          return {
+            status: 'success',
+            data: {
+              unreadCount: 0,
+            },
+          };
+        }
         // Re-throw other errors
         throw error;
       }
@@ -117,12 +127,14 @@ export const useUnreadCount = () => {
     refetchInterval: isEnabled ? 30000 : false, // Only poll when authenticated
     refetchIntervalInBackground: false, // Don't refetch when tab is in background
     retry: (failureCount, error) => {
-      // CRITICAL FIX: Don't retry on 401 errors (auth failure)
-      // This prevents infinite retry loops when auth is invalid
+      // Don't retry on 401 (auth failure)
       if (error?.response?.status === 401) {
         return false;
       }
-      // Retry network errors up to 2 times
+      // Don't retry on network errors (backend down) to avoid console spam
+      if (error?.code === 'ERR_NETWORK' || !error?.response) {
+        return false;
+      }
       return failureCount < 2;
     },
   });

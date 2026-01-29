@@ -13,10 +13,10 @@ import { fadeInUp } from "../../shared/styles/animations";
 
 const ProductsPage = () => {
   useDynamicPageTitle({
-    title: "All Products - EazShop",
-    description: "Browse all products on EazShop",
-    defaultTitle: "All Products - EazShop",
-    defaultDescription: "Browse all products on EazShop",
+    title: "All Products - Saiisai",
+    description: "Browse all products on Saiisai",
+    defaultTitle: "All Products - Saiisai",
+    defaultDescription: "Browse all products on Saiisai",
   });
   const location = useLocation();
   const [showFilters, setShowFilters] = useState(false);
@@ -162,7 +162,7 @@ const ProductsPage = () => {
         <PageHeader>
           <HeaderContent>
             <PageTitle>
-              {showEazShopOnly ? "EazShop Official Store" : "All Products"}
+              {showEazShopOnly ? "Saiisai Official Store" : "All Products"}
             </PageTitle>
             <ProductCount>{displayProducts.length} products available</ProductCount>
           </HeaderContent>
@@ -191,7 +191,7 @@ const ProductsPage = () => {
                     <FaTruck /> Fast Delivery
                   </TrustBadge>
                 </BadgeContainer>
-                <EazShopTitle>EazShop Official Store</EazShopTitle>
+                <EazShopTitle>Saiisai Official Store</EazShopTitle>
                 <EazShopSubtitle>
                   Trusted • Verified • Fast Delivery
                 </EazShopSubtitle>
@@ -243,7 +243,7 @@ const ProductsPage = () => {
                       checked={showEazShopOnly}
                       onChange={(e) => setShowEazShopOnly(e.target.checked)}
                     />
-                    <span>EazShop Official Store</span>
+                    <span>Saiisai Official Store</span>
                   </CheckboxLabel>
                 </FilterGroup>
                 <FilterGroup>
@@ -285,7 +285,7 @@ const ProductsPage = () => {
             <h3>No Products Found</h3>
             <p>
               {showEazShopOnly
-                ? "No EazShop products available at the moment."
+                ? "No Saiisai products available at the moment."
                 : "No products available at the moment."}
             </p>
           </EmptyState>

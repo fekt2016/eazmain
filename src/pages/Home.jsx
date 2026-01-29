@@ -23,9 +23,9 @@ const HomePageWrapper = styled.div`
 
 const HomePage = () => {
   useDynamicPageTitle({
-    title: "EazShop - Shop the Best Products Online",
-    description: "Discover amazing deals and products on EazShop. Fast delivery across Ghana.",
-    defaultTitle: "EazShop",
+    title: "Saiisai - Shop the Best Products Online",
+    description: "Discover amazing deals and products on Saiisai. Fast delivery across Ghana.",
+    defaultTitle: "Saiisai",
   });
 
   // Fetch data

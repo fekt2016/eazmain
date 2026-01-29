@@ -114,10 +114,10 @@ const ProductDetailPage = () => {
   // SEO - Update page title and meta tags based on product data
   useDynamicPageTitle({
     title: "Product Details",
-    dynamicTitle: product?.name && `Buy ${product.name} | EazShop`,
+    dynamicTitle: product?.name && `Buy ${product.name} | Saiisai`,
     description: product?.shortDescription || product?.description || product?.summary,
-    defaultTitle: "EazShop",
-    defaultDescription: "Shop the best products on EazShop",
+    defaultTitle: "Saiisai",
+    defaultDescription: "Shop the best products on Saiisai",
   });
 
   // Wishlist hook - use product._id once product is loaded, fallback to id from params
@@ -910,7 +910,7 @@ const ProductDetailPage = () => {
                 {(product.isEazShopProduct || product.seller?.role === 'eazshop_store') && (
                   <EazShopBadge>
                     <FaAward />
-                    <span>EazShop Official Store</span>
+                    <span>Saiisai Official Store</span>
                   </EazShopBadge>
                 )}
               </SellerHeader>
@@ -924,7 +924,7 @@ const ProductDetailPage = () => {
                 <SellerDetails>
                   <SellerName to={`/seller/${product.seller._id}`}>
                     {(product.isEazShopProduct || product.seller?.role === 'eazshop_store') 
-                      ? "EazShop Official Store ✓" 
+                      ? "Saiisai Official Store ✓" 
                       : (product.seller.shopName || product.seller.name)}
                   </SellerName>
                   <SellerStats>

@@ -207,7 +207,7 @@ export default function Press() {
         <Header>
           <Title>Press & Media</Title>
           <Subtitle>
-            Welcome to EazShop's press center. Find the latest news, press releases, 
+            Welcome to Saiisai's press center. Find the latest news, press releases, 
             media resources, and contact information for media inquiries.
           </Subtitle>
         </Header>
@@ -220,7 +220,7 @@ export default function Press() {
             About EazShop
           </SectionTitle>
           <Description>
-            EazShop is a leading e-commerce platform revolutionizing the shopping experience 
+            Saiisai is a leading e-commerce platform revolutionizing the shopping experience 
             in Ghana and beyond. We connect buyers and sellers, offering a seamless, secure, 
             and convenient marketplace for quality products and services.
           </Description>
@@ -327,13 +327,13 @@ export default function Press() {
               <strong>Twitter:</strong> <Link href="https://twitter.com/eazshop" target="_blank" rel="noopener noreferrer">@eazshop</Link>
             </ListItem>
             <ListItem>
-              <strong>Facebook:</strong> <Link href="https://facebook.com/eazshop" target="_blank" rel="noopener noreferrer">EazShop</Link>
+              <strong>Facebook:</strong> <Link href="https://facebook.com/saiisai" target="_blank" rel="noopener noreferrer">Saiisai</Link>
             </ListItem>
             <ListItem>
               <strong>Instagram:</strong> <Link href="https://instagram.com/eazshop" target="_blank" rel="noopener noreferrer">@eazshop</Link>
             </ListItem>
             <ListItem>
-              <strong>LinkedIn:</strong> <Link href="https://linkedin.com/company/eazshop" target="_blank" rel="noopener noreferrer">EazShop</Link>
+              <strong>LinkedIn:</strong> <Link href="https://linkedin.com/company/saiisai" target="_blank" rel="noopener noreferrer">Saiisai</Link>
             </ListItem>
           </List>
         </ContentSection>

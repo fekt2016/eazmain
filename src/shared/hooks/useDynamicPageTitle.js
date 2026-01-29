@@ -4,8 +4,8 @@ const useDynamicPageTitle = ({
   title,
   dynamicTitle,
   description,
-  defaultTitle = 'EazShop',
-  defaultDescription = 'Shop the best products on EazShop',
+  defaultTitle = 'Saiisai',
+  defaultDescription = 'Shop the best products on Saiisai',
 }) => {
   // FIX: Memoize computed values to prevent unnecessary DOM updates
   const finalTitle = useMemo(() => {

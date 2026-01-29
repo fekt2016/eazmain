@@ -130,9 +130,9 @@ export default function SearchResultsPage() {
   
   useDynamicPageTitle({
     title: "Search",
-    dynamicTitle: searchQuery && `Search: ${searchQuery} | EazShop`,
-    description: searchQuery ? `Search results for "${searchQuery}"` : "Search products on EazShop",
-    defaultTitle: "Search | EazShop",
+    dynamicTitle: searchQuery && `Search: ${searchQuery} | Saiisai`,
+    description: searchQuery ? `Search results for "${searchQuery}"` : "Search products on Saiisai",
+    defaultTitle: "Search | Saiisai",
   });
 
   const toggleFilters = () => setShowFilters(!showFilters);

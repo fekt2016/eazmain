@@ -15,7 +15,7 @@ import {
   FaExclamationTriangle
 } from "react-icons/fa";
 import { useParams } from "react-router-dom";
-import { useGetProductReviews } from '../../shared/hooks/useReview';
+import { useGetProductReviews, useGetMyReviews } from '../../shared/hooks/useReview';
 import useAuth from '../../shared/hooks/useAuth';
 import { LoadingState, ErrorState } from '../../components/loading';
 import { devicesMax } from '../../shared/styles/breakpoint';
@@ -24,32 +24,31 @@ import Container from '../../shared/components/Container';
 export default function CustomerReviewPage() {
   const { id: productId } = useParams();
   
-  // Guard against missing productId
-  if (!productId) {
-    return (
-      <Container>
-        <ErrorState
-          title="Product ID Missing"
-          message="Product ID is required. Please go back and try again."
-        />
-      </Container>
-    );
-  }
-  
-  const { data: reviewData, isLoading } = useGetProductReviews(productId);
+  const isProductReviewsPage = !!productId;
+
+  const { data: productReviewData, isLoading: isProductLoading } = useGetProductReviews(productId, {
+    enabled: isProductReviewsPage,
+  });
+  const { data: myReviewData, isLoading: isMyReviewsLoading } = useGetMyReviews(
+    {},
+    { enabled: !isProductReviewsPage }
+  );
+
   const { userData } = useAuth();
-
   const user = userData?.user || userData?.data || null;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const reviews = reviewData?.data?.data.reviews || [];
 
-  // Filter to only show current user's reviews
   const userReviews = useMemo(() => {
-    if (!user || !reviews.length) return [];
-    return reviews.filter(
-      (review) => review.user._id === user.id || review.user === user.id
-    );
-  }, [user, reviews]);
+    if (isProductReviewsPage) {
+      const reviews = productReviewData?.data?.data?.reviews || [];
+      if (!user || !reviews.length) return [];
+      return reviews.filter(
+        (r) => r.user?._id === user.id || r.user === user.id
+      );
+    }
+    return myReviewData?.data?.data?.reviews || myReviewData?.data?.reviews || [];
+  }, [isProductReviewsPage, productReviewData, myReviewData, user]);
+
+  const isLoading = isProductReviewsPage ? isProductLoading : isMyReviewsLoading;
 
   // Calculate review stats
   const reviewStats = useMemo(() => {
@@ -158,22 +157,34 @@ export default function CustomerReviewPage() {
 
             <ReviewGrid>
               {userReviews.map((review) => {
-                const status = getReviewStatus(review.reviewDate);
+                const reviewDate = review.reviewDate || review.createdAt;
+                const status = getReviewStatus(reviewDate);
+                const productImage = review.product?.imageCover || review.product?.image || '/placeholder-product.png';
+                const productName = review.product?.name || 'Product';
+                const reviewText = review.review || review.comment || '';
                 
                 return (
                   <ReviewCard key={review._id}>
                     <CardHeader>
                       <ProductImage
-                        src={review.product.image}
-                        alt={review.product.name}
+                        src={productImage}
+                        alt={productName}
                       />
                       <ProductInfo>
-                        <ProductName>{review.product.name}</ProductName>
+                        <ProductName>{productName}</ProductName>
                         <ProductMeta>
-                          <MetaItem>
-                            <FaCalendar />
-                            <span>Ordered {new Date(review.orderDate).toLocaleDateString()}</span>
-                          </MetaItem>
+                          {review.order?.orderNumber && (
+                            <MetaItem>
+                              <FaCalendar />
+                              <span>Order #{review.order.orderNumber}</span>
+                            </MetaItem>
+                          )}
+                          {reviewDate && (
+                            <MetaItem>
+                              <FaClock />
+                              <span>Reviewed {new Date(reviewDate).toLocaleDateString()}</span>
+                            </MetaItem>
+                          )}
                         </ProductMeta>
                       </ProductInfo>
                       <ReviewStatus $type={status.type}>
@@ -187,19 +198,19 @@ export default function CustomerReviewPage() {
                         <RatingValue>{review.rating}/5</RatingValue>
                       </ReviewRating>
                       
-                      <ReviewTitle>{review.title}</ReviewTitle>
+                      {review.title && <ReviewTitle>{review.title}</ReviewTitle>}
                       <ReviewContentText>
                         <QuoteIcon>
                           <FaQuoteLeft />
                         </QuoteIcon>
-                        {review.comment}
+                        {reviewText}
                       </ReviewContentText>
                     </ReviewBody>
 
                     <CardFooter>
                       <ReviewDate>
                         <FaClock />
-                        Reviewed on {new Date(review.reviewDate).toLocaleDateString()}
+                        Reviewed on {reviewDate ? new Date(reviewDate).toLocaleDateString() : 'N/A'}
                       </ReviewDate>
                       <ActionButtons>
                         <EditButton>

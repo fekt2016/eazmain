@@ -27,7 +27,7 @@ import {
 } from './policy.styles';
 
 /**
- * Privacy Policy Page for EazShop (Buyer App)
+ * Privacy Policy Page for Saiisai (Buyer App)
  * Comprehensive privacy policy explaining how we collect, use, and protect buyer information
  */
 const PrivacyPolicyPage = () => {
@@ -41,11 +41,11 @@ const PrivacyPolicyPage = () => {
 
   // SEO
   useDynamicPageTitle({
-    title: 'Privacy Policy • EazShop',
-    description: 'Learn how EazShop collects, uses, shares and protects your personal information as a buyer.',
-    keywords: 'privacy policy, data protection, EazShop privacy, buyer privacy, personal information',
-    defaultTitle: 'Privacy Policy • EazShop',
-    defaultDescription: 'Learn how EazShop collects, uses, shares and protects your personal information as a buyer.',
+    title: 'Privacy Policy • Saiisai',
+    description: 'Learn how Saiisai collects, uses, shares and protects your personal information as a buyer.',
+    keywords: 'privacy policy, data protection, Saiisai privacy, buyer privacy, personal information',
+    defaultTitle: 'Privacy Policy • Saiisai',
+    defaultDescription: 'Learn how Saiisai collects, uses, shares and protects your personal information as a buyer.',
   });
 
   // Animation variants
@@ -81,7 +81,7 @@ const PrivacyPolicyPage = () => {
           <PolicyTitle>Privacy Policy</PolicyTitle>
           <LastUpdated>Effective Date: {effectiveDate}</LastUpdated>
           <IntroText>
-            At EazShop, operated by EazWorld, we are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, share, and safeguard your information when you use our marketplace platform, including our website and mobile applications. By using EazShop, you agree to the practices described in this policy.
+            At Saiisai, operated by EazWorld, we are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, share, and safeguard your information when you use our marketplace platform, including our website and mobile applications. By using Saiisai, you agree to the practices described in this policy.
           </IntroText>
         </PolicyHeader>
 
@@ -90,7 +90,7 @@ const PrivacyPolicyPage = () => {
           <SectionTitle>1. Introduction</SectionTitle>
           <SectionContent>
             <Paragraph>
-              EazShop is an online marketplace operated by EazWorld, connecting buyers with sellers across Ghana and beyond. This Privacy Policy applies to all information collected through our website (eazshop.com), mobile applications, and any other services that link to this policy.
+              Saiisai is an online marketplace operated by EazWorld, connecting buyers with sellers across Ghana and beyond. This Privacy Policy applies to all information collected through our website (saiisai.com), mobile applications, and any other services that link to this policy.
             </Paragraph>
             <Paragraph>
               We understand the importance of privacy and are dedicated to maintaining the confidentiality and security of your personal information. This policy outlines our practices regarding the collection, use, disclosure, and protection of your data when you interact with our platform as a buyer.
@@ -184,7 +184,7 @@ const PrivacyPolicyPage = () => {
             <BulletList>
               <li>
                 <Paragraph>
-                  <strong>Device Information:</strong> We automatically collect information about the device you use to access EazShop, including your device model, operating system, browser type and version, language preferences, unique device identifiers, and mobile network information.
+                  <strong>Device Information:</strong> We automatically collect information about the device you use to access Saiisai, including your device model, operating system, browser type and version, language preferences, unique device identifiers, and mobile network information.
                 </Paragraph>
               </li>
               <li>
@@ -393,7 +393,7 @@ const PrivacyPolicyPage = () => {
           <SectionTitle>6. Children</SectionTitle>
           <SectionContent>
             <Paragraph>
-              EazShop is not intended for individuals under the age of 18. We do not knowingly collect personal information from children under 18 without appropriate parental consent.
+              Saiisai is not intended for individuals under the age of 18. We do not knowingly collect personal information from children under 18 without appropriate parental consent.
             </Paragraph>
             <Paragraph>
               If we discover that we have collected information from a child under 18 without proper authorization, we will delete that information promptly. If you are a parent or guardian and believe that your child has provided us with personal information, please contact us immediately using the contact information provided in the "Contact Us" section below.
@@ -462,7 +462,7 @@ const PrivacyPolicyPage = () => {
               <li>Other legal mechanisms designed to ensure adequate protection of your information</li>
             </BulletList>
             <Paragraph>
-              By using EazShop, you consent to the transfer of your information to countries outside your country of residence, including countries that may not have the same level of data protection as your home country. We will continue to protect your information in accordance with this Privacy Policy regardless of where it is processed.
+              By using Saiisai, you consent to the transfer of your information to countries outside your country of residence, including countries that may not have the same level of data protection as your home country. We will continue to protect your information in accordance with this Privacy Policy regardless of where it is processed.
             </Paragraph>
           </SectionContent>
         </PolicySection>
@@ -485,7 +485,7 @@ const PrivacyPolicyPage = () => {
               <li>Other methods as required by applicable law</li>
             </BulletList>
             <Paragraph>
-              We encourage you to review this Privacy Policy periodically to stay informed about how we protect your information. Your continued use of EazShop after changes become effective constitutes your acceptance of the updated Privacy Policy.
+              We encourage you to review this Privacy Policy periodically to stay informed about how we protect your information. Your continued use of Saiisai after changes become effective constitutes your acceptance of the updated Privacy Policy.
             </Paragraph>
           </SectionContent>
         </PolicySection>

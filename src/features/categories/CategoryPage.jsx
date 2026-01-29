@@ -94,7 +94,7 @@ export default function CategoryPage() {
     title: "Category",
     dynamicTitle: category?.name && `${category.name} — Browse Products`,
     description: category?.description,
-    defaultTitle: "EazShop Categories",
+    defaultTitle: "Saiisai Categories",
   });
 
   const products = useMemo(() => {

@@ -53,15 +53,15 @@ const SpinningIcon = styled(FaSpinner)`
 `;
 
 /**
- * Modern Contact Us Page for EazShop/EazWorld
+ * Modern Contact Us Page for Saiisai/EazWorld
  * Fully responsive with form validation and React Query integration
  */
 const ContactPage = () => {
   // SEO
   useDynamicPageTitle({
     title: "Contact Us",
-    description: "Get in touch with EazShop customer support for help with orders, returns, and more.",
-    defaultTitle: "Contact • EazShop",
+    description: "Get in touch with Saiisai customer support for help with orders, returns, and more.",
+    defaultTitle: "Contact • Saiisai",
     defaultDescription: "Reach out to our team for assistance.",
   });
 
@@ -204,7 +204,7 @@ const ContactPage = () => {
 
   // Handle email
   const handleEmail = () => {
-    window.location.href = 'mailto:support@eazshop.com?subject=Contact%20from%20EazShop';
+    window.location.href = 'mailto:support@saiisai.com?subject=Contact%20from%20Saiisai';
   };
 
   // Handle phone
