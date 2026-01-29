@@ -1026,6 +1026,7 @@ const ProgressBarFill = styled.div`
 
 // Spinner Container for consistent spacing
 
+// NOTE: Use transient prop $fullScreen so it doesn't reach the DOM
 export const SpinnerContainer = styled.div`
 
   display: flex;
@@ -1038,7 +1039,7 @@ export const SpinnerContainer = styled.div`
 
   
 
-  ${({ fullScreen }) => fullScreen && `
+  ${({ $fullScreen }) => $fullScreen && `
 
     position: fixed;
 

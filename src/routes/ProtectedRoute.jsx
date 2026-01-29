@@ -53,7 +53,7 @@ const ProtectedRoutes = ({ children }) => {
   // This prevents double spinners since auth queries don't have meta?.global
   if (isLoading) {
     return (
-      <SpinnerContainer fullScreen>
+      <SpinnerContainer $fullScreen>
         <PageSpinner />
       </SpinnerContainer>
     );

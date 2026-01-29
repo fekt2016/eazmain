@@ -35,6 +35,7 @@ const browserHistoryApi = {
       // 400 errors for duplicates are now handled by backend returning 200 with skipped flag
       const status = error.response?.status;
       const errorMessage = error.response?.data?.message || "Failed to add history item";
+      const errorCode = error.response?.data?.code;
       
       // If it's a 400 and the message indicates duplicate, treat as skipped
       // (This is a fallback in case backend hasn't been updated yet)
@@ -45,6 +46,23 @@ const browserHistoryApi = {
             skipped: true,
             reason: 'ALREADY_VIEWED',
             message: errorMessage,
+          },
+        };
+      }
+
+      // CSRF token failures are non-critical for browsing history.
+      // Treat as skipped so the app doesn't spam console/errors for a background feature.
+      if (
+        status === 403 &&
+        (String(errorMessage).toLowerCase().includes('security token') ||
+          errorCode === 'CSRF_TOKEN_MISSING' ||
+          errorCode === 'CSRF_TOKEN_MISMATCH')
+      ) {
+        return {
+          data: {
+            status: 'success',
+            skipped: true,
+            reason: 'SECURITY_TOKEN',
           },
         };
       }

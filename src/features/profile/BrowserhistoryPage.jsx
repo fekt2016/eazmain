@@ -218,7 +218,7 @@ const BrowserHistoryPage = () => {
 
       {/* Deletion Loading Overlay */}
       {(isDeleting || isClearing) && (
-        <SpinnerContainer fullScreen>
+        <SpinnerContainer $fullScreen>
           <LoadingState 
             message={
               deletionType === "selected"

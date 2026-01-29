@@ -35,9 +35,10 @@ export const useAddHistoryItem = () => {
         
         return response;
       } catch (error) {
-        // Only log actual errors (network failures, 500, auth issues, etc.)
-        // Duplicate views are now handled gracefully and won't reach here
-        logger.error("Failed to add history item:", error);
+        // Browsing history is non-critical. Avoid noisy logs in production.
+        if (import.meta.env.DEV) {
+          logger.error("Failed to add history item:", error);
+        }
         throw error; // Re-throw to trigger onError for real errors
       }
     },
@@ -49,9 +50,10 @@ export const useAddHistoryItem = () => {
       // Silently handle skipped responses - no logging needed
     },
     onError: (error) => {
-      // Only log real errors (network, 500, etc.)
-      // Duplicate views should never reach here now
-      logger.error("Error adding history item:", error);
+      // Browsing history is non-critical. Avoid noisy logs in production.
+      if (import.meta.env.DEV) {
+        logger.error("Error adding history item:", error);
+      }
     },
   });
 };

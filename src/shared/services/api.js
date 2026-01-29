@@ -169,6 +169,25 @@ let baseURL = getBaseURL();
 let csrfToken = null;
 let csrfTokenPromise = null;
 
+// Read a cookie value safely (client-side only)
+const readCookie = (name) => {
+  if (typeof document === 'undefined') return null;
+  const cookies = document.cookie ? document.cookie.split('; ') : [];
+  const prefix = `${name}=`;
+  for (const c of cookies) {
+    if (c.startsWith(prefix)) {
+      return decodeURIComponent(c.substring(prefix.length));
+    }
+  }
+  return null;
+};
+
+// Best-effort: read CSRF token from cookie (backend sets 'csrf-token' cookie, httpOnly: false)
+const getCsrfTokenFromCookie = () => {
+  const token = readCookie('csrf-token');
+  return token && typeof token === 'string' ? token : null;
+};
+
 // Fetch CSRF token from backend
 const fetchCsrfToken = async () => {
   // If we already have a token, return it
@@ -286,25 +305,33 @@ api.interceptors.request.use(async (config) => {
     // For authenticated routes, we need the CSRF token
     if (!isPublicRoute(normalizedPath, method)) {
       try {
+        // Fast path: read from cookie (avoids extra network call and prevents missing-header 403s)
+        if (!csrfToken) {
+          const cookieToken = getCsrfTokenFromCookie();
+          if (cookieToken) {
+            csrfToken = cookieToken;
+          }
+        }
+
         // If we already have a token, use it immediately
-    if (csrfToken) {
-      config.headers['X-CSRF-Token'] = csrfToken;
-      logger.debug(`[API] CSRF token added to ${method.toUpperCase()} ${normalizedPath}`);
-    } else {
-          // Try to fetch token with a short timeout
-          // Use Promise.race to ensure we don't wait too long
+        if (csrfToken) {
+          config.headers['X-CSRF-Token'] = csrfToken;
+          logger.debug(`[API] CSRF token added to ${method.toUpperCase()} ${normalizedPath}`);
+        } else {
+          // Fallback: try to fetch token with a short timeout (non-blocking)
           const token = await Promise.race([
             fetchCsrfToken(),
             new Promise((resolve) => setTimeout(() => resolve(null), 1500)), // 1.5 second max wait
           ]);
-          
+
           if (token) {
             config.headers['X-CSRF-Token'] = token;
             logger.debug(`[API] CSRF token added to ${method.toUpperCase()} ${normalizedPath}`);
           } else {
-            // If CSRF token fetch failed or timed out, still proceed with the request
-            // The backend will return a 403 if CSRF is required, which we'll handle
-            logger.debug(`[API] No CSRF token available for ${method.toUpperCase()} ${normalizedPath} - proceeding without token`);
+            // Proceed without token; backend will return 403 if required
+            logger.debug(
+              `[API] No CSRF token available for ${method.toUpperCase()} ${normalizedPath} - proceeding without token`
+            );
           }
         }
       } catch (error) {
@@ -349,9 +376,26 @@ api.interceptors.response.use(
     const isNotification = isNotificationEndpoint(url);
     
     // Handle CSRF token errors (403 with specific message)
+    // Best effort: clear cached token and retry ONCE (safe because backend rejected before any side effects)
     if (status === 403 && error.response?.data?.message?.includes('security token')) {
-      logger.warn('[API] CSRF token invalid, clearing and will retry on next request');
       clearCsrfToken();
+
+      const originalConfig = error.config || {};
+      if (!originalConfig._csrfRetry) {
+        originalConfig._csrfRetry = true;
+        try {
+          // Refresh token (cookie or endpoint) then retry once
+          const cookieToken = getCsrfTokenFromCookie();
+          csrfToken = cookieToken || (await fetchCsrfToken());
+          if (csrfToken) {
+            originalConfig.headers = originalConfig.headers || {};
+            originalConfig.headers['X-CSRF-Token'] = csrfToken;
+          }
+          return api(originalConfig);
+        } catch (retryError) {
+          // Fall through with original error if retry fails
+        }
+      }
     }
 
     // Enhanced error logging with notification-specific logging

@@ -46,7 +46,7 @@ const GlobalLoading = () => {
   if (!visible) return null;
 
   return (
-    <SpinnerContainer fullScreen>
+    <SpinnerContainer $fullScreen>
       <PageSpinner />
     </SpinnerContainer>
   );
