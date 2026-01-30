@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { PATHS } from "../../routes/routePaths";
 import styled, { css } from "styled-components";
 import { spin, pulse, float, fadeIn, slideUp } from "../../shared/styles/animations";
 import logger from "../../shared/utils/logger";
@@ -901,50 +902,78 @@ const ProductDetailPage = () => {
             </TrustItem>
           </TrustSection>
 
-          {/* Seller Info */}
-          {product.seller && (
-            <SellerCard>
-              <SellerHeader>
-                <FaStore />
-                <span>Sold by</span>
-                {(product.isEazShopProduct || product.seller?.role === 'eazshop_store') && (
-                  <EazShopBadge>
-                    <FaAward />
-                    <span>Saiisai Official Store</span>
-                  </EazShopBadge>
-                )}
-              </SellerHeader>
-              <SellerInfo>
-                <SellerAvatar>
-                  <img
-                    src={product.seller.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"}
-                    alt={product.seller.name}
-                  />
-                </SellerAvatar>
-                <SellerDetails>
-                  <SellerName to={`/seller/${product.seller._id}`}>
-                    {(product.isEazShopProduct || product.seller?.role === 'eazshop_store') 
-                      ? "Saiisai Official Store ✓" 
-                      : (product.seller.shopName || product.seller.name)}
-                  </SellerName>
-                  <SellerStats>
-                    {product.seller.rating && (
-                      <SellerRating>
-                        <StarRating rating={product.seller.rating} size="12px" />
-                        {product.seller.rating.toFixed(1)}
-                      </SellerRating>
+          {/* Seller Info - show when product has seller (object or id) or is EazShop */}
+          {(product.seller != null || product.isEazShopProduct) && (() => {
+            const rawSellerId = product.seller?._id ?? (typeof product.seller === 'string' ? product.seller : null);
+            const sellerIdStr = rawSellerId != null ? String(typeof rawSellerId === 'object' && rawSellerId?.toString ? rawSellerId.toString() : rawSellerId) : null;
+            const displayName = (product.isEazShopProduct || product.seller?.role === 'eazshop_store')
+              ? "Saiisai Official Store ✓"
+              : (typeof product.seller === 'object' && (product.seller?.shopName || product.seller?.name)) || "Seller";
+            const sellerPagePath = sellerIdStr ? `${PATHS.SELLERS}/${sellerIdStr}` : null;
+            
+            // Debug logging
+            console.log('[ProductDetail] Seller section:', {
+              hasSeller: !!product.seller,
+              sellerType: typeof product.seller,
+              sellerId: product.seller?._id,
+              sellerIdStr,
+              sellerPagePath,
+              displayName,
+              isEazShop: product.isEazShopProduct,
+              sellerRole: product.seller?.role,
+            });
+            return (
+              <SellerCard>
+                <SellerHeader>
+                  <FaStore />
+                  <span>Sold by</span>
+                  {(product.isEazShopProduct || product.seller?.role === 'eazshop_store') && (
+                    <EazShopBadge>
+                      <FaAward />
+                      <span>Saiisai Official Store</span>
+                    </EazShopBadge>
+                  )}
+                </SellerHeader>
+                <SellerInfo>
+                  <SellerAvatar>
+                    <img
+                      src={(typeof product.seller === 'object' && product.seller?.avatar) || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"}
+                      alt={typeof product.seller === 'object' ? (product.seller?.name || product.seller?.shopName || "Seller") : "Seller"}
+                    />
+                  </SellerAvatar>
+                  <SellerDetails>
+                    {sellerPagePath ? (
+                      <SellerNameButton type="button" onClick={() => navigate(sellerPagePath)}>
+                        {displayName}
+                      </SellerNameButton>
+                    ) : (
+                      <SellerNameAsText>{displayName}</SellerNameAsText>
                     )}
-                    {product.seller.location && (
-                      <SellerLocation>
-                        <FaMapMarkerAlt />
-                        {product.seller.location}
-                      </SellerLocation>
+                    <SellerStats>
+                      {typeof product.seller === 'object' && (product.seller?.rating != null || product.seller?.ratings?.average != null) && (
+                        <SellerRating>
+                          <StarRating rating={product.seller?.rating ?? product.seller?.ratings?.average ?? 0} size="12px" />
+                          {(product.seller?.rating ?? product.seller?.ratings?.average ?? 0).toFixed(1)}
+                        </SellerRating>
+                      )}
+                      {typeof product.seller === 'object' && (product.seller?.location || product.seller?.shopLocation?.region || product.seller?.shopLocation?.city) && (
+                        <SellerLocation>
+                          <FaMapMarkerAlt />
+                          {product.seller?.location || product.seller?.shopLocation?.region || product.seller?.shopLocation?.city}
+                        </SellerLocation>
+                      )}
+                    </SellerStats>
+                    {sellerPagePath && (
+                      <SellerDetailButton type="button" onClick={() => navigate(sellerPagePath)}>
+                        View seller page
+                        <FaChevronRight />
+                      </SellerDetailButton>
                     )}
-                  </SellerStats>
-                </SellerDetails>
-              </SellerInfo>
-            </SellerCard>
-          )}
+                  </SellerDetails>
+                </SellerInfo>
+              </SellerCard>
+            );
+          })()}
         </InfoSection>
       </ModernProductGrid>
 
@@ -2213,16 +2242,58 @@ const SellerDetails = styled.div`
 flex: 1;
 `;
 
-const SellerName = styled(Link)`
+const SellerNameButton = styled.button`
   font-weight: 700;
   font-size: 1.8rem;
   color: var(--color-primary-500);
   text-decoration: none;
-  display: block;
+  display: inline-block;
   margin-bottom: 0.5rem;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  font-family: inherit;
 
   &:hover {
     text-decoration: underline;
+  }
+`;
+
+const SellerNameAsText = styled.span`
+  font-weight: 700;
+  font-size: 1.8rem;
+  color: var(--color-grey-800);
+  display: block;
+  margin-bottom: 0.5rem;
+`;
+
+const SellerDetailButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--color-primary-600);
+  text-decoration: none;
+  transition: color 0.2s;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+
+  &:hover {
+    color: var(--color-primary-700);
+    text-decoration: underline;
+  }
+
+  svg {
+    font-size: 1.2rem;
   }
 `;
 

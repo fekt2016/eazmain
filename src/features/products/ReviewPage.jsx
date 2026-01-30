@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import styled, { keyframes } from "styled-components";
 import {
   FaStar,
@@ -12,9 +12,11 @@ import {
   FaClock,
   FaQuoteLeft,
   FaCheckCircle,
-  FaExclamationTriangle
+  FaExclamationTriangle,
+  FaInfoCircle
 } from "react-icons/fa";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import { PATHS } from "../../routes/routePaths";
 import { useGetProductReviews, useGetMyReviews } from '../../shared/hooks/useReview';
 import useAuth from '../../shared/hooks/useAuth';
 import { LoadingState, ErrorState } from '../../components/loading';
@@ -23,7 +25,9 @@ import Container from '../../shared/components/Container';
 
 export default function CustomerReviewPage() {
   const { id: productId } = useParams();
-  
+  const navigate = useNavigate();
+  const helpSectionRef = useRef(null);
+
   const isProductReviewsPage = !!productId;
 
   const { data: productReviewData, isLoading: isProductLoading } = useGetProductReviews(productId, {
@@ -235,7 +239,7 @@ export default function CustomerReviewPage() {
                 You haven't reviewed any products from your orders
               </EmptyMessage>
               
-              <HelpSection>
+              <HelpSection ref={helpSectionRef}>
                 <HelpTitle>How to review products:</HelpTitle>
                 <StepsGrid>
                   <StepItem>
@@ -263,11 +267,20 @@ export default function CustomerReviewPage() {
               </HelpSection>
 
               <ActionSection>
-                <PrimaryButton>
+                <PrimaryButton
+                  type="button"
+                  onClick={() => navigate(PATHS.ORDERS)}
+                  aria-label="Go to your order history"
+                >
                   <FaShoppingBag />
                   View Order History
                 </PrimaryButton>
-                <SecondaryButton>
+                <SecondaryButton
+                  type="button"
+                  onClick={() => helpSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                  aria-label="Learn how to write reviews"
+                >
+                  <FaInfoCircle />
                   Learn about reviewing
                 </SecondaryButton>
               </ActionSection>
@@ -801,6 +814,9 @@ const PrimaryButton = styled.button`
 `;
 
 const SecondaryButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
   background: var(--color-white-0);
   color: var(--color-grey-700);
   border: 1px solid var(--color-grey-300);
@@ -813,5 +829,10 @@ const SecondaryButton = styled.button`
   &:hover {
     background: var(--color-grey-50);
     border-color: var(--color-grey-400);
+  }
+
+  svg {
+    font-size: 1.4rem;
+    flex-shrink: 0;
   }
 `;
