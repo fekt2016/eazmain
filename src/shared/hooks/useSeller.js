@@ -51,9 +51,9 @@ export const useGetSellerById = (sellerId) => {
     },
   });
 };
-// Create a new hook
+// Create a new hook - omit minRating by default so all active/pending sellers can appear (sorted by rating)
 export const useGetFeaturedSellers = (options = {}) => {
-  const { limit = 8, minRating = 4.0 } = options;
+  const { limit = 8, minRating } = options;
 
   return useQuery({
     queryKey: ["featured-sellers", limit, minRating],

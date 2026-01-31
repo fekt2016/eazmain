@@ -2,12 +2,14 @@ import api from "./api";
 import logger from "../utils/logger";
 
 const sellerApi = {
-  getFeaturedSellers: async (limit = 8, minRating = 4.0) => {
+  getFeaturedSellers: async (limit = 8, minRating) => {
     try {
-      const response = await api.get("/seller/public/featured", {
-        params: { limit, minRating },
-      });
-      return response.data.data.sellers;
+      const params = { limit };
+      if (minRating != null && Number.isFinite(minRating)) params.minRating = minRating;
+      const response = await api.get("/seller/public/featured", { params });
+      const data = response?.data?.data;
+      const sellers = data?.sellers ?? data ?? response?.data?.sellers;
+      return Array.isArray(sellers) ? sellers : [];
     } catch (error) {
       logger.error("Error fetching featured sellers:", error);
       return [];

@@ -269,6 +269,12 @@ if (import.meta.env.DEV) {
 
 // Request interceptor
 api.interceptors.request.use(async (config) => {
+  // Strip trailing slashes from path so backend route matching works (e.g. GET /seller not GET /seller/)
+  if (config.url && typeof config.url === 'string' && !config.url.startsWith('http')) {
+    const [path, query] = config.url.split('?');
+    const pathNorm = path.replace(/\/+$/, '') || '/';
+    config.url = query ? `${pathNorm}?${query}` : pathNorm;
+  }
   // CRITICAL: Always use fresh baseURL from getBaseURL() to ensure localhost in dev
   const freshBaseURL = getBaseURL();
   config.baseURL = freshBaseURL;
