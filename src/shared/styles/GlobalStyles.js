@@ -24,16 +24,17 @@ const GlobalStyles = createGlobalStyle`
   --color-instagram: #FFDC80;
 
 
-   --color-primary-50: #ffffea; 
+   /* Primary (amber/gold) – darker steps for contrast with white (WCAG AA) */
+  --color-primary-50: #ffffea;
   --color-primary-100: #fffcc5;
   --color-primary-200: #fffa85;
   --color-primary-300: #fff146;
   --color-primary-400: #ffe31b;
-  --color-primary-500: #ffc400;
-  --color-primary-600: #e29800;
-  --color-primary-700: #bb6c02; 
-  --color-primary-800: #985308;
-  --color-primary-900: #7c440b;
+  --color-primary-500: #e29800;
+  --color-primary-600: #bb6c02;
+  --color-primary-700: #985308;
+  --color-primary-800: #7c440b;
+  --color-primary-900: #5c3308;
   
 
 
@@ -193,12 +194,13 @@ const GlobalStyles = createGlobalStyle`
   --transition-slow: 0.5s ease;
 
   /* Gradients */
-  --gradient-primary: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
+  --gradient-primary: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-700) 100%);
   --gradient-accent: linear-gradient(135deg, var(--color-brand-500) 0%, var(--color-brand-600) 100%);
 
-  /* Additional color aliases for buttons */
-  --primary: var(--color-primary-500);
-  --primary-light: var(--color-primary-400);
+  /* Primary aliases – darker shades for contrast with white (WCAG AA) */
+  --primary: var(--color-primary-600);
+  --primary-light: var(--color-primary-500);
+  --color-primary-on-light: var(--color-primary-700);
   --secondary: var(--color-grey-700);
   --white: var(--color-white-0);
   --text-secondary: var(--color-grey-600);
