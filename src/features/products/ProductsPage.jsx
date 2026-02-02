@@ -39,13 +39,14 @@ const ProductsPage = () => {
   const { useGetEazShopProducts } = useEazShop();
   const { data: eazshopProductsData, isLoading: isEazShopLoading } = useGetEazShopProducts();
 
-  // Process all products
+  // Process all products (backend returns { status, results, total, data: { data: products } })
   const allProducts = useMemo(() => {
-    // Handle various API response structures defensively
     let products = [];
     
     if (Array.isArray(productsData)) {
       products = productsData;
+    } else if (productsData?.data?.data && Array.isArray(productsData.data.data)) {
+      products = productsData.data.data;
     } else if (productsData?.results && Array.isArray(productsData.results)) {
       products = productsData.results;
     } else if (productsData?.data?.results && Array.isArray(productsData.data.results)) {
@@ -58,9 +59,17 @@ const ProductsPage = () => {
       products = productsData.products;
     }
     
-    // Filter active products only if products is an array
+    // Only show approved, non-deleted products (active or out_of_stock)
     if (Array.isArray(products)) {
-      return products.filter(p => p.status === 'active');
+      return products.filter(
+        (p) =>
+          p.moderationStatus === 'approved' &&
+          !p.isDeleted &&
+          !p.isDeletedByAdmin &&
+          !p.isDeletedBySeller &&
+          p.status !== 'archived' &&
+          (p.status === 'active' || p.status === 'out_of_stock')
+      );
     }
     
     return [];

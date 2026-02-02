@@ -6,19 +6,17 @@ import logger from '../utils/logger';
 const useProduct = () => {
   const queryClient = useQueryClient();
 
-  // Get all products
+  // Get all products (optional params: { limit, page, sort } for products page to get more items)
   const getProducts = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
       try {
-        return await productService.getAllProducts();
+        return await productService.getAllProducts({ limit: 100 });
       } catch (error) {
         logger.error("Failed to fetch products:", error);
         throw new Error("Failed to load products");
       }
     },
-    // FIX: Removed meta: { global: true } - pages should show their own loading states
-    // This prevents double spinners (GlobalLoading + page-level loading)
     staleTime: 1000 * 60 * 5,
     retry: 2,
   });

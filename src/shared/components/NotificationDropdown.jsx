@@ -79,11 +79,12 @@ const NotificationDropdown = ({ unreadCount }) => {
   // STEP 2: Dropdown selection logic (FRONTEND)
   // IMPORTANT: NEVER mix unread + read in dropdown
   // Unread always wins if at least one exists
+  // FIX: Support both isRead and read - backend returns only `read` when using .lean()
   const dropdownNotifications = (() => {
+    const isUnread = (n) => !(n.isRead ?? n.read);
     // Filter and sort unread notifications (most recent first)
-    // Use isRead field (backend standard)
     const unread = allNotifications
-      .filter(n => !n.isRead) // Only check isRead field
+      .filter(n => isUnread(n))
       .sort((a, b) => {
         const dateA = new Date(a.createdAt || 0);
         const dateB = new Date(b.createdAt || 0);
@@ -93,7 +94,7 @@ const NotificationDropdown = ({ unreadCount }) => {
     // Filter and sort read notifications (most recent first)
     // Only used when ALL notifications are read
     const read = allNotifications
-      .filter(n => n.isRead) // Only check isRead field
+      .filter(n => !isUnread(n))
       .sort((a, b) => {
         const dateA = new Date(a.createdAt || 0);
         const dateB = new Date(b.createdAt || 0);
@@ -257,7 +258,8 @@ const NotificationDropdown = ({ unreadCount }) => {
     // STEP 3: Mark as read in background - don't block navigation
     // CRITICAL UX RULE: Fire mark-as-read mutation in background
     // Navigation already happened, so this is fire-and-forget
-    const isUnread = !notification.isRead; // Use isRead field (backend standard)
+    // Support both isRead and read (backend returns only read when using .lean())
+    const isUnread = !(notification.isRead ?? notification.read);
     if (isUnread) {
       console.log('[NotificationDropdown] 📝 Marking notification as read in background:', notification._id);
       // Fire-and-forget: don't wait for response
@@ -303,7 +305,7 @@ const NotificationDropdown = ({ unreadCount }) => {
               </EmptyState>
             ) : (
               dropdownNotifications.map((notification) => {
-                const isUnread = !notification.isRead; // Use isRead field (backend standard)
+                const isUnread = !(notification.isRead ?? notification.read);
                 return (
                 <NotificationItem
                   key={notification._id}

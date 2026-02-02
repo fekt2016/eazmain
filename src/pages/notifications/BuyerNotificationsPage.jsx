@@ -196,9 +196,8 @@ const BuyerNotificationsPage = () => {
     }
 
     // CRITICAL FIX: Mark as read in background - don't block navigation
-    // If markAsRead fails, navigation should still work
-    // The error is already flagged as isNotificationError in api.js, so it won't trigger logout
-    if (!notification.read) {
+    // Support both read and isRead (backend returns only read when using .lean())
+    if (!(notification.read ?? notification.isRead)) {
       console.log('[BuyerNotificationsPage] 📝 Marking notification as read in background:', notification._id);
       markAsRead.mutate(notification._id, {
         onError: (error) => {
@@ -374,7 +373,7 @@ const BuyerNotificationsPage = () => {
             return (
             <NotificationItem
               key={notification._id}
-              $unread={!notification.read}
+              $unread={!(notification.read ?? notification.isRead)}
               $selectMode={selectMode}
               onClick={() => {
                 if (selectMode) {
@@ -400,7 +399,7 @@ const BuyerNotificationsPage = () => {
               <NotificationContent>
                 <NotificationHeader>
                   <NotificationTitle>{notification.title}</NotificationTitle>
-                  {!notification.read && <UnreadDot />}
+                  {!(notification.read ?? notification.isRead) && <UnreadDot />}
                 </NotificationHeader>
                 <NotificationMessage>{notification.message}</NotificationMessage>
                 <NotificationMeta>
@@ -417,7 +416,7 @@ const BuyerNotificationsPage = () => {
                 </NotificationMeta>
               </NotificationContent>
               <NotificationActions>
-                {!notification.read && (
+                {!(notification.read ?? notification.isRead) && (
                   <ActionButton
                     onClick={(e) => {
                       e.stopPropagation();

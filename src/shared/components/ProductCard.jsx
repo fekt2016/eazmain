@@ -12,7 +12,6 @@ import {
   hasProductDiscount,
   getProductDiscountPercentage,
   isProductTrending,
-  isProductNew,
   hasProductPriceRange,
   getProductTotalStock,
 } from '../utils/productHelpers';
@@ -179,7 +178,6 @@ export default function ProductCard({
   const hasDiscount = hasProductDiscount(product);
   const discountPercentage = getProductDiscountPercentage(product);
   const isTrending = isProductTrending(product);
-  const isNew = isProductNew(product);
   const hasPriceRange = hasProductPriceRange(product);
   const totalStock = getProductTotalStock(product);
   
@@ -192,8 +190,8 @@ export default function ProductCard({
   const isInactive = product.status === 'inactive';
   const isOutOfStock = product.status === 'out_of_stock';
   
-  // Check condition (if not new)
-  const showCondition = product.condition && product.condition !== 'new';
+  // Show condition badge from product.condition (new, used, refurbished, etc.)
+  const showCondition = Boolean(product.condition);
 
   return (
     <CardContainer $layout={layout}>
@@ -255,7 +253,7 @@ export default function ProductCard({
           {/* Top Badges */}
           {showBadges && (
             <BadgeContainer>
-              {/* Priority: Out of Stock > Coming Soon > Discontinued > Status > EazShop > Discount > New > Trending > Free Shipping > Condition */}
+              {/* Priority: Out of Stock > Coming Soon > Discontinued > Status > EazShop > Discount > Trending > Free Shipping > Condition (from product.condition) */}
               {(totalStock === 0 || isOutOfStock) && !isComingSoon && (
                 <OutOfStockBadge>Out of Stock</OutOfStockBadge>
               )}
@@ -281,9 +279,6 @@ export default function ProductCard({
               {hasDiscount && !isComingSoon && !isDiscontinued && (
                 <DiscountBadge>-{discountPercentage}%</DiscountBadge>
               )}
-              {isNew && !isComingSoon && (
-                <NewBadge>New</NewBadge>
-              )}
               {isTrending && !isComingSoon && (
                 <TrendingBadge>
                   <FaFire />
@@ -295,7 +290,9 @@ export default function ProductCard({
               )}
               {showCondition && (
                 <ConditionBadge $condition={product.condition}>
-                  {product.condition.charAt(0).toUpperCase() + product.condition.slice(1).replace('_', ' ')}
+                  {product.condition === 'new'
+                    ? 'New'
+                    : product.condition.charAt(0).toUpperCase() + product.condition.slice(1).replace(/_/g, ' ')}
                 </ConditionBadge>
               )}
             </BadgeContainer>
@@ -360,6 +357,13 @@ export default function ProductCard({
               </>
             )}
           </PriceSection>
+
+          {/* Seller shop name - below price */}
+          {(product.seller?.shopName || product.shopName) && (
+            <ProductShopName>
+              {product.seller?.shopName || product.shopName}
+            </ProductShopName>
+          )}
 
           {/* Stock Status */}
           <StockStatus $inStock={totalStock > 0}>
@@ -580,11 +584,6 @@ const TrendingBadge = styled(Badge)`
   gap: 0.3rem;
 `;
 
-const NewBadge = styled(Badge)`
-  background: linear-gradient(135deg, var(--color-green-700) 0%, var(--color-green-500) 100%);
-  color: var(--color-white-0);
-`;
-
 const OutOfStockBadge = styled(Badge)`
   background: rgba(0, 0, 0, 0.8);
   color: var(--color-white-0);
@@ -618,12 +617,18 @@ const FreeShippingBadge = styled(Badge)`
 const ConditionBadge = styled(Badge)`
   background: ${({ $condition }) => {
     switch ($condition) {
+      case 'new':
+        return 'linear-gradient(135deg, var(--color-green-700) 0%, var(--color-green-500) 100%)';
       case 'used':
         return 'linear-gradient(135deg, var(--color-yellow-700) 0%, var(--color-primary-700) 100%)';
       case 'refurbished':
         return 'linear-gradient(135deg, var(--color-brand-500) 0%, var(--color-brand-600) 100%)';
       case 'open_box':
         return 'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%)';
+      case 'like_new':
+      case 'fair':
+      case 'poor':
+        return 'linear-gradient(135deg, var(--color-grey-600) 0%, var(--color-grey-700) 100%)';
       case 'damaged':
         return 'linear-gradient(135deg, var(--color-red-600) 0%, var(--color-red-700) 100%)';
       case 'for_parts':
@@ -684,6 +689,14 @@ const ProductBrand = styled.span`
   color: var(--color-primary-600);
   font-weight: 600;
   margin-bottom: 0.1rem; /* Reduced from 0.2rem */
+`;
+
+const ProductShopName = styled.span`
+  font-size: 0.95rem;
+  color: var(--color-grey-600);
+  font-weight: 500;
+  margin-bottom: 0.1rem;
+  display: block;
 `;
 
 const ProductShortDescription = styled.p`

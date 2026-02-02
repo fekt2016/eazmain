@@ -180,10 +180,10 @@ export const useMarkAsRead = () => {
         
         const updatedData = { ...oldData };
         if (updatedData.data?.notifications) {
-          // Mark notification as read (use isRead field - backend standard)
+          // Mark notification as read. Set both read and isRead (backend returns read; dropdown checks both)
           updatedData.data.notifications = updatedData.data.notifications.map((notif) =>
             notif._id === notificationId
-              ? { ...notif, isRead: true, readAt: new Date().toISOString() }
+              ? { ...notif, read: true, isRead: true, readAt: new Date().toISOString() }
               : notif
           );
         }
@@ -260,7 +260,9 @@ export const useMarkAllAsRead = () => {
         };
       });
       
-      // Optimistically update all notifications in cache
+      // Optimistically update all notifications in cache.
+      // FIX: Set both read and isRead so dropdown (which filters by isRead) shows them as read
+      // immediately. Backend returns only `read` (lean()); dropdown checks isRead.
       queryClient.setQueriesData({ queryKey: ['notifications'] }, (oldData) => {
         if (!oldData) return oldData;
         
@@ -269,6 +271,7 @@ export const useMarkAllAsRead = () => {
           updatedData.data.notifications = updatedData.data.notifications.map((notif) => ({
             ...notif,
             read: true,
+            isRead: true,
             readAt: new Date(),
           }));
         }

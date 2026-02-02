@@ -15,8 +15,13 @@ export const productService = {
   },
 
   // Additional common product service methods
-  getAllProducts: async () => {
-    const response = await api.get("/product");
+  getAllProducts: async (params = {}) => {
+    const queryString = new URLSearchParams();
+    if (params.limit != null) queryString.set("limit", String(params.limit));
+    if (params.page != null) queryString.set("page", String(params.page));
+    if (params.sort != null) queryString.set("sort", params.sort);
+    const url = queryString.toString() ? `/product?${queryString.toString()}` : "/product";
+    const response = await api.get(url);
     return response.data;
   },
 
