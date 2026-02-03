@@ -19,6 +19,7 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import { useGetUserOrderById, useRequestRefund, useGetRefundStatus } from '../../shared/hooks/useOrder';
+import { useGetMyReviews } from '../../shared/hooks/useReview';
 import { usePaystackPayment } from '../../shared/hooks/usePaystackPayment';
 import { LoadingState, ErrorState, EmptyState } from '../../components/loading';
 import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
@@ -47,7 +48,30 @@ const OrderDetail = () => {
   
   const { data: orderData, isLoading, isError, refetch } = useGetUserOrderById(orderId);
   const order = useMemo(() => orderData?.order, [orderData]);
-logger.log("order", order);
+  const { data: myReviewsData } = useGetMyReviews({}, { enabled: !!order?._id });
+
+  // Set of order item IDs and product+order keys that the user has already reviewed
+  const reviewedItemIds = useMemo(() => {
+    const reviews = myReviewsData?.data?.data?.reviews || myReviewsData?.data?.reviews || [];
+    const ids = new Set();
+    reviews.forEach((r) => {
+      if (r.orderItem) ids.add(String(r.orderItem));
+      const productId = r.product?._id || r.product;
+      const orderIdVal = r.order?._id || r.order;
+      if (productId && orderIdVal) ids.add(`${productId}-${orderIdVal}`);
+    });
+    return ids;
+  }, [myReviewsData]);
+
+  const hasReviewedItem = (item) => {
+    const itemId = item._id || item.id;
+    const productId = item.product?._id || item.product?.id;
+    const orderIdVal = order?._id || order?.id;
+    return (
+      (itemId && reviewedItemIds.has(String(itemId))) ||
+      (productId && orderIdVal && reviewedItemIds.has(`${productId}-${orderIdVal}`))
+    );
+  };
 
   useDynamicPageTitle({
     title: "Order Details",
@@ -855,13 +879,14 @@ logger.log("order", order);
                             <ItemPrice>GH₵{item.price.toFixed(2)}</ItemPrice>
                             <ItemQuantity>Qty: {item.quantity}</ItemQuantity>
                           </ItemMeta>
-                          {isCompleted && (
+                          {isCompleted && !hasReviewedItem(item) && (
                             <ReviewButton
                               onClick={() => {
                                 setSelectedProductForReview({
                                   productId: item.product._id || item.product.id,
                                   productName: item.product.name,
                                   orderId: order._id || order.id,
+                                  orderItemId: item._id || item.id,
                                 });
                                 setReviewModalOpen(true);
                               }}
@@ -989,6 +1014,7 @@ logger.log("order", order);
               <CreateReviewForm
                 productId={selectedProductForReview.productId}
                 orderId={selectedProductForReview.orderId}
+                orderItemId={selectedProductForReview.orderItemId}
                 onSuccess={() => {
                   setReviewModalOpen(false);
                   setSelectedProductForReview(null);

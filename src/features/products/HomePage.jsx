@@ -23,6 +23,10 @@ import { useGetFeaturedSellers } from '../../shared/hooks/useSeller';
 import StarRating from '../../shared/components/StarRating';
 import EazShopSection from './EazShopSection';
 import { EmptyState } from '../../components/loading';
+import useAds from '../../shared/hooks/useAds';
+import AdBanner from '../home/AdBanner';
+import AdCarousel from '../home/AdCarousel';
+import AdPopup from '../home/AdPopup';
 
 // Animations
 const fadeInUp = keyframes`
@@ -57,6 +61,68 @@ const HomePage = () => {
   const { recordProductView } = useAnalytics();
   const { data: productsData, isLoading } = getProducts;
   const { data: sellersData, isLoading: isSellersLoading } = useGetFeaturedSellers({ limit: 8 });
+  const {
+    bannerAds,
+    carouselAds,
+    popupAds,
+    isLoading: isAdsLoading,
+  } = useAds();
+
+  const [activePopupAd, setActivePopupAd] = useState(null);
+
+  useEffect(() => {
+    if (!popupAds || popupAds.length === 0) {
+      setActivePopupAd(null);
+      return;
+    }
+
+    const candidate = popupAds[0];
+    if (!candidate) {
+      setActivePopupAd(null);
+      return;
+    }
+
+    const adId = candidate.id || candidate._id;
+    const storageKey = adId ? `saiisai-popup-${adId}` : null;
+
+    try {
+      if (
+        storageKey &&
+        typeof window !== "undefined" &&
+        window.sessionStorage
+      ) {
+        const seen = window.sessionStorage.getItem(storageKey);
+        if (!seen) {
+          setActivePopupAd(candidate);
+        } else {
+          setActivePopupAd(null);
+        }
+      } else {
+        setActivePopupAd(candidate);
+      }
+    } catch (error) {
+      setActivePopupAd(candidate);
+    }
+  }, [popupAds]);
+
+  const handlePopupDismiss = useCallback((ad) => {
+    const adId = ad?.id || ad?._id;
+    const storageKey = adId ? `saiisai-popup-${adId}` : null;
+
+    try {
+      if (
+        storageKey &&
+        typeof window !== "undefined" &&
+        window.sessionStorage
+      ) {
+        window.sessionStorage.setItem(storageKey, "dismissed");
+      }
+    } catch (error) {
+      // Ignore storage errors
+    }
+
+    setActivePopupAd(null);
+  }, []);
 
   const products = useMemo(() => {
     if (!productsData) return [];
@@ -239,6 +305,21 @@ const HomePage = () => {
         </button>
       </HeroSection>
 
+      {/* Featured Promotion Banner */}
+      {isAdsLoading ? (
+        <Section>
+          <Container>
+            <BannerSkeleton />
+          </Container>
+        </Section>
+      ) : bannerAds.length > 0 ? (
+        <Section>
+          <Container>
+            <AdBanner ad={bannerAds[0]} />
+          </Container>
+        </Section>
+      ) : null}
+
       {/* Features / Trust Section */}
       <TrustSection>
         <Container>
@@ -304,6 +385,31 @@ const HomePage = () => {
           )}
         </Container>
       </Section>
+
+      {/* Curated Promotions */}
+      {isAdsLoading ? (
+        <Section $bg="#f1f5f9">
+          <Container fluid>
+            <SectionHeader>
+              <SectionTitle>Featured Promotions</SectionTitle>
+            </SectionHeader>
+            <LoadingGrid>
+              {[1, 2, 3].map((i) => (
+                <CarouselSkeleton key={`carousel-skeleton-${i}`} />
+              ))}
+            </LoadingGrid>
+          </Container>
+        </Section>
+      ) : carouselAds.length > 0 ? (
+        <Section $bg="#f1f5f9">
+          <Container fluid>
+            <SectionHeader>
+              <SectionTitle>Featured Promotions</SectionTitle>
+            </SectionHeader>
+            <AdCarousel ads={carouselAds} />
+          </Container>
+        </Section>
+      ) : null}
 
       {/* Trending Sellers */}
       <Section $bg="#f8f9fa">
@@ -494,6 +600,11 @@ const HomePage = () => {
           </NewsletterContent>
         </Container>
       </NewsletterSection>
+      <AdPopup
+        ad={activePopupAd}
+        open={Boolean(activePopupAd)}
+        onDismiss={handlePopupDismiss}
+      />
     </PageWrapper>
   );
 };
@@ -1127,6 +1238,14 @@ const SkeletonCard = styled.div`
   animation: ${shimmer} 2s infinite linear;
   background: linear-gradient(to right, #f0f0f0 0%, #f8f8f8 50%, #f0f0f0 100%);
   background-size: 1000px 100%;
+`;
+
+const BannerSkeleton = styled(SkeletonCard)`
+  height: 240px;
+`;
+
+const CarouselSkeleton = styled(SkeletonCard)`
+  height: 220px;
 `;
 
 // Seller Card Components

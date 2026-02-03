@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import styled, { keyframes } from "styled-components";
+import { toast } from "react-toastify";
 import { devicesMax } from '../../shared/styles/breakpoint';
 import {
   useGetPermissions,
@@ -35,6 +36,26 @@ import {
   FaInfoCircle
 } from "react-icons/fa";
 
+const PERMISSION_DEFAULTS = {
+  emailPreferences: {
+    promotions: true,
+    newsletters: false,
+    accountUpdates: true,
+  },
+  smsPreferences: {
+    promotions: false,
+    orderUpdates: true,
+  },
+  dataSharing: {
+    analytics: true,
+    personalizedAds: false,
+    thirdParties: false,
+  },
+  locationAccess: "limited",
+  socialMediaSharing: false,
+  accountVisibility: "standard",
+};
+
 const PermissionsPage = () => {
   // State for all permission settings
   const [exportStatus, setExportStatus] = useState(null);
@@ -47,8 +68,9 @@ const PermissionsPage = () => {
     seconds: 0,
   });
 
-  // Use ref for interval to avoid dependency issues
+  // Use refs for timers and scheduled deletion tracking
   const intervalRef = useRef(null);
+  const scheduledDeletionRef = useRef(null);
   const { userData } = useAuth();
 
   const user = useMemo(() => {
@@ -64,7 +86,30 @@ const PermissionsPage = () => {
 
   // Extract permissions with proper fallback
   const permissions = useMemo(() => {
-    return permissionData?.data || permissionData?.data?.data || {};
+    const data = permissionData || {};
+    return {
+      ...PERMISSION_DEFAULTS,
+      ...data,
+      emailPreferences: {
+        ...PERMISSION_DEFAULTS.emailPreferences,
+        ...(data.emailPreferences || {}),
+      },
+      smsPreferences: {
+        ...PERMISSION_DEFAULTS.smsPreferences,
+        ...(data.smsPreferences || {}),
+      },
+      dataSharing: {
+        ...PERMISSION_DEFAULTS.dataSharing,
+        ...(data.dataSharing || {}),
+      },
+      locationAccess: data.locationAccess || PERMISSION_DEFAULTS.locationAccess,
+      socialMediaSharing:
+        typeof data.socialMediaSharing === "boolean"
+          ? data.socialMediaSharing
+          : PERMISSION_DEFAULTS.socialMediaSharing,
+      accountVisibility:
+        data.accountVisibility || PERMISSION_DEFAULTS.accountVisibility,
+    };
   }, [permissionData]);
 
   // Hooks for updating preferences
@@ -77,20 +122,37 @@ const PermissionsPage = () => {
   const downloadDataMutation = useRequestDataDownload();
   const cancelDeletionMutation = useCancelAccountDeletion();
 
+  const isEmailUpdating = updateEmailPrefs.isPending;
+  const isSmsUpdating = updateSMSPrefs.isPending;
+  const isDataSharingUpdating = updateDataSharing.isPending;
+  const isLocationUpdating = updateLocation.isPending;
+  const isSocialUpdating = updateSocial.isPending;
+  const isVisibilityUpdating = updateVisibility.isPending;
+  const isCancellingDeletion = cancelDeletionMutation.isPending;
+
   // Start countdown timer when deletion is pending
-  const startCountdown = () => {
+  const startCountdown = (overrideDate) => {
     // Clear any existing interval
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
 
+    if (overrideDate) {
+      scheduledDeletionRef.current = overrideDate;
+    }
+
     const calculateTime = () => {
+      const targetDate =
+        scheduledDeletionRef.current ||
+        user?.accountDeletion?.scheduledAt ||
+        null;
+
       // Check if user and deletion date exist
-      if (!user || !user.accountDeletion || !user.accountDeletion.scheduledAt) {
+      if (!targetDate) {
         return;
       }
 
-      const deletionDate = new Date(user.accountDeletion.scheduledAt);
+      const deletionDate = new Date(targetDate);
       const now = new Date();
       const diffInMs = deletionDate - now;
 
@@ -98,6 +160,7 @@ const PermissionsPage = () => {
       if (diffInMs <= 0) {
         clearInterval(intervalRef.current);
         setDeletionStatus(null);
+        scheduledDeletionRef.current = null;
         return;
       }
 
@@ -120,67 +183,102 @@ const PermissionsPage = () => {
   // Check if deletion is pending when user data loads
   useEffect(() => {
     if (user?.accountDeletion?.status === "pending") {
+      if (user.accountDeletion?.scheduledAt) {
+        scheduledDeletionRef.current = user.accountDeletion.scheduledAt;
+      }
       setDeletionStatus("pending");
-      startCountdown();
+      startCountdown(user?.accountDeletion?.scheduledAt);
+    } else {
+      scheduledDeletionRef.current = null;
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      if (deletionStatus !== null) {
+        setDeletionStatus(null);
+        setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      }
     }
 
-    // Cleanup interval on component unmount
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
     };
-  }, [user?.accountDeletion?.status, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    user?.accountDeletion?.status,
+    user?.accountDeletion?.scheduledAt,
+  ]);
 
   // Toggle handlers
   const toggleEmailPreference = (type) => {
-    if (!permissions) return;
+    if (!permissions || isEmailUpdating) return;
     updateEmailPrefs.mutate({
       ...permissions.emailPreferences,
-      [type]: !permissions.emailPreferences[type],
+      [type]: !permissions.emailPreferences?.[type],
     });
   };
 
   const toggleSMSPreference = (type) => {
-    if (!permissions) return;
+    if (!permissions || isSmsUpdating) return;
     updateSMSPrefs.mutate({
       ...permissions.smsPreferences,
-      [type]: !permissions.smsPreferences[type],
+      [type]: !permissions.smsPreferences?.[type],
     });
   };
 
   const toggleDataSharing = (type) => {
-    if (!permissions) return;
+    if (!permissions || isDataSharingUpdating) return;
     updateDataSharing.mutate({
       ...permissions.dataSharing,
-      [type]: !permissions.dataSharing[type],
+      [type]: !permissions.dataSharing?.[type],
     });
   };
 
   const changeLocationAccess = (level) => {
-    if (!permissions) return;
+    if (!permissions || isLocationUpdating || permissions.locationAccess === level) return;
     updateLocation.mutate(level);
   };
 
   const toggleSocialSharing = () => {
-    if (!permissions) return;
+    if (!permissions || isSocialUpdating) return;
     updateSocial.mutate(!permissions.socialMediaSharing);
   };
 
   const changeAccountVisibility = (level) => {
-    if (!permissions) return;
+    if (
+      !permissions ||
+      isVisibilityUpdating ||
+      permissions.accountVisibility === level
+    )
+      return;
     updateVisibility.mutate(level);
   };
 
   const downloadData = () => {
-    if (exportStatus === "pending") return;
+    if (exportStatus === "pending" || downloadDataMutation.isPending) return;
     setExportStatus("pending");
     downloadDataMutation.mutate(null, {
-      onSuccess: () => {
-        setExportStatus("success");
+      onSuccess: (response) => {
+        const payload = response?.data || {};
+        const status = payload.status;
+        const message =
+          payload.message ||
+          "Data export request submitted. We'll email you when it's ready.";
+
+        if (status === "disabled") {
+          setExportStatus("error");
+          toast.info(message);
+        } else if (status === "failed") {
+          setExportStatus("error");
+          toast.error(message);
+        } else {
+          setExportStatus("success");
+          toast.success(message);
+        }
         setTimeout(() => setExportStatus(null), 5000);
       },
-      onError: () => {
+      onError: (error) => {
         setExportStatus("error");
         setTimeout(() => setExportStatus(null), 5000);
       },
@@ -191,23 +289,31 @@ const PermissionsPage = () => {
     setIsDeleteModalOpen(true);
   };
 
-  const handleDeletionScheduled = () => {
+  const handleDeletionScheduled = (scheduledDate) => {
     setDeletionStatus("pending");
+    if (scheduledDate) {
+      scheduledDeletionRef.current = scheduledDate;
+      startCountdown(scheduledDate);
+    } else {
+      startCountdown();
+    }
     refetch(); // Refresh permissions data
   };
 
   const handleCancelDeletion = () => {
+    if (isCancellingDeletion) return;
     cancelDeletionMutation.mutate(null, {
       onSuccess: () => {
         setDeletionStatus(null);
         if (intervalRef.current) {
           clearInterval(intervalRef.current);
         }
+        scheduledDeletionRef.current = null;
         setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
         refetch(); // Refresh permissions data
       },
       onError: () => {
-        alert("Failed to cancel account deletion. Please try again.");
+        // toast handled in hook onError
       },
     });
   };
@@ -299,6 +405,7 @@ const PermissionsPage = () => {
                       <ToggleSwitch
                         checked={permissions.emailPreferences?.[item.type]}
                         onChange={() => toggleEmailPreference(item.type)}
+                        disabled={isEmailUpdating}
                       />
                     </PreferenceItem>
                   ))}
@@ -324,6 +431,7 @@ const PermissionsPage = () => {
                       <ToggleSwitch
                         checked={permissions.smsPreferences?.[item.type]}
                         onChange={() => toggleSMSPreference(item.type)}
+                        disabled={isSmsUpdating}
                       />
                     </PreferenceItem>
                   ))}
@@ -367,6 +475,7 @@ const PermissionsPage = () => {
                       <ToggleSwitch
                         checked={permissions.dataSharing?.[item.type]}
                         onChange={() => toggleDataSharing(item.type)}
+                        disabled={isDataSharingUpdating}
                       />
                     </PreferenceItem>
                   ))}
@@ -389,6 +498,7 @@ const PermissionsPage = () => {
                       key={option.value}
                       selected={permissions.locationAccess === option.value}
                       onClick={() => changeLocationAccess(option.value)}
+                      $disabled={isLocationUpdating}
                     >
                       <RadioIndicator selected={permissions.locationAccess === option.value}>
                         {permissions.locationAccess === option.value && <FaCheck />}
@@ -433,6 +543,7 @@ const PermissionsPage = () => {
                   <ToggleSwitch
                     checked={permissions.socialMediaSharing}
                     onChange={toggleSocialSharing}
+                    disabled={isSocialUpdating}
                   />
                 </PreferenceItem>
               </SubSection>
@@ -453,6 +564,7 @@ const PermissionsPage = () => {
                       key={option.value}
                       selected={permissions.accountVisibility === option.value}
                       onClick={() => changeAccountVisibility(option.value)}
+                      $disabled={isVisibilityUpdating}
                     >
                       <RadioIndicator selected={permissions.accountVisibility === option.value}>
                         {permissions.accountVisibility === option.value && <FaCheck />}
@@ -496,7 +608,9 @@ const PermissionsPage = () => {
                 </DataActionInfo>
                 <DownloadButton
                   onClick={downloadData}
-                  disabled={exportStatus === "pending"}
+                  disabled={
+                    exportStatus === "pending" || downloadDataMutation.isPending
+                  }
                   $status={exportStatus}
                 >
                   {exportStatus === "pending" ? (
@@ -544,7 +658,10 @@ const PermissionsPage = () => {
                 </DataActionInfo>
                 
                 {deletionStatus === "pending" ? (
-                  <CancelButton onClick={handleCancelDeletion}>
+                  <CancelButton
+                    onClick={handleCancelDeletion}
+                    disabled={isCancellingDeletion}
+                  >
                     <FaTimes />
                     Cancel Deletion
                   </CancelButton>
@@ -577,15 +694,16 @@ const PermissionsPage = () => {
 };
 
 // Modern Toggle Switch Component
-const ToggleSwitch = ({ checked, onChange }) => (
-  <SwitchContainer>
+const ToggleSwitch = ({ checked, onChange, disabled = false }) => (
+  <SwitchContainer $disabled={disabled}>
     <SwitchInput
       type="checkbox"
       checked={checked}
       onChange={onChange}
+      disabled={disabled}
     />
-    <SwitchSlider checked={checked}>
-      <SwitchKnob checked={checked} />
+    <SwitchSlider checked={checked} $disabled={disabled}>
+      <SwitchKnob checked={checked} $disabled={disabled} />
     </SwitchSlider>
   </SwitchContainer>
 );
@@ -846,8 +964,9 @@ const SwitchContainer = styled.label`
   display: inline-block;
   width: 5rem;
   height: 2.6rem;
-  cursor: pointer;
+  cursor: ${props => (props.$disabled ? 'not-allowed' : 'pointer')};
   flex-shrink: 0;
+  opacity: ${props => (props.$disabled ? 0.7 : 1)};
 `;
 
 const SwitchInput = styled.input`
@@ -874,6 +993,7 @@ const SwitchSlider = styled.span`
   transition: all 0.3s ease;
   border-radius: 3.4rem;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  opacity: ${props => (props.$disabled ? 0.7 : 1)};
 `;
 
 const SwitchKnob = styled.span`
@@ -887,6 +1007,7 @@ const SwitchKnob = styled.span`
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 50%;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  opacity: ${props => (props.$disabled ? 0.8 : 1)};
 `;
 
 const RadioGroup = styled.div`
@@ -903,7 +1024,9 @@ const RadioOption = styled.div`
   border: 2px solid ${props => props.selected ? 'var(--color-primary-200)' : 'var(--color-grey-200)'};
   border-radius: 12px;
   background: ${props => props.selected ? 'var(--color-primary-50)' : 'var(--color-white-0)'};
-  cursor: pointer;
+  cursor: ${props => (props.$disabled ? 'not-allowed' : 'pointer')};
+  pointer-events: ${props => (props.$disabled ? 'none' : 'auto')};
+  opacity: ${props => (props.$disabled ? 0.7 : 1)};
   transition: all 0.2s ease;
 
   &:hover {

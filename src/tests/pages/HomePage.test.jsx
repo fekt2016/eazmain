@@ -1,6 +1,6 @@
 /**
  * HomePage Component Tests
- * 
+ *
  * Tests for the HomePage component including:
  * - Basic rendering (smoke test)
  * - Trust/Features section
@@ -9,12 +9,18 @@
  * - Deal of the Day banner
  * - Newsletter section
  * - Navigation links
+ * - Ads (banner, popup) using mock ad data
  */
 
 import React from 'react';
 import { screen, waitFor } from '@testing-library/react';
 import { renderWithProviders } from '../test-utils';
 import HomePage from '@/features/products/HomePage';
+import {
+  MOCK_BANNER_ADS,
+  MOCK_POPUP_ADS,
+  MOCK_CAROUSEL_ADS,
+} from '@/data/ads/mockAds';
 
 // Create mock functions that can be controlled per test
 const mockUseProduct = jest.fn();
@@ -22,6 +28,7 @@ const mockUseCategory = jest.fn();
 const mockUseGetFeaturedSellers = jest.fn();
 const mockUseAnalytics = jest.fn();
 const mockUseDynamicPageTitle = jest.fn();
+const mockUseAds = jest.fn();
 
 jest.mock('@/shared/hooks/useProduct', () => ({
   __esModule: true,
@@ -46,6 +53,11 @@ jest.mock('@/shared/hooks/useAnalytics', () => ({
 jest.mock('@/shared/hooks/useDynamicPageTitle', () => ({
   __esModule: true,
   default: (...args) => mockUseDynamicPageTitle(...args),
+}));
+
+jest.mock('@/shared/hooks/useAds', () => ({
+  __esModule: true,
+  default: (...args) => mockUseAds(...args),
 }));
 
 jest.mock('@/features/products/EazShopSection', () => ({
@@ -88,6 +100,13 @@ describe('HomePage', () => {
     });
 
     mockUseDynamicPageTitle.mockReturnValue(undefined);
+
+    mockUseAds.mockReturnValue({
+      bannerAds: [],
+      carouselAds: [],
+      popupAds: [],
+      isLoading: false,
+    });
   });
 
   test('renders without crashing (smoke test)', () => {
@@ -285,11 +304,66 @@ describe('HomePage', () => {
         isError: false,
       },
     });
-    
+
     renderWithProviders(<HomePage />);
 
     await waitFor(() => {
       expect(screen.getByText(/product 1/i)).toBeInTheDocument();
     }, { timeout: 3000 });
+  });
+
+  describe('ads (mock data)', () => {
+    test('renders banner ad when bannerAds has mock data', async () => {
+      mockUseAds.mockReturnValue({
+        bannerAds: MOCK_BANNER_ADS,
+        carouselAds: [],
+        popupAds: [],
+        isLoading: false,
+      });
+
+      renderWithProviders(<HomePage />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('link', { name: /summer sale — up to 40% off/i })
+        ).toBeInTheDocument();
+      });
+      expect(screen.getByText(/summer sale — up to 40% off/i)).toBeInTheDocument();
+      expect(screen.getByText(/limited time only/i)).toBeInTheDocument();
+    });
+
+    test('renders popup ad when popupAds has mock data and not yet dismissed', async () => {
+      mockUseAds.mockReturnValue({
+        bannerAds: [],
+        carouselAds: [],
+        popupAds: MOCK_POPUP_ADS,
+        isLoading: false,
+      });
+
+      renderWithProviders(<HomePage />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('dialog', { name: /welcome to saiisai/i })
+        ).toBeInTheDocument();
+      });
+      expect(screen.getByText(/welcome to saiisai/i)).toBeInTheDocument();
+      expect(screen.getByText(/get 10% off your first order/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /dismiss advertisement/i })).toBeInTheDocument();
+    });
+
+    test('does not render ad content when ads are empty', () => {
+      mockUseAds.mockReturnValue({
+        bannerAds: [],
+        carouselAds: [],
+        popupAds: [],
+        isLoading: false,
+      });
+
+      renderWithProviders(<HomePage />);
+
+      expect(screen.queryByText(/summer sale — up to 40% off/i)).not.toBeInTheDocument();
+      expect(screen.queryByRole('dialog', { name: /welcome to saiisai/i })).not.toBeInTheDocument();
+    });
   });
 });

@@ -28,6 +28,7 @@
     "js-cookie": "^3.0.5",
     "jwt-decode": "^4.0.0",
     "libphonenumber-js": "^1.12.31",
+    "prop-types": "^15.8.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.62.0",

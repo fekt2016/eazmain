@@ -4,7 +4,7 @@ import { FaStar, FaStarHalfAlt, FaImage, FaTimes } from "react-icons/fa";
 import { useCreateReview } from "../../shared/hooks/useReview";
 import { toast } from "react-toastify";
 
-export default function CreateReviewForm({ productId, orderId, onSuccess, onCancel }) {
+export default function CreateReviewForm({ productId, orderId, orderItemId, onSuccess, onCancel }) {
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [title, setTitle] = useState("");
@@ -82,6 +82,7 @@ export default function CreateReviewForm({ productId, orderId, onSuccess, onCanc
       const reviewData = {
         product: productId,
         order: orderId,
+        ...(orderItemId && { orderItem: orderItemId }),
         rating,
         title: title.trim(),
         review: review.trim(),
