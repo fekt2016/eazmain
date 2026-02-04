@@ -1,13 +1,12 @@
 // src/hooks/useCart.js
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRef } from "react";
+import { useRef, useCallback, useEffect } from "react";
 import { toast } from "react-toastify";
-import { useCallback } from "react";
 import cartApi from '../services/cartApi';
 import useAuth from './useAuth';
-import { useEffect } from "react";
 import logger from '../utils/logger';
 import { resolveDefaultSku } from '../utils/cartValidation';
+import useAds from "./useAds";
 export const getCartStructure = (cartData) => {
   if (!cartData) return [];
 
@@ -217,12 +216,28 @@ export const useGetCart = () => {
 export const useCartTotals = () => {
   const { data } = useGetCart();
   const products = getCartStructure(data);
+  const { promotionDiscountMap } = useAds();
+
+  const applyPromoDiscount = (product) => {
+    if (!product) return 0;
+    const basePrice = product?.defaultPrice || product?.price || 0;
+    if (!basePrice) return 0;
+
+    const promoKey = product.promotionKey || "";
+    if (!promoKey) return basePrice;
+
+    const discountPercent = promotionDiscountMap[promoKey] || 0;
+    if (!discountPercent || discountPercent <= 0) return basePrice;
+
+    const discounted = basePrice * (1 - discountPercent / 100);
+    // Guard against negative prices
+    return discounted > 0 ? discounted : 0;
+  };
 
   return products.reduce(
     (acc, item) => {
-      const price = item?.product?.defaultPrice || 0;
-
       const quantity = item?.quantity || 0;
+      const price = applyPromoDiscount(item?.product);
       acc.total += price * quantity;
       acc.count += quantity;
       return acc;

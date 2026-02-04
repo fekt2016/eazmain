@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { PATHS } from "./routePaths";
+import PromotionalProductsPage from "../pages/offers/PromotionalProductsPage";
 const ContactPage = lazy(() => import("../pages/contact/ContactPage"));
 import { PageSpinner, SpinnerContainer } from "../components/loading";
 // Import OrderConfirmationPage directly (not lazy) to ensure it loads immediately
@@ -317,6 +318,14 @@ const MainRoutes = () => {
         element={
           <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
             <ProductDetail />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.PROMO_PRODUCT}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <PromotionalProductsPage />
           </Suspense>
         }
       />

@@ -23,6 +23,8 @@ export const PATHS = {
   PRODUCT: "/product/:id", // Singular form - matches /product/:id URLs
   PRODUCT_PLURAL: "/products/:id", // Plural form alias
   EDITPRODUCT: "/products/:id/edit", // Alias for backward compatibility
+  // Promotional landing (used by ads, /offers/:promoId)
+  PROMO_PRODUCT: "/offers/:promoId",
   PRODUCTREVIEWS: "/products/:id/reviews", // Plural form
   PRODUCTREVIEWS_SINGULAR: "/product/:id/reviews", // Singular form - matches /product/:id/reviews URLs
   CATEGORIES: "/categories",
@@ -141,6 +143,11 @@ export const ROUTE_CONFIG = {
     title: "Product Details - EazShop",
     description: "View detailed product information, reviews, and purchase options",
     keywords: "product details, buy, EazShop",
+  },
+  [PATHS.PROMO_PRODUCT]: {
+    title: "Special Offer - EazShop",
+    description: "Products curated for this promotion.",
+    keywords: "special offer, promotion, deal, EazShop",
   },
 
   [PATHS.CATEGORIES]: {

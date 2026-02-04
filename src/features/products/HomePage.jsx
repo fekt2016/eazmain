@@ -25,7 +25,6 @@ import EazShopSection from './EazShopSection';
 import { EmptyState } from '../../components/loading';
 import useAds from '../../shared/hooks/useAds';
 import AdBanner from '../home/AdBanner';
-import AdCarousel from '../home/AdCarousel';
 import AdPopup from '../home/AdPopup';
 
 // Animations
@@ -194,36 +193,49 @@ const HomePage = () => {
     }
   }, [recordProductView]);
 
-  // Hero Slider Data
-  const heroSlides = [
-    {
-      id: 1,
-      title: "Summer Collection 2025",
-      subtitle: "Experience the essence of luxury with our exclusive summer line.",
-      image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=2070&auto=format&fit=crop",
-      cta: "Shop Collection",
-      link: PATHS.PRODUCTS,
-      color: "#f8f9fa"
-    },
-    {
-      id: 2,
-      title: "Modern Tech Essentials",
-      subtitle: "Upgrade your lifestyle with cutting-edge technology.",
-      image: "https://images.unsplash.com/photo-1498049860654-af1a5c5668ba?q=80&w=2070&auto=format&fit=crop",
-      cta: "Explore Gadgets",
-      link: PATHS.PRODUCTS,
-      color: "#e9ecef"
-    },
-    {
-      id: 3,
-      title: "Elegant Home Decor",
-      subtitle: "Transform your space into a sanctuary of style.",
-      image: "https://images.unsplash.com/photo-1616486338812-3dadae4b4f9d?q=80&w=2070&auto=format&fit=crop",
-      cta: "Discover More",
-      link: PATHS.PRODUCTS,
-      color: "#dee2e6"
+  // Resolve ad link to full URL for external or path for internal
+  const resolveAdLink = useCallback((link) => {
+    if (!link || typeof link !== "string") return PATHS.PRODUCTS;
+    const raw = link.trim();
+    if (/^https?:\/\//i.test(raw)) return raw;
+    return raw.startsWith("/") ? raw : `/${raw}`;
+  }, []);
+
+  const isExternalLink = useCallback((link) => {
+    return link && /^https?:\/\//i.test(link);
+  }, []);
+
+  const formatPromoEndDate = useCallback((dateStr) => {
+    if (!dateStr) return null;
+    try {
+      const d = new Date(dateStr);
+      if (Number.isNaN(d.getTime())) return null;
+      return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    } catch {
+      return null;
     }
-  ];
+  }, []);
+
+  // Hero Slider: use carouselAds when available, else static fallback
+  const heroSlides = useMemo(() => {
+    if (carouselAds && carouselAds.length > 0) {
+      return carouselAds.map((ad, index) => ({
+        id: ad.id || ad._id || `ad-${index}`,
+        title: (ad.title || "Special Offer").toUpperCase(),
+        subtitle: ad.subtitle ?? ad.description ?? "",
+        image: ad.imageUrl || "https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=2070&auto=format&fit=crop",
+        cta: ad.ctaText || "Shop offer",
+        link: resolveAdLink(ad.link),
+        discountPercent: typeof ad.discountPercent === "number" ? ad.discountPercent : 0,
+        endDate: ad.endDate || null,
+      }));
+    }
+    return [
+      { id: 1, title: "Summer Collection 2025", subtitle: "Experience the essence of luxury with our exclusive summer line.", image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=2070&auto=format&fit=crop", cta: "Shop Collection", link: PATHS.PRODUCTS, color: "#f8f9fa", discountPercent: 0, endDate: null },
+      { id: 2, title: "Modern Tech Essentials", subtitle: "Upgrade your lifestyle with cutting-edge technology.", image: "https://images.unsplash.com/photo-1498049860654-af1a5c5668ba?q=80&w=2070&auto=format&fit=crop", cta: "Explore Gadgets", link: PATHS.PRODUCTS, color: "#e9ecef", discountPercent: 0, endDate: null },
+      { id: 3, title: "Elegant Home Decor", subtitle: "Transform your space into a sanctuary of style.", image: "https://images.unsplash.com/photo-1616486338812-3dadae4b4f9d?q=80&w=2070&auto=format&fit=crop", cta: "Discover More", link: PATHS.PRODUCTS, color: "#dee2e6", discountPercent: 0, endDate: null },
+    ];
+  }, [carouselAds, resolveAdLink]);
 
   const { getCategories } = useCategory();
   const { data: categoriesData, isLoading: isCategoriesLoading, isError: isCategoriesError } = getCategories;
@@ -279,23 +291,40 @@ const HomePage = () => {
           loop
           className="hero-swiper"
         >
-          {heroSlides.map((slide) => (
-            <SwiperSlide key={slide.id}>
-              <SlideContent>
-                <SlideImageBg style={{ backgroundImage: `url(${slide.image})` }} />
-                <SlideOverlay />
-                <Container>
-                  <SlideTextContent>
-                    <SlideSubtitle>{slide.subtitle}</SlideSubtitle>
-                    <SlideTitle>{slide.title}</SlideTitle>
-                    <SlideButton to={slide.link}>
-                      {slide.cta} <FaArrowRight />
-                    </SlideButton>
-                  </SlideTextContent>
-                </Container>
-              </SlideContent>
-            </SwiperSlide>
-          ))}
+          {heroSlides.map((slide) => {
+            const formattedEnd = slide.endDate ? formatPromoEndDate(slide.endDate) : null;
+            const external = isExternalLink(slide.link);
+            const ctaEl = external ? (
+              <SlideButtonAsAnchor href={slide.link} target="_blank" rel="noopener noreferrer">
+                {slide.cta} <FaArrowRight />
+              </SlideButtonAsAnchor>
+            ) : (
+              <SlideButton to={slide.link}>
+                {slide.cta} <FaArrowRight />
+              </SlideButton>
+            );
+            return (
+              <SwiperSlide key={slide.id}>
+                <SlideContent>
+                  <SlideImageBg style={{ backgroundImage: `url(${slide.image})` }} />
+                  <SlideOverlay />
+                  {slide.discountPercent > 0 ? (
+                    <HeroDiscountBadge>-{slide.discountPercent}%</HeroDiscountBadge>
+                  ) : null}
+                  <Container>
+                    <SlideTextContent>
+                      <SlideSubtitle>{slide.subtitle}</SlideSubtitle>
+                      <SlideTitle>{slide.title}</SlideTitle>
+                      {ctaEl}
+                    </SlideTextContent>
+                  </Container>
+                  {formattedEnd ? (
+                    <SlideEndDate>Ends {formattedEnd}</SlideEndDate>
+                  ) : null}
+                </SlideContent>
+              </SwiperSlide>
+            );
+          })}
         </Swiper>
         <button className="swiper-button-prev-custom" aria-label="Previous slide" type="button">
           <FaArrowLeft />
@@ -385,31 +414,6 @@ const HomePage = () => {
           )}
         </Container>
       </Section>
-
-      {/* Curated Promotions */}
-      {isAdsLoading ? (
-        <Section $bg="#f1f5f9">
-          <Container fluid>
-            <SectionHeader>
-              <SectionTitle>Featured Promotions</SectionTitle>
-            </SectionHeader>
-            <LoadingGrid>
-              {[1, 2, 3].map((i) => (
-                <CarouselSkeleton key={`carousel-skeleton-${i}`} />
-              ))}
-            </LoadingGrid>
-          </Container>
-        </Section>
-      ) : carouselAds.length > 0 ? (
-        <Section $bg="#f1f5f9">
-          <Container fluid>
-            <SectionHeader>
-              <SectionTitle>Featured Promotions</SectionTitle>
-            </SectionHeader>
-            <AdCarousel ads={carouselAds} />
-          </Container>
-        </Section>
-      ) : null}
 
       {/* Trending Sellers */}
       <Section $bg="#f8f9fa">
@@ -783,7 +787,9 @@ const SlideTitle = styled.h1`
   font-size: 4rem;
   font-weight: 800;
   margin-bottom: 1rem;
+  margin-left: 1.5rem;
   line-height: 1.1;
+  color: #ffd700;
   opacity: 0;
   transform: translateY(30px);
   
@@ -793,9 +799,11 @@ const SlideTitle = styled.h1`
 
   @media ${devicesMax.md} {
     font-size: 3rem;
+    margin-left: 1.25rem;
   }
   @media ${devicesMax.sm} {
     font-size: 2.5rem;
+    margin-left: 1rem;
   }
 `;
 
@@ -832,6 +840,77 @@ const SlideButton = styled(Link)`
     transform: translateY(-5px);
     box-shadow: 0 10px 20px rgba(255,255,255,0.2);
     gap: 15px;
+  }
+`;
+
+const SlideButtonAsAnchor = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 1rem 2.5rem;
+  background: white;
+  color: black;
+  font-weight: 600;
+  border-radius: 50px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  opacity: 0;
+  transform: translateY(30px);
+  
+  .swiper-slide-active & {
+    animation: ${fadeInUp} 0.8s ease forwards 0.7s;
+  }
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(255,255,255,0.2);
+    gap: 15px;
+  }
+`;
+
+const HeroDiscountBadge = styled.div`
+  position: absolute;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 3;
+  padding: 0.85rem 1.5rem;
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: #ffffff;
+  background: #dc2626;
+  border: 3px double rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  letter-spacing: 0.05em;
+  
+  @media ${devicesMax.sm} {
+    bottom: 1rem;
+    right: 1rem;
+    font-size: 1.75rem;
+    padding: 0.65rem 1.2rem;
+  }
+`;
+
+const SlideEndDate = styled.p`
+  position: absolute;
+  bottom: 2rem;
+  left: 2rem;
+  margin: 0;
+  padding: 0;
+  font-size: 1.35rem;
+  color: rgba(255, 255, 255, 0.95);
+  text-align: left;
+  z-index: 2;
+  opacity: 0;
+  transform: translateY(30px);
+  
+  .swiper-slide-active & {
+    animation: ${fadeInUp} 0.8s ease forwards 0.6s;
+  }
+  
+  @media ${devicesMax.sm} {
+    bottom: 1.25rem;
+    left: 1rem;
+    font-size: 1.15rem;
   }
 `;
 

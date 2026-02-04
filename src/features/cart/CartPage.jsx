@@ -7,6 +7,7 @@ import {
   useAutoSyncCart,
   getCartStructure,
 } from '../../shared/hooks/useCart';
+import useAds from "../../shared/hooks/useAds";
 import { useNavigate } from "react-router-dom";
 import useAuth from '../../shared/hooks/useAuth';
 import { PrimaryButton, DangerButton, GhostButton, SuccessButton } from '../../shared/components/ui/Buttons';
@@ -31,6 +32,7 @@ const CartPage = () => {
   });
   const { data, isLoading: isCartLoading, isError } = useGetCart();
   const { total: subTotal } = useCartTotals();
+  const { promotionDiscountMap } = useAds();
 
   const { 
     updateCartItem, 
@@ -63,6 +65,17 @@ const CartPage = () => {
 
   const handleRemoveItem = (itemId) => {
     removeCartItem(itemId);
+  };
+
+  const getItemUnitPrice = (item) => {
+    const basePrice = item?.product?.defaultPrice || item?.product?.price || 0;
+    if (!basePrice) return 0;
+    const promoKey = item?.product?.promotionKey || "";
+    if (!promoKey) return basePrice;
+    const discountPercent = promotionDiscountMap[promoKey] || 0;
+    if (!discountPercent || discountPercent <= 0) return basePrice;
+    const discounted = basePrice * (1 - discountPercent / 100);
+    return discounted > 0 ? discounted : 0;
   };
   const handleCheckout = () => {
     if (!isAuthenticated) {
@@ -118,7 +131,7 @@ const CartPage = () => {
                         </div>
 
                         <ItemPrice>
-                          GH₵{(item.product?.defaultPrice || item.product?.price || 0).toFixed(2)}
+                          GH₵{getItemUnitPrice(item).toFixed(2)}
                         </ItemPrice>
                       </div>
                     <ItemActions>
@@ -165,7 +178,7 @@ const CartPage = () => {
                     </ItemActions>
                   </ItemDetails>
                   <ItemPrice>
-                    GH₵{((item.product?.defaultPrice || item.product?.price || 0) * item.quantity).toFixed(2)}
+                    GH₵{(getItemUnitPrice(item) * item.quantity).toFixed(2)}
                   </ItemPrice>
                 </CartItem>
               );
