@@ -15,6 +15,7 @@ import wishlistApi from '../services/wishlistApi';
 import useAuth from '../../shared/hooks/useAuth';
 import { getSessionId, clearSessionId } from '../utils/guestWishlist';
 import logger from '../utils/logger';
+import { toast } from 'react-toastify';
 
 /**
  * Get wishlist query key helper
@@ -166,8 +167,13 @@ export const useRemoveFromWishlist = () => {
   const sessionId = getSessionId();
   const queryKey = getWishlistQueryKey(user?.id, sessionId);
 
+  // Use same source as wishlist fetch: authenticated DELETE when logged in, guest/remove when guest.
+  // Prevents removing from guest list while viewing user list (which made items reappear on refresh).
   return useMutation({
-    mutationFn: (productId) => wishlistApi.removeFromWishlist(productId),
+    mutationFn: (productId) =>
+      user?.id
+        ? wishlistApi.removeFromWishlistAuthenticated(productId)
+        : wishlistApi.removeFromGuestWishlist(productId),
     meta: { global: false },
     
     // Optimistic update
@@ -176,17 +182,16 @@ export const useRemoveFromWishlist = () => {
 
       const previousWishlist = queryClient.getQueryData(queryKey);
 
-      // Optimistically remove product
+      // Optimistically remove product (compare as strings for reliable match)
+      const idStr = String(productId);
       queryClient.setQueryData(queryKey, (old) => {
         const wishlist = old?.data?.wishlist || old?.data || { products: [] };
         const products = wishlist.products || [];
         
-        const filteredProducts = products.filter(
-          (item) =>
-            item.product?._id !== productId &&
-            item.product !== productId &&
-            item.product?.id !== productId
-        );
+        const filteredProducts = products.filter((item) => {
+          const itemId = item?.product?._id ?? item?.product?.id ?? item?.product;
+          return itemId != null && String(itemId) !== idStr;
+        });
 
         return {
           ...old,
@@ -203,27 +208,20 @@ export const useRemoveFromWishlist = () => {
       return { previousWishlist };
     },
 
-    // Rollback on error
+    // Use server response as source of truth so UI matches backend
+    onSuccess: (data) => {
+      if (data?.data?.wishlist != null) {
+        queryClient.setQueryData(queryKey, data);
+      }
+      queryClient.invalidateQueries({ queryKey, refetchType: 'active' });
+    },
+
     onError: (err, productId, context) => {
       if (context?.previousWishlist) {
         queryClient.setQueryData(queryKey, context.previousWishlist);
       }
-    },
-
-    // Refetch on success
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey,
-        refetchType: 'active',
-      });
-    },
-
-    // Always refetch after mutation settles
-    onSettled: () => {
-      queryClient.invalidateQueries({
-        queryKey,
-        refetchType: 'active',
-      });
+      logger.error('Remove from wishlist failed', err);
+      toast.error(err?.response?.data?.message || err?.message || 'Could not remove from wishlist');
     },
   });
 };

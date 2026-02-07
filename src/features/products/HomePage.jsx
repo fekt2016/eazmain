@@ -26,6 +26,8 @@ import { EmptyState } from '../../components/loading';
 import useAds from '../../shared/hooks/useAds';
 import AdBanner from '../home/AdBanner';
 import AdPopup from '../home/AdPopup';
+import DealOfTheDaySection from '../home/DealOfTheDaySection';
+import { useDealOfTheDay } from '../../shared/hooks/useDealOfTheDay';
 
 // Animations
 const fadeInUp = keyframes`
@@ -182,6 +184,9 @@ const HomePage = () => {
     });
   }, [productsData]);
   const sellers = useMemo(() => sellersData || [], [sellersData]);
+
+  // Deal of the Day: best discount or promotionKey 'deal-of-the-day', countdown to end of day
+  const dealOfTheDay = useDealOfTheDay(products);
 
   const handleProductClick = useCallback((productId) => {
     const sessionId = getOrCreateSessionId();
@@ -540,23 +545,11 @@ const HomePage = () => {
       {/* EazShop Official Store Section */}
       <EazShopSection />
 
-      {/* Deal of the Day Banner */}
-      <DealBanner>
-        <DealOverlay />
-        <Container>
-          <DealContent>
-            <DealTag>Deal of the Day</DealTag>
-            <DealTitle>Premium Headphones</DealTitle>
-            <DealDesc>Immerse yourself in crystal clear sound. Limited time offer ending soon.</DealDesc>
-            <DealTimer>
-              <TimerBox><span>08</span><small>Hours</small></TimerBox>
-              <TimerBox><span>45</span><small>Mins</small></TimerBox>
-              <TimerBox><span>12</span><small>Secs</small></TimerBox>
-            </DealTimer>
-            <PrimaryButton to={PATHS.PRODUCTS}>Shop Now</PrimaryButton>
-          </DealContent>
-        </Container>
-      </DealBanner>
+      {/* Deal of the Day: data-driven, best discount or promotionKey deal-of-the-day, countdown to midnight */}
+      <DealOfTheDaySection
+        dealProduct={dealOfTheDay.dealProduct}
+        endOfDay={dealOfTheDay.endOfDay}
+      />
 
       {/* All Products */}
       <Section>
@@ -1114,105 +1107,6 @@ const ProductGrid = styled.div`
   @media ${devicesMax.sm} {
     grid-template-columns: repeat(2, 1fr); /* 2 cards on mobile */
     gap: 0.75rem;
-  }
-`;
-
-const DealBanner = styled.div`
-  position: relative;
-  padding: 6rem 0;
-  background-image: url('https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=2070&auto=format&fit=crop');
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-  color: white;
-  text-align: center;
-`;
-
-const DealOverlay = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.6);
-`;
-
-const DealContent = styled.div`
-  position: relative;
-  z-index: 2;
-  max-width: 800px;
-  margin: 0 auto;
-`;
-
-const DealTag = styled.span`
-  display: inline-block;
-  background: #ff4757;
-  color: white;
-  padding: 0.5rem 1.5rem;
-  border-radius: 50px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 1.5rem;
-  animation: ${float} 3s ease-in-out infinite;
-`;
-
-const DealTitle = styled.h2`
-  font-size: 3.5rem;
-  font-weight: 800;
-  margin-bottom: 1rem;
-  
-  @media ${devicesMax.sm} {
-    font-size: 2.5rem;
-  }
-`;
-
-const DealDesc = styled.p`
-  font-size: 1.2rem;
-  margin-bottom: 2.5rem;
-  opacity: 0.9;
-`;
-
-const DealTimer = styled.div`
-  display: flex;
-  justify-content: center;
-  gap: 2rem;
-  margin-bottom: 3rem;
-`;
-
-const TimerBox = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  
-  span {
-    font-size: 2.5rem;
-    font-weight: 800;
-    line-height: 1;
-  }
-  
-  small {
-    text-transform: uppercase;
-    font-size: 0.8rem;
-    opacity: 0.8;
-    margin-top: 5px;
-  }
-`;
-
-const PrimaryButton = styled(Link)`
-  display: inline-block;
-  padding: 1rem 3rem;
-  background: white;
-  color: black;
-  font-weight: 700;
-  text-decoration: none;
-  border-radius: 50px;
-  transition: all 0.3s;
-  
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(255,255,255,0.2);
-    background: #f8f9fa;
   }
 `;
 

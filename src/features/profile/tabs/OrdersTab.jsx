@@ -4,7 +4,7 @@ import {
   CardDescription,
 } from "../components/TabPanelContainer";
 import { LoadingState, ErrorState } from "../../../components/loading";
-import { useGetUserOrders, getOrderStructure } from "../../../shared/hooks/useOrder";
+import { useGetUserOrders, getOrderStructure, getOrderDisplayStatus } from "../../../shared/hooks/useOrder";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
 import { FaShoppingBag, FaArrowRight } from "react-icons/fa";
@@ -42,8 +42,8 @@ const OrdersTab = () => {
                 </OrderDate>
                 <OrderTotal>${order.totalAmount?.toFixed(2) || "0.00"}</OrderTotal>
               </OrderInfo>
-              <OrderStatus status={order.status}>
-                {order.status || "Pending"}
+              <OrderStatus status={getOrderDisplayStatus(order).badgeStatus}>
+                {getOrderDisplayStatus(order).displayLabel}
               </OrderStatus>
               <OrderArrow>
                 <FaArrowRight />
@@ -134,7 +134,10 @@ const OrderStatus = styled.span`
   background: ${(props) => {
     switch (props.status) {
       case "delivered":
+      case "completed":
         return "var(--color-success)";
+      case "shipped":
+        return "var(--color-primary)";
       case "pending":
         return "#F59E0B";
       case "cancelled":

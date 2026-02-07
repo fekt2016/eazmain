@@ -342,6 +342,14 @@ export default function ProductCard({
             </RatingSection>
           )}
 
+          {/* View count */}
+          {(product.totalViews > 0 || product.views > 0) && (
+            <ViewCountText>
+              <FaEye />
+              {product.totalViews || product.views} {(product.totalViews || product.views) === 1 ? 'view' : 'views'}
+            </ViewCountText>
+          )}
+
           {/* Price Section */}
           <PriceSection>
             {hasPriceRange ? (
@@ -395,10 +403,13 @@ export default function ProductCard({
         {showRemoveButton && (
           <ActionIcons>
             <RemoveButton
+              type="button"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                removeWishlist(productId);
+                const rawId = product?._id ?? product?.id ?? productId;
+                const id = rawId != null ? String(rawId) : null;
+                if (id) removeWishlist(id);
               }}
               disabled={isRemovingFromWishlist}
               aria-label="Remove product"
@@ -736,6 +747,18 @@ const RatingSection = styled.div`
 const RatingCount = styled.span`
   font-size: 1rem; /* Reduced from 1.2rem */
   color: var(--color-grey-500);
+`;
+
+const ViewCountText = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--color-grey-500, #64748b);
+  margin-top: 0.2rem;
+  svg {
+    font-size: 0.75rem;
+  }
 `;
 
 const PriceSection = styled.div`

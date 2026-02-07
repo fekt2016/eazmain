@@ -69,27 +69,38 @@ const wishlistApi = {
     }
   },
 
-  // Remove from wishlist (works for both authenticated and guest users)
-  // SECURITY: Uses cookie-based authentication. Backend verifies auth via httpOnly cookies.
+  // Remove from authenticated user's wishlist only (no fallback to guest).
+  // Use this when we're displaying the user's wishlist so we never remove from the wrong list.
+  removeFromWishlistAuthenticated: async (productId) => {
+    const response = await api.delete(`/wishlist/${productId}`);
+    return response.data;
+  },
+
+  // Remove from guest wishlist only. Use when we're displaying guest wishlist.
+  removeFromGuestWishlist: async (productId) => {
+    const sessionId = getSessionId();
+    if (!sessionId) {
+      throw new Error("No session found for guest user");
+    }
+    const response = await api.post("/wishlist/guest/remove", {
+      sessionId,
+      productId,
+    });
+    return response.data;
+  },
+
+  // Legacy: try authenticated first, fall back to guest on 401 (can remove from wrong list if cookie missing).
   removeFromWishlist: async (productId) => {
     try {
-      // Try authenticated endpoint first (backend will verify via cookies)
       const response = await api.delete(`/wishlist/${productId}`);
       return response.data;
     } catch (error) {
-      // If 401 (unauthorized), user is not authenticated - use guest endpoint
       if (error.response?.status === 401) {
-        let sessionId = getSessionId();
-        if (!sessionId) {
-          throw new Error("No session found for guest user");
-        }
-        const response = await api.post("/wishlist/guest/remove", {
-          sessionId,
-          productId,
-        });
+        const sessionId = getSessionId();
+        if (!sessionId) throw new Error("No session found for guest user");
+        const response = await api.post("/wishlist/guest/remove", { sessionId, productId });
         return response.data;
       }
-      // Re-throw other errors
       throw error;
     }
   },

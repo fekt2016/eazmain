@@ -15,6 +15,7 @@ import {
 import {
   useGetUserOrders,
   getOrderStructure,
+  getOrderDisplayStatus,
   useDeleteOrder,
 } from "../../shared/hooks/useOrder";
 import { useNavigate } from "react-router-dom";
@@ -61,9 +62,11 @@ const OrdersPage = () => {
   // Filter orders based on status and search term
   const filteredOrders = useMemo(() => {
     return sortedOrders.filter((order) => {
-      const matchesFilter = filter === "all" || order.status.toLowerCase() === filter;
-      const matchesSearch = 
-        order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      const { badgeStatus } = getOrderDisplayStatus(order);
+      const matchesFilter =
+        filter === "all" || badgeStatus === filter;
+      const matchesSearch =
+        (order.orderNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.user?.name?.toLowerCase().includes(searchTerm.toLowerCase());
       return matchesFilter && matchesSearch;
     });
@@ -276,8 +279,8 @@ const OrdersPage = () => {
                         <OrderTotal>GH₵{order.totalPrice.toFixed(2)}</OrderTotal>
                       </TableCell>
                       <TableCell>
-                        <StatusBadge $status={order.status.toLowerCase()}>
-                          {order.status}
+                        <StatusBadge $status={getOrderDisplayStatus(order).badgeStatus}>
+                          {getOrderDisplayStatus(order).displayLabel}
                         </StatusBadge>
                       </TableCell>
                       <TableCell>
@@ -320,8 +323,8 @@ const OrdersPage = () => {
                       <OrderId>#{formatOrderNumber(order.orderNumber)}</OrderId>
                       <OrderDate>{formatDate(order.createdAt)}</OrderDate>
                     </OrderInfo>
-                    <StatusBadge $status={order.status.toLowerCase()}>
-                      {order.status}
+                    <StatusBadge $status={getOrderDisplayStatus(order).badgeStatus}>
+                      {getOrderDisplayStatus(order).displayLabel}
                     </StatusBadge>
                   </CardHeader>
                   

@@ -46,7 +46,7 @@ const LoginPage = lazy(() => import("../features/auth/loginPage"));
 import ProtectedRoute from "../routes/ProtectedRoute";
 const MainLayout = lazy(() => import("../shared/layout/MainLayout"));
 const HomePage = lazy(() => import("../features/products/HomePage"));
-const ProductDetail = lazy(() => import("../features/products/ProductDetail"));
+const ProductDetail = lazy(() => import("../features/products/ProductDetail.jsx"));
 const ProductsPage = lazy(() => import("../features/products/ProductsPage"));
 const CategoryPage = lazy(() => import("../features/categories/CategoryPage"));
 const CategoriesListPage = lazy(() => import("../features/categories/CategoriesListPage"));
@@ -55,7 +55,6 @@ const CheckoutPage = lazy(() => import("../features/orders/CheckoutPage"));
 // const ForgetPasswordPage = lazy(() => import("../features/auth/ForgotPasswordPage"));
 
 const ProfilePage = lazy(() => import("../features/profile/profilePage"));
-const SupportPage = lazy(() => import("../features/SupportPage"));
 const CustomerSupportPage = lazy(() => import("../features/support/CustomerSupportPage"));
 const TicketsListPage = lazy(() => import("../features/support/TicketsListPage"));
 const TicketDetailPage = lazy(() => import("../features/support/TicketDetailPage"));

@@ -4,7 +4,8 @@ import logger from '../utils/logger';
 const paymentMethodApi = {
   getPaymentMethods: async () => {
     try {
-      const response = await api.get("/paymentmethod");
+      // Use authenticated endpoint that returns payment methods for the current user only
+      const response = await api.get("/paymentmethod/me");
       return response.data;
     } catch (error) {
       logger.error("Error fetching payment methods:", error);

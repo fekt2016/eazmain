@@ -26,6 +26,35 @@ export const getOrderStructure = (orderData) => {
   // Return empty array if no orders found
   return [];
 };
+
+/**
+ * User-facing order status for display.
+ * Backend uses status ('completed' when delivered) and currentStatus ('delivered').
+ * Use this so delivered orders show "Delivered" even when status is still 'confirmed' in some flows.
+ */
+export const getOrderDisplayStatus = (order) => {
+  const current = (order?.currentStatus || "").toLowerCase();
+  const status = (order?.status || "").toLowerCase();
+  if (current === "delivered" || status === "completed") {
+    return { displayLabel: "Delivered", badgeStatus: "delivered" };
+  }
+  if (current === "cancelled" || status === "cancelled") {
+    return { displayLabel: "Cancelled", badgeStatus: "cancelled" };
+  }
+  if (current === "out_for_delivery" || status === "partially_shipped") {
+    return { displayLabel: "Shipped", badgeStatus: "shipped" };
+  }
+  const raw = current || status;
+  if (!raw) return { displayLabel: "Pending", badgeStatus: "processing" };
+  const label = raw.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const badgeStatus =
+    raw === "shipped" || raw === "out_for_delivery"
+      ? "shipped"
+      : raw === "cancelled"
+        ? "cancelled"
+        : "processing";
+  return { displayLabel: label, badgeStatus };
+};
 export const useGetSellerOrder = (orderId) => {
   return useQuery({
     queryKey: ["sellerOrder", orderId],

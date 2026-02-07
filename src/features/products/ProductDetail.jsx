@@ -603,6 +603,13 @@ const ProductDetailPage = () => {
                   {product.totalSold}+ sold
                 </SoldCounter>
               )}
+
+              {((product.totalViews ?? product?.views) > 0) && (
+                <ViewCountBadge>
+                  <FaEye />
+                  {product.totalViews ?? product.views} {(product.totalViews ?? product.views) === 1 ? 'view' : 'views'}
+                </ViewCountBadge>
+              )}
             </ProductMetaGrid>
 
             {product.shortDescription && (
@@ -1064,32 +1071,75 @@ const ProductDetailPage = () => {
                 </ReviewsSummary>
 
                 <ReviewGrid>
-                  {reviews.slice(0, 3).map((review) => (
-                    <ReviewCard key={review._id}>
-                      <ReviewHeader>
-                        <ReviewerInfo>
-                          <ReviewerAvatar>
-                            {review.user?.name?.charAt(0) || "A"}
-                          </ReviewerAvatar>
-                          <div>
-                            <ReviewerName>{review.user?.name || "Anonymous"}</ReviewerName>
-                            <ReviewDate>
-                              {new Date(review.createdAt).toLocaleDateString("en-US", {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                              })}
-                            </ReviewDate>
-                          </div>
-                        </ReviewerInfo>
-                        <ReviewRating>
-                          <StarRating rating={review.rating} size="14px" />
-                        </ReviewRating>
-                      </ReviewHeader>
-                      {review.title && <ReviewTitle>{review.title}</ReviewTitle>}
-                      <ReviewComment>{review.comment}</ReviewComment>
-                    </ReviewCard>
-                  ))}
+                  {reviews.slice(0, 3).map((review) => {
+                    const reviewDate = review.reviewDate || review.createdAt || review.updatedAt;
+                    const formattedDate = reviewDate
+                      ? new Date(reviewDate).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })
+                      : "";
+                    const reviewText = review.review || review.comment || review.body || review.content || "—";
+                    const hasImages = review.images && Array.isArray(review.images) && review.images.length > 0;
+                    const sellerReply = review.sellerReply?.reply;
+                    const sellerRepliedAt = review.sellerReply?.repliedAt;
+                    const sellerName = review.sellerReply?.repliedBy?.shopName || review.sellerReply?.repliedBy?.name || "Seller";
+                    return (
+                      <ReviewCard key={review._id}>
+                        <ReviewHeader>
+                          <ReviewerInfo>
+                            <ReviewerAvatar>
+                              {review.user?.name?.charAt(0) || "A"}
+                            </ReviewerAvatar>
+                            <div>
+                              <ReviewerName>{review.user?.name || "Anonymous"}</ReviewerName>
+                              <ReviewMeta>
+                                <ReviewDate>Reviewed on {formattedDate}</ReviewDate>
+                                {review.verifiedPurchase && (
+                                  <VerifiedBadge title="Verified purchase">Verified purchase</VerifiedBadge>
+                                )}
+                              </ReviewMeta>
+                            </div>
+                          </ReviewerInfo>
+                          <ReviewRating>
+                            <StarRating rating={review.rating} size="14px" />
+                          </ReviewRating>
+                        </ReviewHeader>
+                        <ReviewTitle>{review.title || "Review"}</ReviewTitle>
+                        <ReviewComment>{reviewText}</ReviewComment>
+                        {hasImages && (
+                          <ReviewImages>
+                            {review.images.map((img, idx) => (
+                              <ReviewImage key={idx} src={img} alt={`Review ${idx + 1}`} />
+                            ))}
+                          </ReviewImages>
+                        )}
+                        {sellerReply && (
+                          <SellerReplyBlock>
+                            <SellerReplyLabel>{sellerName} replied</SellerReplyLabel>
+                            <SellerReplyText>{sellerReply}</SellerReplyText>
+                            {sellerRepliedAt && (
+                              <SellerReplyDate>
+                                {new Date(sellerRepliedAt).toLocaleDateString("en-US", {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </SellerReplyDate>
+                            )}
+                          </SellerReplyBlock>
+                        )}
+                        {(review.helpfulVotes > 0 || review.nothelpfulVotes > 0) && (
+                          <HelpfulCount>
+                            {review.helpfulVotes > 0 && (
+                              <span>{review.helpfulVotes} {review.helpfulVotes === 1 ? "person" : "people"} found this helpful</span>
+                            )}
+                          </HelpfulCount>
+                        )}
+                      </ReviewCard>
+                    );
+                  })}
                 </ReviewGrid>
 
                 {reviewCount > 2 && (
@@ -1691,6 +1741,23 @@ const SoldCounter = styled.div`
   border-radius: 2rem;
   font-size: 1.4rem;
   font-weight: 600;
+
+  @media (max-width: 640px) {
+    padding: 0.6rem 1.2rem;
+    font-size: 1.2rem;
+    border-radius: 1.5rem;
+  }
+`;
+
+const ViewCountBadge = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--color-grey-100, #f1f5f9);
+  color: var(--color-grey-600, #475569);
+  border-radius: 2rem;
+  font-size: 1.4rem;
 
   @media (max-width: 640px) {
     padding: 0.6rem 1.2rem;
@@ -2674,9 +2741,28 @@ const ReviewerName = styled.div`
   margin-bottom: 0.5rem;
 `;
 
+const ReviewMeta = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 0.25rem;
+`;
+
 const ReviewDate = styled.div`
   font-size: 1.3rem;
   color: var(--color-grey-600);
+`;
+
+const VerifiedBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  font-size: 1.1rem;
+  color: var(--color-green-700, #047857);
+  background: var(--color-green-50, #ecfdf5);
+  padding: 0.2rem 0.6rem;
+  border-radius: 0.4rem;
+  font-weight: 600;
 `;
 
 const ReviewRating = styled.div`
@@ -2705,6 +2791,54 @@ const ReviewComment = styled.p`
     font-size: 1.4rem;
     line-height: 1.6;
   }
+`;
+
+const ReviewImages = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-top: 1rem;
+`;
+
+const ReviewImage = styled.img`
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 0.8rem;
+  border: 1px solid var(--color-grey-200, #e5e7eb);
+`;
+
+const SellerReplyBlock = styled.div`
+  margin-top: 1.5rem;
+  padding: 1.2rem 1.5rem;
+  background: var(--color-grey-100, #f3f4f6);
+  border-radius: 0.8rem;
+  border-left: 4px solid var(--color-primary-500);
+`;
+
+const SellerReplyLabel = styled.div`
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--color-grey-800, #1f2937);
+  margin-bottom: 0.5rem;
+`;
+
+const SellerReplyText = styled.p`
+  font-size: 1.4rem;
+  color: var(--color-grey-700, #374151);
+  margin: 0 0 0.5rem 0;
+  line-height: 1.5;
+`;
+
+const SellerReplyDate = styled.div`
+  font-size: 1.2rem;
+  color: var(--color-grey-600, #4b5563);
+`;
+
+const HelpfulCount = styled.div`
+  margin-top: 1rem;
+  font-size: 1.3rem;
+  color: var(--color-grey-600, #4b5563);
 `;
 
 const ViewAllReviews = styled(Link)`

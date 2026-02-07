@@ -18,7 +18,7 @@ import {
   FaUndo,
   FaTimes,
 } from "react-icons/fa";
-import { useGetUserOrderById, useRequestRefund, useGetRefundStatus } from '../../shared/hooks/useOrder';
+import { useGetUserOrderById, useRequestRefund, useGetRefundStatus, getOrderDisplayStatus } from '../../shared/hooks/useOrder';
 import { useGetMyReviews } from '../../shared/hooks/useReview';
 import { usePaystackPayment } from '../../shared/hooks/usePaystackPayment';
 import { LoadingState, ErrorState, EmptyState } from '../../components/loading';
@@ -103,33 +103,74 @@ const OrderDetail = () => {
     }
   }, [orderId, refetch]);
 
-  // Determine current order stage
+  // Determine current order stage.
+  // IMPORTANT: Align this with the tracking system so the simple 3-step
+  // timeline matches the detailed tracking history.
   const getCurrentStage = () => {
     if (!order) return 'placed';
-    
+
+    const trackingStatus = order.currentStatus; // primary source of truth from tracking
     const orderStatus = order.status || order.orderStatus || 'pending';
     const paymentStatus = order.paymentStatus;
-    
+
+    // Prefer currentStatus when available so we stay in sync with trackingHistory
+    if (trackingStatus) {
+      // Map granular tracking statuses into coarse 3-step stages
+      if (['pending_payment', 'payment_completed'].includes(trackingStatus)) {
+        return 'placed';
+      }
+
+      if ([
+        'processing',
+        'confirmed',
+        'preparing',
+        'ready_for_dispatch',
+        'out_for_delivery',
+      ].includes(trackingStatus)) {
+        return 'shipped';
+      }
+
+      if (trackingStatus === 'delivered') {
+        return 'delivered';
+      }
+
+      // For cancelled / refunded and any unknown statuses, keep at "placed"
+      return 'placed';
+    }
+
+    // Fallback: legacy logic using order.status + paymentStatus
     // If payment is not completed, order is still at "placed" stage
     if (paymentStatus !== 'completed' && orderStatus === 'pending') {
       return 'placed';
     }
-    
+
     // If order is shipped
-    if (orderStatus === 'shipped' || order.orderStatus === 'shipped' || order.FulfillmentStatus === 'shipped') {
+    if (
+      orderStatus === 'shipped' ||
+      order.orderStatus === 'shipped' ||
+      order.FulfillmentStatus === 'shipped'
+    ) {
       return 'shipped';
     }
-    
+
     // If order is delivered
-    if (orderStatus === 'delivered' || order.orderStatus === 'delievered' || order.FulfillmentStatus === 'delievered' || orderStatus === 'completed') {
+    if (
+      orderStatus === 'delivered' ||
+      order.orderStatus === 'delievered' ||
+      order.FulfillmentStatus === 'delievered' ||
+      orderStatus === 'completed'
+    ) {
       return 'delivered';
     }
-    
+
     // If payment is completed but order hasn't shipped yet, it's still at "placed" stage
-    if (paymentStatus === 'completed' && (orderStatus === 'paid' || orderStatus === 'pending')) {
+    if (
+      paymentStatus === 'completed' &&
+      (orderStatus === 'paid' || orderStatus === 'pending')
+    ) {
       return 'placed';
     }
-    
+
     return 'placed';
   };
 
@@ -502,8 +543,8 @@ const OrderDetail = () => {
           )}
           <MetaItem>
             <strong>Status:</strong> 
-            <StatusBadge $status={status || order.status || order.orderStatus || 'pending'}>
-              {(status || order.status || order.orderStatus || 'pending').charAt(0).toUpperCase() + (status || order.status || order.orderStatus || 'pending').slice(1)}
+            <StatusBadge $status={order ? getOrderDisplayStatus(order).badgeStatus : 'pending'}>
+              {order ? getOrderDisplayStatus(order).displayLabel : 'Pending'}
             </StatusBadge>
             {(order.paymentStatus === 'completed' ||
               order.paymentStatus === 'paid' ||

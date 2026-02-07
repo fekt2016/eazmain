@@ -202,7 +202,7 @@ export default function CustomerReviewPage() {
                         <RatingValue>{review.rating}/5</RatingValue>
                       </ReviewRating>
                       
-                      {review.title && <ReviewTitle>{review.title}</ReviewTitle>}
+                      <ReviewTitle>{review.title || "Review"}</ReviewTitle>
                       <ReviewContentText>
                         <QuoteIcon>
                           <FaQuoteLeft />
