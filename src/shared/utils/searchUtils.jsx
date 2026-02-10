@@ -54,6 +54,21 @@ const escapeRegex = (str) => {
 };
 
 /**
+ * Strip HTML/script from user input for safe display (title, meta, headings).
+ * Prevents reflected XSS when search/cart/forms params are shown in the page.
+ */
+export const escapeForDisplay = (str) => {
+  if (str == null || typeof str !== 'string') return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .trim();
+};
+
+/**
  * Normalize search query for display
  * @param {string} query - Search query
  * @returns {string} - Normalized query

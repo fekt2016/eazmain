@@ -218,26 +218,26 @@ export const useCartTotals = () => {
   const products = getCartStructure(data);
   const { promotionDiscountMap } = useAds();
 
-  const applyPromoDiscount = (product) => {
+  const getItemUnitPrice = (item) => {
+    if (item?.unitPrice != null && typeof item.unitPrice === 'number' && item.unitPrice >= 0) {
+      return item.unitPrice;
+    }
+    const product = item?.product;
     if (!product) return 0;
     const basePrice = product?.defaultPrice || product?.price || 0;
     if (!basePrice) return 0;
-
     const promoKey = product.promotionKey || "";
     if (!promoKey) return basePrice;
-
     const discountPercent = promotionDiscountMap[promoKey] || 0;
     if (!discountPercent || discountPercent <= 0) return basePrice;
-
     const discounted = basePrice * (1 - discountPercent / 100);
-    // Guard against negative prices
     return discounted > 0 ? discounted : 0;
   };
 
   return products.reduce(
     (acc, item) => {
       const quantity = item?.quantity || 0;
-      const price = applyPromoDiscount(item?.product);
+      const price = getItemUnitPrice(item);
       acc.total += price * quantity;
       acc.count += quantity;
       return acc;

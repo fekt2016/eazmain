@@ -7,9 +7,11 @@ import "swiper/css";
 import "swiper/css/effect-fade";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
-import { FaArrowRight, FaArrowLeft, FaStar, FaShieldAlt, FaTruck, FaHeadset, FaEnvelope } from "react-icons/fa";
+import { FaArrowRight, FaArrowLeft, FaStar, FaShieldAlt, FaTruck, FaHeadset } from "react-icons/fa";
 
 import useProduct from '../../shared/hooks/useProduct';
+import useAuth from '../../shared/hooks/useAuth';
+import { useFollowedSellerProducts } from '../../shared/hooks/useFollow';
 import useCategory from '../../shared/hooks/useCategory';
 import ProductCard from '../../shared/components/ProductCard';
 import { getOrCreateSessionId } from '../../shared/utils/sessionUtils';
@@ -61,6 +63,14 @@ const HomePage = () => {
   const { getProducts } = useProduct();
   const { recordProductView } = useAnalytics();
   const { data: productsData, isLoading } = getProducts;
+  const { userData, isAuthenticated } = useAuth();
+  const user = useMemo(() => {
+    if (!userData) return null;
+    if (userData?.id || userData?._id) return userData;
+    return userData?.user || userData?.data || null;
+  }, [userData]);
+  const showFollowedSection = Boolean(isAuthenticated || user);
+  const { products: followedProducts, isLoading: isFollowedProductsLoading, total: followedProductsTotal } = useFollowedSellerProducts(12);
   const { data: sellersData, isLoading: isSellersLoading } = useGetFeaturedSellers({ limit: 8 });
   const {
     bannerAds,
@@ -542,6 +552,47 @@ const HomePage = () => {
         </Container>
       </Section>
 
+      {/* From sellers you follow - visible when logged in (placed high so users see it) */}
+      {showFollowedSection && (
+        <Section $bg="#f8f9fa">
+          <Container>
+            <SectionHeader>
+              <SectionTitle>From sellers you follow</SectionTitle>
+              {followedProductsTotal > 12 && (
+                <SectionLink to={PATHS.FOLLOWED}>
+                  See all <FaArrowRight />
+                </SectionLink>
+              )}
+            </SectionHeader>
+            {isFollowedProductsLoading ? (
+              <LoadingGrid>
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                  <SkeletonCard key={i} />
+                ))}
+              </LoadingGrid>
+            ) : followedProducts.length > 0 ? (
+              <ProductGrid>
+                {followedProducts.map((product) => (
+                  <ProductCard
+                    key={product._id}
+                    product={product}
+                    onClick={() => handleProductClick(product._id)}
+                    showAddToCart
+                  />
+                ))}
+              </ProductGrid>
+            ) : (
+              <EmptyState>
+                <p>No products from your followed sellers yet.</p>
+                <SectionLink to={PATHS.FOLLOWED} style={{ marginTop: '0.5rem', display: 'inline-block' }}>
+                  View followed shops <FaArrowRight />
+                </SectionLink>
+              </EmptyState>
+            )}
+          </Container>
+        </Section>
+      )}
+
       {/* EazShop Official Store Section */}
       <EazShopSection />
 
@@ -583,20 +634,6 @@ const HomePage = () => {
         </Container>
       </Section>
 
-      {/* Newsletter */}
-      <NewsletterSection>
-        <Container>
-          <NewsletterContent>
-            <NewsletterIcon><FaEnvelope /></NewsletterIcon>
-            <h2>Subscribe to our Newsletter</h2>
-            <p>Get the latest updates on new products and upcoming sales</p>
-            <NewsletterForm>
-              <input type="email" placeholder="Enter your email address" />
-              <button>Subscribe</button>
-            </NewsletterForm>
-          </NewsletterContent>
-        </Container>
-      </NewsletterSection>
       <AdPopup
         ad={activePopupAd}
         open={Boolean(activePopupAd)}
@@ -1107,90 +1144,6 @@ const ProductGrid = styled.div`
   @media ${devicesMax.sm} {
     grid-template-columns: repeat(2, 1fr); /* 2 cards on mobile */
     gap: 0.75rem;
-  }
-`;
-
-const NewsletterSection = styled.section`
-  padding: 5rem 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  text-align: center;
-`;
-
-const NewsletterContent = styled.div`
-  max-width: 600px;
-  margin: 0 auto;
-  
-  h2 {
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
-  }
-  
-  p {
-    margin-bottom: 2.5rem;
-    opacity: 0.9;
-    font-size: 1.1rem;
-  }
-`;
-
-const NewsletterIcon = styled.div`
-  font-size: 3rem;
-  margin-bottom: 1.5rem;
-  animation: ${float} 3s ease-in-out infinite;
-`;
-
-const NewsletterForm = styled.div`
-  display: flex;
-  gap: 10px;
-  background: rgba(255,255,255,0.1);
-  padding: 10px;
-  border-radius: 50px;
-  backdrop-filter: blur(10px);
-  
-  input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    padding: 0 1.5rem;
-    color: white;
-    font-size: 1rem;
-    outline: none;
-    
-    &::placeholder {
-      color: rgba(255,255,255,0.7);
-    }
-  }
-  
-  button {
-    padding: 1rem 2.5rem;
-    background: white;
-    color: #764ba2;
-    border: none;
-    border-radius: 40px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.3s;
-    
-    &:hover {
-      transform: scale(1.05);
-    }
-  }
-  
-  @media ${devicesMax.sm} {
-    flex-direction: column;
-    background: transparent;
-    gap: 1rem;
-    
-    input {
-      background: rgba(255,255,255,0.1);
-      padding: 1rem;
-      border-radius: 10px;
-      text-align: center;
-    }
-    
-    button {
-      width: 100%;
-    }
   }
 `;
 

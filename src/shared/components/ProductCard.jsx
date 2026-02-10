@@ -11,8 +11,8 @@ import StarRating from "./StarRating";
 import {
   hasProductDiscount,
   getProductDiscountPercentage,
+  getProductPriceForDisplay,
   isProductTrending,
-  hasProductPriceRange,
   getProductTotalStock,
 } from '../utils/productHelpers';
 import { highlightSearchTerm } from '../utils/searchUtils.jsx';
@@ -177,8 +177,8 @@ export default function ProductCard({
   // Use utility functions for product calculations
   const hasDiscount = hasProductDiscount(product);
   const discountPercentage = getProductDiscountPercentage(product);
+  const { displayPrice, originalPrice } = getProductPriceForDisplay(product);
   const isTrending = isProductTrending(product);
-  const hasPriceRange = hasProductPriceRange(product);
   const totalStock = getProductTotalStock(product);
   
   // Check availability status
@@ -350,20 +350,14 @@ export default function ProductCard({
             </ViewCountText>
           )}
 
-          {/* Price Section */}
+          {/* Price Section: single final price (VAT inclusive) */}
           <PriceSection>
-            {hasPriceRange ? (
-              <PriceRange>
-                GH₵{product.minPrice.toFixed(2)} - GH₵{product.maxPrice.toFixed(2)}
-              </PriceRange>
-            ) : (
-              <>
-                <CurrentPrice>GH₵{product?.price || product?.minPrice || "0.00"}</CurrentPrice>
-                {hasDiscount && product.originalPrice && (
-                  <OriginalPrice>GH₵{product.originalPrice}</OriginalPrice>
-                )}
-              </>
+            {originalPrice != null && originalPrice > displayPrice && (
+              <OriginalPrice>GH₵{Number(originalPrice).toFixed(2)}</OriginalPrice>
             )}
+            <CurrentPrice>
+              GH₵{Number(displayPrice).toFixed(2)}
+            </CurrentPrice>
           </PriceSection>
 
           {/* Seller shop name - below price */}
@@ -373,11 +367,18 @@ export default function ProductCard({
             </ProductShopName>
           )}
 
-          {/* Stock Status */}
-          <StockStatus $inStock={totalStock > 0}>
-            <StatusDot $inStock={totalStock > 0} />
-            {totalStock > 0 ? `${totalStock} in stock` : "Out of stock"}
-          </StockStatus>
+          {/* Stock Status & Sold count */}
+          <StockAndSoldRow>
+            <StockStatus $inStock={totalStock > 0}>
+              <StatusDot $inStock={totalStock > 0} />
+              {totalStock > 0 ? `${totalStock} in stock` : "Out of stock"}
+            </StockStatus>
+            {(product.totalSold > 0 || product.sales > 0) && (
+              <SoldCountText>
+                {(product.totalSold || product.sales || 0).toLocaleString()} sold
+              </SoldCountText>
+            )}
+          </StockAndSoldRow>
         </ProductInfo>
       </ProductLink>
 
@@ -786,6 +787,13 @@ const PriceRange = styled.span`
   color: var(--color-primary-500);
 `;
 
+const StockAndSoldRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+`;
+
 const StockStatus = styled.div`
   display: flex;
   align-items: center;
@@ -793,6 +801,12 @@ const StockStatus = styled.div`
   font-size: 1rem; /* Reduced from 1.2rem */
   font-weight: 500;
   color: ${({ $inStock }) => ($inStock ? "var(--color-green-600)" : "var(--color-red-600)")};
+`;
+
+const SoldCountText = styled.span`
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-grey-500, #64748b);
 `;
 
 const StatusDot = styled.div`

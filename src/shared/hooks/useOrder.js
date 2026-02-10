@@ -317,3 +317,31 @@ export const useGetRefundStatus = (orderId) => {
     staleTime: 1000 * 60, // 1 minute
   });
 };
+
+export const useGetRefundById = (orderId, refundId) => {
+  return useQuery({
+    queryKey: ["refund", orderId, refundId],
+    queryFn: async () => {
+      if (!orderId || !refundId) return null;
+      const response = await orderService.getRefundById(orderId, refundId);
+      return response.data;
+    },
+    enabled: !!orderId && !!refundId,
+    staleTime: 1000 * 60, // 1 minute
+  });
+};
+
+export const useSelectReturnShippingMethod = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ orderId, refundId, returnShippingMethod }) => {
+      const response = await orderService.selectReturnShippingMethod(orderId, refundId, returnShippingMethod);
+      return response;
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["refund", variables.orderId, variables.refundId] });
+      queryClient.invalidateQueries({ queryKey: ["refundStatus", variables.orderId] });
+      queryClient.invalidateQueries({ queryKey: ["order", variables.orderId] });
+    },
+  });
+};

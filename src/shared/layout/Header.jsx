@@ -12,7 +12,6 @@ import {
   FaChevronUp,
   FaSearch,
   FaTimes,
-  FaBell,
 } from "react-icons/fa";
 import styled from "styled-components";
 import {  slideDown } from "../styles/animations";
@@ -22,12 +21,10 @@ import { useWishlist } from '../hooks/useWishlist';
 import { useCartTotals } from '../hooks/useCart';
 import useCategory from '../hooks/useCategory';
 import { useSearchSuggestions } from '../hooks/useSearch';
-import { useUnreadCount } from '../hooks/notifications/useNotifications';
 import { PATHS } from '../../routes/routePaths';
 import HeaderSearchBar from '../components/HeaderSearchBar';
 import Logo from '../components/Logo';
 import { getAvatarUrl } from '../utils/avatarUtils';
-import NotificationDropdown from '../components/NotificationDropdown';
 
 export default function Header({ onToggleSidebar, isSidebarOpen }) {
   const navigate = useNavigate();
@@ -50,31 +47,6 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
   const { getParentCategories } = useCategory();
   const { data: categoriesData, isLoading: isCategoriesLoading, isError: isCategoriesError } =
     getParentCategories;
-  const { data: unreadData, isLoading: isUnreadLoading } = useUnreadCount();
-  const unreadCount = useMemo(() => {
-    // FIX: Handle different response structures and ensure we get a number
-    if (!unreadData) return 0;
-    
-    // Backend returns: { status: 'success', data: { unreadCount: number } }
-    const count = unreadData?.data?.unreadCount ?? 
-                  unreadData?.data?.data?.unreadCount ?? 
-                  unreadData?.unreadCount ?? 
-                  0;
-    
-    // Ensure it's a valid number
-    const numCount = Number(count) || 0;
-    
-    // Debug in development
-    if (process.env.NODE_ENV === 'development' && !isUnreadLoading) {
-      console.log('[Header] Unread count debug:', {
-        unreadData,
-        extractedCount: numCount,
-        rawData: unreadData
-      });
-    }
-    
-    return numCount;
-  }, [unreadData, isUnreadLoading]);
 
   // Improved search suggestions hook with better caching
   const { data: searchSuggestionsData, isLoading: isSearchProductsLoading } =
@@ -525,10 +497,6 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
                       </ActionText>
                     </BottomLink>
                   )}
-                </HeaderAction>
-
-                <HeaderAction>
-                  <NotificationDropdown unreadCount={unreadCount} />
                 </HeaderAction>
 
                 <HeaderAction>

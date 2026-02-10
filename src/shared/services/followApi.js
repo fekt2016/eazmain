@@ -67,6 +67,21 @@ const followApi = {
       );
     }
   },
+  getFollowedSellerProducts: async (limit = 12) => {
+    try {
+      const response = await api.get("/follow/products", {
+        params: { limit },
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response?.status === 401) {
+        return { data: { data: [] }, results: 0, total: 0 };
+      }
+      throw new Error(
+        error.response?.data?.message || "Failed to get products from followed sellers"
+      );
+    }
+  },
 };
 
 export default followApi;

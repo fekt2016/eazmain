@@ -2,6 +2,21 @@ import api from './api';
 import logger from '../utils/logger';
 
 export const orderService = {
+  // Platform tax rates from admin platform settings (for checkout)
+  getTaxRates: async () => {
+    try {
+      const response = await api.get("/order/tax-rates");
+      return response.data;
+    } catch (error) {
+      logger.error("API Error - getTaxRates:", {
+        url: error.config?.url,
+        status: error.response?.status,
+        message: error.message,
+      });
+      throw new Error(error.response?.data?.message || "Failed to fetch tax rates");
+    }
+  },
+
   // Validate cart and get backend-calculated totals
   validateCart: async (cartData) => {
     try {
@@ -18,8 +33,19 @@ export const orderService = {
   },
 
   createOrder: async (data) => {
-    const response = await api.post("/order", data);
-    return response;
+    try {
+      const response = await api.post("/order", data);
+      return response;
+    } catch (error) {
+      logger.error("API Error - createOrder:", {
+        url: error.config?.url,
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+      });
+      // Surface backend validation message so UI / console shows the real reason
+      throw new Error(error.response?.data?.message || "Failed to create order");
+    }
   },
   getAllOrders: async () => {
     const response = await api.get("/order");
@@ -125,5 +151,33 @@ export const orderService = {
   getRefundStatus: async (orderId) => {
     const response = await api.get(`/order/${orderId}/refund-status`);
     return response.data;
+  },
+  getRefundById: async (orderId, refundId) => {
+    try {
+      const response = await api.get(`/order/${orderId}/refunds/${refundId}`);
+      return response.data;
+    } catch (error) {
+      logger.error("API Error - getRefundById:", {
+        url: error.config?.url,
+        status: error.response?.status,
+        message: error.message,
+      });
+      throw new Error(error.response?.data?.message || "Failed to fetch refund");
+    }
+  },
+  selectReturnShippingMethod: async (orderId, refundId, returnShippingMethod) => {
+    try {
+      const response = await api.patch(`/order/${orderId}/refunds/${refundId}/select-return-shipping`, {
+        returnShippingMethod,
+      });
+      return response.data;
+    } catch (error) {
+      logger.error("API Error - selectReturnShippingMethod:", {
+        url: error.config?.url,
+        status: error.response?.status,
+        message: error.message,
+      });
+      throw new Error(error.response?.data?.message || "Failed to select return shipping method");
+    }
   },
 };

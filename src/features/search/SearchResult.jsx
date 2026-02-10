@@ -9,7 +9,7 @@ import { spin, fadeIn } from '../../shared/styles/animations';
 import Container from '../../shared/components/Container';
 import { devicesMax } from '../../shared/styles/breakpoint';
 import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
-import { parseSearchParams, buildSearchUrl, highlightSearchTerm } from '../../shared/utils/searchUtils.jsx';
+import { parseSearchParams, buildSearchUrl, highlightSearchTerm, escapeForDisplay } from '../../shared/utils/searchUtils.jsx';
 
 export default function SearchResultsPage() {
   const location = useLocation();
@@ -127,11 +127,12 @@ export default function SearchResultsPage() {
   const showPagination = !isLoading && hasPagination && !error;
 
   const searchQuery = urlParams.q || "";
-  
+  const searchQuerySafe = escapeForDisplay(searchQuery);
+
   useDynamicPageTitle({
     title: "Search",
-    dynamicTitle: searchQuery && `Search: ${searchQuery} | Saiisai`,
-    description: searchQuery ? `Search results for "${searchQuery}"` : "Search products on Saiisai",
+    dynamicTitle: searchQuerySafe && `Search: ${searchQuerySafe} | Saiisai`,
+    description: searchQuerySafe ? `Search results for "${searchQuerySafe}"` : "Search products on Saiisai",
     defaultTitle: "Search | Saiisai",
   });
 
@@ -204,7 +205,7 @@ export default function SearchResultsPage() {
         <SearchHeader>
           <HeaderContent>
             <SearchTitle data-testid="search-title">
-              Results for <span>"{searchQuery}"</span>
+              Results for <span>"{searchQuerySafe}"</span>
             </SearchTitle>
             <ResultCount data-testid="search-result-count">
               {totalProducts > 0 ? (
@@ -391,7 +392,7 @@ export default function SearchResultsPage() {
                 <h3>No Results Found</h3>
                 <p>
                   We couldn't find any products matching{" "}
-                  <strong>"{searchQuery}"</strong>.
+                  <strong>"{searchQuerySafe}"</strong>.
                 </p>
                 <EmptySuggestions>
                   <p>Try:</p>

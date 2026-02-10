@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { toast } from "react-toastify";
 import followApi from '../services/followApi';
 import useAuth from '../../shared/hooks/useAuth';
 import { useMemo } from "react";
@@ -7,9 +8,13 @@ import logger from '../utils/logger';
 export const useToggleFollow = (sellerId) => {
   const queryClient = useQueryClient();
   const { userData } = useAuth();
+  // useAuth returns userData = the user object directly (from getCurrentUser query)
   const user = useMemo(() => {
+    if (!userData) return null;
+    if (userData?.id || userData?._id) return userData;
     return userData?.user || userData?.data || null;
   }, [userData]);
+  const userId = user?.id || user?._id;
 
   // NEW: Query to fetch seller follow status
   const sellerQuery = useQuery({
@@ -49,7 +54,7 @@ export const useToggleFollow = (sellerId) => {
     });
 
     // Update followed sellers list
-    queryClient.setQueryData(["followed-sellers", user?.id], (oldData = []) => {
+    queryClient.setQueryData(["followed-sellers", userId], (oldData = []) => {
       if (isFollowing) {
         return [...oldData, { _id: sellerId }];
       }
@@ -68,7 +73,7 @@ export const useToggleFollow = (sellerId) => {
       const previousSeller =
         queryClient.getQueryData(["follower", sellerId]) || currentSeller;
       const previousFollowed =
-        queryClient.getQueryData(["followed-sellers", user?.id]) || [];
+        queryClient.getQueryData(["followed-sellers", userId]) || [];
 
       // Optimistically update UI
       updateCache(true);
@@ -77,6 +82,7 @@ export const useToggleFollow = (sellerId) => {
     },
     onError: (error, variables, context) => {
       logger.error("Follow error:", error);
+      toast.error(error?.response?.data?.message || "Failed to follow. Please try again.");
       // Revert optimistic update
       if (context?.previousSeller) {
         queryClient.setQueryData(
@@ -86,15 +92,18 @@ export const useToggleFollow = (sellerId) => {
       }
       if (context?.previousFollowed) {
         queryClient.setQueryData(
-          ["followed-sellers", user?.id],
+          ["followed-sellers", userId],
           context.previousFollowed
         );
       }
     },
+    onSuccess: () => {
+      toast.success("Following shop");
+    },
     onSettled: () => {
-      // Refetch to ensure data is fresh
       queryClient.invalidateQueries(["follower", sellerId]);
-      queryClient.invalidateQueries(["followed-sellers", user?.id]);
+      queryClient.invalidateQueries(["followed-sellers", userId]);
+      queryClient.invalidateQueries(["followers", sellerId]);
     },
   });
 
@@ -110,7 +119,7 @@ export const useToggleFollow = (sellerId) => {
       const previousSeller =
         queryClient.getQueryData(["follower", sellerId]) || currentSeller;
       const previousFollowed =
-        queryClient.getQueryData(["followed-sellers", user?.id]) || [];
+        queryClient.getQueryData(["followed-sellers", userId]) || [];
 
       // Optimistically update UI
       updateCache(false);
@@ -128,7 +137,7 @@ export const useToggleFollow = (sellerId) => {
       }
       if (context?.previousFollowed) {
         queryClient.setQueryData(
-          ["followed-sellers", user?.id],
+          ["followed-sellers", userId],
           context.previousFollowed
         );
       }
@@ -136,14 +145,14 @@ export const useToggleFollow = (sellerId) => {
     onSettled: () => {
       // Refetch to ensure data is fresh
       queryClient.invalidateQueries(["follower", sellerId]);
-      queryClient.invalidateQueries(["followed-sellers", user?.id]);
+      queryClient.invalidateQueries(["followed-sellers", userId]);
     },
   });
 
   // Toggle function
   const toggleFollow = () => {
     if (!user) {
-      logger.log("User is not logged in");
+      toast.info("Please log in to follow this shop", { autoClose: 4000 });
       return;
     }
 
@@ -167,9 +176,10 @@ export const useGetSellersFollowers = (sellerId) => {
     queryKey: ["followers", sellerId],
     queryFn: async () => {
       const response = await followApi.getSellerFollowers(sellerId);
-
       return response;
     },
+    enabled: !!sellerId,
+    retry: (failureCount, error) => (error?.code !== 'ERR_NETWORK' && failureCount < 2),
   });
 };
 export const useGetFollowedSellerByUser = () => {
@@ -180,9 +190,37 @@ export const useGetFollowedSellerByUser = () => {
 
       return response;
     },
-    // onSuccess: (data) => {
-    //   console.log("[API] Followed shops:", data);
-    // },
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
+};
+
+/**
+ * Products from sellers the current user follows. For homepage "From sellers you follow" section.
+ * Only runs when user is logged in. Returns { data, products, total, isLoading }.
+ */
+export const useFollowedSellerProducts = (limit = 12) => {
+  const { userData } = useAuth();
+  const user = useMemo(() => {
+    if (!userData) return null;
+    if (userData?.id || userData?._id) return userData;
+    return userData?.user || userData?.data || null;
+  }, [userData]);
+
+  const query = useQuery({
+    queryKey: ["followed-seller-products", limit],
+    queryFn: () => followApi.getFollowedSellerProducts(limit),
+    enabled: !!user,
+    staleTime: 1000 * 60 * 2,
+  });
+
+  const products = useMemo(() => {
+    const raw = query.data?.data?.data ?? query.data?.data ?? query.data;
+    return Array.isArray(raw) ? raw : [];
+  }, [query.data]);
+
+  return {
+    ...query,
+    products,
+    total: query.data?.total ?? 0,
+  };
 };

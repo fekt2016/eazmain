@@ -1,4 +1,5 @@
 // src/components/CartPage.jsx
+import { useMemo } from "react";
 import styled from "styled-components";
 import {
   useCartTotals,
@@ -8,6 +9,7 @@ import {
   getCartStructure,
 } from '../../shared/hooks/useCart';
 import useAds from "../../shared/hooks/useAds";
+import { useTrending } from '../../shared/hooks/useRecommendations';
 import { useNavigate } from "react-router-dom";
 import useAuth from '../../shared/hooks/useAuth';
 import { PrimaryButton, DangerButton, GhostButton, SuccessButton } from '../../shared/components/ui/Buttons';
@@ -16,6 +18,7 @@ import { spin } from '../../shared/styles/animations';
 import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 import seoConfig from '../../shared/config/seoConfig';
 import logger from '../../shared/utils/logger';
+import ProductCard from '../../shared/components/ProductCard';
 
 const CartPage = () => {
   // SEO - Set page title and meta tags
@@ -49,6 +52,24 @@ const CartPage = () => {
   const { isAuthenticated } = useAuth();
   const products = getCartStructure(data);
 
+  const { data: trendingData, isLoading: isTrendingLoading } = useTrending(12);
+  const cartProductIds = useMemo(
+    () => new Set(
+      products
+        .filter((item) => item?.product)
+        .map((item) => String(item.product?._id || item.product?.id || ''))
+        .filter(Boolean)
+    ),
+    [products]
+  );
+  const similarProducts = useMemo(() => {
+    const list = trendingData?.data?.products ?? trendingData?.products ?? [];
+    if (!Array.isArray(list)) return [];
+    return list
+      .filter((p) => p && !cartProductIds.has(String(p._id || p.id)))
+      .slice(0, 4);
+  }, [trendingData, cartProductIds]);
+
   const navigate = useNavigate();
   const handleAddToCart = (product) => {
     addToCart({ product, quantity: 1 });
@@ -67,7 +88,11 @@ const CartPage = () => {
     removeCartItem(itemId);
   };
 
+  // Prefer backend-computed unitPrice (includes promo); fallback to product price
   const getItemUnitPrice = (item) => {
+    if (item?.unitPrice != null && typeof item.unitPrice === 'number' && item.unitPrice >= 0) {
+      return item.unitPrice;
+    }
     const basePrice = item?.product?.defaultPrice || item?.product?.price || 0;
     if (!basePrice) return 0;
     const promoKey = item?.product?.promotionKey || "";
@@ -76,6 +101,13 @@ const CartPage = () => {
     if (!discountPercent || discountPercent <= 0) return basePrice;
     const discounted = basePrice * (1 - discountPercent / 100);
     return discounted > 0 ? discounted : 0;
+  };
+
+  const getItemOriginalUnitPrice = (item) => {
+    if (item?.originalUnitPrice != null && typeof item.originalUnitPrice === 'number') {
+      return item.originalUnitPrice;
+    }
+    return null;
   };
   const handleCheckout = () => {
     if (!isAuthenticated) {
@@ -131,7 +163,14 @@ const CartPage = () => {
                         </div>
 
                         <ItemPrice>
-                          GH₵{getItemUnitPrice(item).toFixed(2)}
+                          {getItemOriginalUnitPrice(item) != null ? (
+                            <>
+                              <OriginalPrice>GH₵{getItemOriginalUnitPrice(item).toFixed(2)}</OriginalPrice>
+                              <PromoPrice>GH₵{getItemUnitPrice(item).toFixed(2)}</PromoPrice>
+                            </>
+                          ) : (
+                            <>GH₵{getItemUnitPrice(item).toFixed(2)}</>
+                          )}
                         </ItemPrice>
                       </div>
                     <ItemActions>
@@ -168,7 +207,6 @@ const CartPage = () => {
                         +
                       </QuantityButton>
                       <RemoveButton
-                        as={DangerButton}
                         $size="sm"
                         onClick={() => handleRemoveItem(item._id)}
                         disabled={isRemoving}
@@ -178,7 +216,14 @@ const CartPage = () => {
                     </ItemActions>
                   </ItemDetails>
                   <ItemPrice>
-                    GH₵{(getItemUnitPrice(item) * item.quantity).toFixed(2)}
+                    {getItemOriginalUnitPrice(item) != null ? (
+                      <>
+                        <OriginalPrice>GH₵{(getItemOriginalUnitPrice(item) * item.quantity).toFixed(2)}</OriginalPrice>
+                        <PromoPrice>GH₵{(getItemUnitPrice(item) * item.quantity).toFixed(2)}</PromoPrice>
+                      </>
+                    ) : (
+                      <>GH₵{(getItemUnitPrice(item) * item.quantity).toFixed(2)}</>
+                    )}
                   </ItemPrice>
                 </CartItem>
               );
@@ -217,38 +262,19 @@ const CartPage = () => {
         </CartSummary>
       </CartContainer>
 
-      {/* Recommended Products Section - Placeholder */}
-      {products.filter(item => item.product).length > 0 && (
+      {/* You Might Also Like – similar products (trending), excluding cart items; hide if none */}
+      {!isTrendingLoading && similarProducts.length > 0 && (
         <RecommendedSection>
           <SectionTitle>You Might Also Like</SectionTitle>
           <ProductGrid>
-            {/* In a real app, fetch recommended products from API */}
-            {products
-              .filter(item => item.product)
-              .slice(0, 4)
-              .map((item) => (
-                <ProductCard key={item.product?._id || item._id}>
-                  <ProductImage
-                    src={item.product?.imageCover || '/placeholder-image.png'}
-                    alt={item.product?.name || 'Product'}
-                  />
-                  <ProductInfo>
-                    <ProductName>{item.product?.name || 'Product Name Not Available'}</ProductName>
-                    <ProductPrice>
-                      {/* GH₵{(item.product?.price || 0).toFixed(2)} */}
-                    </ProductPrice>
-                    <AddToCartButton
-                      as={PrimaryButton}
-                      $size="sm"
-                      $fullWidth
-                      onClick={() => item.product && handleAddToCart(item.product)}
-                      disabled={isAdding || !item.product}
-                    >
-                      {isAdding ? <ButtonSpinner size="sm" /> : "Add to Cart"}
-                    </AddToCartButton>
-                  </ProductInfo>
-                </ProductCard>
-              ))}
+            {similarProducts.map((product) => (
+              <ProductCard
+                key={product._id || product.id}
+                product={product}
+                showAddToCart
+                showWishlistButton={false}
+              />
+            ))}
           </ProductGrid>
         </RecommendedSection>
       )}
@@ -258,7 +284,7 @@ const CartPage = () => {
 
 // Styled components
 const PageContainer = styled.div`
-  max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
   padding: 20px;
   font-family: var(--font-body);
@@ -348,6 +374,22 @@ const ItemPrice = styled.div`
   font-size: 1.1rem;
   min-width: 100px;
   text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+`;
+
+const OriginalPrice = styled.span`
+  text-decoration: line-through;
+  color: #6c757d;
+  font-weight: 400;
+  font-size: 0.95rem;
+`;
+
+const PromoPrice = styled.span`
+  color: #0d6efd;
+  font-weight: 600;
 `;
 
 const ItemActions = styled.div`
@@ -384,8 +426,12 @@ const QuantityInput = styled.input`
   }
 `;
 
-// RemoveButton now extends DangerButton from global buttons
-const RemoveButton = styled.div``;
+// RemoveButton – smaller variant of DangerButton
+const RemoveButton = styled(DangerButton)`
+  padding: 0.35rem 0.6rem;
+  font-size: 0.8rem;
+  min-height: unset;
+`;
 
 const SummaryTitle = styled.h2`
   font-size: 1.5rem;
@@ -451,63 +497,6 @@ const ProductGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 25px;
-`;
-
-const ProductCard = styled.div`
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-  transition: transform 0.2s;
-  display: flex;
-  flex-direction: column;
-
-  &:hover {
-    transform: translateY(-5px);
-  }
-`;
-
-const ProductImage = styled.img`
-  height: 180px;
-  width: 100%;
-  object-fit: cover;
-  background-color: #f1f3f5;
-`;
-
-const ProductInfo = styled.div`
-  padding: 15px;
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-`;
-
-const ProductName = styled.h3`
-  margin: 0 0 10px;
-  font-size: 1.1rem;
-  color: #343a40;
-  flex-grow: 1;
-`;
-
-const ProductPrice = styled.div`
-  font-weight: 600;
-  color: #495057;
-  font-size: 1.1rem;
-  margin-bottom: 15px;
-`;
-
-// AddToCartButton now extends PrimaryButton from global buttons
-const AddToCartButton = styled.div`
-  margin-top: auto;
-`;
-
-const LoadingIndicator = styled.div`
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  border: 3px solid rgba(0, 0, 0, 0.1);
-  border-radius: 50%;
-  border-top-color: #007bff;
-  animation: ${spin} 1s ease-in-out infinite;
 `;
 
 export default CartPage;

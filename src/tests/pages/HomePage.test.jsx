@@ -7,7 +7,6 @@
  * - Categories section (loading, empty, with data)
  * - Products section (loading, empty, with data)
  * - Deal of the Day banner
- * - Newsletter section
  * - Navigation links
  * - Ads (banner, popup) using mock ad data
  */
@@ -267,15 +266,6 @@ describe('HomePage', () => {
       expect(screen.getByText(/test product 1/i)).toBeInTheDocument();
       expect(screen.getByText(/test product 2/i)).toBeInTheDocument();
     }, { timeout: 3000 });
-  });
-
-  test('renders newsletter section', () => {
-    renderWithProviders(<HomePage />);
-
-    expect(screen.getByText(/subscribe to our newsletter/i)).toBeInTheDocument();
-    expect(screen.getByText(/get the latest updates on new products and upcoming sales/i)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/enter your email address/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /subscribe/i })).toBeInTheDocument();
   });
 
   test('renders EazShop section', () => {

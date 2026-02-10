@@ -48,6 +48,8 @@ export const PATHS = {
   ORDER: "/orders", // Alias for backward compatibility
   ORDER_DETAIL: "/orders/:id",
   ORDER_DETAILS: "/orders/:id", // Alias for backward compatibility
+  // Buyer refund detail: tracks the latest refund for a given order
+  REFUND_DETAIL: "/orders/:orderId/refund",
   TRACKING: "/tracking/:trackingNumber",
 
   // Account
@@ -97,6 +99,7 @@ export const PATHS = {
   PRIVACY: "/privacy",
   TERMS: "/terms",
   REFUND_POLICY: "/refund-policy",
+  VAT_TAX_POLICY: "/vat-tax-policy",
   SHIPPING_POLICY: "/shipping-policy",
   PRODUCT_CARE: "/product-care",
   CAREERS: "/careers",
@@ -276,6 +279,12 @@ export const ROUTE_CONFIG = {
     keywords: "refund policy, returns, EazShop",
   },
 
+  [PATHS.VAT_TAX_POLICY]: {
+    title: "VAT & Tax Policy - EazShop",
+    description: "How Saiisai handles VAT and tax for the Ghana marketplace. GRA compliance for buyers and sellers.",
+    keywords: "VAT policy, tax policy, Ghana GRA, Saiisai tax, Value Added Tax",
+  },
+
   [PATHS.SHIPPING_POLICY]: {
     title: "Shipping Policy - EazShop",
     description: "Learn about EazShop's shipping and delivery policy",
@@ -384,6 +393,7 @@ export const NAVIGATION_MENU = {
         { path: PATHS.TERMS, label: "Terms of Service" },
         { path: PATHS.PRIVACY, label: "Privacy Policy" },
         { path: PATHS.REFUND_POLICY, label: "Refund Policy" },
+        { path: PATHS.VAT_TAX_POLICY, label: "VAT & Tax Policy" },
       ],
     },
   ],

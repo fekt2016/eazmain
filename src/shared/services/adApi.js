@@ -17,7 +17,7 @@ const unwrapAdsResponse = (response) => {
 const adApi = {
   async getActiveAds() {
     try {
-      const response = await api.get("/ads/public");
+      const response = await api.get("/promotional-discounts/public");
       return unwrapAdsResponse(response);
     } catch (error) {
       logger.error("Failed to fetch active advertisements:", error);
@@ -27,7 +27,7 @@ const adApi = {
 
   async getAds(params = {}) {
     try {
-      const response = await api.get("/ads", { params });
+      const response = await api.get("/promotional-discounts", { params });
       return response?.data ?? response;
     } catch (error) {
       logger.error("Failed to fetch advertisements:", error);
@@ -37,7 +37,7 @@ const adApi = {
 
   async createAd(payload) {
     try {
-      const response = await api.post("/ads", payload);
+      const response = await api.post("/promotional-discounts", payload);
       return response?.data ?? response;
     } catch (error) {
       logger.error("Failed to create advertisement:", error);
@@ -47,7 +47,7 @@ const adApi = {
 
   async updateAd(id, payload) {
     try {
-      const response = await api.patch(`/ads/${id}`, payload);
+      const response = await api.patch(`/promotional-discounts/${id}`, payload);
       return response?.data ?? response;
     } catch (error) {
       logger.error(`Failed to update advertisement ${id}:`, error);
@@ -57,7 +57,7 @@ const adApi = {
 
   async deleteAd(id) {
     try {
-      const response = await api.delete(`/ads/${id}`);
+      const response = await api.delete(`/promotional-discounts/${id}`);
       return response?.data ?? response;
     } catch (error) {
       logger.error(`Failed to delete advertisement ${id}:`, error);

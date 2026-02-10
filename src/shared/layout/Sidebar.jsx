@@ -1,4 +1,4 @@
-import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import styled, { css } from "styled-components";
 import { devicesMax } from '../../shared/styles/breakpoint';
 import {
@@ -11,7 +11,6 @@ import {
   FaCreditCard,
   FaHistory,
   FaUserShield,
-  FaBell,
   FaUserCog,
   FaSignOutAlt,
   FaChevronRight,
@@ -20,7 +19,6 @@ import {
 } from "react-icons/fa";
 import useAuth from '../hooks/useAuth';
 import { getAvatarUrl } from '../utils/avatarUtils';
-import { useUnreadCount } from '../hooks/notifications/useNotifications';
 import { useWalletBalance } from '../hooks/useWallet';
 import { useGetUserOrders, getOrderStructure } from '../hooks/useOrder';
 import { useMemo } from 'react';
@@ -30,8 +28,6 @@ import { PATHS } from '../../routes/routePaths';
 const SideBar = ({ $isOpen, onClose }) => {
   const navigate = useNavigate();
   const { logout, userData } = useAuth();
-  const { data: unreadData } = useUnreadCount();
-  const unreadCount = unreadData?.data?.unreadCount || 0;
   
   const user = userData?.data?.data || userData?.data?.user || userData?.user || null;
   
@@ -49,8 +45,6 @@ const SideBar = ({ $isOpen, onClose }) => {
   const orders = useMemo(() => getOrderStructure(ordersData) || [], [ordersData]);
   const orderCount = orders.length;
 
-  const location = useLocation();
-
   const handleLogout = () => {
     logout.mutate(undefined, {
       onSettled: () => navigate("/login"),
@@ -67,7 +61,6 @@ const SideBar = ({ $isOpen, onClose }) => {
     { path: PATHS.PAYMENT, icon: <FaCreditCard />, label: "Payments" },
     { path: PATHS.BROWSER, icon: <FaHistory />, label: "History" },
     { path: PATHS.PERMISSION, icon: <FaUserShield />, label: "Permissions" },
-    { path: PATHS.NOTIFICATION, icon: <FaBell />, label: "Notifications", badge: unreadCount > 0 ? unreadCount : null },
     { path: PATHS.PROFILE, icon: <FaUserCog />, label: "Settings" },
   ];
 

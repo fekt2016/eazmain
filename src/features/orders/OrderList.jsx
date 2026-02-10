@@ -18,7 +18,8 @@ import {
   getOrderDisplayStatus,
   useDeleteOrder,
 } from "../../shared/hooks/useOrder";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { PATHS } from "../../routes/routePaths";
 import logger from "../../shared/utils/logger";
 import AlertModal from "../../shared/components/AlertModal";
 
@@ -248,6 +249,7 @@ const OrdersPage = () => {
                       </HeaderContent>
                     </TableHeader>
                     <TableHeader>Status</TableHeader>
+                    <TableHeader>Refund</TableHeader>
                     <TableHeader>Actions</TableHeader>
                   </TableRow>
                 </TableHead>
@@ -282,6 +284,25 @@ const OrdersPage = () => {
                         <StatusBadge $status={getOrderDisplayStatus(order).badgeStatus}>
                           {getOrderDisplayStatus(order).displayLabel}
                         </StatusBadge>
+                      </TableCell>
+                      <TableCell>
+                        {order.refundRequested && (
+                          <Link
+                            to={PATHS.REFUND_DETAIL.replace(':orderId', order.id || order._id)}
+                            style={{ textDecoration: 'none' }}
+                            title="Click to view refund details"
+                          >
+                            <RefundBadge $status={order.refundStatus} $clickable>
+                              {order.refundStatus === 'pending' && 'Refund Pending'}
+                              {order.refundStatus === 'approved' && 'Refund Approved'}
+                              {order.refundStatus === 'rejected' && 'Refund Rejected'}
+                              {order.refundStatus === 'processing' && 'Refund Processing'}
+                              {order.refundStatus === 'completed' && 'Refund Completed'}
+                              {!order.refundStatus && 'Refund Requested'}
+                              {' →'}
+                            </RefundBadge>
+                          </Link>
+                        )}
                       </TableCell>
                       <TableCell>
                         <ActionButtons>
@@ -353,6 +374,28 @@ const OrdersPage = () => {
                         <DetailLabel>Total</DetailLabel>
                         <DetailValue>GH₵{order.totalPrice.toFixed(2)}</DetailValue>
                       </DetailItem>
+                      {order.refundRequested && (
+                        <DetailItem>
+                          <DetailLabel>Refund</DetailLabel>
+                          <DetailValue>
+                            <Link
+                              to={PATHS.REFUND_DETAIL.replace(':orderId', order.id || order._id)}
+                              style={{ textDecoration: 'none' }}
+                              title="Click to view refund details"
+                            >
+                              <RefundBadge $status={order.refundStatus} $clickable>
+                                {order.refundStatus === 'pending' && 'Refund Pending'}
+                                {order.refundStatus === 'approved' && 'Refund Approved'}
+                                {order.refundStatus === 'rejected' && 'Refund Rejected'}
+                                {order.refundStatus === 'processing' && 'Refund Processing'}
+                                {order.refundStatus === 'completed' && 'Refund Completed'}
+                                {!order.refundStatus && 'Refund Requested'}
+                                {' →'}
+                              </RefundBadge>
+                            </Link>
+                          </DetailValue>
+                        </DetailItem>
+                      )}
                     </OrderDetails>
                   </CardBody>
 
@@ -655,6 +698,55 @@ const StatusBadge = styled.span`
       case 'shipped': return 'var(--color-blue-700)';
       case 'cancelled': return 'var(--color-red-700)';
       default: return 'var(--color-yellow-700)';
+    }
+  }};
+`;
+
+const RefundBadge = styled.span`
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: none;
+  cursor: ${({ $clickable }) => ($clickable ? 'pointer' : 'default')};
+  transition: all 0.2s;
+  ${({ $clickable }) =>
+    $clickable &&
+    `
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+  `}
+
+  background: ${({ $status }) => {
+    switch ($status) {
+      case 'approved':
+      case 'completed':
+        return 'rgba(22,163,74,0.12)'; // green soft
+      case 'pending':
+      case 'processing':
+        return 'rgba(234,179,8,0.12)'; // yellow soft
+      case 'rejected':
+        return 'rgba(220,38,38,0.12)'; // red soft
+      default:
+        return 'rgba(59,130,246,0.08)'; // blue soft
+    }
+  }};
+
+  color: ${({ $status }) => {
+    switch ($status) {
+      case 'approved':
+      case 'completed':
+        return '#16a34a';
+      case 'pending':
+      case 'processing':
+        return '#b45309';
+      case 'rejected':
+        return '#b91c1c';
+      default:
+        return '#1d4ed8';
     }
   }};
 `;

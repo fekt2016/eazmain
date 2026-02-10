@@ -472,29 +472,15 @@ const CheckoutPage = () => {
   const round = (val) => Math.round(val * 100) / 100;
   
   // Use backend totals if available, otherwise fallback to frontend calculation for display
-  // NOTE: Backend MUST recalculate and validate all amounts before processing payment
-  const backendTotal = backendTotals?.totalAmount || null;
+  const backendTotal = backendTotals?.totalAmount ?? backendTotals?.total ?? null;
   const backendDiscount = backendTotals?.discount || discount;
   const backendSubtotal = backendTotals?.subtotal || subTotal;
-  
-  // Frontend calculation for display only (backend validates actual amounts)
-  const taxableAmount = Math.max(0, (backendSubtotal || subTotal) - (backendDiscount || discount));
-  const basePrice = taxableAmount / 1.15;
-  const vat = basePrice * 0.125;
-  const nhil = basePrice * 0.025;
-  const getfund = basePrice * 0.025;
-  const covidLevy = basePrice * 0.01;
-  
-  // const roundedBasePrice = round(basePrice);
-  // const roundedVAT = round(vat);
-  // const roundedNHIL = round(nhil);
-  // const roundedGETFund = round(getfund);
-  // const roundedCovidLevy = round(covidLevy);
-  // const totalTax = round(vat + nhil + getfund);
-  
-  // SECURITY: Use backend total if available, otherwise calculate for display
-  // Backend MUST validate this amount before processing payment
-  const total = backendTotal || round(taxableAmount + shippingFee);
+
+  // Total = subtotal - discount + shipping; use backend when available, else computed. If backend is 1 short of (subtotal + shipping), use computed so 1200 + 16 = 1216
+  const computedTotal = Math.round(round(Math.max(0, (backendSubtotal ?? subTotal) - (backendDiscount ?? discount) + shippingFee)));
+  const total = backendTotal != null
+    ? (computedTotal > backendTotal ? computedTotal : backendTotal)
+    : computedTotal;
 
   // Credit balance calculations
   const hasInsufficientBalance = useMemo(() => {
@@ -581,6 +567,48 @@ const CheckoutPage = () => {
         if (savedState.newAddress) setNewAddress(savedState.newAddress);
     }
   }, [isAuthenticated]);
+
+  // Fetch backend totals (including tax from admin platform-settings) when cart or options change
+  useEffect(() => {
+    if (!isAuthenticated || !cartData) return;
+
+    const list = getCartStructure(cartData);
+    if (!list?.length) return;
+
+    const orderItems = list.map((item) => ({
+      product: item.product?._id || item.product,
+      quantity: Math.max(1, Math.min(item.quantity || 1, item.product?.stock || 999)),
+      sku: resolveSkuFromCartItem(item) || undefined,
+    })).filter((item) => item.product);
+
+    if (orderItems.length === 0) return;
+
+    validateCart(
+      {
+        orderItems,
+        couponCode: couponCode || undefined,
+        deliveryMethod,
+        address: selectedAddressId || undefined,
+      },
+      {
+        onSuccess: (data) => {
+          if (data?.data?.totals) {
+            setBackendTotals(data.data.totals);
+          }
+        },
+        onError: () => {
+          // Keep existing backendTotals or null; display will use fallback
+        },
+      }
+    );
+  }, [
+    isAuthenticated,
+    cartData,
+    couponCode,
+    deliveryMethod,
+    selectedAddressId,
+    validateCart,
+  ]);
 
   // Auto-select default or first address
   useEffect(() => {
@@ -1134,6 +1162,9 @@ const CheckoutPage = () => {
         // ✅ DO NOT send discountAmount - backend calculates it
       }),
       deliveryMethod,
+      // Always send the shipping amount selected at checkout so the order uses it
+      // Backend expects only `shippingFee` (validator rejects unknown fields like totalShippingFee)
+      shippingFee: shippingFee,
       ...(deliveryMethod === "pickup_center" &&
         selectedPickupCenterId && {
         pickupCenterId: selectedPickupCenterId,
@@ -1141,7 +1172,6 @@ const CheckoutPage = () => {
       ...(deliveryMethod === "dispatch" && {
         deliverySpeed: deliverySpeed === "same_day" ? "same_day" : "standard",
         shippingType: deliverySpeed === "same_day" ? "same_day" : "standard",
-        shippingFee: shippingFee,
       }),
     };
 
@@ -2018,11 +2048,21 @@ const CheckoutPage = () => {
             )}
           </CouponForm>
 
-          {/* Totals - Only show product price and shipping */}
+          {/* Totals – Jumia-style: single price; no tax line (price includes VAT) */}
           <SummaryItem>
-            <span>Product Price:</span>
-            <span>GH₵{subTotal.toFixed(2)}</span>
+            <span>Subtotal:</span>
+            <span>GH₵{(backendSubtotal ?? subTotal).toFixed(2)}</span>
           </SummaryItem>
+          <SummaryItem style={{ fontSize: "0.85rem", color: "#666" }}>
+            <span>Price includes applicable taxes</span>
+          </SummaryItem>
+
+          {discount > 0 && (
+            <SummaryItem>
+              <span>Discount:</span>
+              <span>- GH₵{(backendDiscount ?? discount).toFixed(2)}</span>
+            </SummaryItem>
+          )}
 
           <SummaryItem>
             <span>Shipping Charges:</span>
@@ -2062,8 +2102,9 @@ const CheckoutPage = () => {
           {(createOrderError || formError) && (
             <ErrorState 
               message={
-                createOrderError?.message ||
+                createOrderError?.response?.data?.message ||
                 formError ||
+                createOrderError?.message ||
                 "Something went wrong"
               }
             />

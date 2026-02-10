@@ -164,6 +164,12 @@ const HelpCenterPage = () => {
       icon: <FaShieldAlt />,
       href: PATHS.PRIVACY,
     },
+    {
+      title: 'VAT & Tax Policy',
+      description: 'How VAT and tax work on Saiisai (Ghana)',
+      icon: <FaShieldAlt />,
+      href: PATHS.VAT_TAX_POLICY,
+    },
   ];
 
   return (

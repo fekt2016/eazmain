@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { spin } from "../styles/animations";
 import { FaSearch, FaSpinner } from "react-icons/fa";
 import { PrimaryButton } from './ui/Buttons';
+import { escapeForDisplay } from '../utils/searchUtils.jsx';
 
 export default function HeaderSearchBar({
   searchTerm,
@@ -94,7 +95,7 @@ export default function HeaderSearchBar({
         searchTerm &&
         searchSuggestions.length === 0 &&
         !isSearchProductsLoading && (
-          <NoSuggestions>No products found for "{searchTerm}"</NoSuggestions>
+          <NoSuggestions>No products found for "{escapeForDisplay(searchTerm)}"</NoSuggestions>
         )}
 
       {isSearchProductsLoading && (

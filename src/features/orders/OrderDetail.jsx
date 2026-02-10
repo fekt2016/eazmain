@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import styled from "styled-components";
 import {
   FaArrowLeft,
@@ -513,6 +513,22 @@ const OrderDetail = () => {
   // Grand total: subtotal + shipping (COVID levy NOT included)
   const grandTotal = order.totalPrice || (subtotal + totalShipping);
 
+  // Map sellerId (string) -> { shopName, name } for Shipping Breakdown and anywhere we need seller label
+  const sellerIdToInfo = (order?.sellerOrder || []).reduce((acc, so) => {
+    const id = so.seller?._id?.toString?.() ?? so.seller?.toString?.() ?? so.sellerId?.toString?.() ?? null;
+    if (id) acc[id] = { shopName: so.seller?.shopName, name: so.seller?.name };
+    return acc;
+  }, {});
+
+  const getSellerLabel = (breakdown, index) => {
+    const sellerNameFromBreakdown = breakdown?.sellerName;
+    const sellerId = breakdown?.sellerId;
+    const idStr = sellerId != null ? (typeof sellerId === 'string' ? sellerId : sellerId?.toString?.()) : null;
+    const info = idStr ? sellerIdToInfo[idStr] : null;
+    const label = info?.shopName || info?.name || sellerNameFromBreakdown;
+    return (label && String(label).trim()) ? String(label).trim() : `Seller ${index + 1}`;
+  };
+
   return (
     <OrderDetailContainer>
       {/* Header Section */}
@@ -745,16 +761,14 @@ const OrderDetail = () => {
                     </InfoValue>
                   </InfoItem>
                 )}
-                {(order.shippingCost || order.shippingCost === 0) && (
-                  <InfoItem>
-                    <InfoLabel>Shipping Cost</InfoLabel>
-                    <InfoValue>
-                      {order.shippingCost > 0 
-                        ? `GH₵${order.shippingCost.toFixed(2)}`
-                        : 'Free'}
-                    </InfoValue>
-                  </InfoItem>
-                )}
+                <InfoItem>
+                  <InfoLabel>Shipping Charges</InfoLabel>
+                  <InfoValue>
+                    {(totalShipping > 0)
+                      ? `GH₵${Number(totalShipping).toFixed(2)}`
+                      : 'Free'}
+                  </InfoValue>
+                </InfoItem>
                 {order.deliveryEstimate && (
                   <InfoItem>
                     <InfoLabel>Delivery Estimate</InfoLabel>
@@ -808,13 +822,13 @@ const OrderDetail = () => {
                 <ShippingBreakdownSection>
                   <BreakdownTitle>Shipping Breakdown</BreakdownTitle>
                   {(order?.shippingBreakdown || []).map((breakdown, index) => (
-                    <BreakdownItem key={index}>
-                      <BreakdownLabel>Seller {index + 1}</BreakdownLabel>
+                    <BreakdownItem key={breakdown.sellerId ?? index}>
+                      <BreakdownLabel>{getSellerLabel(breakdown, index)}</BreakdownLabel>
                       <BreakdownValue>
                         GH₵{breakdown.shippingFee?.toFixed(2) || '0.00'}
                         {breakdown.reason && (
                           <BreakdownReason>
-                            ({breakdown.reason === 'sameCity' ? 'Same City' 
+                            ({breakdown.reason === 'sameCity' ? 'Same City'
                               : breakdown.reason === 'crossCity' ? 'Cross City'
                               : breakdown.reason === 'heavyItem' ? 'Heavy Item'
                               : breakdown.reason})
@@ -892,8 +906,18 @@ const OrderDetail = () => {
                     <FaUser />
                   </SellerAvatar>
                   <SellerInfo>
-                    <SellerName>{sellerOrder.seller?.name || "Unknown Seller"}</SellerName>
-                    <SellerEmail>{sellerOrder.seller?.email || "N/A"}</SellerEmail>
+                    <SellerName>
+                      {sellerOrder.seller?.shopName || sellerOrder.seller?.name || "Seller"}
+                    </SellerName>
+                    {sellerOrder.seller?.shopName && sellerOrder.seller?.name && (
+                      <SellerEmail>{sellerOrder.seller.name}</SellerEmail>
+                    )}
+                    {(!sellerOrder.seller?.shopName || !sellerOrder.seller?.name) && sellerOrder.seller?.email && (
+                      <SellerEmail>{sellerOrder.seller.email}</SellerEmail>
+                    )}
+                    {!sellerOrder.seller?.shopName && !sellerOrder.seller?.name && !sellerOrder.seller?.email && (
+                      <SellerEmail>N/A</SellerEmail>
+                    )}
                   </SellerInfo>
                 </SellerHeader>
 
@@ -947,16 +971,16 @@ const OrderDetail = () => {
                 <OrderSummary>
                   <SummaryRow>
                     <span>Items Subtotal:</span>
-                    <span>GH₵{sellerOrder.subtotal.toFixed(2)}</span>
+                    <span>GH₵{(sellerOrder.subtotal ?? 0).toFixed(2)}</span>
                   </SummaryRow>
                   <SummaryRow>
                     <span>Shipping Cost:</span>
-                    <span>GH₵{sellerOrder.shippingCost.toFixed(2)}</span>
+                    <span>GH₵{(sellerOrder.shippingCost ?? 0).toFixed(2)}</span>
                   </SummaryRow>
                   <SummaryDivider />
                   <SummaryRow $total={true}>
                     <span>Seller Total:</span>
-                    <span>GH₵{sellerOrder.total.toFixed(2)}</span>
+                    <span>GH₵{(sellerOrder.total ?? 0).toFixed(2)}</span>
                   </SummaryRow>
                 </OrderSummary>
               </SellerCard>
@@ -972,12 +996,10 @@ const OrderDetail = () => {
                   <span>Subtotal:</span>
                   <span>GH₵{subtotal.toFixed(2)}</span>
                 </BreakdownRow>
-                {totalShipping > 0 && (
-                  <BreakdownRow>
-                    <span>Shipping:</span>
-                    <span>GH₵{totalShipping.toFixed(2)}</span>
-                  </BreakdownRow>
-                )}
+                <BreakdownRow>
+                  <span>Shipping:</span>
+                  <span>{totalShipping > 0 ? `GH₵${totalShipping.toFixed(2)}` : 'Free'}</span>
+                </BreakdownRow>
                 <TotalAmount>GH₵{grandTotal.toFixed(2)}</TotalAmount>
               </TotalBreakdown>
             </TotalContent>
@@ -1002,13 +1024,19 @@ const OrderDetail = () => {
             </Button>
           )}
           {refundStatus?.requested && (
-            <RefundStatusBadge $status={refundStatus.status}>
-              Refund {refundStatus.status === 'pending' ? 'Pending' : 
-                      refundStatus.status === 'approved' ? 'Approved' :
-                      refundStatus.status === 'rejected' ? 'Rejected' :
-                      refundStatus.status === 'processing' ? 'Processing' :
-                      refundStatus.status === 'completed' ? 'Completed' : 'Requested'}
-            </RefundStatusBadge>
+            <Link
+              to={PATHS.REFUND_DETAIL.replace(':orderId', orderId)}
+              style={{ textDecoration: 'none' }}
+            >
+              <RefundStatusBadge $status={refundStatus.status} $clickable>
+                Refund {refundStatus.status === 'pending' ? 'Pending' : 
+                        refundStatus.status === 'approved' ? 'Approved' :
+                        refundStatus.status === 'rejected' ? 'Rejected' :
+                        refundStatus.status === 'processing' ? 'Processing' :
+                        refundStatus.status === 'completed' ? 'Completed' : 'Requested'}
+                {' →'}
+              </RefundStatusBadge>
+            </Link>
           )}
           <SecondaryButton onClick={handleEditOrder}>
             <FaMapMarkerAlt />
@@ -2125,6 +2153,7 @@ const ReviewModalOverlay = styled.div`
   justify-content: center;
   z-index: 1000;
   padding: 2rem;
+  overflow-y: auto;
 `;
 
 const ReviewModalContent = styled.div`
@@ -2132,9 +2161,10 @@ const ReviewModalContent = styled.div`
   border-radius: 12px;
   width: 100%;
   max-width: 700px;
-  max-height: 90vh;
+  max-height: min(90vh, calc(100vh - 4rem));
   overflow-y: auto;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  margin: auto;
 `;
 
 const ReviewModalHeader = styled.div`
@@ -2184,6 +2214,16 @@ const RefundStatusBadge = styled.span`
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-sm);
   font-weight: var(--font-semibold);
+  cursor: ${(props) => (props.$clickable ? 'pointer' : 'default')};
+  transition: all 0.2s;
+  ${(props) =>
+    props.$clickable &&
+    `
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+  `}
   background: ${(props) => {
     switch (props.$status) {
       case 'pending':

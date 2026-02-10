@@ -118,6 +118,7 @@ const SitemapPage = () => {
       links: [
         { label: 'Privacy Policy', path: PATHS.PRIVACY },
         { label: 'Terms of Use', path: PATHS.TERMS },
+        { label: 'VAT & Tax Policy', path: PATHS.VAT_TAX_POLICY },
         { label: 'Cookie Policy', path: '/cookies' },
         { label: 'Return & Refund Policy', path: PATHS.REFUND_POLICY },
         { label: 'Seller Policies', path: 'https://seller.saiisai.com/seller/policies', external: true },

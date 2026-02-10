@@ -37,6 +37,27 @@ export const calculateDiscountPercentage = (originalPrice, currentPrice) => {
 };
 
 /**
+ * Finds the first variant that has a discount (e.g. from Ramadan/campaign via applyDiscounts).
+ * @param {Object} product - Product object with variants
+ * @returns {{ price: number, originalPrice: number } | null}
+ */
+const getFirstVariantWithDiscount = (product) => {
+  const variants = product?.variants;
+  if (!Array.isArray(variants) || variants.length === 0) return null;
+  const v = variants.find(
+    (variant) =>
+      variant?.originalPrice != null &&
+      variant.originalPrice > 0 &&
+      (variant.price ?? 0) < variant.originalPrice
+  );
+  if (!v) return null;
+  return {
+    price: Number(v.price) || 0,
+    originalPrice: Number(v.originalPrice) || 0,
+  };
+};
+
+/**
  * Determines if a product has a discount
  * @param {Object} product - Product object
  * @param {Object} variant - Optional variant object
@@ -45,14 +66,24 @@ export const calculateDiscountPercentage = (originalPrice, currentPrice) => {
 export const hasProductDiscount = (product, variant = null) => {
   if (!product) return false;
 
-  // Check if product explicitly states it's on sale
-  if (product.isOnSale !== undefined) {
-    return product.isOnSale;
+  // Backend-set promo price (when promotionKey applies, calculated from variant price + discount)
+  if (product.promoPrice != null && Number(product.promoPrice) > 0) {
+    return true;
   }
 
-  // Calculate from prices
+  // Check if product explicitly states it's on sale (API virtual)
+  if (product.isOnSale === true) {
+    return true;
+  }
+
+  // Campaign/variant discount (e.g. Ramadan): any variant has originalPrice > price
+  if (getFirstVariantWithDiscount(product)) {
+    return true;
+  }
+
+  // Top-level or single-price product
   const currentPrice = variant?.price || product?.defaultPrice || product?.price || product?.minPrice || 0;
-  const originalPrice = product?.originalPrice || product?.defaultPrice || product?.price || product?.minPrice || 0;
+  const originalPrice = product?.originalPrice ?? product?.defaultPrice ?? product?.price ?? product?.minPrice ?? 0;
 
   return originalPrice > 0 && currentPrice < originalPrice;
 };
@@ -66,14 +97,27 @@ export const hasProductDiscount = (product, variant = null) => {
 export const getProductDiscountPercentage = (product, variant = null) => {
   if (!product) return 0;
 
-  // Use pre-calculated sale percentage if available
-  if (product.salePercentage !== undefined) {
-    return product.salePercentage;
+  // Backend-set promo price: use originalPrice (or price) and promoPrice for percentage
+  const promoPrice = product.promoPrice != null ? Number(product.promoPrice) : 0;
+  if (promoPrice > 0) {
+    const orig = product.originalPrice != null ? Number(product.originalPrice) : Number(product?.price ?? 0) || 0;
+    if (orig > promoPrice) return calculateDiscountPercentage(orig, promoPrice);
   }
 
-  // Calculate from prices
+  // Use pre-calculated sale percentage if available (API virtual)
+  if (product.salePercentage != null && product.salePercentage > 0) {
+    return Math.round(Number(product.salePercentage));
+  }
+
+  // Campaign/variant discount (e.g. Ramadan)
+  const variantDiscount = getFirstVariantWithDiscount(product);
+  if (variantDiscount) {
+    return calculateDiscountPercentage(variantDiscount.originalPrice, variantDiscount.price);
+  }
+
+  // Top-level prices
   const currentPrice = variant?.price || product?.defaultPrice || product?.price || product?.minPrice || 0;
-  const originalPrice = product?.originalPrice || product?.defaultPrice || product?.price || product?.minPrice || 0;
+  const originalPrice = product?.originalPrice ?? product?.defaultPrice ?? product?.price ?? product?.minPrice ?? 0;
 
   return calculateDiscountPercentage(originalPrice, currentPrice);
 };
@@ -84,17 +128,67 @@ export const getProductDiscountPercentage = (product, variant = null) => {
  * @param {Object} variant - Optional variant object
  * @returns {number} - Display price
  */
+/** Dual VAT: customer sees VAT-inclusive price only; prefer priceInclVat when present */
 export const getProductDisplayPrice = (product, variant = null) => {
-  return variant?.price || product?.defaultPrice || product?.price || product?.minPrice || 0;
+  const incl = variant?.priceInclVat ?? product?.priceInclVat ?? variant?.price;
+  if (incl != null && incl !== '') return Number(incl);
+  return product?.defaultPrice || product?.price || product?.minPrice || 0;
 };
 
 /**
- * Gets original price for a product
- * @param {Object} product - Product object
- * @returns {number} - Original price
+ * Gets original price for a product (pre-discount). Prefer inclusive for display.
  */
 export const getProductOriginalPrice = (product) => {
-  return product?.originalPrice || product?.defaultPrice || product?.price || product?.minPrice || 0;
+  const first = product?.originalPrice ?? product?.priceInclVat;
+  if (first != null && first !== '') return Number(first);
+  return product?.defaultPrice || product?.price || product?.minPrice || 0;
+};
+
+/**
+ * Gets the price to display as "current" on the card.
+ * When product has a discount: returns the discounted (sale) price and original struck through.
+ * Supports campaign/variant discounts (e.g. Ramadan) where only variants have originalPrice.
+ * @param {Object} product - Product object
+ * @returns {{ displayPrice: number, originalPrice: number | null }} - displayPrice = price to show as main; originalPrice = price to show struck through, or null
+ */
+export const getProductPriceForDisplay = (product) => {
+  if (!product) {
+    return { displayPrice: 0, originalPrice: null };
+  }
+  // Always use VAT-inclusive price for display on product cards
+  const base = Number(getProductDisplayPrice(product)) || 0;
+  const original = product?.originalPrice != null ? Number(product.originalPrice) : null;
+  const discountPrice = product?.discountPrice != null ? Number(product.discountPrice) : null;
+
+  const promoPrice = product?.promoPrice != null ? Number(product.promoPrice) : 0;
+  if (promoPrice > 0 && (original != null ? promoPrice < original : true)) {
+    return {
+      displayPrice: promoPrice,
+      originalPrice: original != null && original > promoPrice ? original : base,
+    };
+  }
+
+  const variantDiscount = getFirstVariantWithDiscount(product);
+  if (variantDiscount && variantDiscount.price > 0 && variantDiscount.originalPrice > variantDiscount.price) {
+    return {
+      displayPrice: variantDiscount.priceInclVat ?? variantDiscount.price,
+      originalPrice: variantDiscount.originalPrice,
+    };
+  }
+
+  if (hasProductDiscount(product)) {
+    // Top-level discount fields
+    if (discountPrice != null && discountPrice < base) {
+      return { displayPrice: discountPrice, originalPrice: base };
+    }
+    if (original != null && original > base) {
+      return { displayPrice: base, originalPrice: original };
+    }
+    if (original != null && original > 0 && original !== base) {
+      return { displayPrice: base, originalPrice: original };
+    }
+  }
+  return { displayPrice: base, originalPrice: null };
 };
 
 /**
@@ -157,11 +251,14 @@ export const getProductTotalStock = (product) => {
 };
 
 /**
- * Checks if product has price range (multiple variants with different prices)
+ * Checks if product has price range (multiple variants with different prices).
+ * When product has a discount, we do not show a price range — only discount + original struck through.
  * @param {Object} product - Product object
- * @returns {boolean} - True if product has price range
+ * @returns {boolean} - True if product has price range (and no discount)
  */
 export const hasProductPriceRange = (product) => {
+  if (!product) return false;
+  if (hasProductDiscount(product)) return false;
   return !!(product.minPrice && product.maxPrice && product.minPrice !== product.maxPrice);
 };
 
