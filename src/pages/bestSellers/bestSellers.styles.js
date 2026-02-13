@@ -3,12 +3,14 @@ import Container from '../../shared/components/Container';
 
 export const BestSellersPageContainer = styled.div`
   min-height: 100vh;
-  background: var(--color-grey-50);
+  width: 100%;
+  background: var(--color-white-0);
   padding-bottom: 4rem;
 `;
 
 export const ContentContainer = styled(Container)`
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
   padding: 0 1rem;
 `;

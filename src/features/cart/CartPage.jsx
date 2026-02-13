@@ -1,5 +1,5 @@
 // src/components/CartPage.jsx
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import styled from "styled-components";
 import {
   useCartTotals,
@@ -52,6 +52,15 @@ const CartPage = () => {
   const { isAuthenticated } = useAuth();
   const products = getCartStructure(data);
 
+  // Detect if cart contains any pre-order items so we can
+  // clearly communicate this to the buyer in the cart UI.
+  const hasPreorderItem = useMemo(
+    () =>
+      Array.isArray(products) &&
+      products.some((item) => item?.product?.isPreOrder),
+    [products]
+  );
+
   const { data: trendingData, isLoading: isTrendingLoading } = useTrending(12);
   const cartProductIds = useMemo(
     () => new Set(
@@ -71,6 +80,14 @@ const CartPage = () => {
   }, [trendingData, cartProductIds]);
 
   const navigate = useNavigate();
+  
+  // Redirect to homepage when cart becomes empty
+  useEffect(() => {
+    if (!isCartLoading && products.length === 0) {
+      navigate("/");
+    }
+  }, [products.length, isCartLoading, navigate]);
+
   const handleAddToCart = (product) => {
     addToCart({ product, quantity: 1 });
   };
@@ -123,6 +140,13 @@ const CartPage = () => {
     <PageContainer>
       <PageTitle>Your Shopping Cart</PageTitle>
 
+      {hasPreorderItem && (
+        <PreorderCartBanner>
+          This cart contains <strong>pre-order</strong> items. These will ship once they arrive in Ghana, and{" "}
+          <strong>international shipping charges</strong> will apply.
+        </PreorderCartBanner>
+      )}
+
       <CartContainer>
         <CartItems>
           <CartHeader>
@@ -160,6 +184,17 @@ const CartPage = () => {
                         <div>
                           <ItemName>{item.product?.name || 'Product Name Not Available'}</ItemName>
                           {/* <ItemName>sku:{cart.variant.sku}</ItemName> */}
+                          {item.product?.isPreOrder && (
+                            <PreorderBadge>
+                              Pre-Order
+                            </PreorderBadge>
+                          )}
+                          {item.product?.isPreOrder && item.product?.preOrderAvailableDate && (
+                            <PreorderNote>
+                              Ships from{" "}
+                              {new Date(item.product.preOrderAvailableDate).toLocaleDateString()}
+                            </PreorderNote>
+                          )}
                         </div>
 
                         <ItemPrice>
@@ -458,6 +493,44 @@ const SummaryRow = styled.div`
 // CheckoutButton now extends PrimaryButton from global buttons
 const CheckoutButton = styled.div`
   margin-top: 20px;
+`;
+
+const PreorderCartBanner = styled.div`
+  margin: 0 0 1rem 0;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fed7aa;
+  font-size: 0.85rem;
+  line-height: 1.4;
+
+  strong {
+    font-weight: 700;
+  }
+`;
+
+const PreorderBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.25rem;
+  margin-right: 0.25rem;
+  padding: 0.08rem 0.35rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: #eef2ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+`;
+
+const PreorderNote = styled.div`
+  margin-top: 0.15rem;
+  font-size: 0.7rem;
+  color: #4b5563;
 `;
 
 const EmptyCart = styled.div`

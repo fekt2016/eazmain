@@ -436,6 +436,12 @@ export const useCartActions = () => {
             defaultPrice: product?.defaultPrice || product?.price,
             imageCover: product?.imageCover || product?.image,
             variants: product?.variants || [], // Include variants for validation
+            // Include pre-order metadata so guest carts can also
+            // display proper pre-order badges and notes in the UI.
+            isPreOrder: product?.isPreOrder || false,
+            preOrderAvailableDate: product?.preOrderAvailableDate || null,
+            preOrderNote: product?.preOrderNote || '',
+            preOrderOriginCountry: product?.preOrderOriginCountry || null,
           },
           quantity,
           variantCount: variantCount, // Store variant count for validation

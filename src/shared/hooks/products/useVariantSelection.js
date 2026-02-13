@@ -125,13 +125,26 @@ export const useVariantSelection = (variants = [], product = null) => {
   }, [selectedAttributes, matchVariant, attributeKeys]);
 
   /**
-   * Select an attribute value
+   * Select an attribute value (option click).
    */
   const selectAttribute = useCallback((attributeName, value) => {
     setSelectedAttributes((prev) => ({
       ...prev,
       [attributeName]: value,
     }));
+  }, []);
+
+  /**
+   * Select a full variant (e.g. when user clicks a variant image).
+   * Sets attributes from the variant so selectedVariant updates to match; enables image sync.
+   */
+  const selectVariant = useCallback((variant) => {
+    if (!variant?.attributes?.length) return;
+    const attrs = {};
+    variant.attributes.forEach((attr) => {
+      if (attr?.key && attr?.value) attrs[attr.key] = attr.value;
+    });
+    setSelectedAttributes(attrs);
   }, []);
 
   /**
@@ -153,25 +166,23 @@ export const useVariantSelection = (variants = [], product = null) => {
   }, [variants, selectedAttributes]);
 
   /**
-   * Check if an option is disabled (would lead to no matching variant)
-   * Note: We allow selection even if variant is out of stock - stock status is shown after selection
+   * Check if an option is disabled (invalid combination or all matching variants out of stock).
+   * Stock disabling: out-of-stock variants are disabled so only valid purchasable options can be selected.
    */
   const isOptionDisabled = useCallback((attributeName, value) => {
-    // Build potential attributes if this option is selected
     const potentialAttributes = {
       ...selectedAttributes,
       [attributeName]: value,
     };
 
-    // Find all variants that match this potential selection
     const matchingVariants = findMatchingVariants(potentialAttributes);
 
-    // Option is disabled ONLY if:
-    // 1. No variant matches this combination, OR
-    // 2. All matching variants are inactive
-    // We do NOT disable based on stock - allow selection and show stock status after
+    // Disabled if no variant matches this combination
     if (matchingVariants.length === 0) return true;
-    if (matchingVariants.every(v => v.status === 'inactive')) return true;
+    // Disabled if all matching variants are inactive
+    if (matchingVariants.every((v) => v.status === 'inactive')) return true;
+    // Disabled if all matching variants are out of stock (stock handling: disable option)
+    if (matchingVariants.every((v) => (v.stock || 0) === 0)) return true;
 
     return false;
   }, [selectedAttributes, findMatchingVariants]);
@@ -241,14 +252,14 @@ export const useVariantSelection = (variants = [], product = null) => {
         }
       }
       
-      // Option is disabled ONLY if no variant exists or all are inactive
+      // Option disabled: invalid combination, all inactive, or all out of stock (variant combination logic)
       const isDisabled = isOptionDisabled(attributeKey, value);
 
       return {
         value,
         availabilityStatus, // 'available' | 'outOfStock' | 'unavailable'
         isAvailable: availabilityStatus === 'available',
-        isDisabled,
+        isDisabled: isDisabled || availabilityStatus === 'outOfStock', // Disable out-of-stock options in UI
         isSelected: selectedAttributes[attributeKey] === value,
         variant: potentialVariant,
         matchingVariants, // All variants matching this option
@@ -311,6 +322,7 @@ export const useVariantSelection = (variants = [], product = null) => {
     
     // Methods
     selectAttribute,
+    selectVariant,
     initializeDefaultVariant,
     computeAvailableOptions,
     isOptionDisabled,

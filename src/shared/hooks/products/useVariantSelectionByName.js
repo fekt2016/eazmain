@@ -58,17 +58,15 @@ export const useVariantSelectionByName = (variants = [], product = null) => {
   }, [variants, isInitialized, initializeDefaultVariant]);
 
   /**
-   * Handle variant selection
+   * Handle variant selection (by name or by clicking variant image).
+   * Allow selecting out-of-stock variants so we can show price/SKU and disable Add to Cart;
+   * UI (e.g. VariantColorImageGallery) disables the option for out-of-stock so user cannot click them.
    */
   const handleVariantSelect = useCallback((variant) => {
     if (!variant) return;
-    // Only allow selection if variant is active and has stock
-    if (variant.status === 'active' && (variant.stock || 0) > 0) {
-      setSelectedVariant(variant);
-      // Set selected variant image - use variant.images[0]
-      const variantImage = variant.images && variant.images.length > 0 ? variant.images[0] : null;
-      setSelectedVariantImage(variantImage);
-    }
+    setSelectedVariant(variant);
+    const variantImage = variant.images && variant.images.length > 0 ? variant.images[0] : null;
+    setSelectedVariantImage(variantImage);
   }, []);
 
   /**

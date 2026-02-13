@@ -25,7 +25,7 @@ const BestSellersHero = ({ totalSellers }) => {
         <HeroContent>
           <HeroTitle>Best Sellers</HeroTitle>
           <HeroSubtitle>
-            Discover top-performing sellers on EazShop with the most orders. Shop from trusted merchants.
+            Discover top-performing sellers on saiisai marketplace with the most orders. Shop from trusted merchants.
           </HeroSubtitle>
           {totalSellers > 0 && (
             <SellerCount>

@@ -40,10 +40,22 @@ const TrackingPage = () => {
     );
   }
 
+  const isPreorderLocal = orderData?.orderType === "preorder_local";
+  const isPreorderInternational =
+    orderData?.orderType === "preorder_international";
+  const isPreorder = isPreorderLocal || isPreorderInternational;
+  const isInternationalPreorder = isPreorderInternational;
+
   useDynamicPageTitle({
-    title: "Track Order",
-    dynamicTitle: trackingNumber && `Track Order ${trackingNumber} | Saiisai`,
-    description: "Track your order status and delivery",
+    title: isInternationalPreorder ? "Track International Shipment" : "Track Order",
+    dynamicTitle:
+      trackingNumber &&
+      (isInternationalPreorder
+        ? `Track International Shipment ${trackingNumber} | Saiisai`
+        : `Track Order ${trackingNumber} | Saiisai`),
+    description: isInternationalPreorder
+      ? "Track your international pre-order shipment and customs progress"
+      : "Track your order status and delivery",
     defaultTitle: "Track Order | Saiisai",
   });
 
@@ -188,35 +200,112 @@ const TrackingPage = () => {
   const currentStatus = orderData.currentStatus || "pending_payment";
   const orderItems = orderData.orderItems || [];
   const paymentStatus = orderData.paymentStatus || "pending";
+  const supplierCountry = orderData.supplierCountry || null;
+
+  // Detect international pre-orders:
+  // prefer explicit orderType, but also treat an order as
+  // pre-order when any product is flagged as isPreOrder.
+  const hasPreOrderItem = Array.isArray(orderItems)
+    ? orderItems.some((item) => item?.product?.isPreOrder)
+    : false;
+
+  const isInternationalOrder = isPreorderInternational;
+  const displayTrackingNumber =
+    orderData.internationalTrackingNumber || orderData.trackingNumber;
 
   // Define all possible tracking steps in order
-  const ALL_TRACKING_STEPS = [
-    { status: 'pending_payment', label: 'Order Placed', icon: 'order' },
-    { status: 'payment_completed', label: 'Payment Completed', icon: 'payment' },
-    { status: 'processing', label: 'Processing Order', icon: 'processing' },
-    { status: 'preparing', label: 'Preparing for Dispatch', icon: 'preparing' },
-    { status: 'ready_for_dispatch', label: 'Rider Assigned', icon: 'rider' },
-    { status: 'out_for_delivery', label: 'Out for Delivery', icon: 'delivery' },
-    { status: 'delivered', label: 'Delivered', icon: 'delivered' },
+  const DEFAULT_TRACKING_STEPS = [
+    { status: "pending_payment", label: "Order Placed", icon: "order" },
+    { status: "payment_completed", label: "Payment Completed", icon: "payment" },
+    { status: "processing", label: "Processing Order", icon: "processing" },
+    { status: "preparing", label: "Preparing for Dispatch", icon: "preparing" },
+    { status: "ready_for_dispatch", label: "Rider Assigned", icon: "rider" },
+    { status: "out_for_delivery", label: "Out for Delivery", icon: "delivery" },
+    { status: "delivered", label: "Delivered", icon: "delivered" },
   ];
+
+  // International pre-order milestone timeline
+  const INTERNATIONAL_TRACKING_STEPS = [
+    { status: "pending_payment", label: "Order Placed", icon: "order" },
+    { status: "payment_completed", label: "Payment Confirmed", icon: "payment" },
+    {
+      status: "supplier_confirmed",
+      label: `Supplier Confirmed${supplierCountry ? ` (${supplierCountry})` : ""}`,
+      icon: "processing",
+    },
+    {
+      status: "awaiting_dispatch",
+      label: "Awaiting International Dispatch",
+      icon: "preparing",
+    },
+    {
+      status: "international_shipped",
+      label: "International Shipping",
+      icon: "delivery",
+    },
+    {
+      status: "customs_clearance",
+      label: "Customs Clearance (Ghana)",
+      icon: "delivery",
+    },
+    {
+      status: "arrived_destination",
+      label: "Arrived in Ghana",
+      icon: "delivery",
+    },
+    {
+      status: "local_dispatch",
+      label: "Local Dispatch",
+      icon: "rider",
+    },
+    {
+      status: "out_for_delivery",
+      label: "Out for Delivery",
+      icon: "delivery",
+    },
+    { status: "delivered", label: "Delivered", icon: "delivered" },
+  ];
+
+  const ALL_TRACKING_STEPS = isInternationalOrder
+    ? INTERNATIONAL_TRACKING_STEPS
+    : DEFAULT_TRACKING_STEPS;
 
   // Map currentStatus to active step index
   // If order is paid but status is still pending_payment, move to payment_completed
   const getActiveStepIndex = () => {
     // If payment is paid but status hasn't been updated, show payment_completed as active
-    if ((paymentStatus === 'paid' || paymentStatus === 'completed') && currentStatus === 'pending_payment') {
+    if (
+      (paymentStatus === "paid" || paymentStatus === "completed") &&
+      currentStatus === "pending_payment"
+    ) {
       return 1; // payment_completed
     }
-    
+
+    if (isInternationalOrder) {
+      const statusToIndexIntl = {
+        pending_payment: 0,
+        payment_completed: 1,
+        supplier_confirmed: 2,
+        awaiting_dispatch: 3,
+        international_shipped: 4,
+        customs_clearance: 5,
+        arrived_destination: 6,
+        local_dispatch: 7,
+        out_for_delivery: 8,
+        delivered: 9,
+      };
+      return statusToIndexIntl[currentStatus] ?? 0;
+    }
+
     const statusToIndex = {
-      'pending_payment': 0,
-      'payment_completed': 1,
-      'processing': 2,
-      'confirmed': 2,
-      'preparing': 3,
-      'ready_for_dispatch': 4,
-      'out_for_delivery': 5,
-      'delivered': 6,
+      pending_payment: 0,
+      payment_completed: 1,
+      processing: 2,
+      confirmed: 2,
+      preparing: 3,
+      ready_for_dispatch: 4,
+      out_for_delivery: 5,
+      delivered: 6,
     };
     return statusToIndex[currentStatus] ?? 0;
   };
@@ -258,22 +347,51 @@ const TrackingPage = () => {
 
   // Get estimated delivery from shipping options (stored in order)
   const getEstimatedDelivery = () => {
+    // For international pre-orders, prefer a date anchored on the
+    // pre-order/international arrival metadata instead of the generic
+    // "1-3 business days" shipping window.
+    if (isInternationalPreorder) {
+      if (orderData.estimatedArrivalDate) {
+        return formatDate(orderData.estimatedArrivalDate);
+      }
+
+      // Fallback: derive from product-level preOrderAvailableDate when present
+      const preOrderDates = (orderItems || [])
+        .map((item) => item?.product?.preOrderAvailableDate)
+        .filter(Boolean);
+
+      if (preOrderDates.length > 0) {
+        const latestTs = Math.max(
+          ...preOrderDates.map((d) => new Date(d).getTime())
+        );
+        const base = new Date(latestTs);
+        return base.toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+      }
+    }
+
     // Use the deliveryEstimate from shipping options if available
     if (orderData.deliveryEstimate) {
       // If it's already a formatted date string, return it
-      if (orderData.deliveryEstimate.includes('Today') || 
-          orderData.deliveryEstimate.includes('Business Day') ||
-          orderData.deliveryEstimate.includes('Arrives')) {
+      if (
+        orderData.deliveryEstimate.includes('Today') ||
+        orderData.deliveryEstimate.includes('Business Day') ||
+        orderData.deliveryEstimate.includes('Arrives')
+      ) {
         return orderData.deliveryEstimate;
       }
-      
+
       // If it's a number (days), calculate the actual date
       const days = parseInt(orderData.deliveryEstimate);
       if (!isNaN(days) && orderData.createdAt) {
         const orderDate = new Date(orderData.createdAt);
         const estimatedDate = new Date(orderDate);
         estimatedDate.setDate(estimatedDate.getDate() + days);
-        
+
         return estimatedDate.toLocaleDateString('en-US', {
           weekday: 'long',
           year: 'numeric',
@@ -281,16 +399,16 @@ const TrackingPage = () => {
           day: 'numeric',
         });
       }
-      
+
       // Return as-is if it's already a formatted string
       return orderData.deliveryEstimate;
     }
-    
+
     // Fallback: calculate based on order date and shipping type if no estimate stored
     if (orderData.createdAt) {
       const orderDate = new Date(orderData.createdAt);
       const estimatedDate = new Date(orderDate);
-      
+
       // Use shippingType to determine days
       if (orderData.shippingType === 'same_day') {
         return 'Arrives Today';
@@ -313,7 +431,7 @@ const TrackingPage = () => {
         });
       }
     }
-    
+
     return null;
   };
 
@@ -326,7 +444,14 @@ const TrackingPage = () => {
           <FaArrowLeft />
           Back
         </BackButton>
-        <Title>Order Tracking</Title>
+        <Title>
+          {isInternationalPreorder ? "Track International Shipment" : "Order Tracking"}
+        </Title>
+        {isPreorder && (
+          <HeaderPreorderBadge>
+            {isPreorderInternational ? "International Pre-Order" : "Pre-Order"}
+          </HeaderPreorderBadge>
+        )}
       </Header>
 
       <ContentGrid>
@@ -334,7 +459,7 @@ const TrackingPage = () => {
         <MainCard>
         <TrackingHeader>
           <TrackingNumber>
-            Tracking Number: <strong>{orderData.trackingNumber}</strong>
+            Tracking Number: <strong>{displayTrackingNumber}</strong>
           </TrackingNumber>
           <OrderNumber>
             Order Number: <strong>{orderData.orderNumber}</strong>
@@ -344,6 +469,11 @@ const TrackingPage = () => {
               <FaCalendarAlt style={{ marginRight: '0.5rem' }} />
               Expected Delivery: <strong>{estimatedDelivery}</strong>
             </EstimatedDeliveryHeader>
+          )}
+          {isPreorder && (
+            <TrackingPreorderBadge>
+              {isPreorderInternational ? "International Pre-Order" : "Pre-Order"}
+            </TrackingPreorderBadge>
           )}
         </TrackingHeader>
 
@@ -547,7 +677,9 @@ const TrackingPage = () => {
                 <SummaryValue>GH₵{(orderData.subtotal || 0).toFixed(2)}</SummaryValue>
               </SummaryRow>
               <SummaryRow>
-                <SummaryLabel>Shipping</SummaryLabel>
+                <SummaryLabel>
+                  {isInternationalPreorder ? "International Shipping" : "Shipping"}
+                </SummaryLabel>
                 <SummaryValue>GH₵{(orderData.shippingCost || 0).toFixed(2)}</SummaryValue>
               </SummaryRow>
               <SummaryRow $total>
@@ -592,7 +724,7 @@ const TrackingPage = () => {
           </SidebarCard>
 
           {/* Delivery Information */}
-          {(orderData.deliveryMethod || orderData.deliveryEstimate) && (
+          {(orderData.deliveryMethod || orderData.deliveryEstimate || isInternationalOrder || isPreorder) && (
             <SidebarCard>
               <CardTitle>
                 <FaTruck />
@@ -622,6 +754,45 @@ const TrackingPage = () => {
                       Estimated Delivery Date
                     </InfoLabel>
                     <InfoValue>{estimatedDelivery}</InfoValue>
+                  </InfoRow>
+                )}
+                {isInternationalOrder && (
+                  <>
+                    {orderData.supplierCountry && (
+                      <InfoRow>
+                        <InfoLabel>Supplier Country</InfoLabel>
+                        <InfoValue>{orderData.supplierCountry}</InfoValue>
+                      </InfoRow>
+                    )}
+                    {orderData.supplierName && (
+                      <InfoRow>
+                        <InfoLabel>Supplier Name</InfoLabel>
+                        <InfoValue>{orderData.supplierName}</InfoValue>
+                      </InfoRow>
+                    )}
+                    {orderData.estimatedArrivalDate && (
+                      <InfoRow>
+                        <InfoLabel>
+                          <FaCalendarAlt style={{ marginRight: '0.25rem' }} />
+                          Estimated Arrival (International)
+                        </InfoLabel>
+                        <InfoValue>{formatDate(orderData.estimatedArrivalDate)}</InfoValue>
+                      </InfoRow>
+                    )}
+                    {orderData.internationalTrackingNumber && (
+                      <InfoRow>
+                        <InfoLabel>International Tracking Number</InfoLabel>
+                        <InfoValue>{orderData.internationalTrackingNumber}</InfoValue>
+                      </InfoRow>
+                    )}
+                  </>
+                )}
+                {isPreorder && (
+                  <InfoRow>
+                    <InfoLabel>Order Type</InfoLabel>
+                    <InfoValue>
+                      {isPreorderInternational ? "International Pre-Order" : "Pre-Order"}
+                    </InfoValue>
                   </InfoRow>
                 )}
                 {orderData.deliveryZone && (
@@ -915,6 +1086,7 @@ const Header = styled.div`
   align-items: center;
   gap: 1rem;
   margin-bottom: 2rem;
+  flex-wrap: wrap;
 `;
 
 const BackButton = styled.button`
@@ -941,6 +1113,21 @@ const Title = styled.h1`
   font-weight: 700;
   color: #1a202c;
   margin: 0;
+`;
+
+const HeaderPreorderBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: #eef2ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
 `;
 
 
@@ -989,6 +1176,22 @@ const EstimatedDeliveryHeader = styled.div`
     font-weight: 700;
     margin-left: 0.25rem;
   }
+`;
+
+const TrackingPreorderBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: #fdf2ff;
+  color: #86198f;
+  border: 1px solid #fbcfe8;
 `;
 
 const CurrentStatus = styled.div`

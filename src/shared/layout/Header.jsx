@@ -252,7 +252,7 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
             </TopLinks>
             
             <PromoText>
-              🚀 Free shipping on orders over $50 | 🔥 Hot Deals Live Now
+              🚀 Free shipping on eligible orders | 🔥 Hot Deals Live Now
             </PromoText>
             
             <RightLinks>

@@ -452,7 +452,11 @@ const OrderConfirmationPage = () => {
         {order?.trackingNumber && (
           <TrackingLinkContainer>
             <TrackingLink onClick={() => navigate(`/tracking/${order.trackingNumber}`)}>
-              <FaBox /> Track Order: {order.trackingNumber}
+              <FaBox />{" "}
+              {order?.orderType === "preorder_international"
+                ? "Track International Shipment:"
+                : "Track Order:"}{" "}
+              {order.trackingNumber}
             </TrackingLink>
           </TrackingLinkContainer>
         )}

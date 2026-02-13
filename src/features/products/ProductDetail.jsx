@@ -55,14 +55,12 @@ import {
   getProductStock,
   isProductInStock,
 } from '../../shared/utils/productHelpers';
-import VariantNameSelector from '../../components/product/variantNameSelector/VariantNameSelector';
-import VariantDetailsDisplay from '../../components/product/variantNameSelector/VariantDetailsDisplay';
+
 import VariantColorImageGallery from '../../components/product/variantNameSelector/VariantColorImageGallery';
 import VariantMainImageSwitcher from '../../components/product/variantNameSelector/VariantMainImageSwitcher';
 import VariantPriceDisplay from './components/variantSelector/VariantPriceDisplay';
 import { useVariantSelectionByName } from '../../shared/hooks/products/useVariantSelectionByName';
 import { useVariantSelection } from '../../shared/hooks/products/useVariantSelection';
-import VariantSelector from './components/VariantSelector';
 
 const ProductDetailPage = () => {
   const { id } = useParams();
@@ -178,6 +176,8 @@ const ProductDetailPage = () => {
     return product?.variants || [];
   }, [product]);
 
+  const isSingleVariant = variants.length === 1;
+
   // Check if variants use attributes (Color, Size, etc.) or just names
   const hasAttributeBasedVariants = useMemo(() => {
     if (!variants.length) return false;
@@ -190,12 +190,17 @@ const ProductDetailPage = () => {
     );
   }, [variants]);
 
+  // UX rule: when there is only ONE variant, always show it and treat it
+  // like a simple variant selector (no need to force attribute-based flow).
+  const useAttributeBasedVariants = hasAttributeBasedVariants && !isSingleVariant;
+
   // Use attribute-based selection for products with attributes (Color + Size, etc.)
   const attributeVariantSelection = useVariantSelection(variants, product);
   const { 
     selectedAttributes, 
     selectedVariant: attributeSelectedVariant,
     selectAttribute,
+    selectVariant: selectVariantByObject,
     allAttributesSelected,
     missingAttributes,
     getVariantSummary,
@@ -205,8 +210,8 @@ const ProductDetailPage = () => {
   const variantSelection = useVariantSelectionByName(variants, product);
   const { selectedVariant: nameSelectedVariant, handleVariantSelect } = variantSelection;
 
-  // Use attribute-based variant if available, otherwise fall back to name-based
-  const selectedVariant = hasAttributeBasedVariants ? attributeSelectedVariant : nameSelectedVariant;
+  // Use attribute-based variant if enabled, otherwise fall back to name-based
+  const selectedVariant = useAttributeBasedVariants ? attributeSelectedVariant : nameSelectedVariant;
   
   // CRITICAL: Maintain selectedSku state separately (SKU is the unit of commerce)
   const [selectedSku, setSelectedSku] = useState(null);
@@ -335,10 +340,10 @@ const ProductDetailPage = () => {
 
   // Sync SKU when attribute-based variant is selected
   useEffect(() => {
-    if (hasAttributeBasedVariants && attributeSelectedVariant?.sku) {
+    if (useAttributeBasedVariants && attributeSelectedVariant?.sku) {
       setSelectedSku(attributeSelectedVariant.sku.trim().toUpperCase());
     }
-  }, [hasAttributeBasedVariants, attributeSelectedVariant]);
+  }, [useAttributeBasedVariants, attributeSelectedVariant]);
 
   const handleImageZoom = (e) => {
     if (!imageRef.current) return;
@@ -436,19 +441,54 @@ const ProductDetailPage = () => {
     return isProductInStock(product, selectedVariant);
   }, [selectedVariant, variants, product]);
   
-  // Get product images - ModernProductGrid MUST use product.images ONLY
-  // This is separate from variant images and never changes based on variant selection
+  // Product-level images (fallback when variant has no images)
   const productImages = useMemo(() => {
     if (!product) return [];
     return getProductImages(product);
   }, [product]);
 
-  // Reset selected image to 0 when product images change
+  // Main gallery always shows the general product images (not variant images)
+  const galleryImages = productImages;
+
+  // Clamp selectedImage when gallery length changes (e.g. switch product)
   useEffect(() => {
-    if (productImages.length > 0) {
+    if (galleryImages.length > 0 && selectedImage >= galleryImages.length) {
       setSelectedImage(0);
     }
-  }, [productImages.length]);
+  }, [galleryImages.length, selectedImage]);
+
+  // Helper function to get variant attributes for display
+  const getVariantAttributes = useCallback((variant) => {
+    if (!variant?.attributes || !Array.isArray(variant.attributes) || variant.attributes.length === 0) {
+      return null;
+    }
+    return variant.attributes.filter(attr => attr.key && attr.value);
+  }, []);
+
+  // Component to render variant attributes as a table
+  const VariantAttributesTable = ({ variant, isInLabel = false }) => {
+    const attributes = getVariantAttributes(variant);
+    
+    if (!attributes || attributes.length === 0) {
+      return variant?.name || null;
+    }
+
+    return (
+      <AttributesTableContainer $isInLabel={isInLabel}>
+        {!isInLabel && <AttributesTableHeading>Product Detail</AttributesTableHeading>}
+        <AttributesTable $isInLabel={isInLabel}>
+          <tbody>
+            {attributes.map((attr, index) => (
+              <AttributeRow key={index} $isInLabel={isInLabel}>
+                <AttributeKey $isInLabel={isInLabel}>{attr.key}:</AttributeKey>
+                <AttributeValue $isInLabel={isInLabel}>{attr.value}</AttributeValue>
+              </AttributeRow>
+            ))}
+          </tbody>
+        </AttributesTable>
+      </AttributesTableContainer>
+    );
+  };
 
   if (isLoading) return <LoadingState message="Loading product..." />;
   if (error) return <ErrorState
@@ -503,7 +543,7 @@ const ProductDetailPage = () => {
             $isZoomed={isImageZoomed}
           >
             <ModernMainImage
-              src={productImages[selectedImage] || productImages[0]}
+              src={galleryImages[selectedImage] || galleryImages[0]}
               alt={product.name}
               $zoomX={imageZoomPosition.x}
               $zoomY={imageZoomPosition.y}
@@ -548,8 +588,8 @@ const ProductDetailPage = () => {
             </ImageActions>
           </MainImageWrapper>
 
-          {/* Thumbnail Gallery */}
-          {productImages.length > 1 && (
+          {/* Thumbnail Gallery — driven by selected variant images or product images */}
+          {galleryImages.length > 1 && (
             <ThumbnailGallery>
               <ThumbnailScrollButton
                 onClick={() => setSelectedImage(Math.max(0, selectedImage - 1))}
@@ -559,7 +599,7 @@ const ProductDetailPage = () => {
               </ThumbnailScrollButton>
 
               <ThumbnailList>
-                {productImages.map((img, index) => (
+                {galleryImages.map((img, index) => (
                   <ModernThumbnail
                     key={index}
                     $active={index === selectedImage}
@@ -572,8 +612,8 @@ const ProductDetailPage = () => {
               </ThumbnailList>
 
               <ThumbnailScrollButton
-                onClick={() => setSelectedImage(Math.min(productImages.length - 1, selectedImage + 1))}
-                disabled={selectedImage === productImages.length - 1}
+                onClick={() => setSelectedImage(Math.min(galleryImages.length - 1, selectedImage + 1))}
+                disabled={selectedImage === galleryImages.length - 1}
               >
                 <FaChevronRight />
               </ThumbnailScrollButton>
@@ -625,188 +665,134 @@ const ProductDetailPage = () => {
               variantSelectionHook={variantSelection}
             />
 
-            <StockAlert $inStock={isInStock}>
-              <StatusIndicator $inStock={isInStock} />
-              {isInStock ? (
-                <span><strong>{variantStock} available</strong> - Order now!</span>
-              ) : selectedVariant ? (
-                <span>This variant is out of stock</span>
-              ) : variants.length > 0 ? (
-                <span>Please select a variant</span>
-              ) : (
-                <span>Currently out of stock</span>
+            <StockRow>
+              <StockAlert $inStock={isInStock}>
+                <StatusIndicator $inStock={isInStock} />
+                {isInStock ? (
+                  <span><strong>In Stock</strong> - Order now!</span>
+                ) : variants.length > 0 && variants.every((v) => (v.stock || 0) === 0) ? (
+                  <span>All variants are currently out of stock</span>
+                ) : selectedVariant ? (
+                  <span>This variant is out of stock</span>
+                ) : variants.length > 0 ? (
+                  <span>Please select a variant</span>
+                ) : (
+                  <span>Currently out of stock</span>
+                )}
+              </StockAlert>
+              {product.isPreOrder && (
+                <PreOrderBadge>
+                  Pre-Order
+                  {product.preOrderNote && <PreOrderNote>{product.preOrderNote}</PreOrderNote>}
+                </PreOrderBadge>
               )}
-            </StockAlert>
+            </StockRow>
           </PricingCard>
 
-          {/* Variant Selection - Use attribute-based selector if variants have attributes */}
+          {/* Variant Section — selection based on variant image; section holds the variant image grid */}
           {variants.length > 0 && (
-            <>
-              {hasAttributeBasedVariants ? (
-                <>
-                  {/* Attribute-based Variant Selector (Color + Size, etc.) */}
-                  <VariantSelector
-                    variants={variants}
-                    selectedAttributes={selectedAttributes}
-                    onAttributeChange={selectAttribute}
-                    variantSelectionHook={attributeVariantSelection}
-                    categoryAttributes={categoryAttributes}
-                  />
+            <VariantSectionCard>
+              <VariantSectionTitle>Choose your option</VariantSectionTitle>
+              <VariantSectionSubtitle>
+                {variants.length === 1
+                  ? '1 option available'
+                  : `${variants.length} options available`}
+              </VariantSectionSubtitle>
 
-                  {/* Variant Status Display */}
-                  <VariantStatusCard>
-                    {selectedVariant ? (
-                      isInStock ? (
-                        <VariantMatched>
-                          <StatusIcon $status="success">
-                            <FaCheck />
-                          </StatusIcon>
-                          <StatusContent>
-                            <StatusTitle>Variant selected: {getVariantSummary()}</StatusTitle>
-                            <StatusSubtitle>{variantStock} in stock</StatusSubtitle>
-                          </StatusContent>
-                        </VariantMatched>
-                      ) : (
-                        <VariantOutOfStock>
-                          <StatusIcon $status="warning">
-                            <FaExclamationTriangle />
-                          </StatusIcon>
-                          <StatusContent>
-                            <StatusTitle>This combination is out of stock</StatusTitle>
-                            <StatusSubtitle>Please select a different combination</StatusSubtitle>
-                          </StatusContent>
-                        </VariantOutOfStock>
-                      )
-                    ) : allAttributesSelected ? (
-                      <VariantNotAvailable>
-                        <StatusIcon $status="error">
-                          <FaExclamationTriangle />
-                        </StatusIcon>
-                        <StatusContent>
-                          <StatusTitle>This combination is not available</StatusTitle>
-                          <StatusSubtitle>Please select a different combination</StatusSubtitle>
-                        </StatusContent>
-                      </VariantNotAvailable>
-                    ) : Object.keys(selectedAttributes).length > 0 ? (
-                      <VariantIncomplete>
-                        <StatusIcon $status="info">
-                          <FaExclamationTriangle />
-                        </StatusIcon>
-                        <StatusContent>
-                          <StatusTitle>Please select: {missingAttributes.join(', ')}</StatusTitle>
-                          <StatusSubtitle>Complete your selection to see availability</StatusSubtitle>
-                        </StatusContent>
-                      </VariantIncomplete>
-                    ) : (
-                      <VariantNotSelected>
-                        <StatusIcon $status="info">
-                          <FaExclamationTriangle />
-                        </StatusIcon>
-                        <StatusContent>
-                          <StatusTitle>Please select variant options</StatusTitle>
-                          <StatusSubtitle>Choose your preferred combination</StatusSubtitle>
-                        </StatusContent>
-                      </VariantNotSelected>
-                    )}
-                  </VariantStatusCard>
+              {/* Variant image grid — always use image-based selection */}
+              <VariantImagesGrid>
+                {variants.map((variant) => {
+                  // Use variant image if available, otherwise fallback to product image or placeholder
+                  const image = variant.images?.[0] || product?.imageCover || '/placeholder-image.png';
+                  const isSelected = selectedVariant?._id === variant._id;
+                  const isOutOfStock = variant.status === 'inactive' || (variant.stock || 0) === 0;
+                  const attributes = getVariantAttributes(variant);
 
-                  {/* Variant Images Gallery - shows all variant images and allows selection */}
-                  {variants.some(v => v.images && v.images.length > 0) && (
-                    <VariantImagesCard>
-                      <VariantImagesTitle>Variant Images</VariantImagesTitle>
-                      <VariantImagesGrid>
-                        {variants
-                          .filter(variant => variant.images && variant.images.length > 0)
-                          .flatMap((variant) => {
-                            return variant.images.map((image, imgIndex) => {
-                              // Find the variant that contains this image
-                              const variantForImage = variants.find(v => 
-                                v.images && v.images.includes(image)
-                              );
-                              
-                              const isSelected = selectedVariant?._id === variantForImage?._id;
-                              
-                              return (
-                                <VariantImageItem
-                                  key={`${variant._id}-${imgIndex}`}
-                                  $selected={isSelected}
-                                  onClick={() => {
-                                    if (variantForImage && variantForImage.attributes) {
-                                      // Select all attributes for this variant
-                                      variantForImage.attributes.forEach((attr) => {
-                                        if (attr.key && attr.value) {
-                                          selectAttribute(attr.key, attr.value);
-                                        }
-                                      });
-                                    }
-                                    
-                                    // Also update the main image
-                                    const imageIndex = productImages.findIndex(img => img === image);
-                                    if (imageIndex !== -1) {
-                                      setSelectedImage(imageIndex);
-                                    } else if (variantForImage?.images?.[0]) {
-                                      // If image is not in product images, try to find it
-                                      const variantImageIndex = productImages.findIndex(img => 
-                                        variantForImage.images.includes(img)
-                                      );
-                                      if (variantImageIndex !== -1) {
-                                        setSelectedImage(variantImageIndex);
-                                      }
-                                    }
-                                  }}
-                                >
-                                  <VariantImage src={image} alt={`Variant Image ${imgIndex + 1}`} />
-                                  {isSelected && <VariantImageSelectedBadge>Selected</VariantImageSelectedBadge>}
-                                </VariantImageItem>
-                              );
-                            });
-                          })}
-                      </VariantImagesGrid>
-                    </VariantImagesCard>
-                  )}
+                  return (
+                    <VariantImageItem
+                      key={variant._id || variant.sku}
+                      $selected={isSelected}
+                      $disabled={isOutOfStock}
+                      onClick={() => {
+                        if (isOutOfStock) return;
+                        if (useAttributeBasedVariants && variant?.attributes?.length && selectVariantByObject) {
+                          selectVariantByObject(variant);
+                        } else if (useAttributeBasedVariants && variant?.attributes?.length && selectAttribute) {
+                          variant.attributes.forEach((attr) => {
+                            if (attr.key && attr.value) selectAttribute(attr.key, attr.value);
+                          });
+                        } else {
+                          handleVariantSelectCallback(variant);
+                        }
+                        setSelectedImage(0);
+                      }}
+                    >
+                      <VariantImage src={image} alt={variant.name || variant.sku || 'Variant'} />
+                      {isSelected && !isOutOfStock && <VariantImageSelectedBadge>Selected</VariantImageSelectedBadge>}
+                      {isOutOfStock && <VariantImageSelectedBadge $outOfStock>Out of Stock</VariantImageSelectedBadge>}
+                      {attributes && attributes.length > 0 && (
+                        <VariantImageLabel>
+                          <VariantAttributesTable variant={variant} isInLabel={true} />
+                        </VariantImageLabel>
+                      )}
+                      {(!attributes || attributes.length === 0) && variant?.name && (
+                        <VariantImageLabel>{variant.name}</VariantImageLabel>
+                      )}
+                    </VariantImageItem>
+                  );
+                })}
+              </VariantImagesGrid>
 
-                  {/* Variant Main Image Switcher - handles image updates when variant changes */}
-                  <VariantMainImageSwitcher
-                    selectedVariant={selectedVariant}
-                    fallbackImages={getProductImages(product)}
-                    onImageChange={setSelectedImage}
-                    variantSelectionHook={variantSelection}
-                  />
-                </>
-              ) : (
-                <>
-                  {/* Simple Variant Name Selector (for products without attributes) */}
-                  <VariantNameSelector
-                    variants={variants}
-                    selectedVariant={selectedVariant}
-                    onSelect={handleVariantSelectCallback}
-                    variantSelectionHook={variantSelection}
-                  />
+              {/* Status line under the grid */}
+              <VariantStatusCard>
+                {selectedVariant ? (
+                  isInStock ? (
+                    <VariantMatched>
+                      <StatusIcon $status="success">
+                        <FaCheck />
+                      </StatusIcon>
+                      <StatusContent>
+                        <StatusTitle>
+                          {useAttributeBasedVariants ? (
+                            getVariantSummary() || 'Selected'
+                          ) : (
+                            <VariantAttributesTable variant={selectedVariant} />
+                          ) || 'Selected'}
+                        </StatusTitle>
+                        <StatusSubtitle>Available - ready to ship</StatusSubtitle>
+                      </StatusContent>
+                    </VariantMatched>
+                  ) : (
+                    <VariantOutOfStock>
+                      <StatusIcon $status="warning">
+                        <FaExclamationTriangle />
+                      </StatusIcon>
+                      <StatusContent>
+                        <StatusTitle>This option is out of stock</StatusTitle>
+                        <StatusSubtitle>Please select a different option</StatusSubtitle>
+                      </StatusContent>
+                    </VariantOutOfStock>
+                  )
+                ) : (
+                  <VariantNotSelected>
+                    <StatusIcon $status="info">
+                      <FaExclamationTriangle />
+                    </StatusIcon>
+                    <StatusContent>
+                      <StatusTitle>Select an option above</StatusTitle>
+                      <StatusSubtitle>Click an image to choose your variant</StatusSubtitle>
+                    </StatusContent>
+                  </VariantNotSelected>
+                )}
+              </VariantStatusCard>
 
-                  {/* Variant Color Image Gallery - shows color swatches for variants with images */}
-                  <VariantColorImageGallery
-                    selectedVariant={selectedVariant}
-                    variants={variants}
-                    onImageSelect={handleVariantImageSelect}
-                    variantSelectionHook={variantSelection}
-                  />
-
-                  {/* Variant Details Display - shows attributes of selected variant */}
-                  <VariantDetailsDisplay
-                    selectedVariant={selectedVariant}
-                    variantSelectionHook={variantSelection}
-                  />
-
-                  {/* Variant Main Image Switcher - handles image updates when variant changes */}
-                  <VariantMainImageSwitcher
-                    selectedVariant={selectedVariant}
-                    fallbackImages={getProductImages(product)}
-                    onImageChange={setSelectedImage}
-                    variantSelectionHook={variantSelection}
-                  />
-                </>
-              )}
-            </>
+              <VariantMainImageSwitcher
+                selectedVariant={selectedVariant}
+                fallbackImages={galleryImages}
+                onImageChange={setSelectedImage}
+                variantSelectionHook={variantSelection}
+              />
+            </VariantSectionCard>
           )}
 
           {/* Actions Section */}
@@ -834,7 +820,7 @@ const ProductDetailPage = () => {
                   !isInStock || 
                   !selectedVariant || 
                   isAddingToCart ||
-                  (hasAttributeBasedVariants && allAttributesSelected && !selectedVariant) // Disable if all selected but no match
+                  (useAttributeBasedVariants && allAttributesSelected && !selectedVariant) // Disable if all selected but no match
                 }
                 $isAdding={isAddingToCart}
               >
@@ -847,7 +833,7 @@ const ProductDetailPage = () => {
                   <>
                     <FaShoppingCart />
                     {!selectedVariant 
-                      ? (hasAttributeBasedVariants && allAttributesSelected 
+                      ? (useAttributeBasedVariants && allAttributesSelected 
                           ? "Not Available" 
                           : "Select Variant")
                       : isInStock 
@@ -879,11 +865,11 @@ const ProductDetailPage = () => {
 
           {/* Trust & Shipping */}
           <TrustSection>
-            <TrustItem>
+            <TrustItem $highlight={!!product.shipping?.freeShipping}>
               <FaTruck />
               <div>
-                <strong>Free Shipping</strong>
-                <span>On orders over GH₵200</span>
+                <strong>{product.shipping?.freeShipping ? 'Free Shipping' : 'Shipping'}</strong>
+                <span>{product.shipping?.freeShipping ? 'No shipping fee on this product' : 'Standard shipping rates apply'}</span>
               </div>
             </TrustItem>
             <TrustItem>
@@ -897,7 +883,7 @@ const ProductDetailPage = () => {
               <FaUndo />
               <div>
                 <strong>Easy Returns</strong>
-                <span>30-day policy</span>
+                <span>{product.returnWindowDays ? `${product.returnWindowDays}-day return policy` : '30-day policy'}</span>
               </div>
             </TrustItem>
             <TrustItem>
@@ -1183,7 +1169,7 @@ const ProductDetailPage = () => {
       {showImageModal && (
         <ImageModal onClick={() => setShowImageModal(false)}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
-            <ModalImage src={productImages[selectedImage] || productImages[0]} alt={product.name} />
+            <ModalImage src={galleryImages[selectedImage] || galleryImages[0]} alt={product.name} />
             <CloseModal onClick={() => setShowImageModal(false)}>
               ×
             </CloseModal>
@@ -1206,13 +1192,13 @@ const ProductDetailPage = () => {
               !isInStock || 
               !selectedVariant || 
               isAddingToCart ||
-              (hasAttributeBasedVariants && allAttributesSelected && !selectedVariant)
+              (useAttributeBasedVariants && allAttributesSelected && !selectedVariant)
             }
           >
             {isAddingToCart ? (
               <ButtonSpinner size="sm" />
             ) : !selectedVariant 
-              ? (hasAttributeBasedVariants && allAttributesSelected 
+              ? (useAttributeBasedVariants && allAttributesSelected 
                   ? "Not Available" 
                   : "Select Variant")
               : isInStock 
@@ -1801,6 +1787,51 @@ const PricingCard = styled.div`
   }
 `;
 
+const VariantSectionCard = styled.div`
+  background: white;
+  padding: 2.5rem;
+  border-radius: 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--color-grey-100);
+  margin-top: 2rem;
+
+  @media (max-width: 1024px) {
+    padding: 2rem;
+    border-radius: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  @media (max-width: 640px) {
+    padding: 1.5rem;
+    border-radius: 1.2rem;
+    margin-top: 1.25rem;
+  }
+`;
+
+const VariantSectionTitle = styled.h3`
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-grey-900);
+  margin: 0 0 0.35rem 0;
+  font-family: var(--font-heading);
+
+  @media (max-width: 640px) {
+    font-size: 1.5rem;
+  }
+`;
+
+const VariantSectionSubtitle = styled.p`
+  font-size: 1rem;
+  color: var(--color-grey-600);
+  margin: 0 0 1.5rem 0;
+  font-family: var(--font-body);
+
+  @media (max-width: 640px) {
+    font-size: 0.95rem;
+    margin-bottom: 1.25rem;
+  }
+`;
+
 const PriceDisplay = styled.div`
   display: flex;
   align-items: baseline;
@@ -1892,6 +1923,51 @@ const StatusIndicator = styled.div`
   animation: ${pulse} 2s infinite;
 `;
 
+const StockRow = styled.div`
+  display: flex;
+  align-items: stretch;
+  gap: 1rem;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+`;
+
+const PreOrderBadge = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  color: #92400e;
+  border-radius: 1rem;
+  font-size: 1.4rem;
+  font-weight: 700;
+  border-left: 4px solid #f59e0b;
+  white-space: nowrap;
+
+  @media (max-width: 640px) {
+    padding: 0.8rem 1rem;
+    font-size: 1.2rem;
+    border-radius: 0.8rem;
+    border-left-width: 3px;
+  }
+`;
+
+const PreOrderNote = styled.span`
+  font-size: 1.1rem;
+  font-weight: 400;
+  color: #b45309;
+  text-align: center;
+  white-space: normal;
+
+  @media (max-width: 640px) {
+    font-size: 1rem;
+  }
+`;
 
 const ActionsCard = styled.div`
   background: white;
@@ -2201,10 +2277,11 @@ const TrustItem = styled.div`
   align-items: center;
   gap: 1.5rem;
   padding: 1.5rem;
-  background: white;
+  background: ${(props) => props.$highlight ? 'linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%)' : 'white'};
   border-radius: 1.2rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
   transition: all 0.3s ease;
+  border: ${(props) => props.$highlight ? '1px solid var(--color-green-200)' : 'none'};
 
   @media (max-width: 640px) {
     padding: 1.2rem;
@@ -2219,7 +2296,7 @@ const TrustItem = styled.div`
 
   svg {
     font-size: 2.4rem;
-    color: var(--color-primary-500);
+    color: ${(props) => props.$highlight ? 'var(--color-green-600)' : 'var(--color-primary-500)'};
     flex-shrink: 0;
 
     @media (max-width: 640px) {
@@ -2235,7 +2312,7 @@ const TrustItem = styled.div`
 
   strong {
     font-size: 1.4rem;
-    color: var(--color-grey-800);
+    color: ${(props) => props.$highlight ? 'var(--color-green-800)' : 'var(--color-grey-800)'};
 
     @media (max-width: 640px) {
       font-size: 1.3rem;
@@ -2244,7 +2321,7 @@ const TrustItem = styled.div`
 
   span {
     font-size: 1.2rem;
-    color: var(--color-grey-600);
+    color: ${(props) => props.$highlight ? 'var(--color-green-700)' : 'var(--color-grey-600)'};
 
     @media (max-width: 640px) {
       font-size: 1.1rem;
@@ -3153,6 +3230,7 @@ const StatusTitle = styled.div`
   font-size: 1.6rem;
   font-weight: 600;
   color: var(--color-grey-900);
+  width: 100%;
 
   @media (max-width: 640px) {
     font-size: 1.4rem;
@@ -3202,34 +3280,35 @@ const VariantImagesTitle = styled.h3`
 
 const VariantImagesGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: 0.5rem;
 
   @media (max-width: 640px) {
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    gap: 0.8rem;
+    grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+    gap: 0.4rem;
   }
 `;
 
 const VariantImageItem = styled.div`
   position: relative;
   aspect-ratio: 1;
-  border-radius: 1rem;
+  border-radius: 0.7rem;
   overflow: hidden;
-  cursor: pointer;
-  border: 2px solid ${(props) => 
-    props.$selected ? "var(--color-primary-500)" : "var(--color-grey-200)"};
+  cursor: ${(props) => (props.$disabled ? 'not-allowed' : 'pointer')};
+  opacity: ${(props) => (props.$disabled ? 0.6 : 1)};
+  border: 2px solid ${(props) =>
+    props.$selected ? 'var(--color-primary-500)' : props.$disabled ? 'var(--color-grey-300)' : 'var(--color-grey-200)'};
   transition: all 0.3s ease;
   background: white;
-  box-shadow: ${(props) => 
-    props.$selected 
-      ? "0 4px 12px rgba(99, 102, 241, 0.3)" 
-      : "0 2px 8px rgba(0, 0, 0, 0.08)"};
+  box-shadow: ${(props) =>
+    props.$selected
+      ? '0 4px 12px rgba(99, 102, 241, 0.3)'
+      : '0 2px 8px rgba(0, 0, 0, 0.08)'};
 
   &:hover {
-    border-color: var(--color-primary-500);
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    border-color: ${(props) => (props.$disabled ? 'var(--color-grey-300)' : 'var(--color-primary-500)')};
+    transform: ${(props) => (props.$disabled ? 'none' : 'scale(1.05)')};
+    box-shadow: ${(props) => (props.$disabled ? '0 2px 8px rgba(0, 0, 0, 0.08)' : '0 4px 12px rgba(0, 0, 0, 0.12)')};
   }
 `;
 
@@ -3239,18 +3318,88 @@ const VariantImage = styled.img`
   object-fit: cover;
 `;
 
+const VariantImageLabel = styled.span`
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.5), transparent);
+  text-align: left;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  max-height: 60%;
+`;
+
 const VariantImageSelectedBadge = styled.div`
   position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  background: var(--color-primary-500);
+  top: 0.35rem;
+  right: 0.35rem;
+  background: ${(props) => (props.$outOfStock ? 'var(--color-red-500)' : 'var(--color-primary-500)')};
   color: white;
-  padding: 0.3rem 0.8rem;
-  border-radius: 0.6rem;
-  font-size: 1rem;
+  padding: 0.18rem 0.55rem;
+  border-radius: 0.45rem;
+  font-size: 0.75rem;
   font-weight: 600;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   z-index: 1;
+`;
+
+const AttributesTableContainer = styled.div`
+  width: 100%;
+  overflow-x: auto;
+  ${(props) => !props.$isInLabel && `
+    margin-top: 0.5rem;
+  `}
+`;
+
+const AttributesTableHeading = styled.h3`
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--color-grey-900);
+  margin-bottom: 0.8rem;
+  
+  @media (max-width: 640px) {
+    font-size: 1.4rem;
+  }
+`;
+
+const AttributesTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  font-size: ${(props) => props.$isInLabel ? '0.85rem' : '1.4rem'};
+  
+  @media (max-width: 640px) {
+    font-size: ${(props) => props.$isInLabel ? '0.75rem' : '1.2rem'};
+  }
+`;
+
+const AttributeRow = styled.tr`
+  &:not(:last-child) {
+    border-bottom: 1px solid ${(props) => 
+      props.$isInLabel ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'};
+  }
+`;
+
+const AttributeKey = styled.td`
+  padding: 0.25rem 0.5rem 0.25rem 0;
+  font-weight: 600;
+  color: ${(props) => props.$isInLabel ? 'white' : 'var(--color-grey-900)'};
+  white-space: nowrap;
+  text-align: left;
+  vertical-align: top;
+`;
+
+const AttributeValue = styled.td`
+  padding: 0.25rem 0;
+  color: ${(props) => props.$isInLabel ? 'rgba(255, 255, 255, 0.95)' : 'var(--color-grey-700)'};
+  text-align: left;
+  word-break: break-word;
+  vertical-align: top;
 `;
 
 export default ProductDetailPage;

@@ -269,7 +269,7 @@ const OrdersPage = () => {
                         {order.trackingNumber ? (
                           <TrackingLink 
                             onClick={() => navigate(`/tracking/${order.trackingNumber}`)}
-                            title="Track Order"
+                            title={order.orderType === 'preorder_international' ? 'Track International Shipment' : 'Track Order'}
                           >
                             {order.trackingNumber}
                           </TrackingLink>
@@ -361,7 +361,7 @@ const OrdersPage = () => {
                           {order.trackingNumber ? (
                             <TrackingLink 
                               onClick={() => navigate(`/tracking/${order.trackingNumber}`)}
-                              title="Track Order"
+                              title={order.orderType === 'preorder_international' ? 'Track International Shipment' : 'Track Order'}
                             >
                               {order.trackingNumber}
                             </TrackingLink>

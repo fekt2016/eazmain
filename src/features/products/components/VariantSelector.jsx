@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import styled, { css } from "styled-components";
-import { FaCheck, FaExclamationTriangle, FaCircle } from "react-icons/fa";
+import { FaExclamationTriangle } from "react-icons/fa";
 import { pulse } from "../../../shared/styles/animations";
 import { isColorValue } from "../../../shared/utils/productHelpers";
 
@@ -67,12 +67,6 @@ const VariantSelector = ({
           <VariantGroup key={attribute}>
             <VariantGroupHeader>
               <VariantGroupLabel>{attribute}</VariantGroupLabel>
-              {selectedAttributes[attribute] && (
-                <SelectedValueBadge>
-                  <FaCheck size={12} />
-                  {selectedAttributes[attribute]}
-                </SelectedValueBadge>
-              )}
             </VariantGroupHeader>
 
             <VariantOptionsList>
@@ -193,19 +187,6 @@ const VariantGroupLabel = styled.label`
   font-weight: 600;
   color: var(--color-grey-800);
   display: block;
-`;
-
-const SelectedValueBadge = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.3rem 0.8rem;
-  background: var(--color-primary-50);
-  color: var(--color-primary-700);
-  border-radius: 0.8rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-  border: 1px solid var(--color-primary-200);
 `;
 
 const VariantOptionsList = styled.div`

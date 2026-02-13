@@ -1,5 +1,5 @@
 import { useCallback, useRef } from "react";
-import styled, { css } from "styled-components";
+import styled, { css, keyframes } from "styled-components";
 import { fadeIn, pulse } from "../styles/animations";
 import { Link } from "react-router-dom";
 import { FaHeart, FaRegHeart, FaShoppingCart, FaTimes, FaEye, FaStar, FaFire } from "react-icons/fa";
@@ -180,6 +180,11 @@ export default function ProductCard({
   const { displayPrice, originalPrice } = getProductPriceForDisplay(product);
   const isTrending = isProductTrending(product);
   const totalStock = getProductTotalStock(product);
+
+  // Debug: verify pre-order flag reaches ProductCard
+  if (product.isPreOrder) {
+    console.debug('[ProductCard] Pre-order product detected:', product.name, '| isPreOrder:', product.isPreOrder);
+  }
   
   // Check availability status
   const isComingSoon = product.availability?.status === 'coming_soon';
@@ -284,6 +289,9 @@ export default function ProductCard({
                   <FaFire />
                   Trending
                 </TrendingBadge>
+              )}
+              {product.isPreOrder && (
+                <PreOrderBadge>Pre-Order</PreOrderBadge>
               )}
               {product.shipping?.freeShipping && (
                 <FreeShippingBadge>Free Shipping</FreeShippingBadge>
@@ -624,6 +632,17 @@ const InactiveBadge = styled(Badge)`
 const FreeShippingBadge = styled(Badge)`
   background: linear-gradient(135deg, var(--color-green-700) 0%, var(--color-green-500) 100%);
   color: var(--color-white-0);
+`;
+
+const blink = keyframes`
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+`;
+
+const PreOrderBadge = styled(Badge)`
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+  color: var(--color-white-0);
+  animation: ${blink} 1.5s ease-in-out infinite;
 `;
 
 const ConditionBadge = styled(Badge)`

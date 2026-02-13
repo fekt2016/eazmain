@@ -21,7 +21,15 @@ export const useValidateCart = () => {
         return response;
       } catch (error) {
         logger.error("[useValidateCart] Cart validation error:", error);
-        throw error;
+
+        // Surface a readable error message to callers (Checkout, etc.)
+        const backendMessage =
+          error?.response?.data?.message || error?.message || null;
+
+        throw new Error(
+          backendMessage ||
+            "We couldn’t validate your cart. Please review your coupon and shipping details and try again."
+        );
       }
     },
   });

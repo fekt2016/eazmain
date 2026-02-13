@@ -506,12 +506,40 @@ const OrderDetail = () => {
   if (!order) return <EmptyState title="Order not found" message="The order you're looking for doesn't exist." />;
 
   // Calculate grand total (tax is already included in subtotal for VAT-inclusive pricing)
-  const subtotal = (order?.sellerOrder || []).reduce((total, sellerOrder) => total + (sellerOrder.subtotal || 0), 0);
-  const totalShipping = order.shippingCost || (order?.sellerOrder || []).reduce((total, sellerOrder) => total + (sellerOrder.shippingCost || 0), 0);
+  const subtotal = (order?.sellerOrder || []).reduce(
+    (total, sellerOrder) => total + (sellerOrder.subtotal || 0),
+    0
+  );
+  const totalSellerDiscount = (order?.sellerOrder || []).reduce(
+    (total, sellerOrder) => total + (sellerOrder.discountAmount || 0),
+    0
+  );
+  const orderLevelDiscount = order?.discountAmount || 0;
+  // Prefer order-level discountAmount if present, otherwise sum of seller-level discounts
+  const totalDiscount = orderLevelDiscount > 0 ? orderLevelDiscount : totalSellerDiscount;
+
+  const totalShipping =
+    order.shippingCost ||
+    (order?.sellerOrder || []).reduce(
+      (total, sellerOrder) => total + (sellerOrder.shippingCost || 0),
+      0
+    );
   // Get COVID levy from order (for tracking only, NOT added to customer total - will be deducted from seller at withdrawal)
   const totalCovidLevy = order.totalCovidLevy || (order?.sellerOrder || []).reduce((total, sellerOrder) => total + (sellerOrder.totalCovidLevy || 0), 0);
   // Grand total: subtotal + shipping (COVID levy NOT included)
   const grandTotal = order.totalPrice || (subtotal + totalShipping);
+
+  // Detect pre-order orders
+  // Prefer explicit orderType when present, but fall back to
+  // checking if any product in the order is flagged as pre-order.
+  const hasPreOrderItem = Array.isArray(order?.orderItems)
+    ? order.orderItems.some((item) => item?.product?.isPreOrder)
+    : false;
+
+  const isPreorderLocal =
+    order?.orderType === 'preorder_local' || hasPreOrderItem;
+  const isPreorderInternational =
+    order?.orderType === 'preorder_international';
 
   // Map sellerId (string) -> { shopName, name } for Shipping Breakdown and anywhere we need seller label
   const sellerIdToInfo = (order?.sellerOrder || []).reduce((acc, so) => {
@@ -569,6 +597,11 @@ const OrderDetail = () => {
               <PaymentStatusBadge>
                 Payment Completed
               </PaymentStatusBadge>
+            )}
+            {(isPreorderLocal || isPreorderInternational) && (
+              <PreorderBadge>
+                {isPreorderInternational ? 'International Pre-Order' : 'Pre-Order'}
+              </PreorderBadge>
             )}
           </MetaItem>
         </HeaderMeta>
@@ -749,8 +782,12 @@ const OrderDetail = () => {
                   <InfoItem>
                     <InfoLabel>Shipping Type</InfoLabel>
                     <InfoValue>
-                      {order.shippingType === 'same_day' 
+                      {isPreorderInternational
+                        ? 'International Shipping'
+                        : order.shippingType === 'same_day'
                         ? 'Express Shipping (Same Day)'
+                        : order.shippingType === 'express'
+                        ? 'Express Delivery (1-2 Days)'
                         : order.shippingType === 'standard'
                         ? 'Standard Delivery (2-3 Days)'
                         : order.deliverySpeed === 'same_day'
@@ -762,7 +799,11 @@ const OrderDetail = () => {
                   </InfoItem>
                 )}
                 <InfoItem>
-                  <InfoLabel>Shipping Charges</InfoLabel>
+                  <InfoLabel>
+                    {isPreorderInternational
+                      ? 'International Shipping Charges'
+                      : 'Shipping Charges'}
+                  </InfoLabel>
                   <InfoValue>
                     {(totalShipping > 0)
                       ? `GH₵${Number(totalShipping).toFixed(2)}`
@@ -820,7 +861,11 @@ const OrderDetail = () => {
               </InfoGrid>
               {order.shippingBreakdown && order.shippingBreakdown.length > 0 && (
                 <ShippingBreakdownSection>
-                  <BreakdownTitle>Shipping Breakdown</BreakdownTitle>
+                  <BreakdownTitle>
+                    {isPreorderInternational
+                      ? 'International Shipping Breakdown'
+                      : 'Shipping Breakdown'}
+                  </BreakdownTitle>
                   {(order?.shippingBreakdown || []).map((breakdown, index) => (
                     <BreakdownItem key={breakdown.sellerId ?? index}>
                       <BreakdownLabel>{getSellerLabel(breakdown, index)}</BreakdownLabel>
@@ -973,8 +1018,18 @@ const OrderDetail = () => {
                     <span>Items Subtotal:</span>
                     <span>GH₵{(sellerOrder.subtotal ?? 0).toFixed(2)}</span>
                   </SummaryRow>
+                  {sellerOrder.discountAmount > 0 && (
+                    <SummaryRow>
+                      <span>Discount:</span>
+                      <span>- GH₵{(sellerOrder.discountAmount ?? 0).toFixed(2)}</span>
+                    </SummaryRow>
+                  )}
                   <SummaryRow>
-                    <span>Shipping Cost:</span>
+                    <span>
+                      {isPreorderInternational
+                        ? 'International Shipping Cost:'
+                        : 'Shipping Cost:'}
+                    </span>
                     <span>GH₵{(sellerOrder.shippingCost ?? 0).toFixed(2)}</span>
                   </SummaryRow>
                   <SummaryDivider />
@@ -996,8 +1051,18 @@ const OrderDetail = () => {
                   <span>Subtotal:</span>
                   <span>GH₵{subtotal.toFixed(2)}</span>
                 </BreakdownRow>
+                {totalDiscount > 0 && (
+                  <BreakdownRow>
+                    <span>Discount:</span>
+                    <span>- GH₵{totalDiscount.toFixed(2)}</span>
+                  </BreakdownRow>
+                )}
                 <BreakdownRow>
-                  <span>Shipping:</span>
+                  <span>
+                    {isPreorderInternational
+                      ? 'International Shipping:'
+                      : 'Shipping:'}
+                  </span>
                   <span>{totalShipping > 0 ? `GH₵${totalShipping.toFixed(2)}` : 'Free'}</span>
                 </BreakdownRow>
                 <TotalAmount>GH₵{grandTotal.toFixed(2)}</TotalAmount>
@@ -1524,6 +1589,19 @@ const PaymentStatusBadge = styled.span`
   font-weight: var(--font-semibold);
   background: var(--color-green-100);
   color: var(--color-green-700);
+`;
+
+const PreorderBadge = styled.span`
+  display: inline-block;
+  margin-left: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-semibold);
+  background: #eff6ff;
+  color: #1d4ed8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 `;
 
 const TrackingLink = styled.span`

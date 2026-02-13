@@ -426,6 +426,46 @@ const CheckoutPage = () => {
     [rawItems]
   );
 
+  const hasPreorderItem = useMemo(
+    () => products.some((item) => item.product?.isPreOrder),
+    [products],
+  );
+
+  // Derive origin country from pre-order products.
+  // If pre-order product exists but no origin specified, default to "China"
+  const preorderOriginCountry = useMemo(() => {
+    const origins = Array.from(
+      new Set(
+        products
+          .filter((item) => item.product?.isPreOrder)
+          .map((item) => {
+            const origin = item.product?.preOrderOriginCountry;
+            return origin ? String(origin).trim() : null;
+          })
+          .filter(Boolean),
+      ),
+    );
+    
+    // If we have a single origin, use it
+    if (origins.length === 1) {
+      return origins[0];
+    }
+    
+    // If pre-order exists but no origin specified, default to "China"
+    // (all pre-orders are assumed to be international from China/USA)
+    if (hasPreorderItem && origins.length === 0) {
+      return "China"; // Default for pre-orders without specified origin
+    }
+    
+    return null;
+  }, [products, hasPreorderItem]);
+
+  const supplierCountry = preorderOriginCountry || (hasPreorderItem ? "China" : null);
+
+  // Pre-orders are ALWAYS international (from China/USA)
+  // If origin not specified, default to "China"
+  const isInternationalPreorderEnabled = hasPreorderItem && supplierCountry;
+
   // EazShop products detection
   const hasEazShopProducts = useMemo(
     () =>
@@ -475,9 +515,13 @@ const CheckoutPage = () => {
   const backendTotal = backendTotals?.totalAmount ?? backendTotals?.total ?? null;
   const backendDiscount = backendTotals?.discount || discount;
   const backendSubtotal = backendTotals?.subtotal || subTotal;
+  const internationalBreakdown = backendTotals?.internationalBreakdown || null;
 
-  // Total = subtotal - discount + shipping; use backend when available, else computed. If backend is 1 short of (subtotal + shipping), use computed so 1200 + 16 = 1216
-  const computedTotal = Math.round(round(Math.max(0, (backendSubtotal ?? subTotal) - (backendDiscount ?? discount) + shippingFee)));
+  // For international: use backend shipping; else use local shipping
+  const effectiveShippingFee = isInternationalPreorderEnabled && internationalBreakdown
+    ? (backendTotals?.shipping ?? 0)
+    : shippingFee;
+  const computedTotal = Math.round(round(Math.max(0, (backendSubtotal ?? subTotal) - (backendDiscount ?? discount) + effectiveShippingFee)));
   const total = backendTotal != null
     ? (computedTotal > backendTotal ? computedTotal : backendTotal)
     : computedTotal;
@@ -1066,9 +1110,17 @@ const CheckoutPage = () => {
         },
         onError: (error) => {
           setDiscount(0);
-          setCouponMessage(
-            error.response?.data?.message || "Failed to apply coupon"
-          );
+          const backendMessage = error?.response?.data?.message || error?.message || "";
+          // Friendlier, human-readable message for users
+          if (backendMessage.toLowerCase().includes("invalid or expired coupon")) {
+            setCouponMessage(
+              "This coupon is invalid or has expired. Please check the code or try a different coupon."
+            );
+          } else {
+            setCouponMessage(
+              "We couldn’t apply this coupon to your cart. Please verify the code or try another coupon."
+            );
+          }
           setCouponData(null);
         },
       }
@@ -1162,9 +1214,10 @@ const CheckoutPage = () => {
         // ✅ DO NOT send discountAmount - backend calculates it
       }),
       deliveryMethod,
-      // Always send the shipping amount selected at checkout so the order uses it
-      // Backend expects only `shippingFee` (validator rejects unknown fields like totalShippingFee)
-      shippingFee: shippingFee,
+      // Backend expects shippingFee; for international, backend recalculates from config
+      shippingFee: isInternationalPreorderEnabled && internationalBreakdown
+        ? (backendTotals?.shipping ?? 0)
+        : shippingFee,
       ...(deliveryMethod === "pickup_center" &&
         selectedPickupCenterId && {
         pickupCenterId: selectedPickupCenterId,
@@ -1172,6 +1225,10 @@ const CheckoutPage = () => {
       ...(deliveryMethod === "dispatch" && {
         deliverySpeed: deliverySpeed === "same_day" ? "same_day" : "standard",
         shippingType: deliverySpeed === "same_day" ? "same_day" : "standard",
+      }),
+      ...(isInternationalPreorderEnabled && {
+        orderType: "preorder_international",
+        supplierCountry,
       }),
     };
 
@@ -1615,16 +1672,17 @@ const CheckoutPage = () => {
           </TabContent>
         </ShippingSection>
 
-        {/* Delivery Method Section */}
-        <DeliveryMethodSection>
-          <SectionHeader>
-            <SectionTitle>Delivery Method</SectionTitle>
-            <InfoText>
-              Saiisai currently delivers only in Accra and Tema
-            </InfoText>
-          </SectionHeader>
+        {/* Delivery Method Section - Hide for pre-orders */}
+        {!hasPreorderItem && (
+          <DeliveryMethodSection>
+            <SectionHeader>
+              <SectionTitle>Delivery Method</SectionTitle>
+              <InfoText>
+                Saiisai currently delivers only in Accra and Tema
+              </InfoText>
+            </SectionHeader>
 
-          <DeliveryOptions>
+            <DeliveryOptions>
             {/* Pickup Center */}
             <DeliveryOption
               $selected={deliveryMethod === "pickup_center"}
@@ -1818,12 +1876,25 @@ const CheckoutPage = () => {
               </>
             )}
 
-          </DeliveryOptions>
+            </DeliveryOptions>
 
-          {isCalculatingShipping && (
-            <LoadingState message="Calculating shipping..." />
-          )}
-        </DeliveryMethodSection>
+            {isCalculatingShipping && (
+              <LoadingState message="Calculating shipping..." />
+            )}
+          </DeliveryMethodSection>
+        )}
+
+        {/* Pre-order Info Message */}
+        {hasPreorderItem && (
+          <DeliveryMethodSection>
+            <SectionHeader>
+              <SectionTitle>International Pre-Order</SectionTitle>
+              <InfoText>
+                This is an international pre-order. Shipping charges include international shipping, customs, and local delivery fees.
+              </InfoText>
+            </SectionHeader>
+          </DeliveryMethodSection>
+        )}
 
         {/* Payment Section */}
         <PaymentSection>
@@ -2053,6 +2124,17 @@ const CheckoutPage = () => {
             <span>Subtotal:</span>
             <span>GH₵{(backendSubtotal ?? subTotal).toFixed(2)}</span>
           </SummaryItem>
+
+          {hasPreorderItem && (
+            <SummaryItem style={{ fontSize: "0.85rem", color: "#4b5563" }}>
+              <span>Order type:</span>
+              <span>
+                {isInternationalPreorderEnabled
+                  ? "International Pre-order"
+                  : "Pre-order"}
+              </span>
+            </SummaryItem>
+          )}
           <SummaryItem style={{ fontSize: "0.85rem", color: "#666" }}>
             <span>Price includes applicable taxes</span>
           </SummaryItem>
@@ -2064,18 +2146,48 @@ const CheckoutPage = () => {
             </SummaryItem>
           )}
 
-          <SummaryItem>
-            <span>Shipping Charges:</span>
-            <span>
-              {isCalculatingShipping ? (
-                <LoadingSpinner size="sm" />
-              ) : shippingFee > 0 ? (
-                `GH₵${shippingFee.toFixed(2)}`
-              ) : (
-                "Free"
-              )}
-            </span>
-          </SummaryItem>
+          {isInternationalPreorderEnabled && (
+            <SummaryItem style={{ fontSize: "0.85rem", color: "#4b5563" }}>
+              <span>Country of origin:</span>
+              <span>{supplierCountry}</span>
+            </SummaryItem>
+          )}
+
+          {isInternationalPreorderEnabled && internationalBreakdown ? (
+            <>
+              <SummaryItem>
+                <span>International Shipping ({supplierCountry}):</span>
+                <span>GH₵{(internationalBreakdown.shippingCost || 0).toFixed(2)}</span>
+              </SummaryItem>
+              <SummaryItem>
+                <span>Estimated Customs &amp; Taxes:</span>
+                <span>GH₵{(internationalBreakdown.totalCustoms || 0).toFixed(2)}</span>
+              </SummaryItem>
+              <SummaryItem>
+                <span>Clearing Fee:</span>
+                <span>GH₵{(internationalBreakdown.clearingFee || 0).toFixed(2)}</span>
+              </SummaryItem>
+              <SummaryItem style={{ fontSize: "0.8rem", color: "#4b5563" }}>
+                <span>
+                  International pre-order. Estimated arrival 15–25 days. Customs
+                  delays may occur.
+                </span>
+              </SummaryItem>
+            </>
+          ) : (
+            <SummaryItem>
+              <span>Local Delivery (Shipping Charges):</span>
+              <span>
+                {isCalculatingShipping ? (
+                  <LoadingSpinner size="sm" />
+                ) : shippingFee > 0 ? (
+                  `GH₵${shippingFee.toFixed(2)}`
+                ) : (
+                  "Free"
+                )}
+              </span>
+            </SummaryItem>
+          )}
 
           <SummaryTotal>
             <span>Total:</span>
