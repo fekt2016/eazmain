@@ -209,20 +209,49 @@ const HomePage = () => {
   }, [recordProductView]);
 
   // Resolve ad link to full URL using FRONTEND_URL environment variable
+  // Also replaces localhost URLs with production FRONTEND_URL
   const resolveAdLink = useCallback((link) => {
     if (!link || typeof link !== "string") return PATHS.PRODUCTS;
     const raw = link.trim();
     
-    // If it's already an absolute URL, return as-is
+    // Priority: VITE_FRONTEND_URL > VITE_API_URL (without /api) > window.location.origin
+    // In production, VITE_FRONTEND_URL should be set to https://saiisai.com
+    let frontendUrl = import.meta.env.VITE_FRONTEND_URL;
+    
+    // If VITE_FRONTEND_URL is not set, try to derive from VITE_API_URL or VITE_API_BASE_URL
+    if (!frontendUrl) {
+      const apiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
+      if (apiUrl) {
+        // Remove /api and trailing slashes to get frontend URL
+        frontendUrl = apiUrl.replace(/\/api\/?.*$/, '').replace(/\/$/, '');
+      }
+    }
+    
+    // Fallback to window.location.origin only if env vars are not available
+    if (!frontendUrl) {
+      frontendUrl = window.location.origin;
+    }
+    
+    const cleanFrontendUrl = frontendUrl.trim().replace(/\/$/, ''); // Remove trailing slash
+    
+    // If it's a localhost URL, replace it with production URL
+    if (/^https?:\/\/localhost/i.test(raw) || /^https?:\/\/127\.0\.0\.1/i.test(raw)) {
+      try {
+        const url = new URL(raw);
+        const path = url.pathname + url.search + url.hash;
+        return `${cleanFrontendUrl}${path}`;
+      } catch (error) {
+        const pathMatch = raw.match(/^https?:\/\/[^\/]+(\/.*)?$/);
+        const path = pathMatch && pathMatch[1] ? pathMatch[1] : '/';
+        return `${cleanFrontendUrl}${path}`;
+      }
+    }
+    
+    // If it's already an absolute URL (and not localhost), return as-is
     if (/^https?:\/\//i.test(raw)) return raw;
     
     // If it's a relative path, prepend FRONTEND_URL
-    const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 
-                        import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 
-                        window.location.origin;
-    const cleanFrontendUrl = frontendUrl.trim().replace(/\/$/, ''); // Remove trailing slash
     const cleanLink = raw.startsWith("/") ? raw.substring(1) : raw; // Remove leading slash
-    
     return `${cleanFrontendUrl}/${cleanLink}`;
   }, []);
 
