@@ -153,6 +153,25 @@ const isValidUrl = (url) => {
   }
 };
 
+// Helper to normalize ad link using FRONTEND_URL environment variable
+const normalizeAdLink = (link) => {
+  if (!link || typeof link !== 'string') return link;
+  
+  // If it's already an absolute URL, return as-is
+  if (/^https?:\/\//i.test(link.trim())) {
+    return link.trim();
+  }
+  
+  // If it's a relative path, prepend FRONTEND_URL
+  const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 
+                      import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 
+                      window.location.origin;
+  const cleanFrontendUrl = frontendUrl.trim().replace(/\/$/, ''); // Remove trailing slash
+  const cleanLink = link.trim().replace(/^\//, ''); // Remove leading slash from link
+  
+  return `${cleanFrontendUrl}/${cleanLink}`;
+};
+
 const AdPopup = ({ ad, open, onDismiss }) => {
   useEffect(() => {
     if (!open) return undefined;
@@ -178,7 +197,9 @@ const AdPopup = ({ ad, open, onDismiss }) => {
     return null;
   }
 
-  const safeLink = isValidUrl(ad.link);
+  // Normalize the link using FRONTEND_URL
+  const normalizedLink = normalizeAdLink(ad.link);
+  const safeLink = isValidUrl(normalizedLink);
   const subtitle = ad.subtitle ?? ad.description ?? "";
   const handleDismiss = (reason = "close") => onDismiss?.(ad, { reason });
 
@@ -209,7 +230,7 @@ const AdPopup = ({ ad, open, onDismiss }) => {
           <PopupActions>
             {safeLink ? (
               <ActionButton
-                href={ad.link}
+                href={normalizedLink}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => handleDismiss("cta")}

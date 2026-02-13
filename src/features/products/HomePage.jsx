@@ -208,12 +208,22 @@ const HomePage = () => {
     }
   }, [recordProductView]);
 
-  // Resolve ad link to full URL for external or path for internal
+  // Resolve ad link to full URL using FRONTEND_URL environment variable
   const resolveAdLink = useCallback((link) => {
     if (!link || typeof link !== "string") return PATHS.PRODUCTS;
     const raw = link.trim();
+    
+    // If it's already an absolute URL, return as-is
     if (/^https?:\/\//i.test(raw)) return raw;
-    return raw.startsWith("/") ? raw : `/${raw}`;
+    
+    // If it's a relative path, prepend FRONTEND_URL
+    const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 
+                        import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 
+                        window.location.origin;
+    const cleanFrontendUrl = frontendUrl.trim().replace(/\/$/, ''); // Remove trailing slash
+    const cleanLink = raw.startsWith("/") ? raw.substring(1) : raw; // Remove leading slash
+    
+    return `${cleanFrontendUrl}/${cleanLink}`;
   }, []);
 
   const isExternalLink = useCallback((link) => {
