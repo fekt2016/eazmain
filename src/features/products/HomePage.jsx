@@ -210,40 +210,128 @@ const HomePage = () => {
 
   // Resolve ad link to full URL using FRONTEND_URL environment variable
   // Also replaces localhost URLs with production FRONTEND_URL
+  // PRODUCTION-SAFE: Always replaces localhost URLs with production domain
   const resolveAdLink = useCallback((link) => {
     if (!link || typeof link !== "string") return PATHS.PRODUCTS;
     const raw = link.trim();
     
-    // Priority: VITE_FRONTEND_URL > VITE_API_URL (without /api) > window.location.origin
-    // In production, VITE_FRONTEND_URL should be set to https://saiisai.com
-    let frontendUrl = import.meta.env.VITE_FRONTEND_URL;
+    // Get current origin (in production: https://saiisai.com, in dev: http://localhost:5173)
+    const currentOrigin = window.location.origin;
+    const isProduction = !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(currentOrigin);
     
-    // If VITE_FRONTEND_URL is not set, try to derive from VITE_API_URL or VITE_API_BASE_URL
-    if (!frontendUrl) {
+    // Determine the production frontend URL to use for replacing localhost links
+    // Priority:
+    // 1. VITE_FRONTEND_URL (if set and not localhost)
+    // 2. VITE_API_URL/VITE_API_BASE_URL (derive from API URL, if not localhost)
+    // 3. window.location.origin (if in production)
+    // 4. Hardcoded production domain as last resort
+    let productionFrontendUrl = import.meta.env.VITE_FRONTEND_URL;
+    
+    // Ignore localhost env vars - we want production URL
+    if (productionFrontendUrl && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(productionFrontendUrl)) {
+      productionFrontendUrl = null;
+    }
+    
+    // Try to derive from API URL (if it's production API)
+    if (!productionFrontendUrl) {
       const apiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
-      if (apiUrl) {
+      if (apiUrl && !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(apiUrl)) {
         // Remove /api and trailing slashes to get frontend URL
-        frontendUrl = apiUrl.replace(/\/api\/?.*$/, '').replace(/\/$/, '');
+        productionFrontendUrl = apiUrl.replace(/\/api\/?.*$/, '').replace(/\/$/, '');
       }
     }
     
-    // Fallback to window.location.origin only if env vars are not available
-    if (!frontendUrl) {
-      frontendUrl = window.location.origin;
+    // In production, use current origin
+    if (isProduction && !productionFrontendUrl) {
+      productionFrontendUrl = currentOrigin;
     }
     
-    const cleanFrontendUrl = frontendUrl.trim().replace(/\/$/, ''); // Remove trailing slash
+    // If still not set and we're replacing a localhost link, use hardcoded production domain
+    // This ensures localhost links always get replaced, even in development
+    if (!productionFrontendUrl || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(productionFrontendUrl)) {
+      // Check API URL again - if it's production API (api.saiisai.com), use saiisai.com
+      const apiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
+      if (apiUrl && apiUrl.includes('api.saiisai.com')) {
+        productionFrontendUrl = 'https://saiisai.com';
+      } else if (isProduction) {
+        productionFrontendUrl = currentOrigin;
+      } else {
+        // In development, if we have a localhost link, we still want to replace it with production
+        // But if no production URL is available, keep it as localhost for dev
+        productionFrontendUrl = currentOrigin;
+      }
+    }
     
-    // If it's a localhost URL, replace it with production URL
-    if (/^https?:\/\/localhost/i.test(raw) || /^https?:\/\/127\.0\.0\.1/i.test(raw)) {
+    const cleanFrontendUrl = productionFrontendUrl.trim().replace(/\/$/, ''); // Remove trailing slash
+    
+    // CRITICAL: Always replace localhost URLs with production URL
+    // Even in development, if a link contains localhost, replace it with production domain
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(raw)) {
       try {
         const url = new URL(raw);
         const path = url.pathname + url.search + url.hash;
-        return `${cleanFrontendUrl}${path}`;
+        
+        // Determine production URL to use for replacement
+        // Always prioritize production domain, never use localhost
+        let replacementUrl = null;
+        
+        // First, check API URL - if it contains api.saiisai.com, use saiisai.com
+        const apiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
+        if (apiUrl) {
+          if (apiUrl.includes('api.saiisai.com')) {
+            replacementUrl = 'https://saiisai.com';
+          } else if (!/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(apiUrl)) {
+            // If API URL is production (not localhost), derive frontend URL
+            replacementUrl = apiUrl.replace(/\/api\/?.*$/, '').replace(/\/$/, '');
+          }
+        }
+        
+        // If still not set, use cleanFrontendUrl only if it's NOT localhost
+        if (!replacementUrl && !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(cleanFrontendUrl)) {
+          replacementUrl = cleanFrontendUrl;
+        }
+        
+        // If still not set and we're in production, use current origin
+        if (!replacementUrl && isProduction) {
+          replacementUrl = currentOrigin;
+        }
+        
+        // Final fallback: hardcode production domain if API suggests production
+        if (!replacementUrl && apiUrl && apiUrl.includes('api.saiisai.com')) {
+          replacementUrl = 'https://saiisai.com';
+        }
+        
+        // Last resort: keep localhost only if we're truly in dev with no production API
+        if (!replacementUrl) {
+          replacementUrl = cleanFrontendUrl;
+        }
+        
+        const normalized = `${replacementUrl}${path}`;
+        // Debug log
+        console.log('[resolveAdLink] Normalized localhost URL:', { 
+          original: raw, 
+          normalized, 
+          replacementUrl,
+          frontendUrl: cleanFrontendUrl,
+          isProduction,
+          currentOrigin,
+          apiUrl: apiUrl,
+          apiUrlCheck: apiUrl ? apiUrl.includes('api.saiisai.com') : false
+        });
+        return normalized;
       } catch (error) {
         const pathMatch = raw.match(/^https?:\/\/[^\/]+(\/.*)?$/);
         const path = pathMatch && pathMatch[1] ? pathMatch[1] : '/';
-        return `${cleanFrontendUrl}${path}`;
+        
+        // Same logic for fallback
+        const apiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
+        let replacementUrl = cleanFrontendUrl;
+        if (apiUrl && apiUrl.includes('api.saiisai.com')) {
+          replacementUrl = 'https://saiisai.com';
+        }
+        
+        const normalized = `${replacementUrl}${path}`;
+        return normalized;
       }
     }
     
@@ -347,13 +435,44 @@ const HomePage = () => {
         >
           {heroSlides.map((slide) => {
             const formattedEnd = slide.endDate ? formatPromoEndDate(slide.endDate) : null;
-            const external = isExternalLink(slide.link);
+            // CRITICAL: Always normalize the link to ensure no localhost URLs
+            let normalizedSlideLink = slide.link ? resolveAdLink(slide.link) : PATHS.PRODUCTS;
+            
+            // Double-check: if somehow localhost still exists, replace it again
+            if (normalizedSlideLink && typeof normalizedSlideLink === 'string') {
+              if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(normalizedSlideLink)) {
+                // Get production URL again
+                let frontendUrl = import.meta.env.VITE_FRONTEND_URL;
+                if (!frontendUrl) {
+                  const apiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
+                  if (apiUrl) {
+                    frontendUrl = apiUrl.replace(/\/api\/?.*$/, '').replace(/\/$/, '');
+                  }
+                }
+                if (!frontendUrl) {
+                  frontendUrl = window.location.origin;
+                }
+                const cleanFrontendUrl = frontendUrl.trim().replace(/\/$/, '');
+                try {
+                  const url = new URL(normalizedSlideLink);
+                  const path = url.pathname + url.search + url.hash;
+                  normalizedSlideLink = `${cleanFrontendUrl}${path}`;
+                } catch (error) {
+                  const pathMatch = normalizedSlideLink.match(/^https?:\/\/[^\/]+(\/.*)?$/);
+                  const path = pathMatch && pathMatch[1] ? pathMatch[1] : '/';
+                  normalizedSlideLink = `${cleanFrontendUrl}${path}`;
+                }
+              }
+            }
+            
+            // Determine if it's an external link (full URL) or internal (relative path)
+            const external = normalizedSlideLink && /^https?:\/\//i.test(normalizedSlideLink);
             const ctaEl = external ? (
-              <SlideButtonAsAnchor href={slide.link} target="_blank" rel="noopener noreferrer">
+              <SlideButtonAsAnchor href={normalizedSlideLink} target="_blank" rel="noopener noreferrer">
                 {slide.cta} <FaArrowRight />
               </SlideButtonAsAnchor>
             ) : (
-              <SlideButton to={slide.link}>
+              <SlideButton to={normalizedSlideLink}>
                 {slide.cta} <FaArrowRight />
               </SlideButton>
             );
