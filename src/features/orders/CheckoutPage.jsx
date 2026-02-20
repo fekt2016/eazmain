@@ -41,6 +41,8 @@ import NeighborhoodAutocomplete from "../../shared/components/NeighborhoodAutoco
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import locationApi from "../../shared/services/locationApi";
 import neighborhoodService from "../../shared/services/neighborhoodApi";
+import { ACCRA_NEIGHBORHOODS, TEMA_NEIGHBORHOODS, getCityForNeighborhood } from "../../shared/config/neighborhoods";
+
 
 // ────────────────────────────────────────────────
 // Helper functions
@@ -1506,53 +1508,36 @@ const CheckoutPage = () => {
                 <FormRow>
                   <FormGroup>
                     <Label>Neighborhood/Area *</Label>
-                    {autoNeighborhoodOptions.length > 0 ? (
-                      <>
-                        <Select
-                          name="area"
-                          value={newAddress.area}
-                          onChange={(e) => {
-                            const selectedName = e.target.value;
-                            setNewAddress((prev) => ({
-                              ...prev,
-                              area: selectedName,
-                            }));
-                          }}
-                        >
-                          <option value="">Select neighborhood</option>
-                          {autoNeighborhoodOptions.map((n) => (
-                            <option
-                              key={n._id || n.name}
-                              value={n.name}
-                            >
-                              {n.name}
-                              {n.municipality ? ` (${n.municipality})` : ""}
-                            </option>
-                          ))}
-                        </Select>
-                        <HintText>
-                          We detected multiple neighborhoods for your area. Please choose the correct one.
-                        </HintText>
-                      </>
-                    ) : (
-                      <>
-                        <NeighborhoodAutocomplete
-                          value={newAddress.area}
-                          onChange={handleAddressChange}
-                          city={newAddress.city}
-                          placeholder="Search neighborhood (e.g., Nima, Cantonments, Tema Community 1)"
-                          onSelect={(neighborhood) => {
-                            setNewAddress((prev) => ({
-                              ...prev,
-                              area: neighborhood.name,
-                            }));
-                          }}
-                        />
-                        <HintText>
-                          Start typing to search for your neighborhood
-                        </HintText>
-                      </>
-                    )}
+                    <Select
+                      name="area"
+                      value={newAddress.area}
+                      onChange={(e) => {
+                        const selectedName = e.target.value;
+                        const detectedCity = getCityForNeighborhood(selectedName);
+                        setNewAddress((prev) => ({
+                          ...prev,
+                          area: selectedName,
+                          ...(detectedCity && { city: detectedCity.toUpperCase() }),
+                        }));
+                        setErrors((prev) => ({ ...prev, area: undefined, city: undefined }));
+                      }}
+                      required
+                    >
+                      <option value="">— Select your neighborhood —</option>
+                      <optgroup label="📍 Accra">
+                        {ACCRA_NEIGHBORHOODS.map((name) => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="📍 Tema">
+                        {TEMA_NEIGHBORHOODS.map((name) => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </optgroup>
+                    </Select>
+                    <HintText>
+                      Select your neighborhood — city will be auto-filled
+                    </HintText>
                     {errors.area && (
                       <ErrorText>{errors.area}</ErrorText>
                     )}

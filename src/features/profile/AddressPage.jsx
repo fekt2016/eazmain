@@ -33,6 +33,7 @@ import Button from '../../shared/components/Button';
 import { LoadingState, ErrorState } from '../../components/loading';
 import logger from '../../shared/utils/logger';
 import { sanitizeText, sanitizeAddress, sanitizePhone } from '../../shared/utils/sanitize';
+import { ACCRA_NEIGHBORHOODS, TEMA_NEIGHBORHOODS, getCityForNeighborhood } from '../../shared/config/neighborhoods';
 
 const AddressManagementPage = () => {
   const navigate = useNavigate();
@@ -438,19 +439,37 @@ const AddressManagementPage = () => {
                 <FormGroup>
                   <Label>
                     <FaMapPin />
-                    Area/Town *
+                    Neighborhood/Area *
                   </Label>
-                  <Input
-                    type="text"
+                  <Select
                     name="area"
                     value={formData.area}
-                    onChange={handleInputChange}
-                    placeholder="e.g., Nima, Cantonments, Tema Community 1"
+                    onChange={(e) => {
+                      const selectedName = e.target.value;
+                      const detectedCity = getCityForNeighborhood(selectedName);
+                      setFormData((prev) => ({
+                        ...prev,
+                        area: selectedName,
+                        ...(detectedCity && { city: detectedCity }),
+                      }));
+                    }}
                     required
                     disabled={isCreating || isUpdating}
-                  />
+                  >
+                    <option value="">— Select your neighborhood —</option>
+                    <optgroup label="📍 Accra">
+                      {ACCRA_NEIGHBORHOODS.map((name) => (
+                        <option key={name} value={name}>{name}</option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="📍 Tema">
+                      {TEMA_NEIGHBORHOODS.map((name) => (
+                        <option key={name} value={name}>{name}</option>
+                      ))}
+                    </optgroup>
+                  </Select>
                   <HelpText>
-                    Enter your neighborhood/area name (e.g., Nima, Osu, Tema Community 1)
+                    Select your neighborhood — city will be auto-filled
                   </HelpText>
                 </FormGroup>
 
