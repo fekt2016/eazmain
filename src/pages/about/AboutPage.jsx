@@ -56,17 +56,17 @@ import {
 } from './about.styles';
 
 /**
- * Premium About Us Page for Saysay
+ * Premium About Us Page for Saiisai
  * Modern, polished design inspired by Shopify, Stripe, Notion, and Airbnb
  */
 const AboutPage = () => {
   // SEO
   useDynamicPageTitle({
-    title: 'About Us • EazWorld',
-    description: 'Learn more about EazWorld, our mission, vision, and story. Building the future of e-commerce, logistics, and technology for Africa and the world.',
-    keywords: 'Saysay, about us, company story, mission, vision, e-commerce, marketplace, Africa',
-    defaultTitle: 'About Us • EazWorld',
-    defaultDescription: 'Learn more about EazWorld, our mission, vision, and story.',
+    title: 'About Us • Saiisai',
+    description: 'Learn more about Saiisai, our mission, vision, and story. Building the future of e-commerce and technology in Ghana and Africa.',
+    keywords: 'Saiisai, about us, company story, mission, vision, e-commerce, marketplace, Ghana, Africa',
+    defaultTitle: 'About Us • Saiisai',
+    defaultDescription: 'Learn more about Saiisai, our mission, vision, and story.',
   });
 
   // Animation variants
@@ -126,13 +126,13 @@ const AboutPage = () => {
   const timelineEvents = [
     {
       year: '2023',
-      title: 'EazWorld Founded',
-      description: 'EazWorld was established with a vision to revolutionize digital commerce and technology services in Africa.',
+      title: 'Saiisai Founded',
+      description: 'Saiisai was established with a vision to revolutionize digital commerce and technology services in Africa.',
     },
     {
       year: '2024',
-      title: 'Saysay Marketplace Launched',
-      description: 'We launched Saysay, a comprehensive online marketplace connecting buyers and sellers across Ghana and beyond.',
+      title: 'Saiisai Marketplace Launched',
+      description: 'We launched Saiisai, a comprehensive online marketplace connecting buyers and sellers across Ghana and beyond.',
     },
     {
       year: '2024',
@@ -204,32 +204,26 @@ const AboutPage = () => {
         <SectionTitle>Who We Are</SectionTitle>
         <OverviewGrid>
           <OverviewContent>
-            <h3>EazWorld: Your Complete Digital Ecosystem</h3>
+            <h3>Saiisai: Your Complete Digital Ecosystem</h3>
             <p>
-              EazWorld is a multi-product technology company dedicated to empowering businesses
-              and individuals across Africa through innovative digital solutions. We've built a
-              comprehensive ecosystem that addresses the diverse needs of modern commerce and services.
+              Saiisai is a Ghanaian-born technology powerhouse, founded with the mission to solve common bottlenecks in Africa's digital landscape.
+              We are not just a marketplace; we are a comprehensive ecosystem designed to bridge the gap between traditional commerce and the modern global economy.
+            </p>
+            <p>
+              Our operations are rooted in Accra, but our vision is continental. We believe that by providing robust, transparent, and scalable tools, we can empower the next generation of African entrepreneurs and consumers.
             </p>
             <ul>
               <li>
-                <strong>Saysay</strong> — A leading online marketplace connecting buyers and sellers
-                with secure transactions, fast delivery, and exceptional customer service.
+                <strong>Saiisai Marketplace</strong> — Ghana's most trusted online destination for authentic products, featuring verified sellers and a seamless shopping experience.
               </li>
               <li>
-                <strong>Seller Portal</strong> — A powerful seller dashboard that helps merchants manage
-                products, orders, finances, and grow their online business.
+                <strong>Powered by Technology</strong> — Our proprietary Seller and Admin portals (EazSeller & EazAdmin) provide unparalleled data insights and operational efficiency for local businesses.
               </li>
               <li>
-                <strong>EazAdmin</strong> — An advanced admin portal for managing operations, users,
-                payments, and the entire platform ecosystem.
+                <strong>Integrated Mobility</strong> — Through <strong>BenzFlex</strong>, we provide modern logistics and car rental solutions, ensuring that mobility is never a barrier to business growth.
               </li>
               <li>
-                <strong>BenzFlex</strong> — A modern car rental and mobility service platform for
-                businesses and individuals.
-              </li>
-              <li>
-                <strong>Additional Services</strong> — We also provide domain registration, web hosting,
-                and logistics solutions to support your digital journey.
+                <strong>Digital Infrastructure</strong> — We provide the foundation for online presence through professional web hosting and domain registration services tailored for the African market.
               </li>
             </ul>
           </OverviewContent>
@@ -266,17 +260,15 @@ const AboutPage = () => {
           <MissionCard variants={staggerItem}>
             <h3>Our Mission</h3>
             <p>
-              To empower businesses and customers with fast, reliable, and transparent technology
-              systems that enhance commerce and daily services. We strive to make digital solutions
-              accessible, affordable, and impactful for everyone.
+              To catalyze the growth of African businesses by providing the most reliable, transparent, and accessible digital infrastructure.
+              We aim to eliminate friction in commerce, logistics, and technology services, ensuring that every Ghanaian entrepreneur has the tools they need to thrive.
             </p>
           </MissionCard>
           <MissionCard variants={staggerItem}>
             <h3>Our Vision</h3>
             <p>
-              To become the leading digital ecosystem in Africa, connecting buyers, sellers, and
-              businesses through innovation and automation. We envision a future where technology
-              seamlessly integrates into every aspect of commerce and daily life.
+              To be the primary engine of Africa's digital transformation. We envision a future where Saiisai is the first choice for every transaction,
+              connecting millions across the continent through a unified, automated, and secure digital ecosystem that sets the global standard for emerging markets.
             </p>
           </MissionCard>
         </MissionVisionGrid>
@@ -350,7 +342,7 @@ const AboutPage = () => {
       >
         <SectionTitle>Meet Our Team</SectionTitle>
         <SectionDescription>
-          The passionate individuals behind EazWorld's success.
+          The passionate individuals behind Saiisai's success.
         </SectionDescription>
         <TeamGrid>
           {teamMembers.map((member, index) => (
@@ -402,7 +394,7 @@ const AboutPage = () => {
         viewport={{ once: true, amount: 0.3 }}
         variants={fadeUp}
       >
-        <CTATitle>Join the EazWorld Ecosystem</CTATitle>
+        <CTATitle>Join the Saiisai Ecosystem</CTATitle>
         <CTASubtitle>
           Whether you're a buyer, seller, or business, we're here to support your growth.
         </CTASubtitle>

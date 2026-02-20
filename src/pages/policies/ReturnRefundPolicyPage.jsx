@@ -42,11 +42,11 @@ const ReturnRefundPolicyPage = () => {
 
   // SEO
   useDynamicPageTitle({
-    title: 'Return & Refund Policy • EazShop',
-    description: 'Learn about EazShop\'s return and refund process, timelines, and policies.',
-    keywords: 'return policy, refund policy, EazShop returns, EazShop refunds, return process',
-    defaultTitle: 'Return & Refund Policy • EazShop',
-    defaultDescription: 'Learn about EazShop\'s return and refund process.',
+    title: 'Return & Refund Policy • Saiisai',
+    description: 'Learn about Saiisai\'s return and refund process, timelines, and policies.',
+    keywords: 'return policy, refund policy, Saiisai returns, Saiisai refunds, return process',
+    defaultTitle: 'Return & Refund Policy • Saiisai',
+    defaultDescription: 'Learn about Saiisai\'s return and refund process.',
   });
 
   // Animation variants
@@ -82,7 +82,7 @@ const ReturnRefundPolicyPage = () => {
           <PolicyTitle>Return & Refund Policy</PolicyTitle>
           <LastUpdated>Last Updated: {lastUpdatedDate}</LastUpdated>
           <IntroText>
-            If you are not satisfied with an item purchased on EazShop, you may be eligible to return it and receive a refund. Please follow the procedure outlined in this Return and Refund Policy.
+            If you are not satisfied with an item purchased on Saiisai, you may be eligible to return it and receive a refund. Please follow the procedure outlined in this Return and Refund Policy.
           </IntroText>
         </PolicyHeader>
 
@@ -98,7 +98,7 @@ const ReturnRefundPolicyPage = () => {
                 <LetteredList>
                   <li>
                     <Paragraph>
-                      Go to your EazShop account (web or app) and request a return. If you ordered as a guest, click "Track Your Order" in your order confirmation email.
+                      Go to your Saiisai account (web or app) and request a return. If you ordered as a guest, click "Track Your Order" in your order confirmation email.
                     </Paragraph>
                   </li>
                   <li>
@@ -116,7 +116,7 @@ const ReturnRefundPolicyPage = () => {
                       If the item does not need to be physically returned, select your refund method:
                     </Paragraph>
                     <BulletList>
-                      <li>Refund to your EazShop credit balance</li>
+                      <li>Refund to your Saiisai credit balance</li>
                       <li>Refund to your original payment method</li>
                     </BulletList>
                   </li>
@@ -160,7 +160,7 @@ const ReturnRefundPolicyPage = () => {
           <SectionTitle>3. How long do I have to return an item?</SectionTitle>
           <SectionContent>
             <Paragraph>
-              EazShop allows returns <strong>within 90 days</strong> of purchase, with exceptions.
+              Saiisai allows returns <strong>within 90 days</strong> of purchase, with exceptions.
             </Paragraph>
             <Paragraph>
               <strong>Items that cannot be returned:</strong>
@@ -194,7 +194,7 @@ const ReturnRefundPolicyPage = () => {
                   <strong>Advanced Refunds</strong>
                 </Paragraph>
                 <Paragraph>
-                  In some cases, EazShop may issue an advanced refund immediately after you drop off your return package. If the return is not completed or the item fails inspection, EazShop may charge your original payment method.
+                  In some cases, Saiisai may issue an advanced refund immediately after you drop off your return package. If the return is not completed or the item fails inspection, Saiisai may charge your original payment method.
                 </Paragraph>
               </li>
               <li>
@@ -234,18 +234,18 @@ const ReturnRefundPolicyPage = () => {
                   <strong>Refund Processing Time</strong>
                 </Paragraph>
                 <Paragraph>
-                  Bank refunds take <strong>5–14 business days</strong> (up to 30 days). Original shipping fees, import taxes, insurance, and delivery-signature fees are <strong>not refundable</strong>, unless the issue is EazShop's fault.
+                  Bank refunds take <strong>5–14 business days</strong> (up to 30 days). Original shipping fees, import taxes, insurance, and delivery-signature fees are <strong>not refundable</strong>, unless the issue is Saiisai's fault.
                 </Paragraph>
               </li>
               <li>
                 <Paragraph>
-                  <strong>Refund to EazShop Credits</strong>
+                  <strong>Refund to Saiisai Credits</strong>
                 </Paragraph>
                 <BulletList>
                   <li>Faster processing</li>
                   <li>No expiration</li>
                   <li>Cannot usually be converted to cash</li>
-                  <li>Can only be used for purchases on EazShop</li>
+                  <li>Can only be used for purchases on Saiisai</li>
                 </BulletList>
               </li>
             </LetteredList>
@@ -259,7 +259,7 @@ const ReturnRefundPolicyPage = () => {
           <SectionTitle>5. Refund Timeline</SectionTitle>
           <SectionContent>
             <Paragraph>
-              After EazShop processes the refund, your financial institution may require additional processing time based on the payment provider. The time it takes for the refund to appear in your account depends on your bank or payment method's processing policies.
+              After Saiisai processes the refund, your financial institution may require additional processing time based on the payment provider. The time it takes for the refund to appear in your account depends on your bank or payment method's processing policies.
             </Paragraph>
           </SectionContent>
         </PolicySection>
@@ -278,7 +278,7 @@ const ReturnRefundPolicyPage = () => {
               </li>
               <li>
                 <Paragraph>
-                  Do <strong>NOT</strong> place unintended items inside your return package. EazShop cannot guarantee recovery or compensation for misplaced items.
+                  Do <strong>NOT</strong> place unintended items inside your return package. Saiisai cannot guarantee recovery or compensation for misplaced items.
                 </Paragraph>
               </li>
             </LetteredList>

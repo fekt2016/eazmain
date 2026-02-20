@@ -19,17 +19,19 @@ const PasswordField = ({ id, label, error, required = false, ...inputProps }) =>
         icon={FaLock}
         error={error}
         required={required}
+        endAdornment={
+          <ToggleButton
+            type="button"
+            onClick={togglePasswordVisibility}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-pressed={showPassword}
+            tabIndex={0}
+          >
+            {showPassword ? <FaEyeSlash /> : <FaEye />}
+          </ToggleButton>
+        }
         {...inputProps}
       />
-      <ToggleButton
-        type="button"
-        onClick={togglePasswordVisibility}
-        aria-label={showPassword ? "Hide password" : "Show password"}
-        aria-pressed={showPassword}
-        tabIndex={0}
-      >
-        {showPassword ? <FaEyeSlash /> : <FaEye />}
-      </ToggleButton>
     </PasswordFieldWrapper>
   );
 };
@@ -40,10 +42,6 @@ const PasswordFieldWrapper = styled.div`
 `;
 
 const ToggleButton = styled.button`
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
   background: none;
   border: none;
   color: #999;
@@ -54,7 +52,6 @@ const ToggleButton = styled.button`
   align-items: center;
   justify-content: center;
   transition: color 0.2s;
-  z-index: 2;
   
   &:hover {
     color: #667eea;

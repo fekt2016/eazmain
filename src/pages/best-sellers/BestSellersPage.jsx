@@ -16,7 +16,7 @@ import {
 
 const BestSellersPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  
+
   // Get query parameters
   const sort = searchParams.get('sort') || 'best-seller';
   const category = searchParams.get('category') || null;
@@ -29,9 +29,9 @@ const BestSellersPage = () => {
 
   useDynamicPageTitle({
     title: "Best Sellers",
-    description: "Discover top-performing sellers on EazShop with the most orders. Shop from trusted merchants.",
-    defaultTitle: "Best Sellers – EazShop",
-    defaultDescription: "Discover top-performing sellers on EazShop.",
+    description: "Discover top-performing sellers on Saiisai with the most orders. Shop from trusted merchants.",
+    defaultTitle: "Best Sellers – Saiisai",
+    defaultDescription: "Discover top-performing sellers on Saiisai.",
   });
 
   // Fetch best sellers (sellers with most orders)
@@ -99,7 +99,7 @@ const BestSellersPage = () => {
           onSortChange={handleSortChange}
           onCategoryChange={handleCategoryChange}
         />
-        
+
         {isLoading ? (
           <SkeletonGrid count={12} />
         ) : sellers.length === 0 ? (

@@ -25,7 +25,7 @@ const NewArrivalsHero = ({ totalProducts }) => {
         <HeroContent>
           <HeroTitle>New Arrivals</HeroTitle>
           <HeroSubtitle>
-            Discover the latest products added to EazShop.
+            Discover the latest products added to Saiisai.
           </HeroSubtitle>
           {totalProducts > 0 && (
             <ProductCount>

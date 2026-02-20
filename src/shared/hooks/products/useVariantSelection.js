@@ -111,7 +111,7 @@ export const useVariantSelection = (variants = [], product = null) => {
       // Only match if all attributes are selected (complete selection)
       // For partial selection, we'll use findMatchingVariants to show available options
       const allAttributesSelected = attributeKeys.every(key => selectedAttributes[key]);
-      
+
       if (allAttributesSelected) {
         const matched = matchVariant(selectedAttributes);
         setSelectedVariant(matched);
@@ -212,35 +212,35 @@ export const useVariantSelection = (variants = [], product = null) => {
 
       // Find all variants matching this potential selection
       const matchingVariants = findMatchingVariants(potentialAttributes);
-      
+
       // For complete selection (all attributes selected), find exact match
-      const allAttributesSelected = attributeKeys.every(key => 
+      const allAttributesSelected = attributeKeys.every(key =>
         potentialAttributes[key] !== undefined
       );
-      
+
       let potentialVariant = null;
       let variantStock = 0;
       let isVariantActive = false;
       let availabilityStatus = 'unavailable'; // 'available' | 'outOfStock' | 'unavailable'
-      
+
       if (allAttributesSelected && matchingVariants.length > 0) {
         // Complete selection - find exact match
         potentialVariant = matchVariant(potentialAttributes, variants);
         variantStock = potentialVariant?.stock || 0;
         isVariantActive = potentialVariant?.status !== 'inactive';
-        
+
         if (potentialVariant && isVariantActive) {
           availabilityStatus = variantStock > 0 ? 'available' : 'outOfStock';
         }
       } else if (matchingVariants.length > 0) {
         // Partial selection - check if any matching variant is available
-        const availableVariants = matchingVariants.filter(v => 
+        const availableVariants = matchingVariants.filter(v =>
           v.status !== 'inactive' && (v.stock || 0) > 0
         );
-        const outOfStockVariants = matchingVariants.filter(v => 
+        const outOfStockVariants = matchingVariants.filter(v =>
           v.status !== 'inactive' && (v.stock || 0) === 0
         );
-        
+
         if (availableVariants.length > 0) {
           availabilityStatus = 'available';
           // Use first available variant for stock display
@@ -251,7 +251,7 @@ export const useVariantSelection = (variants = [], product = null) => {
           isVariantActive = true;
         }
       }
-      
+
       // Option disabled: invalid combination, all inactive, or all out of stock (variant combination logic)
       const isDisabled = isOptionDisabled(attributeKey, value);
 
@@ -286,6 +286,57 @@ export const useVariantSelection = (variants = [], product = null) => {
     return isColorValue(value);
   }, []);
 
+  /**
+   * Get variant price
+   */
+  const getVariantPrice = useCallback((variant) => {
+    if (!variant) return 0;
+    // Prefer tax-inclusive price if available
+    if (variant.priceInclVat != null && variant.priceInclVat !== '') {
+      return Number(variant.priceInclVat);
+    }
+    return variant.price || 0;
+  }, []);
+
+  /**
+   * Get variant original price
+   */
+  const getVariantOriginalPrice = useCallback((variant) => {
+    if (!variant) return 0;
+    // Prefer tax-inclusive price if available
+    if (variant.originalPrice != null && variant.originalPrice !== '') {
+      return Number(variant.originalPrice);
+    }
+    if (variant.priceInclVat != null && variant.priceInclVat !== '') {
+      return Number(variant.priceInclVat);
+    }
+    return variant.price || 0;
+  }, []);
+
+  /**
+   * Check if variant has discount
+   */
+  const hasVariantDiscount = useCallback((variant) => {
+    if (!variant) return false;
+    if (variant.discount > 0) return true;
+    if (variant.originalPrice && variant.price && variant.originalPrice > variant.price) {
+      return true;
+    }
+    return false;
+  }, []);
+
+  /**
+   * Get discount percentage
+   */
+  const getDiscountPercentage = useCallback((variant) => {
+    if (!variant) return 0;
+    if (variant.discount > 0) return variant.discount;
+    if (variant.originalPrice && variant.price && variant.originalPrice > variant.price) {
+      return Math.round(((variant.originalPrice - variant.price) / variant.originalPrice) * 100);
+    }
+    return 0;
+  }, []);
+
   // Get variant summary text
   const getVariantSummary = useCallback(() => {
     if (!selectedVariant || !Object.keys(selectedAttributes).length) {
@@ -314,12 +365,12 @@ export const useVariantSelection = (variants = [], product = null) => {
     selectedAttributes,
     selectedVariant,
     isInitialized,
-    
+
     // Computed values
     attributeKeys,
     allAttributesSelected,
     missingAttributes,
-    
+
     // Methods
     selectAttribute,
     selectVariant,
@@ -329,10 +380,14 @@ export const useVariantSelection = (variants = [], product = null) => {
     matchVariant,
     findMatchingVariants,
     clearSelection,
-    
+
     // Helpers
     isColorAttribute,
     isColorValueAttribute,
     getVariantSummary,
+    getVariantPrice,
+    getVariantOriginalPrice,
+    hasVariantDiscount,
+    getDiscountPercentage,
   };
 };

@@ -85,6 +85,10 @@ export const useVariantSelectionByName = (variants = [], product = null) => {
    */
   const getVariantPrice = useCallback((variant) => {
     if (!variant) return 0;
+    // Prefer tax-inclusive price if available
+    if (variant.priceInclVat != null && variant.priceInclVat !== '') {
+      return Number(variant.priceInclVat);
+    }
     return variant.price || 0;
   }, []);
 
@@ -93,7 +97,14 @@ export const useVariantSelectionByName = (variants = [], product = null) => {
    */
   const getVariantOriginalPrice = useCallback((variant) => {
     if (!variant) return 0;
-    return variant.originalPrice || variant.price || 0;
+    // Prefer tax-inclusive price if available
+    if (variant.originalPrice != null && variant.originalPrice !== '') {
+      return Number(variant.originalPrice);
+    }
+    if (variant.priceInclVat != null && variant.priceInclVat !== '') {
+      return Number(variant.priceInclVat);
+    }
+    return variant.price || 0;
   }, []);
 
   /**
@@ -165,11 +176,11 @@ export const useVariantSelectionByName = (variants = [], product = null) => {
     selectedVariant,
     selectedVariantImage,
     isInitialized,
-    
+
     // Methods
     handleVariantSelect,
     initializeDefaultVariant,
-    
+
     // Getters
     getVariantAttributes,
     getVariantPrice,

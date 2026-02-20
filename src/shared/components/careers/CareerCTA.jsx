@@ -27,7 +27,7 @@ const CareerCTA = ({ navigate }) => {
     >
       <CTAContainer>
         <CTAContent>
-          <CTATitle>Build Your Future With EazShop</CTATitle>
+          <CTATitle>Build Your Future With Saiisai</CTATitle>
           <CTASubtitle>
             Ready to join our mission? Explore open roles or reach out to our HR team
           </CTASubtitle>

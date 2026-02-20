@@ -18,9 +18,9 @@ const ShippingInfoPage = () => {
 
   useDynamicPageTitle({
     title: "Shipping Information",
-    description: "Learn about EazShop delivery options, shipping times, costs, and how to track your orders. Fast and reliable shipping across Africa.",
-    defaultTitle: "Shipping Information • EazShop",
-    defaultDescription: "Understand how delivery works at EazShop",
+    description: "Learn about Saiisai delivery options, shipping times, costs, and how to track your orders. Fast and reliable shipping across Africa.",
+    defaultTitle: "Shipping Information • Saiisai",
+    defaultDescription: "Understand how delivery works at Saiisai",
   });
 
   return (

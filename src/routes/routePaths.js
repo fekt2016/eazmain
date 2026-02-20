@@ -118,225 +118,225 @@ export const PATHS = {
 // ---------- ROUTE CONFIG (SEO META) ----------
 export const ROUTE_CONFIG = {
   [PATHS.HOME]: {
-    title: "EazShop - Ghana's Leading Online Marketplace",
+    title: "Saiisai - Ghana's Leading Online Marketplace",
     description:
       "Discover thousands of products from verified sellers. Fast delivery, secure payments, and excellent customer service.",
-    keywords: "online shopping, ecommerce, Ghana, marketplace, buy online, shop Ghana",
+    keywords: "online shopping, ecommerce, Ghana, marketplace, buy online, shop Ghana, Saiisai",
   },
 
   [PATHS.LOGIN]: {
-    title: "Login - EazShop",
-    description: "Sign in to your EazShop account to start shopping",
-    keywords: "login, sign in, account, EazShop",
+    title: "Login - Saiisai",
+    description: "Sign in to your Saiisai account to start shopping",
+    keywords: "login, sign in, account, Saiisai",
   },
 
   [PATHS.SIGNUP]: {
-    title: "Sign Up - EazShop",
-    description: "Create a new EazShop account to start shopping",
-    keywords: "sign up, register, create account, EazShop",
+    title: "Sign Up - Saiisai",
+    description: "Create a new Saiisai account to start shopping",
+    keywords: "sign up, register, create account, Saiisai",
   },
 
   [PATHS.PRODUCTS]: {
-    title: "All Products - EazShop",
+    title: "All Products - Saiisai",
     description: "Browse our complete catalog of products from trusted sellers",
-    keywords: "products, shop, buy online, EazShop",
+    keywords: "products, shop, buy online, Saiisai",
   },
 
   [PATHS.PRODUCT_DETAIL]: {
-    title: "Product Details - EazShop",
+    title: "Product Details - Saiisai",
     description: "View detailed product information, reviews, and purchase options",
-    keywords: "product details, buy, EazShop",
+    keywords: "product details, buy, Saiisai",
   },
   [PATHS.PROMO_PRODUCT]: {
-    title: "Special Offer - EazShop",
+    title: "Special Offer - Saiisai",
     description: "Products curated for this promotion.",
-    keywords: "special offer, promotion, deal, EazShop",
+    keywords: "special offer, promotion, deal, Saiisai",
   },
 
   [PATHS.CATEGORIES]: {
-    title: "Categories - EazShop",
-    description: "Browse products by category on EazShop",
-    keywords: "categories, shop by category, EazShop",
+    title: "Categories - Saiisai",
+    description: "Browse products by category on Saiisai",
+    keywords: "categories, shop by category, Saiisai",
   },
 
   [PATHS.CATEGORY_DETAIL]: {
-    title: "Category - EazShop",
+    title: "Category - Saiisai",
     description: "Browse products in this category",
-    keywords: "category, products, EazShop",
+    keywords: "category, products, Saiisai",
   },
 
   [PATHS.SEARCH]: {
-    title: "Search Results - EazShop",
-    description: "Find products matching your search on EazShop",
-    keywords: "search, find products, EazShop",
+    title: "Search Results - Saiisai",
+    description: "Find products matching your search on Saiisai",
+    keywords: "search, find products, Saiisai",
   },
 
   [PATHS.SELLERS]: {
-    title: "Sellers - EazShop",
-    description: "Browse verified sellers and their shops on EazShop",
-    keywords: "sellers, shops, vendors, EazShop",
+    title: "Sellers - Saiisai",
+    description: "Browse verified sellers and their shops on Saiisai",
+    keywords: "sellers, shops, vendors, Saiisai",
   },
 
   [PATHS.SELLER_SHOP]: {
-    title: "Seller Shop - EazShop",
+    title: "Seller Shop - Saiisai",
     description: "Browse products from this verified seller",
-    keywords: "seller, shop, products, EazShop",
+    keywords: "seller, shop, products, Saiisai",
   },
 
   [PATHS.CART]: {
-    title: "Shopping Cart - EazShop",
+    title: "Shopping Cart - Saiisai",
     description: "Review your cart items before checkout",
-    keywords: "cart, shopping cart, checkout, EazShop",
+    keywords: "cart, shopping cart, checkout, Saiisai",
   },
 
   [PATHS.CHECKOUT]: {
-    title: "Checkout - EazShop",
-    description: "Complete your purchase securely on EazShop",
-    keywords: "checkout, payment, order, EazShop",
+    title: "Checkout - Saiisai",
+    description: "Complete your purchase securely on Saiisai",
+    keywords: "checkout, payment, order, Saiisai",
   },
 
   [PATHS.ORDER_CONFIRMATION]: {
-    title: "Order Confirmed - EazShop",
+    title: "Order Confirmed - Saiisai",
     description: "Your order has been successfully placed",
-    keywords: "order confirmation, order success, EazShop",
+    keywords: "order confirmation, order success, Saiisai",
   },
 
   [PATHS.ORDERS]: {
-    title: "My Orders - EazShop",
+    title: "My Orders - Saiisai",
     description: "View and track your order history",
-    keywords: "orders, order history, track order, EazShop",
+    keywords: "orders, order history, track order, Saiisai",
   },
 
   [PATHS.ORDER_DETAIL]: {
-    title: "Order Details - EazShop",
+    title: "Order Details - Saiisai",
     description: "View detailed information about your order",
-    keywords: "order details, order info, EazShop",
+    keywords: "order details, order info, Saiisai",
   },
 
   [PATHS.PROFILE]: {
-    title: "My Profile - EazShop",
-    description: "Manage your EazShop account profile",
-    keywords: "profile, account, settings, EazShop",
+    title: "My Profile - Saiisai",
+    description: "Manage your Saiisai account profile",
+    keywords: "profile, account, settings, Saiisai",
   },
 
   [PATHS.WISHLIST]: {
-    title: "My Wishlist - EazShop",
+    title: "My Wishlist - Saiisai",
     description: "View and manage your saved products",
-    keywords: "wishlist, saved products, favorites, EazShop",
+    keywords: "wishlist, saved products, favorites, Saiisai",
   },
 
   [PATHS.REVIEWS]: {
-    title: "My Reviews - EazShop",
+    title: "My Reviews - Saiisai",
     description: "View and manage your product reviews",
-    keywords: "reviews, ratings, feedback, EazShop",
+    keywords: "reviews, ratings, feedback, Saiisai",
   },
 
   [PATHS.ABOUT]: {
-    title: "About Us - EazShop",
-    description: "Learn about EazShop - Ghana's leading online marketplace",
-    keywords: "about, company, EazShop, marketplace",
+    title: "About Us - Saiisai",
+    description: "Learn about Saiisai - Ghana's leading online marketplace",
+    keywords: "about, company, Saiisai, marketplace",
   },
 
   [PATHS.CONTACT]: {
-    title: "Contact Us - EazShop",
-    description: "Get in touch with EazShop customer support",
-    keywords: "contact, support, help, EazShop",
+    title: "Contact Us - Saiisai",
+    description: "Get in touch with Saiisai customer support",
+    keywords: "contact, support, help, Saiisai",
   },
 
   [PATHS.FAQ]: {
-    title: "FAQ - EazShop",
-    description: "Frequently asked questions about EazShop",
-    keywords: "faq, questions, help, EazShop",
+    title: "FAQ - Saiisai",
+    description: "Frequently asked questions about Saiisai",
+    keywords: "faq, questions, help, Saiisai",
   },
 
   [PATHS.HELP]: {
-    title: "Help Center - EazShop",
+    title: "Help Center - Saiisai",
     description: "Get help with your orders, account, and more",
-    keywords: "help, support, FAQ, customer service, EazShop",
+    keywords: "help, support, FAQ, customer service, Saiisai",
   },
 
   [PATHS.BLOG]: {
-    title: "Blog - EazShop",
-    description: "Read the latest news, tips, and updates from EazShop",
-    keywords: "blog, news, tips, EazShop",
+    title: "Blog - Saiisai",
+    description: "Read the latest news, tips, and updates from Saiisai",
+    keywords: "blog, news, tips, Saiisai",
   },
 
   [PATHS.PRIVACY]: {
-    title: "Privacy Policy - EazShop",
-    description: "Learn how EazShop protects your data and privacy",
-    keywords: "privacy, policy, security, EazShop",
+    title: "Privacy Policy - Saiisai",
+    description: "Learn how Saiisai protects your data and privacy",
+    keywords: "privacy, policy, security, Saiisai",
   },
 
   [PATHS.TERMS]: {
-    title: "Terms of Service - EazShop",
-    description: "Review the terms and conditions for using EazShop",
-    keywords: "terms, conditions, policy, EazShop",
+    title: "Terms of Service - Saiisai",
+    description: "Review the terms and conditions for using Saiisai",
+    keywords: "terms, conditions, policy, Saiisai",
   },
 
   [PATHS.REFUND_POLICY]: {
-    title: "Refund Policy - EazShop",
-    description: "Learn about EazShop's refund and return policy",
-    keywords: "refund policy, returns, EazShop",
+    title: "Refund Policy - Saiisai",
+    description: "Learn about Saiisai's refund and return policy",
+    keywords: "refund policy, returns, Saiisai",
   },
 
   [PATHS.VAT_TAX_POLICY]: {
-    title: "VAT & Tax Policy - EazShop",
+    title: "VAT & Tax Policy - Saiisai",
     description: "How Saiisai handles VAT and tax for the Ghana marketplace. GRA compliance for buyers and sellers.",
     keywords: "VAT policy, tax policy, Ghana GRA, Saiisai tax, Value Added Tax",
   },
 
   [PATHS.SHIPPING_POLICY]: {
-    title: "Shipping Policy - EazShop",
-    description: "Learn about EazShop's shipping and delivery policy",
-    keywords: "shipping policy, delivery, EazShop",
+    title: "Shipping Policy - Saiisai",
+    description: "Learn about Saiisai's shipping and delivery policy",
+    keywords: "shipping policy, delivery, Saiisai",
   },
 
   [PATHS.PRODUCT_CARE]: {
-    title: "Product Care Guide - EazShop",
+    title: "Product Care Guide - Saiisai",
     description: "Learn how to properly care for your clothes, electronics, home items, beauty products and more",
-    keywords: "product care, care guide, maintenance tips, cleaning instructions, EazShop",
+    keywords: "product care, care guide, maintenance tips, cleaning instructions, Saiisai",
   },
 
   [PATHS.CAREERS]: {
-    title: "Careers - EazShop",
-    description: "Join the EazShop team and build a career in e-commerce",
-    keywords: "careers, jobs, hiring, EazShop",
+    title: "Careers - Saiisai",
+    description: "Join the Saiisai team and build a career in e-commerce",
+    keywords: "careers, jobs, hiring, Saiisai",
   },
 
   [PATHS.OFFERS]: {
-    title: "Special Offers - EazShop",
-    description: "Exclusive deals and promotions on EazShop",
-    keywords: "offers, deals, discounts, promotions, EazShop",
+    title: "Special Offers - Saiisai",
+    description: "Exclusive deals and promotions on Saiisai",
+    keywords: "offers, deals, discounts, promotions, Saiisai",
   },
 
   [PATHS.DEALS]: {
-    title: "Deals - EazShop",
-    description: "Best deals and discounts on EazShop",
-    keywords: "deals, discounts, savings, EazShop",
+    title: "Deals - Saiisai",
+    description: "Best deals and discounts on Saiisai",
+    keywords: "deals, discounts, savings, Saiisai",
   },
 
   [PATHS.NEW_ARRIVALS]: {
-    title: "New Arrivals - EazShop",
-    description: "Discover the latest products on EazShop",
-    keywords: "new products, latest, arrivals, EazShop",
+    title: "New Arrivals - Saiisai",
+    description: "Discover the latest products on Saiisai",
+    keywords: "new products, latest, arrivals, Saiisai",
   },
 
   [PATHS.BEST_SELLERS]: {
-    title: "Best Sellers – EazShop",
-    description: "Discover the most popular and top-selling products on EazShop.",
-    keywords: "best sellers, top products, popular items, EazShop",
+    title: "Best Sellers – Saiisai",
+    description: "Discover the most popular and top-selling products on Saiisai.",
+    keywords: "best sellers, top products, popular items, Saiisai",
   },
 
   [PATHS.NOT_FOUND]: {
-    title: "Page Not Found - EazShop",
+    title: "Page Not Found - Saiisai",
     description: "The page you are looking for does not exist",
-    keywords: "404, not found, error, EazShop",
+    keywords: "404, not found, error, Saiisai",
   },
 
   [PATHS.ERROR]: {
-    title: "Error - EazShop",
+    title: "Error - Saiisai",
     description: "An error occurred. Please try again later.",
-    keywords: "error, EazShop",
+    keywords: "error, Saiisai",
   },
 };
 

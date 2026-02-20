@@ -42,7 +42,7 @@ const ProductsPage = () => {
   // Process all products (backend returns { status, results, total, data: { data: products } })
   const allProducts = useMemo(() => {
     let products = [];
-    
+
     if (Array.isArray(productsData)) {
       products = productsData;
     } else if (productsData?.data?.data && Array.isArray(productsData.data.data)) {
@@ -58,7 +58,7 @@ const ProductsPage = () => {
     } else if (productsData?.products && Array.isArray(productsData.products)) {
       products = productsData.products;
     }
-    
+
     // Only show approved, non-deleted products (active or out_of_stock)
     if (Array.isArray(products)) {
       return products.filter(
@@ -71,7 +71,7 @@ const ProductsPage = () => {
           (p.status === 'active' || p.status === 'out_of_stock')
       );
     }
-    
+
     return [];
   }, [productsData]);
 
@@ -79,11 +79,11 @@ const ProductsPage = () => {
   const eazshopProducts = useMemo(() => {
     // Handle various API response structures defensively
     let products = [];
-    
+
     if (!eazshopProductsData) {
       return [];
     }
-    
+
     if (Array.isArray(eazshopProductsData)) {
       products = eazshopProductsData;
     } else if (eazshopProductsData?.results && Array.isArray(eazshopProductsData.results)) {
@@ -97,7 +97,7 @@ const ProductsPage = () => {
     } else if (eazshopProductsData?.products && Array.isArray(eazshopProductsData.products)) {
       products = eazshopProductsData.products;
     }
-    
+
     return Array.isArray(products) ? products : [];
   }, [eazshopProductsData]);
 
@@ -109,11 +109,11 @@ const ProductsPage = () => {
     if (Array.isArray(eazshopProducts)) {
       eazshopProducts.forEach(eazProduct => {
         // CRITICAL: Only add non-deleted EazShop products
-        if (!eazProduct.isDeleted && 
-            !eazProduct.isDeletedByAdmin && 
-            !eazProduct.isDeletedBySeller &&
-            eazProduct.status !== 'archived' &&
-            !products.find(p => p._id === eazProduct._id)) {
+        if (!eazProduct.isDeleted &&
+          !eazProduct.isDeletedByAdmin &&
+          !eazProduct.isDeletedBySeller &&
+          eazProduct.status !== 'archived' &&
+          !products.find(p => p._id === eazProduct._id)) {
           products.push(eazProduct);
         }
       });
@@ -121,10 +121,10 @@ const ProductsPage = () => {
 
     // CRITICAL: Filter out deleted products (client-side safety check)
     products = products.filter(product => {
-      if (product.isDeleted === true || 
-          product.isDeletedByAdmin === true || 
-          product.isDeletedBySeller === true ||
-          product.status === 'archived') {
+      if (product.isDeleted === true ||
+        product.isDeletedByAdmin === true ||
+        product.isDeletedBySeller === true ||
+        product.status === 'archived') {
         return false;
       }
       return true;
@@ -210,23 +210,23 @@ const ProductsPage = () => {
               {eazshopProducts
                 .filter(product => {
                   // CRITICAL: Exclude deleted products
-                  return !product.isDeleted && 
-                         !product.isDeletedByAdmin && 
-                         !product.isDeletedBySeller &&
-                         product.status !== 'archived';
+                  return !product.isDeleted &&
+                    !product.isDeletedByAdmin &&
+                    !product.isDeletedBySeller &&
+                    product.status !== 'archived';
                 })
                 .slice(0, 8)
                 .map((product) => (
-                <ProductCard
-                  key={product._id || product.id}
-                  product={product}
-                  showAddToCart
-                />
-              ))}
+                  <ProductCard
+                    key={product._id || product.id}
+                    product={product}
+                    showAddToCart
+                  />
+                ))}
             </EazShopGrid>
             {eazshopProducts.length > 8 && (
               <ViewMoreButton onClick={() => setShowEazShopOnly(true)}>
-                View All EazShop Products <FaChevronDown />
+                View All Saiisai Products <FaChevronDown />
               </ViewMoreButton>
             )}
           </EazShopSection>

@@ -1,0 +1,35 @@
+User-agent: *
+Allow: /
+
+# Disallow private/personal pages
+Disallow: /cart
+Disallow: /checkout
+Disallow: /order-confirmation
+Disallow: /orders/
+Disallow: /profile/
+Disallow: /wishlist
+Disallow: /notifications
+Disallow: /login
+Disallow: /signup
+Disallow: /forgot-password
+Disallow: /reset-password
+
+# Allow important public pages
+Allow: /products/
+Allow: /categories/
+Allow: /sellers/
+Allow: /search
+Allow: /about
+Allow: /contact
+Allow: /help
+Allow: /deals
+Allow: /new-arrivals
+Allow: /best-sellers
+Allow: /partner
+Allow: /careers
+Allow: /shipping
+Allow: /policies/
+Allow: /sitemap
+
+# Sitemap location
+Sitemap: https://saiisai.com/sitemap.xml

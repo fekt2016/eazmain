@@ -77,9 +77,9 @@ const PartnerWhy = () => {
       variants={container}
     >
       <WhyContainer>
-        <WhyTitle>Why Partner With EazShop</WhyTitle>
+        <WhyTitle>Why Partner With Saiisai</WhyTitle>
         <WhyDescription>
-          Join thousands of successful partners who are growing their businesses with EazShop
+          Join thousands of successful partners who are growing their businesses with Saiisai
         </WhyDescription>
         <WhyGrid>
           {whyData.map((item, index) => (

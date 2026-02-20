@@ -36,9 +36,9 @@ export default function Footer() {
             <LogoWrapper>
               <Logo to={PATHS.HOME} variant="default" />
             </LogoWrapper>
-                <BrandTagline>Redefining Shopping Experience</BrandTagline>
+            <BrandTagline>Redefining Shopping Experience</BrandTagline>
             <BrandDescription>
-              Your premier destination for curated products, exceptional service, 
+              Your premier destination for curated products, exceptional service,
               and seamless shopping. Discover quality, style, and convenience all in one place.
             </BrandDescription>
           </BrandSection>
@@ -156,11 +156,11 @@ export default function Footer() {
         <FooterBottom>
           <BottomContent>
             <Copyright>
-              © {new Date().getFullYear()} Saysay. All rights reserved.
+              © {new Date().getFullYear()} Saiisai. All rights reserved.
             </Copyright>
-            
+
             <LegalLinks>
-                    <LegalLink to={PATHS.SITEMAP}>Sitemap</LegalLink>
+              <LegalLink to={PATHS.SITEMAP}>Sitemap</LegalLink>
               <LegalLink to={PATHS.PRIVACY}>Privacy Policy</LegalLink>
               <LegalLink to={PATHS.TERMS}>Terms & Service</LegalLink>
               <LegalLink to={PATHS.VAT_TAX_POLICY}>VAT & Tax Policy</LegalLink>
@@ -236,21 +236,20 @@ const LogoWrapper = styled.div`
     text-decoration: none;
   }
   
-  /* Override logo text colors for dark footer */
-  /* Target the first span (Eaz) to be white */
+  /* Override logo text colors for dark footer - No longer used with new Logo component */
+  /*
   div > div > span:first-of-type {
     color: #ffffff !important;
   }
   
-  /* Keep the second span (Shop) yellow */
   div > div > span:last-of-type {
     color: #ffc400 !important;
   }
   
-  /* Ensure logo icon stays yellow */
   svg {
     color: #ffc400 !important;
   }
+  */
 `;
 
 const BrandTagline = styled.span`

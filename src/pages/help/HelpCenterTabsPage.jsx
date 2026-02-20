@@ -32,11 +32,35 @@ const TabsSection = styled.section`
 const HelpCenterTabsPage = () => {
   // SEO
   useDynamicPageTitle({
-    title: 'Help Center - EazShop',
+    title: 'Help Center - Saiisai',
     description: 'Find quick answers to common questions about orders, payments, returns, account management, and more.',
-    defaultTitle: 'Help Center - EazShop',
+    defaultTitle: 'Help Center - Saiisai',
     defaultDescription: 'Get help with your orders, account, payments, shipping, and more.',
   });
+
+  // FAQ Schema
+  const faqSchema = useMemo(() => {
+    // Collect all Q&A items from data
+    const allQuestions = [];
+    qaData.forEach(category => {
+      category.items.forEach(item => {
+        allQuestions.push({
+          "@type": "Question",
+          "name": item.q,
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": item.a
+          }
+        });
+      });
+    });
+
+    return {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": allQuestions.slice(0, 10) // Limit to top 10 for rich results
+    };
+  }, []);
 
   // State
   const [activeTab, setActiveTab] = useState(0);
@@ -82,6 +106,10 @@ const HelpCenterTabsPage = () => {
 
   return (
     <PageContainer>
+      {/* FAQ Structured Data */}
+      <script type="application/ld+json">
+        {JSON.stringify(faqSchema)}
+      </script>
       {/* Page Hero */}
       <PageHeroComponent
         title="Help Center"

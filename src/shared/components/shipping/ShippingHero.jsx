@@ -25,7 +25,7 @@ const ShippingHero = () => {
         <HeroContent>
           <HeroTitle>Shipping Information</HeroTitle>
           <HeroSubtitle>
-            Understand how delivery works at EazShop.
+            Understand how delivery works at Saiisai.
           </HeroSubtitle>
         </HeroContent>
       </HeroContainer>

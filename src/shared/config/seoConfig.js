@@ -22,21 +22,41 @@ const seoConfig = {
       '@context': 'https://schema.org',
       '@type': 'Organization',
       name: 'Saiisai',
+      alternateName: 'Saiisai Ghana',
       url: BASE_URL,
-      logo: `${BASE_URL}/images/logo.png`,
-      description: 'Ghana\'s leading online marketplace connecting buyers and sellers',
+      logo: `${BASE_URL}/saiisailogo.png`,
+      description: 'Ghana’s leading online marketplace connecting buyers and sellers with fast delivery and secure payments.',
+      address: {
+        '@type': 'PostalAddress',
+        'streetAddress': 'HRH2+R22, Al-Waleed bin Talal Highway',
+        'addressLocality': 'Accra',
+        'addressRegion': 'Greater Accra',
+        'postalCode': '00233',
+        'addressCountry': 'GH'
+      },
       sameAs: [
         'https://www.facebook.com/saiisai',
         'https://www.twitter.com/saiisai',
         'https://www.instagram.com/saiisai',
+        'https://www.linkedin.com/company/saiisai',
+        'https://www.youtube.com/@saiisai'
       ],
-      contactPoint: {
-        '@type': 'ContactPoint',
-        telephone: '+233-XXX-XXXX',
-        contactType: 'Customer Service',
-        areaServed: 'GH',
-        availableLanguage: ['en'],
-      },
+      contactPoint: [
+        {
+          '@type': 'ContactPoint',
+          telephone: '+233 235222207',
+          contactType: 'customer service',
+          areaServed: 'GH',
+          availableLanguage: ['en']
+        },
+        {
+          '@type': 'ContactPoint',
+          telephone: '+233 235222207',
+          contactType: 'sales',
+          areaServed: 'GH',
+          availableLanguage: ['en']
+        }
+      ],
     },
   },
 
@@ -74,8 +94,8 @@ const seoConfig = {
           url: productUrl,
           priceCurrency: 'GHS',
           price: productPrice,
-          availability: productData.stock > 0 
-            ? 'https://schema.org/InStock' 
+          availability: productData.stock > 0
+            ? 'https://schema.org/InStock'
             : 'https://schema.org/OutOfStock',
           seller: {
             '@type': 'Organization',
@@ -220,8 +240,8 @@ const seoConfig = {
 
     const orderNumber = orderData.orderNumber || orderData.id || 'Order';
     const orderUrl = `${BASE_URL}/orders/${orderData._id || orderData.id}`;
-    const orderDate = orderData.createdAt 
-      ? new Date(orderData.createdAt).toLocaleDateString() 
+    const orderDate = orderData.createdAt
+      ? new Date(orderData.createdAt).toLocaleDateString()
       : '';
     const orderStatus = orderData.orderStatus || orderData.status || 'pending';
     const totalPrice = orderData.totalPrice || 0;
@@ -294,7 +314,7 @@ const seoConfig = {
     const searchQuery = query || '';
     return {
       title: searchQuery ? `Search Results for "${searchQuery}" - Saiisai` : 'Search Products - Saiisai',
-      description: searchQuery 
+      description: searchQuery
         ? `Find products matching "${searchQuery}" on Saiisai`
         : 'Search for products on Saiisai',
       keywords: `search, ${searchQuery}, products, Saiisai`,

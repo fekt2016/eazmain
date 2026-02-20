@@ -53,7 +53,7 @@ const SpinningIcon = styled(FaSpinner)`
 `;
 
 /**
- * Modern Contact Us Page for Saiisai/EazWorld
+ * Modern Contact Us Page for Saiisai
  * Fully responsive with form validation and React Query integration
  */
 const ContactPage = () => {
@@ -64,6 +64,47 @@ const ContactPage = () => {
     defaultTitle: "Contact • Saiisai",
     defaultDescription: "Reach out to our team for assistance.",
   });
+
+  const localBusinessSchema = {
+    "@context": "https://schema.org",
+    "@type": "Store", // or "LocalBusiness"
+    "name": "Saiisai Headquarters",
+    "image": "https://saiisai.com/saiisailogo.png",
+    "@id": "https://saiisai.com/#organization",
+    "url": "https://saiisai.com/contact",
+    "telephone": "+233235222207",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "HRH2+R22, Al-Waleed bin Talal Highway",
+      "addressLocality": "Accra",
+      "addressRegion": "Greater Accra",
+      "postalCode": "00233",
+      "addressCountry": "GH"
+    },
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": 5.582930,
+      "longitude": -0.171870
+    },
+    "openingHoursSpecification": {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ],
+      "opens": "08:00",
+      "closes": "20:00"
+    },
+    "sameAs": [
+      "https://www.facebook.com/saiisai",
+      "https://www.twitter.com/saiisai",
+      "https://www.instagram.com/saiisai"
+    ]
+  };
 
   // Form state
   const [formData, setFormData] = useState({
@@ -209,11 +250,15 @@ const ContactPage = () => {
 
   // Handle phone
   const handlePhone = () => {
-    window.location.href = 'tel:+233123456789';
+    window.location.href = 'tel:+233235222207';
   };
 
   return (
     <ContactContainer>
+      {/* Structured Data for SEO */}
+      <script type="application/ld+json">
+        {JSON.stringify(localBusinessSchema)}
+      </script>
       {/* SECTION 1 — HERO */}
       <HeroSection
         initial="hidden"
@@ -270,7 +315,7 @@ const ContactPage = () => {
             <ContactCardDescription>
               Send us an email and we'll respond within 24 hours.
             </ContactCardDescription>
-            <ContactCardInfo>support@eazshop.com</ContactCardInfo>
+            <ContactCardInfo>support@saiisai.com</ContactCardInfo>
             <ContactCardButton
               onClick={handleEmail}
               whileHover={{ scale: 1.05 }}
@@ -291,7 +336,7 @@ const ContactPage = () => {
             <ContactCardDescription>
               Call us during business hours for immediate assistance.
             </ContactCardDescription>
-            <ContactCardInfo>+233 (123) 456 789</ContactCardInfo>
+            <ContactCardInfo>+233 235222207</ContactCardInfo>
             <ContactCardButton
               onClick={handlePhone}
               whileHover={{ scale: 1.05 }}
@@ -459,13 +504,13 @@ const ContactPage = () => {
         </SectionDescription>
         <LocationGrid>
           <LocationContent>
-            <h3>EazWorld Headquarters</h3>
+            <h3>Saiisai Headquarters</h3>
             <p>
               We're located in the heart of Accra, Ghana, where we work every day
               to build and improve our digital ecosystem.
             </p>
             <address>
-              Accra, Ghana • EazWorld HQ
+              Accra, Ghana • Saiisai HQ
             </address>
           </LocationContent>
           <LocationMap

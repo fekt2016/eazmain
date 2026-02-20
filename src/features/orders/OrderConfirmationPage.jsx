@@ -43,16 +43,16 @@ const OrderConfirmationPage = () => {
   const [isPayNowLoading, setIsPayNowLoading] = useState(false);
 
   const orderFromState = location.state?.order || location.state;
-  
+
   // Extract URL parameters
   const searchString = location.search;
-  
+
   // Memoize URL parameters using search string to prevent re-creation on every render
   const orderIdFromUrl = useMemo(() => {
     const params = new URLSearchParams(searchString);
     return params.get("orderId");
   }, [searchString]);
-  
+
   const paymentReference = useMemo(() => {
     const params = new URLSearchParams(searchString);
     return params.get("reference") || params.get("trxref");
@@ -89,11 +89,11 @@ const OrderConfirmationPage = () => {
 
     // Handle API order structure
     const apiOrder = orderFromApi?.data?.order || orderFromApi?.order || orderFromApi;
-    
+
     if (!apiOrder) {
       return null;
     }
-    
+
     return transformOrderData(apiOrder);
   }, [orderFromState, orderFromApi]);
 
@@ -143,20 +143,20 @@ const OrderConfirmationPage = () => {
     // - Paystack/mobile_money orders require payment reference for verification
     // - If order is still loading, be lenient (don't fail yet - might be COD or wallet)
     const orderIsLoaded = !!order && !!order.paymentMethod;
-    
+
     // If order is not loaded yet, allow through (will validate once loaded)
     if (!orderIsLoaded) {
       return { isValid: true, error: null };
     }
-    
-    const isCOD = order?.paymentMethod === "payment_on_delivery" || 
-                  order?.paymentMethod === "Cash on Delivery" ||
-                  order?.paymentMethod === "cod";
-    
+
+    const isCOD = order?.paymentMethod === "payment_on_delivery" ||
+      order?.paymentMethod === "Cash on Delivery" ||
+      order?.paymentMethod === "cod";
+
     const isWalletPayment = order?.paymentMethod === "credit_balance" ||
-                           order?.paymentMethod === "wallet" ||
-                           order?.paymentMethod === "account_balance";
-    
+      order?.paymentMethod === "wallet" ||
+      order?.paymentMethod === "account_balance";
+
     // Only require payment reference for unpaid Paystack/mobile_money payments.
     // COD and wallet payments don't need external payment references.
     const isPaystackPayment = !isCOD && !isWalletPayment;
@@ -171,7 +171,7 @@ const OrderConfirmationPage = () => {
 
     const requiresPaymentReference =
       isPaystackPayment && !paymentReference && !isAlreadyPaid;
-    
+
     if (requiresPaymentReference) {
       return {
         isValid: false,
@@ -249,8 +249,8 @@ const OrderConfirmationPage = () => {
       console.error("[OrderConfirmationPage] Pay Now error:", error);
       setPayNowError(
         error?.response?.data?.message ||
-          error?.message ||
-          "Failed to initialize payment. Please try again."
+        error?.message ||
+        "Failed to initialize payment. Please try again."
       );
     } finally {
       setIsPayNowLoading(false);
@@ -267,7 +267,7 @@ const OrderConfirmationPage = () => {
     }
 
     const cartClearKey = `CART_CLEARED_${orderId}`;
-    
+
     // Check if cart already cleared for this order
     if (typeof window !== "undefined") {
       const alreadyCleared = window.sessionStorage.getItem(cartClearKey);
@@ -417,10 +417,10 @@ const OrderConfirmationPage = () => {
 
   const readableOrderDate = order?.orderDate || order?.date
     ? new Date(order.orderDate || order.date).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
     : "N/A";
 
   const isMobileMoney =
@@ -433,9 +433,9 @@ const OrderConfirmationPage = () => {
 
   const paymentMethodLabel = order?.paymentMethod
     ? order.paymentMethod
-        .split("_")
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" ")
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ")
     : "N/A";
 
   return (
@@ -650,13 +650,16 @@ const OrderConfirmationPage = () => {
                 <PaymentNotice>
                   <p>Please complete your bank transfer to:</p>
                   <p>
-                    <strong>Bank:</strong> Ghana Commercial Bank
+                    <strong>Bank:</strong> CBG Bank
                   </p>
                   <p>
-                    <strong>Account:</strong> ShopGH Ltd
+                    <strong>Branch:</strong> Nima Branch
                   </p>
                   <p>
-                    <strong>Account #:</strong> 1234567890
+                    <strong>Account:</strong> EasyworldPc
+                  </p>
+                  <p>
+                    <strong>Account #:</strong> 2297931640001
                   </p>
                   <p>
                     <strong>Reference:</strong>{" "}
@@ -713,8 +716,7 @@ const OrderConfirmationPage = () => {
       <HelpSection>
         <h3>Need Help?</h3>
         <p>
-          Contact our support team at support@shopgh.com or call +233 20 123
-          4567
+          Contact our support team at support@saiisai.com or call +233 235222207
         </p>
       </HelpSection>
     </ConfirmationContainer>

@@ -18,10 +18,10 @@ const PartnerPage = () => {
   const navigate = useNavigate();
 
   useDynamicPageTitle({
-    title: "Partner With EazShop",
-    description: "Join EazShop as a seller, logistics partner, or brand. Reach millions of customers, grow your business, and scale with Africa's leading e-commerce platform.",
-    defaultTitle: "Partner With EazShop • EazShop",
-    defaultDescription: "Partner with EazShop and grow your business",
+    title: "Partner With Saiisai",
+    description: "Join Saiisai as a seller, logistics partner, or brand. Reach thousands of customers, grow your business, and scale with Ghana's leading e-commerce platform.",
+    defaultTitle: "Partner With Saiisai • Saiisai",
+    defaultDescription: "Partner with Saiisai and grow your business",
   });
 
   return (

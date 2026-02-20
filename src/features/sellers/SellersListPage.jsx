@@ -13,13 +13,13 @@ import StarRating from '../../shared/components/StarRating';
 
 export default function SellersListPage() {
   useDynamicPageTitle({
-    title: 'Sellers - EazShop',
-    description: 'Discover trusted sellers on EazShop',
-    defaultTitle: 'Sellers - EazShop',
-    defaultDescription: 'Discover trusted sellers on EazShop',
+    title: 'Sellers - Saiisai',
+    description: 'Discover trusted sellers on Saiisai',
+    defaultTitle: 'Sellers - Saiisai',
+    defaultDescription: 'Discover trusted sellers on Saiisai',
   });
   const { data: sellersData, isLoading } = useGetFeaturedSellers({ limit: 100 });
-  
+
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [minRating, setMinRating] = useState(0);
@@ -29,29 +29,29 @@ export default function SellersListPage() {
   const allSellers = useMemo(() => {
     // Handle different response structures
     if (!sellersData) return [];
-    
+
     // If it's already an array, return it
     if (Array.isArray(sellersData)) {
       return sellersData;
     }
-    
+
     // If it's an object with sellers array
     if (sellersData?.sellers && Array.isArray(sellersData.sellers)) {
       return sellersData.sellers;
     }
-    
+
     // If it's an object with data.sellers
     if (sellersData?.data?.sellers && Array.isArray(sellersData.data.sellers)) {
       return sellersData.data.sellers;
     }
-    
+
     // If it's an object with responseData.sellers
     if (sellersData?.responseData?.sellers && Array.isArray(sellersData.responseData.sellers)) {
       return sellersData.responseData.sellers;
     }
-    
+
     return [];
-    }, [sellersData]);
+  }, [sellersData]);
 
   // Get unique locations
   const locations = useMemo(() => {
@@ -71,7 +71,7 @@ export default function SellersListPage() {
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(seller => 
+      filtered = filtered.filter(seller =>
         (seller.shopName || seller.name || "").toLowerCase().includes(query)
       );
     }
@@ -86,7 +86,7 @@ export default function SellersListPage() {
 
     // Location filter
     if (locationFilter) {
-      filtered = filtered.filter(seller => 
+      filtered = filtered.filter(seller =>
         seller.location === locationFilter
       );
     }
@@ -137,7 +137,7 @@ export default function SellersListPage() {
       <PageHeader>
         <Container>
           <PageTitle>Verified Sellers</PageTitle>
-          <PageDescription>Shop from trusted and verified sellers on EazShop</PageDescription>
+          <PageDescription>Shop from trusted and verified sellers on Saiisai</PageDescription>
         </Container>
       </PageHeader>
 
@@ -149,239 +149,239 @@ export default function SellersListPage() {
 
             {/* Filter Sidebar */}
             <FilterSidebar $isOpen={showFilters}>
-            <FilterHeader>
-              <h3>Filters</h3>
-              <CloseButton onClick={toggleFilters}>
-                <FaTimes />
-              </CloseButton>
-            </FilterHeader>
+              <FilterHeader>
+                <h3>Filters</h3>
+                <CloseButton onClick={toggleFilters}>
+                  <FaTimes />
+                </CloseButton>
+              </FilterHeader>
 
-            <FilterScroll>
-              {/* Search Filter */}
-              <FilterGroup>
-                <FilterSectionTitle>
-                  <span>Search</span>
-                </FilterSectionTitle>
-                <SearchInputWrapper>
-                  <FaSearch />
-                  <SearchInput
-                    type="text"
-                    placeholder="Search by shop name..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </SearchInputWrapper>
-              </FilterGroup>
-
-              {/* Rating Filter */}
-              <FilterGroup>
-                <FilterSectionTitle>
-                  <span>Minimum Rating</span>
-                </FilterSectionTitle>
-                <RatingFilter>
-                  {[0, 3, 4, 4.5].map((rating) => (
-                    <RatingOption
-                      key={rating}
-                      $active={minRating === rating}
-                      onClick={() => setMinRating(rating)}
-                    >
-                      <StarRating rating={rating} size="16px" />
-                      <span>{rating === 0 ? 'All' : `${rating}+`}</span>
-                    </RatingOption>
-                  ))}
-                </RatingFilter>
-              </FilterGroup>
-
-              {/* Location Filter */}
-              {locations.length > 0 && (
+              <FilterScroll>
+                {/* Search Filter */}
                 <FilterGroup>
                   <FilterSectionTitle>
-                    <span>Location</span>
+                    <span>Search</span>
                   </FilterSectionTitle>
-                  <LocationSelect
-                    value={locationFilter}
-                    onChange={(e) => setLocationFilter(e.target.value)}
-                  >
-                    <option value="">All Locations</option>
-                    {locations.map((location) => (
-                      <option key={location} value={location}>
-                        {location}
-                      </option>
-                    ))}
-                  </LocationSelect>
+                  <SearchInputWrapper>
+                    <FaSearch />
+                    <SearchInput
+                      type="text"
+                      placeholder="Search by shop name..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </SearchInputWrapper>
                 </FilterGroup>
-              )}
 
-              {/* Clear Filters */}
-              {(searchQuery || minRating > 0 || locationFilter) && (
-                <ClearFiltersButton onClick={clearFilters}>
-                  Clear All Filters
-                </ClearFiltersButton>
-              )}
-            </FilterScroll>
-          </FilterSidebar>
+                {/* Rating Filter */}
+                <FilterGroup>
+                  <FilterSectionTitle>
+                    <span>Minimum Rating</span>
+                  </FilterSectionTitle>
+                  <RatingFilter>
+                    {[0, 3, 4, 4.5].map((rating) => (
+                      <RatingOption
+                        key={rating}
+                        $active={minRating === rating}
+                        onClick={() => setMinRating(rating)}
+                      >
+                        <StarRating rating={rating} size="16px" />
+                        <span>{rating === 0 ? 'All' : `${rating}+`}</span>
+                      </RatingOption>
+                    ))}
+                  </RatingFilter>
+                </FilterGroup>
 
-          {/* Main Content */}
-          <MainContent>
-            <ContentHeader>
-              <ResultsInfo>
-                <ResultsCount>
-                  Showing <strong>{sellers.length}</strong> of <strong>{allSellers.length}</strong> sellers
-                </ResultsCount>
-                {(searchQuery || minRating > 0 || locationFilter) && (
-                  <ActiveFilters>
-                    {searchQuery && (
-                      <FilterBadge>
-                        Search: "{searchQuery}"
-                        <FaTimes onClick={() => setSearchQuery("")} />
-                      </FilterBadge>
-                    )}
-                    {minRating > 0 && (
-                      <FilterBadge>
-                        Rating: {minRating}+
-                        <FaTimes onClick={() => setMinRating(0)} />
-                      </FilterBadge>
-                    )}
-                    {locationFilter && (
-                      <FilterBadge>
-                        Location: {locationFilter}
-                        <FaTimes onClick={() => setLocationFilter("")} />
-                      </FilterBadge>
-                    )}
-                  </ActiveFilters>
+                {/* Location Filter */}
+                {locations.length > 0 && (
+                  <FilterGroup>
+                    <FilterSectionTitle>
+                      <span>Location</span>
+                    </FilterSectionTitle>
+                    <LocationSelect
+                      value={locationFilter}
+                      onChange={(e) => setLocationFilter(e.target.value)}
+                    >
+                      <option value="">All Locations</option>
+                      {locations.map((location) => (
+                        <option key={location} value={location}>
+                          {location}
+                        </option>
+                      ))}
+                    </LocationSelect>
+                  </FilterGroup>
                 )}
-              </ResultsInfo>
 
-              <ControlsContainer>
-                <MobileFilterButton onClick={toggleFilters}>
-                  <FaFilter /> Filters
-                </MobileFilterButton>
-
-                <SortContainer>
-                  <FaSortAmountDown />
-                  <SortSelect value={sortOption} onChange={(e) => setSortOption(e.target.value)}>
-                    <option value="rating-desc">Highest Rated</option>
-                    <option value="rating-asc">Lowest Rated</option>
-                    <option value="products-desc">Most Products</option>
-                    <option value="products-asc">Fewest Products</option>
-                    <option value="name-asc">Name (A-Z)</option>
-                    <option value="name-desc">Name (Z-A)</option>
-                  </SortSelect>
-                </SortContainer>
-              </ControlsContainer>
-            </ContentHeader>
-
-            {sellers.length === 0 ? (
-              <EmptyState>
-                <EmptyIcon>🏪</EmptyIcon>
-                <EmptyTitle>No Sellers Found</EmptyTitle>
-                <EmptyText>
-                  {searchQuery || minRating > 0 || locationFilter
-                    ? "Try adjusting your filters to see more results."
-                    : "Check back later for new sellers."}
-                </EmptyText>
+                {/* Clear Filters */}
                 {(searchQuery || minRating > 0 || locationFilter) && (
-                  <ClearFiltersButton onClick={clearFilters} style={{ marginTop: '2rem' }}>
+                  <ClearFiltersButton onClick={clearFilters}>
                     Clear All Filters
                   </ClearFiltersButton>
                 )}
-              </EmptyState>
-            ) : (
-              <SellersGrid>
-                {sellers.map((seller) => {
-              const productImages = seller.products
-                ?.flatMap((product) => product.images || [])
-                ?.filter((img) => img)
-                ?.slice(0, 3) || [];
+              </FilterScroll>
+            </FilterSidebar>
 
-              return (
-                <SellerCard key={seller.id || seller._id} to={`${PATHS.SELLERS}/${seller.id || seller._id}`}>
-                  <SellerCardHeader>
-                    <SellerAvatarContainer>
-                      <SellerAvatar
-                        src={seller.avatar || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23ffc400' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='40' font-weight='bold'%3EShop%3C/text%3E%3C/svg%3E"}
-                        alt={seller.shopName || seller.name}
-                        onError={(e) => {
-                          e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23ffc400' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='40' font-weight='bold'%3EShop%3C/text%3E%3C/svg%3E";
-                        }}
-                      />
-                      <VerifiedBadge>
-                        <FaShieldAlt />
-                      </VerifiedBadge>
-                    </SellerAvatarContainer>
-                    <SellerHeaderContent>
-                      <SellerName>{seller.shopName || seller.name}</SellerName>
-                      <SellerRating>
-                        <StarRating rating={seller.rating || seller.ratings?.average || 0} size="14px" />
-                        <RatingText>
-                          {(seller.rating || seller.ratings?.average || 0).toFixed(1)}
-                        </RatingText>
-                      </SellerRating>
-                      {seller.location && (
-                        <SellerLocation>
-                          <FaMapMarkerAlt size={12} />
-                          <span>{seller.location}</span>
-                        </SellerLocation>
+            {/* Main Content */}
+            <MainContent>
+              <ContentHeader>
+                <ResultsInfo>
+                  <ResultsCount>
+                    Showing <strong>{sellers.length}</strong> of <strong>{allSellers.length}</strong> sellers
+                  </ResultsCount>
+                  {(searchQuery || minRating > 0 || locationFilter) && (
+                    <ActiveFilters>
+                      {searchQuery && (
+                        <FilterBadge>
+                          Search: "{searchQuery}"
+                          <FaTimes onClick={() => setSearchQuery("")} />
+                        </FilterBadge>
                       )}
-                    </SellerHeaderContent>
-                  </SellerCardHeader>
-                  
-                  <SellerCardBody>
-                    <SellerStats>
-                      <StatItem>
-                        <StatIcon>📦</StatIcon>
-                        <StatContent>
-                          <StatValue>{seller.productCount || seller.products?.length || 0}</StatValue>
-                          <StatLabel>Products</StatLabel>
-                        </StatContent>
-                      </StatItem>
-                      {seller.totalSold && (
-                        <StatItem>
-                          <StatIcon>✅</StatIcon>
-                          <StatContent>
-                            <StatValue>{seller.totalSold}</StatValue>
-                            <StatLabel>Sold</StatLabel>
-                          </StatContent>
-                        </StatItem>
+                      {minRating > 0 && (
+                        <FilterBadge>
+                          Rating: {minRating}+
+                          <FaTimes onClick={() => setMinRating(0)} />
+                        </FilterBadge>
                       )}
-                    </SellerStats>
-                    
-                    {productImages.length > 0 && (
-                      <ProductPreviewSection>
-                        <PreviewLabel>Featured Products</PreviewLabel>
-                        <ProductPreview>
-                          {productImages.map((image, index) => (
-                            <PreviewImageWrapper key={index}>
-                              <PreviewImage
-                                src={image}
-                                alt={`Product ${index + 1}`}
-                                onError={(e) => {
-                                  e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect fill='%23e2e8f0' width='80' height='80'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2364748b' font-size='24'%3EP%3C/text%3E%3C/svg%3E";
-                                }}
-                              />
-                            </PreviewImageWrapper>
-                          ))}
-                          {productImages.length < 3 && (seller.productCount || seller.products?.length || 0) > productImages.length && (
-                            <MoreProductsIndicator>
-                              +{Math.max(0, (seller.productCount || seller.products?.length || 0) - productImages.length)}
-                            </MoreProductsIndicator>
+                      {locationFilter && (
+                        <FilterBadge>
+                          Location: {locationFilter}
+                          <FaTimes onClick={() => setLocationFilter("")} />
+                        </FilterBadge>
+                      )}
+                    </ActiveFilters>
+                  )}
+                </ResultsInfo>
+
+                <ControlsContainer>
+                  <MobileFilterButton onClick={toggleFilters}>
+                    <FaFilter /> Filters
+                  </MobileFilterButton>
+
+                  <SortContainer>
+                    <FaSortAmountDown />
+                    <SortSelect value={sortOption} onChange={(e) => setSortOption(e.target.value)}>
+                      <option value="rating-desc">Highest Rated</option>
+                      <option value="rating-asc">Lowest Rated</option>
+                      <option value="products-desc">Most Products</option>
+                      <option value="products-asc">Fewest Products</option>
+                      <option value="name-asc">Name (A-Z)</option>
+                      <option value="name-desc">Name (Z-A)</option>
+                    </SortSelect>
+                  </SortContainer>
+                </ControlsContainer>
+              </ContentHeader>
+
+              {sellers.length === 0 ? (
+                <EmptyState>
+                  <EmptyIcon>🏪</EmptyIcon>
+                  <EmptyTitle>No Sellers Found</EmptyTitle>
+                  <EmptyText>
+                    {searchQuery || minRating > 0 || locationFilter
+                      ? "Try adjusting your filters to see more results."
+                      : "Check back later for new sellers."}
+                  </EmptyText>
+                  {(searchQuery || minRating > 0 || locationFilter) && (
+                    <ClearFiltersButton onClick={clearFilters} style={{ marginTop: '2rem' }}>
+                      Clear All Filters
+                    </ClearFiltersButton>
+                  )}
+                </EmptyState>
+              ) : (
+                <SellersGrid>
+                  {sellers.map((seller) => {
+                    const productImages = seller.products
+                      ?.flatMap((product) => product.images || [])
+                      ?.filter((img) => img)
+                      ?.slice(0, 3) || [];
+
+                    return (
+                      <SellerCard key={seller.id || seller._id} to={`${PATHS.SELLERS}/${seller.id || seller._id}`}>
+                        <SellerCardHeader>
+                          <SellerAvatarContainer>
+                            <SellerAvatar
+                              src={seller.avatar || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23ffc400' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='40' font-weight='bold'%3EShop%3C/text%3E%3C/svg%3E"}
+                              alt={seller.shopName || seller.name}
+                              onError={(e) => {
+                                e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23ffc400' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='40' font-weight='bold'%3EShop%3C/text%3E%3C/svg%3E";
+                              }}
+                            />
+                            <VerifiedBadge>
+                              <FaShieldAlt />
+                            </VerifiedBadge>
+                          </SellerAvatarContainer>
+                          <SellerHeaderContent>
+                            <SellerName>{seller.shopName || seller.name}</SellerName>
+                            <SellerRating>
+                              <StarRating rating={seller.rating || seller.ratings?.average || 0} size="14px" />
+                              <RatingText>
+                                {(seller.rating || seller.ratings?.average || 0).toFixed(1)}
+                              </RatingText>
+                            </SellerRating>
+                            {seller.location && (
+                              <SellerLocation>
+                                <FaMapMarkerAlt size={12} />
+                                <span>{seller.location}</span>
+                              </SellerLocation>
+                            )}
+                          </SellerHeaderContent>
+                        </SellerCardHeader>
+
+                        <SellerCardBody>
+                          <SellerStats>
+                            <StatItem>
+                              <StatIcon>📦</StatIcon>
+                              <StatContent>
+                                <StatValue>{seller.productCount || seller.products?.length || 0}</StatValue>
+                                <StatLabel>Products</StatLabel>
+                              </StatContent>
+                            </StatItem>
+                            {seller.totalSold && (
+                              <StatItem>
+                                <StatIcon>✅</StatIcon>
+                                <StatContent>
+                                  <StatValue>{seller.totalSold}</StatValue>
+                                  <StatLabel>Sold</StatLabel>
+                                </StatContent>
+                              </StatItem>
+                            )}
+                          </SellerStats>
+
+                          {productImages.length > 0 && (
+                            <ProductPreviewSection>
+                              <PreviewLabel>Featured Products</PreviewLabel>
+                              <ProductPreview>
+                                {productImages.map((image, index) => (
+                                  <PreviewImageWrapper key={index}>
+                                    <PreviewImage
+                                      src={image}
+                                      alt={`Product ${index + 1}`}
+                                      onError={(e) => {
+                                        e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect fill='%23e2e8f0' width='80' height='80'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2364748b' font-size='24'%3EP%3C/text%3E%3C/svg%3E";
+                                      }}
+                                    />
+                                  </PreviewImageWrapper>
+                                ))}
+                                {productImages.length < 3 && (seller.productCount || seller.products?.length || 0) > productImages.length && (
+                                  <MoreProductsIndicator>
+                                    +{Math.max(0, (seller.productCount || seller.products?.length || 0) - productImages.length)}
+                                  </MoreProductsIndicator>
+                                )}
+                              </ProductPreview>
+                            </ProductPreviewSection>
                           )}
-                        </ProductPreview>
-                      </ProductPreviewSection>
-                    )}
-                  </SellerCardBody>
-                  
-                  <SellerCardFooter>
-                    <ViewShopButton>
-                      View Shop <FaArrowRight />
-                    </ViewShopButton>
-                  </SellerCardFooter>
-                </SellerCard>
-              );
-                })}
-              </SellersGrid>
-            )}
-          </MainContent>
+                        </SellerCardBody>
+
+                        <SellerCardFooter>
+                          <ViewShopButton>
+                            View Shop <FaArrowRight />
+                          </ViewShopButton>
+                        </SellerCardFooter>
+                      </SellerCard>
+                    );
+                  })}
+                </SellersGrid>
+              )}
+            </MainContent>
           </ContentLayout>
         </Container>
       </ContentWrapper>

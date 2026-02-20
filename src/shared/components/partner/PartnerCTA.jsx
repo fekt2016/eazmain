@@ -27,7 +27,7 @@ const PartnerCTA = ({ navigate }) => {
     >
       <CTAContainer>
         <CTAContent>
-          <CTATitle>Ready to Partner With EazShop?</CTATitle>
+          <CTATitle>Ready to Partner With Saiisai?</CTATitle>
           <CTASubtitle>
             Join thousands of successful partners and start growing your business today
           </CTASubtitle>

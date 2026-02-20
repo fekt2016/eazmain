@@ -30,6 +30,7 @@ import AdBanner from '../home/AdBanner';
 import AdPopup from '../home/AdPopup';
 import DealOfTheDaySection from '../home/DealOfTheDaySection';
 import { useDealOfTheDay } from '../../shared/hooks/useDealOfTheDay';
+import SaiisaiStories from '../home/SaiisaiStories';
 
 // Animations
 const fadeInUp = keyframes`
@@ -137,9 +138,9 @@ const HomePage = () => {
 
   const products = useMemo(() => {
     if (!productsData) return [];
-    
+
     let productsList = [];
-    
+
     // Handle nested data.data.data structure (from getAllProduct controller)
     if (productsData.data?.data && Array.isArray(productsData.data.data)) {
       productsList = productsData.data.data;
@@ -164,32 +165,32 @@ const HomePage = () => {
     else if (Array.isArray(productsData)) {
       productsList = productsData;
     }
-    
+
     // CRITICAL: Filter out deleted products and unapproved products (client-side safety check)
     // Backend should already filter these via buildBuyerSafeQuery, but this ensures no deleted/unapproved products are shown
     return productsList.filter(product => {
       // Exclude products deleted by admin or seller
-      if (product.isDeleted === true || 
-          product.isDeletedByAdmin === true || 
-          product.isDeletedBySeller === true ||
-          product.status === 'archived') {
+      if (product.isDeleted === true ||
+        product.isDeletedByAdmin === true ||
+        product.isDeletedBySeller === true ||
+        product.status === 'archived') {
         return false;
       }
-      
+
       // CRITICAL: Only show products that have been approved by admin
       // Backend buildBuyerSafeQuery requires: moderationStatus: 'approved'
       // Frontend safety check: Ensure moderationStatus is 'approved' if it exists
       if (product.moderationStatus && product.moderationStatus !== 'approved') {
         return false;
       }
-      
+
       // NOTE: We no longer check isVisible - approved products are visible regardless of seller verification
-      
+
       // Additional check: Ensure status is active or out_of_stock (backend also filters this)
       if (product.status && !['active', 'out_of_stock'].includes(product.status)) {
         return false;
       }
-      
+
       return true;
     });
   }, [productsData]);
@@ -209,29 +210,36 @@ const HomePage = () => {
   }, [recordProductView]);
 
   // Resolve ad link to full URL using FRONTEND_URL environment variable
-  // Also replaces localhost URLs with production FRONTEND_URL
-  // PRODUCTION-SAFE: Always replaces localhost URLs with production domain
+  // In development: Keeps localhost URLs as localhost
+  // In production: Replaces localhost URLs with production domain
   const resolveAdLink = useCallback((link) => {
     if (!link || typeof link !== "string") return PATHS.PRODUCTS;
     const raw = link.trim();
-    
+
     // Get current origin (in production: https://saiisai.com, in dev: http://localhost:5173)
     const currentOrigin = window.location.origin;
     const isProduction = !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(currentOrigin);
-    
+
+    // In DEVELOPMENT: Keep localhost URLs as-is, don't replace them
+    if (!isProduction) {
+      // If it's already a full URL (including localhost), return as-is
+      if (/^https?:\/\//i.test(raw)) {
+        return raw;
+      }
+      // If it's a relative path, prepend current origin (localhost)
+      const cleanLink = raw.startsWith("/") ? raw.substring(1) : raw;
+      return `${currentOrigin}/${cleanLink}`;
+    }
+
+    // In PRODUCTION: Replace localhost URLs with production domain
     // Determine the production frontend URL to use for replacing localhost links
-    // Priority:
-    // 1. VITE_FRONTEND_URL (if set and not localhost)
-    // 2. VITE_API_URL/VITE_API_BASE_URL (derive from API URL, if not localhost)
-    // 3. window.location.origin (if in production)
-    // 4. Hardcoded production domain as last resort
     let productionFrontendUrl = import.meta.env.VITE_FRONTEND_URL;
-    
-    // Ignore localhost env vars - we want production URL
+
+    // Ignore localhost env vars in production
     if (productionFrontendUrl && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(productionFrontendUrl)) {
       productionFrontendUrl = null;
     }
-    
+
     // Try to derive from API URL (if it's production API)
     if (!productionFrontendUrl) {
       const apiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
@@ -240,104 +248,63 @@ const HomePage = () => {
         productionFrontendUrl = apiUrl.replace(/\/api\/?.*$/, '').replace(/\/$/, '');
       }
     }
-    
-    // In production, use current origin
-    if (isProduction && !productionFrontendUrl) {
+
+    // Use current origin as fallback in production
+    if (!productionFrontendUrl) {
       productionFrontendUrl = currentOrigin;
     }
-    
-    // If still not set and we're replacing a localhost link, use hardcoded production domain
-    // This ensures localhost links always get replaced, even in development
-    if (!productionFrontendUrl || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(productionFrontendUrl)) {
-      // Check API URL again - if it's production API (api.saiisai.com), use saiisai.com
-      const apiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
-      if (apiUrl && apiUrl.includes('api.saiisai.com')) {
-        productionFrontendUrl = 'https://saiisai.com';
-      } else if (isProduction) {
-        productionFrontendUrl = currentOrigin;
-      } else {
-        // In development, if we have a localhost link, we still want to replace it with production
-        // But if no production URL is available, keep it as localhost for dev
-        productionFrontendUrl = currentOrigin;
-      }
-    }
-    
+
     const cleanFrontendUrl = productionFrontendUrl.trim().replace(/\/$/, ''); // Remove trailing slash
-    
-    // CRITICAL: Always replace localhost URLs with production URL
-    // Even in development, if a link contains localhost, replace it with production domain
+
+    // In PRODUCTION: Replace localhost URLs with production URL
     if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(raw)) {
       try {
         const url = new URL(raw);
         const path = url.pathname + url.search + url.hash;
-        
+
         // Determine production URL to use for replacement
-        // Always prioritize production domain, never use localhost
         let replacementUrl = null;
-        
+
         // First, check API URL - if it contains api.saiisai.com, use saiisai.com
         const apiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
-        if (apiUrl) {
-          if (apiUrl.includes('api.saiisai.com')) {
-            replacementUrl = 'https://saiisai.com';
-          } else if (!/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(apiUrl)) {
-            // If API URL is production (not localhost), derive frontend URL
-            replacementUrl = apiUrl.replace(/\/api\/?.*$/, '').replace(/\/$/, '');
-          }
+        if (apiUrl && apiUrl.includes('api.saiisai.com')) {
+          replacementUrl = 'https://saiisai.com';
+        } else if (apiUrl && !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(apiUrl)) {
+          // If API URL is production (not localhost), derive frontend URL
+          replacementUrl = apiUrl.replace(/\/api\/?.*$/, '').replace(/\/$/, '');
         }
-        
+
         // If still not set, use cleanFrontendUrl only if it's NOT localhost
         if (!replacementUrl && !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(cleanFrontendUrl)) {
           replacementUrl = cleanFrontendUrl;
         }
-        
-        // If still not set and we're in production, use current origin
-        if (!replacementUrl && isProduction) {
+
+        // Use current origin as fallback
+        if (!replacementUrl) {
           replacementUrl = currentOrigin;
         }
-        
-        // Final fallback: hardcode production domain if API suggests production
-        if (!replacementUrl && apiUrl && apiUrl.includes('api.saiisai.com')) {
-          replacementUrl = 'https://saiisai.com';
-        }
-        
-        // Last resort: keep localhost only if we're truly in dev with no production API
-        if (!replacementUrl) {
-          replacementUrl = cleanFrontendUrl;
-        }
-        
+
         const normalized = `${replacementUrl}${path}`;
         // Debug log
-        console.log('[resolveAdLink] Normalized localhost URL:', { 
-          original: raw, 
-          normalized, 
+        console.log('[resolveAdLink] Normalized localhost URL (production):', {
+          original: raw,
+          normalized,
           replacementUrl,
-          frontendUrl: cleanFrontendUrl,
           isProduction,
-          currentOrigin,
-          apiUrl: apiUrl,
-          apiUrlCheck: apiUrl ? apiUrl.includes('api.saiisai.com') : false
+          currentOrigin
         });
         return normalized;
       } catch (error) {
         const pathMatch = raw.match(/^https?:\/\/[^\/]+(\/.*)?$/);
         const path = pathMatch && pathMatch[1] ? pathMatch[1] : '/';
-        
-        // Same logic for fallback
-        const apiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
-        let replacementUrl = cleanFrontendUrl;
-        if (apiUrl && apiUrl.includes('api.saiisai.com')) {
-          replacementUrl = 'https://saiisai.com';
-        }
-        
-        const normalized = `${replacementUrl}${path}`;
+        const normalized = `${cleanFrontendUrl}${path}`;
         return normalized;
       }
     }
-    
+
     // If it's already an absolute URL (and not localhost), return as-is
     if (/^https?:\/\//i.test(raw)) return raw;
-    
+
     // If it's a relative path, prepend FRONTEND_URL
     const cleanLink = raw.startsWith("/") ? raw.substring(1) : raw; // Remove leading slash
     return `${cleanFrontendUrl}/${cleanLink}`;
@@ -386,11 +353,11 @@ const HomePage = () => {
     // Handle different response structures
     // Backend returns: { status: 'success', results: [...], meta: {...} }
     // Service now returns response.data directly
-    const categoriesList = 
-      categoriesData?.results || 
-      categoriesData?.data?.results || 
+    const categoriesList =
+      categoriesData?.results ||
+      categoriesData?.data?.results ||
       [];
-    
+
     if (!categoriesList || !Array.isArray(categoriesList) || categoriesList.length === 0) return [];
 
     // Filter to show only parent categories (top-level categories)
@@ -437,7 +404,7 @@ const HomePage = () => {
             const formattedEnd = slide.endDate ? formatPromoEndDate(slide.endDate) : null;
             // CRITICAL: Always normalize the link to ensure no localhost URLs
             let normalizedSlideLink = slide.link ? resolveAdLink(slide.link) : PATHS.PRODUCTS;
-            
+
             // Double-check: if somehow localhost still exists, replace it again
             if (normalizedSlideLink && typeof normalizedSlideLink === 'string') {
               if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(normalizedSlideLink)) {
@@ -464,7 +431,7 @@ const HomePage = () => {
                 }
               }
             }
-            
+
             // Determine if it's an external link (full URL) or internal (relative path)
             const external = normalizedSlideLink && /^https?:\/\//i.test(normalizedSlideLink);
             const ctaEl = external ? (
@@ -650,7 +617,7 @@ const HomePage = () => {
                           </SellerRating>
                         </SellerHeaderContent>
                       </SellerCardHeader>
-                      
+
                       <SellerCardBody>
                         <SellerStats>
                           <StatItem>
@@ -670,7 +637,7 @@ const HomePage = () => {
                             </StatItem>
                           )}
                         </SellerStats>
-                        
+
                         {productImages.length > 0 && (
                           <ProductPreviewSection>
                             <PreviewLabel>Featured Products</PreviewLabel>
@@ -680,9 +647,9 @@ const HomePage = () => {
                                   <PreviewImage
                                     src={image}
                                     alt={`Product ${index + 1}`}
-                                  onError={(e) => {
-                                    e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect fill='%23e2e8f0' width='80' height='80'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2364748b' font-size='24'%3EP%3C/text%3E%3C/svg%3E";
-                                  }}
+                                    onError={(e) => {
+                                      e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect fill='%23e2e8f0' width='80' height='80'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2364748b' font-size='24'%3EP%3C/text%3E%3C/svg%3E";
+                                    }}
                                   />
                                 </PreviewImageWrapper>
                               ))}
@@ -695,7 +662,7 @@ const HomePage = () => {
                           </ProductPreviewSection>
                         )}
                       </SellerCardBody>
-                      
+
                       <SellerCardFooter>
                         <ViewShopButton>
                           View Shop <FaArrowRight />
@@ -759,6 +726,9 @@ const HomePage = () => {
         dealProduct={dealOfTheDay.dealProduct}
         endOfDay={dealOfTheDay.endOfDay}
       />
+
+      {/* Saiisai Stories: Success stories from sellers and customers */}
+      <SaiisaiStories />
 
       {/* All Products */}
       <Section>

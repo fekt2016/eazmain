@@ -42,11 +42,11 @@ export const qaData = [
       },
       {
         q: "What payment methods are accepted?",
-        a: "We accept multiple payment methods: Credit/Debit Balance (from your EazShop wallet), Paystack (mobile money, credit/debit cards, and bank transfers), and Payment on Delivery (cash payment when your order arrives). You can select your preferred payment method during checkout."
+        a: "We accept multiple payment methods: Credit/Debit Balance (from your Saiisai wallet), Paystack (mobile money, credit/debit cards, and bank transfers), and Payment on Delivery (cash payment when your order arrives). You can select your preferred payment method during checkout."
       },
       {
         q: "How do I pay with Paystack?",
-        a: "During checkout, select 'Mobile Money' as your payment method. Click 'Place Order' and you'll be redirected to Paystack's secure payment page. Enter your mobile money details or card information, complete the payment, and you'll be redirected back to EazShop with a confirmation. Your order will be processed immediately after successful payment."
+        a: "During checkout, select 'Mobile Money' as your payment method. Click 'Place Order' and you'll be redirected to Paystack's secure payment page. Enter your mobile money details or card information, complete the payment, and you'll be redirected back to Saiisai with a confirmation. Your order will be processed immediately after successful payment."
       },
       {
         q: "Can I use my wallet balance for partial payment?",

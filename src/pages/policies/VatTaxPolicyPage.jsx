@@ -35,10 +35,10 @@ const VatTaxPolicyPage = () => {
   });
 
   useDynamicPageTitle({
-    title: 'VAT & Tax Policy • EazShop',
+    title: 'VAT & Tax Policy • Saiisai',
     description: 'Learn how Saiisai handles Value Added Tax (VAT) and tax compliance for buyers and sellers in Ghana.',
     keywords: 'VAT policy, tax policy, Ghana GRA, Saiisai tax, Value Added Tax',
-    defaultTitle: 'VAT & Tax Policy • EazShop',
+    defaultTitle: 'VAT & Tax Policy • Saiisai',
     defaultDescription: 'VAT and tax policy for the Saiisai marketplace in Ghana.',
   });
 

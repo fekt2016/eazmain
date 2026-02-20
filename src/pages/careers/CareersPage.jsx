@@ -18,10 +18,10 @@ const CareersPage = () => {
   const navigate = useNavigate();
 
   useDynamicPageTitle({
-    title: "Careers at EazShop",
-    description: "Join EazShop and build the future of e-commerce in Africa. Explore open roles, learn about our culture, and grow your career with us.",
-    defaultTitle: "Careers at EazShop • EazShop",
-    defaultDescription: "Join EazShop and build the future of e-commerce in Africa.",
+    title: "Careers at Saiisai",
+    description: "Join Saiisai and build the future of e-commerce in Ghana and Africa. Explore open roles, learn about our culture, and grow your career with us.",
+    defaultTitle: "Careers at Saiisai • Saiisai",
+    defaultDescription: "Join Saiisai and build the future of e-commerce in Ghana and Africa.",
   });
 
   return (

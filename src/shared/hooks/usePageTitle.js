@@ -70,7 +70,7 @@ export const usePageTitle = (config = {}) => {
     if (image) createMetaTag('og:image', image, true);
     createMetaTag('og:url', currentUrl, true);
     createMetaTag('og:type', type, true);
-    createMetaTag('og:site_name', 'EazShop', true);
+    createMetaTag('og:site_name', 'Saiisai', true);
 
     // Twitter Card tags
     createMetaTag('twitter:card', 'summary_large_image');

@@ -4,15 +4,21 @@ import styled from 'styled-components';
 import { FaBell, FaCheck, FaCheckDouble, FaTrash, FaShoppingCart, FaTruck, FaMoneyBillWave, FaHeadset, FaBox, FaUndo, FaChevronLeft, FaChevronRight, FaCheckSquare, FaSquare } from 'react-icons/fa';
 import { useNotifications, useUnreadCount, useMarkAsRead, useMarkAllAsRead, useDeleteNotification, useDeleteMultipleNotifications, useDeleteAllNotifications } from '../../shared/hooks/notifications/useNotifications';
 import { PATHS } from '../../routes/routePaths';
+import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 
 const BuyerNotificationsPage = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  
+
+  useDynamicPageTitle({
+    title: 'Notifications - Saiisai',
+    description: 'View and manage your notifications on Saiisai.',
+  });
+
   // Get pagination from URL params
   const page = parseInt(searchParams.get('page') || '1', 10);
   const limit = 20; // Items per page
-  
+
   const [filter, setFilter] = useState('all'); // 'all', 'unread', 'read'
   const [typeFilter, setTypeFilter] = useState('all');
   const [selectMode, setSelectMode] = useState(false); // Toggle select mode
@@ -97,7 +103,7 @@ const BuyerNotificationsPage = () => {
   // Handle delete selected
   const handleDeleteSelected = () => {
     if (selectedIds.length === 0) return;
-    
+
     if (window.confirm(`Delete ${selectedIds.length} selected notification(s)?`)) {
       deleteMultiple.mutate(selectedIds, {
         onSuccess: () => {
@@ -371,76 +377,76 @@ const BuyerNotificationsPage = () => {
           {notifications.map((notification) => {
             const isSelected = selectedIds.includes(notification._id);
             return (
-            <NotificationItem
-              key={notification._id}
-              $unread={!(notification.read ?? notification.isRead)}
-              $selectMode={selectMode}
-              onClick={() => {
-                if (selectMode) {
-                  toggleNotificationSelection(notification._id);
-                } else {
-                  handleNotificationClick(notification);
-                }
-              }}
-            >
-              {selectMode && (
-                <CheckboxContainer
-                  onClick={(e) => {
-                    e.stopPropagation();
+              <NotificationItem
+                key={notification._id}
+                $unread={!(notification.read ?? notification.isRead)}
+                $selectMode={selectMode}
+                onClick={() => {
+                  if (selectMode) {
                     toggleNotificationSelection(notification._id);
-                  }}
-                >
-                  {isSelected ? <FaCheckSquare /> : <FaSquare />}
-                </CheckboxContainer>
-              )}
-              <NotificationIcon $color={getNotificationColor(notification.type)}>
-                {getNotificationIcon(notification.type)}
-              </NotificationIcon>
-              <NotificationContent>
-                <NotificationHeader>
-                  <NotificationTitle>{notification.title}</NotificationTitle>
-                  {!(notification.read ?? notification.isRead) && <UnreadDot />}
-                </NotificationHeader>
-                <NotificationMessage>{notification.message}</NotificationMessage>
-                <NotificationMeta>
-                  <NotificationTime>
-                    {new Date(notification.createdAt).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </NotificationTime>
-                  <NotificationType>{notification.type}</NotificationType>
-                </NotificationMeta>
-              </NotificationContent>
-              <NotificationActions>
-                {!(notification.read ?? notification.isRead) && (
+                  } else {
+                    handleNotificationClick(notification);
+                  }
+                }}
+              >
+                {selectMode && (
+                  <CheckboxContainer
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleNotificationSelection(notification._id);
+                    }}
+                  >
+                    {isSelected ? <FaCheckSquare /> : <FaSquare />}
+                  </CheckboxContainer>
+                )}
+                <NotificationIcon $color={getNotificationColor(notification.type)}>
+                  {getNotificationIcon(notification.type)}
+                </NotificationIcon>
+                <NotificationContent>
+                  <NotificationHeader>
+                    <NotificationTitle>{notification.title}</NotificationTitle>
+                    {!(notification.read ?? notification.isRead) && <UnreadDot />}
+                  </NotificationHeader>
+                  <NotificationMessage>{notification.message}</NotificationMessage>
+                  <NotificationMeta>
+                    <NotificationTime>
+                      {new Date(notification.createdAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </NotificationTime>
+                    <NotificationType>{notification.type}</NotificationType>
+                  </NotificationMeta>
+                </NotificationContent>
+                <NotificationActions>
+                  {!(notification.read ?? notification.isRead) && (
+                    <ActionButton
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        markAsRead.mutate(notification._id);
+                      }}
+                      title="Mark as read"
+                    >
+                      <FaCheck />
+                    </ActionButton>
+                  )}
                   <ActionButton
                     onClick={(e) => {
                       e.stopPropagation();
-                      markAsRead.mutate(notification._id);
+                      if (window.confirm('Delete this notification?')) {
+                        deleteNotification.mutate(notification._id);
+                      }
                     }}
-                    title="Mark as read"
+                    title="Delete"
+                    $danger
                   >
-                    <FaCheck />
+                    <FaTrash />
                   </ActionButton>
-                )}
-                <ActionButton
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (window.confirm('Delete this notification?')) {
-                      deleteNotification.mutate(notification._id);
-                    }
-                  }}
-                  title="Delete"
-                  $danger
-                >
-                  <FaTrash />
-                </ActionButton>
-              </NotificationActions>
-            </NotificationItem>
+                </NotificationActions>
+              </NotificationItem>
             );
           })}
         </NotificationsList>
@@ -461,12 +467,12 @@ const BuyerNotificationsPage = () => {
               <FaChevronLeft />
               Previous
             </PaginationButton>
-            
+
             <PageNumbers>
               {(() => {
                 const pages = [];
                 const maxVisible = 5;
-                
+
                 if (totalPages <= maxVisible) {
                   // Show all pages if total is less than max visible
                   for (let i = 1; i <= totalPages; i++) {
@@ -476,12 +482,12 @@ const BuyerNotificationsPage = () => {
                   // Show pages around current page
                   let start = Math.max(1, currentPage - 2);
                   let end = Math.min(totalPages, start + maxVisible - 1);
-                  
+
                   // Adjust start if we're near the end
                   if (end - start < maxVisible - 1) {
                     start = Math.max(1, end - maxVisible + 1);
                   }
-                  
+
                   // Add first page and ellipsis if needed
                   if (start > 1) {
                     pages.push(1);
@@ -489,12 +495,12 @@ const BuyerNotificationsPage = () => {
                       pages.push('ellipsis-start');
                     }
                   }
-                  
+
                   // Add page range
                   for (let i = start; i <= end; i++) {
                     pages.push(i);
                   }
-                  
+
                   // Add last page and ellipsis if needed
                   if (end < totalPages) {
                     if (end < totalPages - 1) {
@@ -503,12 +509,12 @@ const BuyerNotificationsPage = () => {
                     pages.push(totalPages);
                   }
                 }
-                
+
                 return pages.map((pageNum, index) => {
                   if (pageNum === 'ellipsis-start' || pageNum === 'ellipsis-end') {
                     return <Ellipsis key={`ellipsis-${index}`}>...</Ellipsis>;
                   }
-                  
+
                   return (
                     <PageNumber
                       key={pageNum}
@@ -521,7 +527,7 @@ const BuyerNotificationsPage = () => {
                 });
               })()}
             </PageNumbers>
-            
+
             <PaginationButton
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
@@ -773,9 +779,9 @@ const FilterButton = styled.button`
   &:hover {
     border-color: var(--color-primary-500);
     background: ${(props) =>
-      props.$active ? 'var(--color-primary-600)' : 'var(--color-primary-50)'};
+    props.$active ? 'var(--color-primary-600)' : 'var(--color-primary-50)'};
     color: ${(props) =>
-      props.$active ? 'var(--color-white-0)' : 'var(--color-primary-600)'};
+    props.$active ? 'var(--color-white-0)' : 'var(--color-primary-600)'};
   }
 `;
 
@@ -922,7 +928,7 @@ const ActionButton = styled.button`
 
   &:hover {
     background: ${(props) =>
-      props.$danger ? 'var(--color-red-100)' : 'var(--color-grey-200)'};
+    props.$danger ? 'var(--color-red-100)' : 'var(--color-grey-200)'};
   }
 `;
 
@@ -1050,10 +1056,10 @@ const PageNumber = styled.button`
 
   &:hover {
     background: ${(props) =>
-      props.$active ? 'var(--color-primary-600)' : 'var(--color-primary-50)'};
+    props.$active ? 'var(--color-primary-600)' : 'var(--color-primary-50)'};
     border-color: var(--color-primary-500);
     color: ${(props) =>
-      props.$active ? 'var(--color-white-0)' : 'var(--color-primary-600)'};
+    props.$active ? 'var(--color-white-0)' : 'var(--color-primary-600)'};
   }
 `;
 

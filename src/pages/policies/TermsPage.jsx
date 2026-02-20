@@ -42,11 +42,11 @@ const TermsPage = () => {
 
   // SEO
   useDynamicPageTitle({
-    title: 'Terms & Service • EazShop',
-    description: 'Review the terms and conditions for using EazShop. Understand your rights and responsibilities as a user.',
-    keywords: 'terms, conditions, terms of service, EazShop terms, user agreement, service agreement',
-    defaultTitle: 'Terms & Service • EazShop',
-    defaultDescription: 'Review the terms and conditions for using EazShop.',
+    title: 'Terms & Service • Saiisai',
+    description: 'Review the terms and conditions for using Saiisai. Understand your rights and responsibilities as a user.',
+    keywords: 'terms, conditions, terms of service, Saiisai terms, user agreement, service agreement',
+    defaultTitle: 'Terms & Service • Saiisai',
+    defaultDescription: 'Review the terms and conditions for using Saiisai.',
   });
 
   // Animation variants
@@ -82,7 +82,7 @@ const TermsPage = () => {
           <PolicyTitle>Terms & Service</PolicyTitle>
           <LastUpdated>Last Updated: {lastUpdatedDate}</LastUpdated>
           <IntroText>
-            Please read these Terms and Conditions carefully before using EazShop. By accessing or using our platform, you agree to be bound by these terms. If you do not agree with any part of these terms, you may not access the service.
+            Please read these Terms and Conditions carefully before using Saiisai. By accessing or using our platform, you agree to be bound by these terms. If you do not agree with any part of these terms, you may not access the service.
           </IntroText>
         </PolicyHeader>
 
@@ -91,7 +91,7 @@ const TermsPage = () => {
           <SectionTitle>1. Acceptance of Terms</SectionTitle>
           <SectionContent>
             <Paragraph>
-              By accessing and using EazShop, you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service.
+              By accessing and using Saiisai, you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service.
             </Paragraph>
             <Paragraph>
               These Terms apply to all visitors, users, and others who access or use the Service.
@@ -106,17 +106,17 @@ const TermsPage = () => {
           <SectionTitle>2. Use License</SectionTitle>
           <SectionContent>
             <Paragraph>
-              Permission is granted to temporarily access the materials on EazShop's website for personal, non-commercial transitory viewing only. This is the grant of a license, not a transfer of title, and under this license you may not:
+              Permission is granted to temporarily access the materials on Saiisai's website for personal, non-commercial transitory viewing only. This is the grant of a license, not a transfer of title, and under this license you may not:
             </Paragraph>
             <BulletList>
               <li>Modify or copy the materials</li>
               <li>Use the materials for any commercial purpose or for any public display</li>
-              <li>Attempt to reverse engineer any software contained on EazShop's website</li>
+              <li>Attempt to reverse engineer any software contained on Saiisai's website</li>
               <li>Remove any copyright or other proprietary notations from the materials</li>
               <li>Transfer the materials to another person or "mirror" the materials on any other server</li>
             </BulletList>
             <Paragraph>
-              This license shall automatically terminate if you violate any of these restrictions and may be terminated by EazShop at any time.
+              This license shall automatically terminate if you violate any of these restrictions and may be terminated by Saiisai at any time.
             </Paragraph>
           </SectionContent>
         </PolicySection>
@@ -150,7 +150,7 @@ const TermsPage = () => {
           <SectionTitle>4. Products and Services</SectionTitle>
           <SectionContent>
             <Paragraph>
-              EazShop provides a platform for buyers and sellers to transact. We do not manufacture, store, or ship products directly. All products are sold by independent sellers.
+              Saiisai provides a platform for buyers and sellers to transact. We do not manufacture, store, or ship products directly. All products are sold by independent sellers.
             </Paragraph>
             <Paragraph>
               <strong>Product Information:</strong> We strive to provide accurate product information, but we do not warrant that product descriptions or other content is accurate, complete, reliable, current, or error-free.
@@ -173,7 +173,7 @@ const TermsPage = () => {
                   <strong>Payment Methods</strong>
                 </Paragraph>
                 <Paragraph>
-                  We accept various payment methods including credit/debit cards, mobile money, and EazShop credit balance. All payments are processed securely through our payment partners.
+                  We accept various payment methods including credit/debit cards, mobile money, and Saiisai credit balance. All payments are processed securely through our payment partners.
                 </Paragraph>
               </li>
               <li>
@@ -227,7 +227,7 @@ const TermsPage = () => {
           <SectionTitle>7. Intellectual Property</SectionTitle>
           <SectionContent>
             <Paragraph>
-              The Service and its original content, features, and functionality are and will remain the exclusive property of EazShop and its licensors. The Service is protected by copyright, trademark, and other laws.
+              The Service and its original content, features, and functionality are and will remain the exclusive property of Saiisai and its licensors. The Service is protected by copyright, trademark, and other laws.
             </Paragraph>
             <Paragraph>
               Our trademarks and trade dress may not be used in connection with any product or service without our prior written consent.
@@ -242,11 +242,11 @@ const TermsPage = () => {
           <SectionTitle>8. Limitation of Liability</SectionTitle>
           <SectionContent>
             <Paragraph>
-              In no event shall EazShop, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential, or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your use of the Service.
+              In no event shall Saiisai, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential, or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your use of the Service.
             </Paragraph>
             <ImportantNotice>
               <Paragraph>
-                <strong>Important:</strong> EazShop acts as a platform connecting buyers and sellers. We are not responsible for the quality, safety, or legality of products sold by third-party sellers.
+                <strong>Important:</strong> Saiisai acts as a platform connecting buyers and sellers. We are not responsible for the quality, safety, or legality of products sold by third-party sellers.
               </Paragraph>
             </ImportantNotice>
           </SectionContent>
@@ -259,7 +259,7 @@ const TermsPage = () => {
           <SectionTitle>9. Indemnification</SectionTitle>
           <SectionContent>
             <Paragraph>
-              You agree to defend, indemnify, and hold harmless EazShop and its licensee and licensors, and their employees, contractors, agents, officers and directors, from and against any and all claims, damages, obligations, losses, liabilities, costs or debt, and expenses (including but not limited to attorney's fees).
+              You agree to defend, indemnify, and hold harmless Saiisai and its licensee and licensors, and their employees, contractors, agents, officers and directors, from and against any and all claims, damages, obligations, losses, liabilities, costs or debt, and expenses (including but not limited to attorney's fees).
             </Paragraph>
           </SectionContent>
         </PolicySection>

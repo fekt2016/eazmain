@@ -9,6 +9,7 @@ import Card from "../../components/ui/Card";
 import Container from "../../components/ui/Container";
 import ProductCard from "../../shared/components/ProductCard";
 import { PATHS } from "../../routes/routePaths";
+import useDynamicPageTitle from "../../shared/hooks/useDynamicPageTitle";
 
 const PageWrapper = styled.div`
   background: var(--color-grey-50);
@@ -46,6 +47,17 @@ const EmptyState = styled.div`
   padding: 3rem 1rem;
   text-align: center;
   color: var(--color-grey-600);
+  width: 100%;
+`;
+
+const CardContainer = styled.div`
+  width: 100%;
+  background-color: 'red'
+`;
+
+const FullWidthGrid = styled(Grid)`
+
+  grid-template-columns: 1fr;
 `;
 
 const PromotionalProductsPage = () => {
@@ -80,6 +92,11 @@ const PromotionalProductsPage = () => {
     ? promoId.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
     : "Special Offer";
 
+  useDynamicPageTitle({
+    title: `${title} - Saiisai`,
+    description: `Discover products in the ${title} promotion on Saiisai. Limited time offers from trusted sellers.`,
+  });
+
   return (
     <PageWrapper>
       <Container>
@@ -109,13 +126,15 @@ const PromotionalProductsPage = () => {
             No products are currently attached to this promotion.
           </EmptyState>
         ) : (
-          <Grid responsiveColumns>
+          <FullWidthGrid>
             {products.map((product) => (
-              <Card key={product._id} clickable variant="elevated">
-                <ProductCard product={product} />
-              </Card>
+              <CardContainer key={product._id}>
+                <Card clickable variant="elevated">
+                  <ProductCard product={product} />
+                </Card>
+              </CardContainer>
             ))}
-          </Grid>
+          </FullWidthGrid>
         )}
       </Container>
     </PageWrapper>

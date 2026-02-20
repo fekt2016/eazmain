@@ -181,7 +181,7 @@ export default function Press() {
       // For now, show a message that this feature is being prepared
       // In the future, this can be connected to an API endpoint that serves the media kit
       toast.info('Media kit download is being prepared. Please contact support for immediate access to media resources.');
-      
+
       // Future implementation when API is ready:
       // const response = await fetch('/api/media-kit/download');
       // if (!response.ok) throw new Error('Download failed');
@@ -189,7 +189,7 @@ export default function Press() {
       // const url = window.URL.createObjectURL(blob);
       // const a = document.createElement('a');
       // a.href = url;
-      // a.download = 'eazshop-media-kit.zip';
+      // a.download = 'saiisai-media-kit.zip';
       // document.body.appendChild(a);
       // a.click();
       // document.body.removeChild(a);
@@ -207,7 +207,7 @@ export default function Press() {
         <Header>
           <Title>Press & Media</Title>
           <Subtitle>
-            Welcome to Saiisai's press center. Find the latest news, press releases, 
+            Welcome to Saiisai's press center. Find the latest news, press releases,
             media resources, and contact information for media inquiries.
           </Subtitle>
         </Header>
@@ -217,16 +217,16 @@ export default function Press() {
             <SectionIcon>
               <FaNewspaper />
             </SectionIcon>
-            About EazShop
+            The Saiisai Brand
           </SectionTitle>
           <Description>
-            Saiisai is a leading e-commerce platform revolutionizing the shopping experience 
-            in Ghana and beyond. We connect buyers and sellers, offering a seamless, secure, 
-            and convenient marketplace for quality products and services.
+            Saiisai is Ghana's leading digital ecosystem, headquartered in Accra. What started as a goal to simplify online shopping has evolved into a multi-product technology company that powers the digital economy of tomorrow.
           </Description>
           <Description>
-            Our mission is to make online shopping accessible, reliable, and enjoyable for 
-            everyone while empowering local sellers to reach a wider audience and grow their businesses.
+            Our ecosystem spans across e-commerce (Saiisai Marketplace), logistics and mobility (BenzFlex), and digital infrastructure (Web Hosting & Domain services). We are committed to building transparent, reliable, and high-performance systems that empower local businesses to reach global standards.
+          </Description>
+          <Description>
+            <strong>Key Stats:</strong> Our platform supports hundreds of verified sellers and has processed thousands of orders, maintaining a focus on security, speed, and customer satisfaction.
           </Description>
         </ContentSection>
 
@@ -254,7 +254,7 @@ export default function Press() {
               <strong>Product Images:</strong> High-quality product and platform screenshots
             </ListItem>
           </List>
-          <Button 
+          <Button
             onClick={handleDownloadMediaKit}
           >
             <FaDownload />
@@ -270,7 +270,7 @@ export default function Press() {
             Press Inquiries
           </SectionTitle>
           <Description>
-            For media inquiries, interview requests, or press-related questions, please contact 
+            For media inquiries, interview requests, or press-related questions, please contact
             our press team. We're here to help with:
           </Description>
           <List>
@@ -291,7 +291,7 @@ export default function Press() {
               </ContactIcon>
               <ContactLabel>Email</ContactLabel>
               <ContactValue>
-                <Link href="mailto:press@eazshop.com">press@eazshop.com</Link>
+                <Link href="mailto:press@saiisai.com">press@saiisai.com</Link>
               </ContactValue>
             </ContactCard>
 
@@ -301,7 +301,7 @@ export default function Press() {
               </ContactIcon>
               <ContactLabel>Phone</ContactLabel>
               <ContactValue>
-                <Link href="tel:+233XXXXXXXXX">+233 XX XXX XXXX</Link>
+                <Link href="tel:+233235222207">+233 235222207</Link>
               </ContactValue>
             </ContactCard>
 
@@ -324,13 +324,13 @@ export default function Press() {
           </Description>
           <List>
             <ListItem>
-              <strong>Twitter:</strong> <Link href="https://twitter.com/eazshop" target="_blank" rel="noopener noreferrer">@eazshop</Link>
+              <strong>Twitter:</strong> <Link href="https://twitter.com/saiisai" target="_blank" rel="noopener noreferrer">@saiisai</Link>
             </ListItem>
             <ListItem>
               <strong>Facebook:</strong> <Link href="https://facebook.com/saiisai" target="_blank" rel="noopener noreferrer">Saiisai</Link>
             </ListItem>
             <ListItem>
-              <strong>Instagram:</strong> <Link href="https://instagram.com/eazshop" target="_blank" rel="noopener noreferrer">@eazshop</Link>
+              <strong>Instagram:</strong> <Link href="https://instagram.com/saiisai" target="_blank" rel="noopener noreferrer">@saiisai</Link>
             </ListItem>
             <ListItem>
               <strong>LinkedIn:</strong> <Link href="https://linkedin.com/company/saiisai" target="_blank" rel="noopener noreferrer">Saiisai</Link>

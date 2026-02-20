@@ -61,13 +61,13 @@ jest.mock('@/shared/hooks/useAds', () => ({
 
 jest.mock('@/features/products/EazShopSection', () => ({
   __esModule: true,
-  default: () => <div data-testid="eazshop-section">EazShop Section</div>,
+  default: () => <div data-testid="eazshop-section">Saiisai Section</div>,
 }));
 
 describe('HomePage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Set default mock return values
     mockUseProduct.mockReturnValue({
       getProducts: {
@@ -110,7 +110,7 @@ describe('HomePage', () => {
 
   test('renders without crashing (smoke test)', () => {
     renderWithProviders(<HomePage />);
-    
+
     // Verify Swiper is rendered (via mock)
     expect(screen.getByTestId('swiper')).toBeInTheDocument();
   });
@@ -142,7 +142,7 @@ describe('HomePage', () => {
         isError: false,
       },
     });
-    
+
     renderWithProviders(<HomePage />);
 
     // Loading skeletons should be rendered (via Swiper mock or loading state)
@@ -167,7 +167,7 @@ describe('HomePage', () => {
         isError: false,
       },
     });
-    
+
     renderWithProviders(<HomePage />);
 
     await waitFor(() => {
@@ -222,7 +222,7 @@ describe('HomePage', () => {
         isError: false,
       },
     });
-    
+
     renderWithProviders(<HomePage />);
 
     expect(screen.getByText(/all products/i)).toBeInTheDocument();
@@ -259,7 +259,7 @@ describe('HomePage', () => {
         isError: false,
       },
     });
-    
+
     renderWithProviders(<HomePage />);
 
     await waitFor(() => {
@@ -268,7 +268,7 @@ describe('HomePage', () => {
     }, { timeout: 3000 });
   });
 
-  test('renders EazShop section', () => {
+  test('renders Saiisai section', () => {
     renderWithProviders(<HomePage />);
 
     expect(screen.getByTestId('eazshop-section')).toBeInTheDocument();

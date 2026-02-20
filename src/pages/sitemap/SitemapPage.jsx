@@ -26,25 +26,25 @@ import {
 
 /**
  * Modern Sitemap Page
- * Displays all pages and resources across the EazWorld ecosystem
+ * Displays all pages and resources across the Saiisai ecosystem
  */
 const SitemapPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   // SEO
   useDynamicPageTitle({
-    title: 'Sitemap | EazWorld',
-    description: 'Explore all pages and resources across EazWorld, Saiisai, EazSeller, and EazAdmin platforms.',
-    keywords: 'sitemap, pages, navigation, EazWorld, Saiisai, EazSeller, EazAdmin',
-    defaultTitle: 'Sitemap | EazWorld',
-    defaultDescription: 'Explore all pages and resources across EazWorld, Saiisai, EazSeller, and EazAdmin platforms.',
+    title: 'Sitemap | Saiisai',
+    description: 'Explore all pages and resources across the Saiisai platform ecosystem.',
+    keywords: 'sitemap, pages, navigation, Saiisai, Seller, Admin',
+    defaultTitle: 'Sitemap | Saiisai',
+    defaultDescription: 'Explore all pages and resources across the Saiisai platform ecosystem.',
   });
 
   // Sitemap sections data
   const sitemapSections = [
     {
-      id: 'eazmain',
-      title: 'EazMain (Buyer App)',
+      id: 'saiisai',
+      title: 'Saiisai (Buyer App)',
       links: [
         { label: 'Home', path: PATHS.HOME },
         { label: 'All Categories', path: PATHS.CATEGORIES },
@@ -63,8 +63,8 @@ const SitemapPage = () => {
       ],
     },
     {
-      id: 'eazseller',
-      title: 'EazSeller (Seller Portal)',
+      id: 'saiisaiseller',
+      title: 'Saiisai Seller (Seller Portal)',
       links: [
         { label: 'Dashboard', path: 'https://seller.saiisai.com/dashboard', external: true },
         { label: 'Products', path: 'https://seller.saiisai.com/products', external: true },
@@ -80,35 +80,35 @@ const SitemapPage = () => {
       ],
     },
     {
-      id: 'eazadmin',
-      title: 'EazAdmin (Admin Portal)',
+      id: 'saiisaiadmin',
+      title: 'Saiisai Admin (Admin Portal)',
       links: [
-        { label: 'Admin Dashboard', path: 'https://admin.eazworld.com/dashboard', external: true },
-        { label: 'Manage Sellers', path: 'https://admin.eazworld.com/sellers', external: true },
-        { label: 'Manage Products', path: 'https://admin.eazworld.com/products', external: true },
-        { label: 'Orders Panel', path: 'https://admin.eazworld.com/orders', external: true },
-        { label: 'Payments & Wallet', path: 'https://admin.eazworld.com/payment-request', external: true },
-        { label: 'Withdrawals', path: 'https://admin.eazworld.com/balance-history', external: true },
-        { label: 'User Reports', path: 'https://admin.eazworld.com/users', external: true },
-        { label: 'Activity Logs', path: 'https://admin.eazworld.com/activity-logs', external: true },
-        { label: 'System Settings', path: 'https://admin.eazworld.com/platform-settings', external: true },
-        { label: 'Support / Internal Tools', path: 'https://admin.eazworld.com/support', external: true },
+        { label: 'Admin Dashboard', path: 'https://admin.saiisai.com/dashboard', external: true },
+        { label: 'Manage Sellers', path: 'https://admin.saiisai.com/sellers', external: true },
+        { label: 'Manage Products', path: 'https://admin.saiisai.com/products', external: true },
+        { label: 'Orders Panel', path: 'https://admin.saiisai.com/orders', external: true },
+        { label: 'Payments & Wallet', path: 'https://admin.saiisai.com/payment-request', external: true },
+        { label: 'Withdrawals', path: 'https://admin.saiisai.com/balance-history', external: true },
+        { label: 'User Reports', path: 'https://admin.saiisai.com/users', external: true },
+        { label: 'Activity Logs', path: 'https://admin.saiisai.com/activity-logs', external: true },
+        { label: 'System Settings', path: 'https://admin.saiisai.com/platform-settings', external: true },
+        { label: 'Support / Internal Tools', path: 'https://admin.saiisai.com/support', external: true },
       ],
     },
     {
-      id: 'eazworld',
-      title: 'EazWorld (Company Website)',
+      id: 'saiisaicompany',
+      title: 'Saiisai (Company Website)',
       links: [
-        { label: 'Home', path: 'https://eazworld.com', external: true },
-        { label: 'Services', path: 'https://eazworld.com/services', external: true },
-        { label: 'Pricing', path: 'https://eazworld.com/pricing', external: true },
-        { label: 'Portfolio', path: 'https://eazworld.com/portfolio', external: true },
-        { label: 'Hosting Plans', path: 'https://eazworld.com/hosting', external: true },
-        { label: 'Domain Search', path: 'https://eazworld.com/domains', external: true },
-        { label: 'About EazWorld', path: 'https://eazworld.com/about', external: true },
-        { label: 'Press & Media', path: 'https://eazworld.com/press', external: true },
-        { label: 'Careers', path: 'https://eazworld.com/careers', external: true },
-        { label: 'Contact Us', path: 'https://eazworld.com/contact', external: true },
+        { label: 'Home', path: 'https://saiisai.com', external: true },
+        { label: 'Services', path: 'https://saiisai.com/services', external: true },
+        { label: 'Pricing', path: 'https://saiisai.com/pricing', external: true },
+        { label: 'Portfolio', path: 'https://saiisai.com/portfolio', external: true },
+        { label: 'Hosting Plans', path: 'https://saiisai.com/hosting', external: true },
+        { label: 'Domain Search', path: 'https://saiisai.com/domains', external: true },
+        { label: 'About Saiisai', path: 'https://saiisai.com/about', external: true },
+        { label: 'Press & Media', path: 'https://saiisai.com/press', external: true },
+        { label: 'Careers', path: 'https://saiisai.com/careers', external: true },
+        { label: 'Contact Us', path: 'https://saiisai.com/contact', external: true },
         { label: 'Sitemap', path: PATHS.SITEMAP },
       ],
     },

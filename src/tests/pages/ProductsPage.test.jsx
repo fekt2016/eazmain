@@ -8,7 +8,7 @@
  * - Handles EazShop products section
  * - Handles filtering functionality
  * - Handles sorting functionality
- * - Handles EazShop only filter
+ * - Handles Saiisai only filter
  */
 
 import React from 'react';
@@ -61,7 +61,7 @@ jest.mock('@/shared/hooks/useEazShop', () => ({
 // Mock useDynamicPageTitle
 jest.mock('@/shared/hooks/useDynamicPageTitle', () => ({
   __esModule: true,
-  default: jest.fn(() => {}),
+  default: jest.fn(() => { }),
 }));
 
 // Mock ProductCard
@@ -171,7 +171,7 @@ describe('ProductsPage', () => {
     });
   });
 
-  test('handles EazShop products section', async () => {
+  test('handles Saiisai products section', async () => {
     const products = [
       {
         _id: 'product1',
@@ -204,7 +204,7 @@ describe('ProductsPage', () => {
 
     await waitFor(() => {
       // Check for EazShop section - text appears in EazShopTitle component
-      expect(screen.getByText('EazShop Official Store')).toBeInTheDocument();
+      expect(screen.getByText('Saiisai Official Store')).toBeInTheDocument();
     }, { timeout: 3000 });
 
     // Verify the product is rendered - use getAllByTestId since it might appear in multiple sections
@@ -291,7 +291,7 @@ describe('ProductsPage', () => {
     });
   });
 
-  test('handles EazShop only filter from URL', async () => {
+  test('handles Saiisai only filter from URL', async () => {
     mockLocation.search = '?eazshop=true';
 
     const products = [
@@ -314,7 +314,7 @@ describe('ProductsPage', () => {
     renderWithProviders(<ProductsPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('EazShop Official Store')).toBeInTheDocument();
+      expect(screen.getByText('Saiisai Official Store')).toBeInTheDocument();
     });
   });
 });

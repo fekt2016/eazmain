@@ -41,7 +41,7 @@ const PartnerHero = ({ navigate }) => {
       <HeroContainer>
         <HeroContent>
           <HeroLeft variants={fadeUp}>
-            <HeroTitle>Partner With EazShop</HeroTitle>
+            <HeroTitle>Partner With Saiisai</HeroTitle>
             <HeroSubtitle>
               Grow your business, reach millions of customers, and scale with us.
             </HeroSubtitle>
@@ -77,7 +77,7 @@ const PartnerHero = ({ navigate }) => {
               <svg viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
                 {/* Background Circle */}
                 <circle cx="200" cy="200" r="180" fill="url(#gradient1)" opacity="0.1" />
-                
+
                 {/* Main Illustration Elements */}
                 <g transform="translate(200, 200)">
                   {/* Store Icon */}
@@ -87,7 +87,7 @@ const PartnerHero = ({ navigate }) => {
                     <rect x="15" y="15" width="30" height="20" rx="2" fill="white" />
                     <rect x="20" y="40" width="20" height="10" rx="2" fill="white" />
                   </g>
-                  
+
                   {/* Handshake Icon */}
                   <g transform="translate(20, -100)">
                     <circle cx="30" cy="30" r="30" fill="#00C896" opacity="0.2" />
@@ -100,7 +100,7 @@ const PartnerHero = ({ navigate }) => {
                       fill="none"
                     />
                   </g>
-                  
+
                   {/* Truck Icon */}
                   <g transform="translate(-80, 20)">
                     <rect x="0" y="20" width="50" height="30" rx="4" fill="#0078cc" opacity="0.2" />
@@ -108,7 +108,7 @@ const PartnerHero = ({ navigate }) => {
                     <circle cx="15" cy="50" r="8" fill="#1e293b" />
                     <circle cx="35" cy="50" r="8" fill="#1e293b" />
                   </g>
-                  
+
                   {/* Growth Arrow */}
                   <g transform="translate(20, 20)">
                     <path
@@ -127,7 +127,7 @@ const PartnerHero = ({ navigate }) => {
                     />
                   </g>
                 </g>
-                
+
                 <defs>
                   <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor="#ffc400" />

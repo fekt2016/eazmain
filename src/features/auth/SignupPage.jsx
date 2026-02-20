@@ -4,7 +4,6 @@ import styled, { keyframes } from "styled-components";
 import { FaFacebook, FaApple, FaEnvelope, FaArrowLeft } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import useAuth from '../../shared/hooks/useAuth';
-import { ErrorState } from '../../components/loading';
 import { devicesMax } from '../../shared/styles/breakpoint';
 import logger from '../../shared/utils/logger';
 import Button from '../../shared/components/Button';
@@ -103,26 +102,23 @@ export default function SignupPage() {
         onError: (error) => {
           logger.error("Registration error:", error);
           
-          // Extract error response data
           const errorResponse = error.response?.data || {};
-          const errorMessage = errorResponse.message || error.message || "Registration failed. Please try again.";
+          const fieldErrors = errorResponse.details || errorResponse.fieldErrors;
           
-          // Handle field-level errors from backend (409 for duplicates, 400 for validation)
-          if (errorResponse.fieldErrors) {
-            Object.keys(errorResponse.fieldErrors).forEach((field) => {
+          // Handle field-level validation errors only (e.g. invalid phone, short password)
+          if (fieldErrors && typeof fieldErrors === "object" && Object.keys(fieldErrors).length > 0) {
+            Object.keys(fieldErrors).forEach((field) => {
               setFormError(field, {
                 type: "server",
-                message: errorResponse.fieldErrors[field],
+                message: fieldErrors[field],
               });
             });
           }
-          
-          // Set general error if no field errors or for non-validation errors
-          if (!errorResponse.fieldErrors || Object.keys(errorResponse.fieldErrors).length === 0) {
-            setFormError("root", { message: errorMessage });
-          } else {
-            // Still show general message for context
-            setFormError("root", { message: errorMessage });
+          // Show friendly message for rate limiting (429) so user knows to wait and retry
+          if (error.response?.status === 429) {
+            setFormError("root", {
+              message: "Too many attempts. Please wait a few minutes and try again.",
+            });
           }
         },
       });
@@ -260,11 +256,6 @@ export default function SignupPage() {
               Create Account
             </Button>
 
-            {registerMutation.error && (
-              <ErrorState 
-                message={registerMutation.error?.message || "Failed to create account"} 
-              />
-            )}
           </StyledForm>
 
           <Divider>
@@ -439,12 +430,8 @@ const StyledForm = styled.form`
 
 const Row = styled.div`
   display: flex;
-  gap: 16px;
-  
-  @media ${devicesMax.sm} {
-    flex-direction: column;
-    gap: 20px;
-  }
+  flex-direction: column;
+  gap: 20px;
 `;
 
 const Divider = styled.div`

@@ -59,7 +59,7 @@ const CareerLife = () => {
       variants={container}
     >
       <LifeContainer>
-        <LifeTitle>Life at EazShop</LifeTitle>
+        <LifeTitle>Life at Saiisai</LifeTitle>
         <LifeDescription>
           Experience what it's like to work with a team that's transforming e-commerce
         </LifeDescription>

@@ -24,7 +24,7 @@ const CareerHero = ({ navigate }) => {
     >
       <HeroContainer>
         <HeroContent>
-          <HeroTitle>Careers at EazShop</HeroTitle>
+          <HeroTitle>Careers at Saiisai</HeroTitle>
           <HeroSubtitle>
             Join our mission to power commerce across Africa.
           </HeroSubtitle>

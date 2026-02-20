@@ -86,10 +86,10 @@ export default function ProductCard({
   const handleAddToCart = useCallback((product) => {
     // CRITICAL: Resolve default SKU for ProductCard quick-add
     let sku = null;
-    
+
     if (product.variants?.length > 0) {
       sku = resolveDefaultSku(product);
-      
+
       if (!sku) {
         logger.error("[PRODUCT_CARD_ADD] No SKU found for variant product:", {
           productId: product._id,
@@ -185,16 +185,16 @@ export default function ProductCard({
   if (product.isPreOrder) {
     console.debug('[ProductCard] Pre-order product detected:', product.name, '| isPreOrder:', product.isPreOrder);
   }
-  
+
   // Check availability status
   const isComingSoon = product.availability?.status === 'coming_soon';
   const isDiscontinued = product.availability?.status === 'discontinued';
-  
+
   // Check product status
   const isDraft = product.status === 'draft';
   const isInactive = product.status === 'inactive';
   const isOutOfStock = product.status === 'out_of_stock';
-  
+
   // Show condition badge from product.condition (new, used, refurbished, etc.)
   const showCondition = Boolean(product.condition);
 
@@ -203,8 +203,8 @@ export default function ProductCard({
       <ProductLink to={`/product/${product._id}`}>
         {/* Image Section */}
         <ImageContainer $layout={layout}>
-          <ProductImage 
-            src={getGridImage(product)} 
+          <ProductImage
+            src={getGridImage(product)}
             alt={product.name}
             $layout={layout}
             onError={(e) => {
@@ -215,7 +215,7 @@ export default function ProductCard({
               }
             }}
           />
-          
+
           {/* Overlay Actions */}
           <ImageOverlay className="image-overlay">
             {showQuickView && (
@@ -278,7 +278,7 @@ export default function ProductCard({
               {(product.isEazShopProduct || product.seller?.role === 'eazshop_store') && (
                 <EazShopBadge>
                   <EazShopIcon>✓</EazShopIcon>
-                  EazShop Official
+                  Saiisai Official
                 </EazShopBadge>
               )}
               {hasDiscount && !isComingSoon && !isDiscontinued && (
@@ -310,34 +310,34 @@ export default function ProductCard({
         {/* Product Info */}
         <ProductInfo $layout={layout}>
           {/* <ProductCategory>{product.category?.name || "Category"}</ProductCategory> */}
-          
+
           {/* Brand */}
           {product.brand && (
             <ProductBrand>{product.brand}</ProductBrand>
           )}
-          
+
           <ProductName title={product.name || ""}>
             {highlightTerm && product.name ? (
               <>
                 {highlightSearchTerm(
-                  product.name.length > 25 
-                    ? `${product.name.slice(0, 25)}...` 
+                  product.name.length > 25
+                    ? `${product.name.slice(0, 25)}...`
                     : product.name,
                   highlightTerm
                 )}
               </>
             ) : (
-              product.name && product.name.length > 25 
-                ? `${product.name.slice(0, 25)}...` 
+              product.name && product.name.length > 25
+                ? `${product.name.slice(0, 25)}...`
                 : (product.name || "Product Name")
             )}
           </ProductName>
-          
+
           {/* Short Description */}
           {product.shortDescription && (
             <ProductShortDescription>
-              {product.shortDescription && product.shortDescription.length > 60 
-                ? `${product.shortDescription.slice(0, 60)}...` 
+              {product.shortDescription && product.shortDescription.length > 60
+                ? `${product.shortDescription.slice(0, 60)}...`
                 : product.shortDescription}
             </ProductShortDescription>
           )}

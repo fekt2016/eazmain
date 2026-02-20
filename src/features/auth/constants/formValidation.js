@@ -1,5 +1,5 @@
 import { validateGhanaPhoneNumberOnly } from '../../../shared/utils/helpers';
-import { sanitizeEmail, sanitizePhone, sanitizeText } from '../../../shared/utils/sanitize';
+import { sanitizeEmail, sanitizeName, sanitizePhone, sanitizeText } from '../../../shared/utils/sanitize';
 
 export const DEFAULT_FORM_VALUES = {
   name: "",
@@ -19,8 +19,8 @@ export const VALIDATION_RULES = {
     },
     validate: {
       sanitize: (value) => {
-        const sanitized = sanitizeText(value, 100);
-        return sanitized === value || "Invalid characters in name";
+        const sanitized = sanitizeName(value);
+        return sanitized === value.trim() || "Invalid characters in name. Use letters, spaces, hyphens, and apostrophes only.";
       }
     }
   },
@@ -64,6 +64,14 @@ export const VALIDATION_RULES = {
     maxLength: {
       value: 128,
       message: "Password must be less than 128 characters"
+    },
+    validate: {
+      hasNumber: (value) =>
+        /\d/.test(value) ||
+        "Almost there! Add at least one number (e.g. 1, 2, 3) to make your password stronger.",
+      hasSpecialChar: (value) =>
+        /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(value) ||
+        "Almost there! Add a special character (e.g. ! @ # $ %) to make your password more secure."
     }
   },
   passwordConfirm: {
@@ -83,7 +91,7 @@ export const VALIDATION_RULES = {
 };
 
 export const sanitizeFormData = (data) => ({
-  name: sanitizeText(data.name || "", 100),
+  name: sanitizeName(data.name || ""),
   email: sanitizeEmail(data.email || ""),
   phone: data.phone ? sanitizePhone(data.phone).replace(/\D/g, "") : "",
   password: (data.password || "").slice(0, 128),

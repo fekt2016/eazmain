@@ -81,7 +81,7 @@ const PrivacyPolicyPage = () => {
           <PolicyTitle>Privacy Policy</PolicyTitle>
           <LastUpdated>Effective Date: {effectiveDate}</LastUpdated>
           <IntroText>
-            At Saiisai, operated by EazWorld, we are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, share, and safeguard your information when you use our marketplace platform, including our website and mobile applications. By using Saiisai, you agree to the practices described in this policy.
+            At Saiisai, we are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, share, and safeguard your information when you use our marketplace platform, including our website and mobile applications. By using Saiisai, you agree to the practices described in this policy.
           </IntroText>
         </PolicyHeader>
 
@@ -90,7 +90,7 @@ const PrivacyPolicyPage = () => {
           <SectionTitle>1. Introduction</SectionTitle>
           <SectionContent>
             <Paragraph>
-              Saiisai is an online marketplace operated by EazWorld, connecting buyers with sellers across Ghana and beyond. This Privacy Policy applies to all information collected through our website (saiisai.com), mobile applications, and any other services that link to this policy.
+              Saiisai is an online marketplace connecting buyers with sellers across Ghana and beyond. This Privacy Policy applies to all information collected through our website (saiisai.com), mobile applications, and any other services that link to this policy.
             </Paragraph>
             <Paragraph>
               We understand the importance of privacy and are dedicated to maintaining the confidentiality and security of your personal information. This policy outlines our practices regarding the collection, use, disclosure, and protection of your data when you interact with our platform as a buyer.
@@ -189,7 +189,7 @@ const PrivacyPolicyPage = () => {
               </li>
               <li>
                 <Paragraph>
-                  <strong>Usage Data:</strong> We collect information about how you interact with our platform, including the pages you visit, the time you spend on each page, the links you click, the products you view, your search queries, and the referring website or source that led you to EazShop. We also track email opens and interactions with our communications.
+                  <strong>Usage Data:</strong> We collect information about how you interact with our platform, including the pages you visit, the time you spend on each page, the links you click, the products you view, your search queries, and the referring website or source that led you to Saiisai. We also track email opens and interactions with our communications.
                 </Paragraph>
               </li>
               <li>
@@ -282,7 +282,7 @@ const PrivacyPolicyPage = () => {
             <BulletList>
               <li>
                 <Paragraph>
-                  <strong>EazWorld Affiliates:</strong> We may share your information with other EazWorld entities and affiliates to provide integrated services, process orders, fulfill deliveries, provide customer support, and manage our business operations. These affiliates are bound by the same privacy standards.
+                  <strong>Saiisai Affiliates:</strong> We may share your information with other Saiisai entities and affiliates to provide integrated services, process orders, fulfill deliveries, provide customer support, and manage our business operations. These affiliates are bound by the same privacy standards.
                 </Paragraph>
               </li>
               <li>
@@ -400,7 +400,7 @@ const PrivacyPolicyPage = () => {
             </Paragraph>
             <ImportantNotice>
               <Paragraph>
-                <strong>Important:</strong> If you are under 18, please do not use EazShop or provide any personal information to us. If you are a parent or guardian, please supervise your children's use of the internet and our services.
+                <strong>Important:</strong> If you are under 18, please do not use Saiisai or provide any personal information to us. If you are a parent or guardian, please supervise your children's use of the internet and our services.
               </Paragraph>
             </ImportantNotice>
           </SectionContent>
@@ -451,7 +451,7 @@ const PrivacyPolicyPage = () => {
           <SectionTitle>8. International Transfers</SectionTitle>
           <SectionContent>
             <Paragraph>
-              EazWorld operates globally, and your information may be transferred to, stored in, and processed in countries other than your country of residence. These countries may have data protection laws that differ from those in your jurisdiction.
+              Saiisai operates globally, and your information may be transferred to, stored in, and processed in countries other than your country of residence. These countries may have data protection laws that differ from those in your jurisdiction.
             </Paragraph>
             <Paragraph>
               When we transfer your information internationally, we take steps to ensure that appropriate safeguards are in place to protect your data. These safeguards may include:
@@ -502,13 +502,13 @@ const PrivacyPolicyPage = () => {
             <BulletList>
               <li>
                 <Paragraph>
-                  <strong>Email:</strong> privacy@eazworld.com
+                  <strong>Email:</strong> privacy@saiisai.com
                 </Paragraph>
               </li>
               <li>
                 <Paragraph>
                   <strong>Postal Address:</strong><br />
-                  EazWorld Data Protection Officer<br />
+                  Saiisai Data Protection Officer<br />
                   [Address to be updated]<br />
                   Ghana
                 </Paragraph>

@@ -11,10 +11,10 @@ import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 
 export default function CategoriesListPage() {
   useDynamicPageTitle({
-    title: 'Categories - EazShop',
-    description: 'Browse products by category on EazShop',
-    defaultTitle: 'Categories - EazShop',
-    defaultDescription: 'Browse products by category on EazShop',
+    title: 'Categories - Saiisai',
+    description: 'Browse products by category on Saiisai',
+    defaultTitle: 'Categories - Saiisai',
+    defaultDescription: 'Browse products by category on Saiisai',
   });
   const { getCategories } = useCategory();
   const { data: categoriesData, isLoading, isError } = getCategories;

@@ -8,6 +8,7 @@ const InputField = ({
   icon: Icon, 
   error, 
   required = false,
+  endAdornment,
   ...inputProps 
 }) => {
   const iconMap = {
@@ -32,11 +33,15 @@ const InputField = ({
             <InputIcon />
           </InputIconWrapper>
         )}
+        {endAdornment && (
+          <EndAdornmentWrapper>{endAdornment}</EndAdornmentWrapper>
+        )}
         <Input
           type={type}
           id={id}
           $error={!!error}
           $hasIcon={!!InputIcon}
+          $hasEndAdornment={!!endAdornment}
           required={required}
           aria-invalid={error ? "true" : "false"}
           aria-describedby={error ? `${id}-error` : undefined}
@@ -74,6 +79,17 @@ const InputWrapper = styled.div`
   position: relative;
 `;
 
+const EndAdornmentWrapper = styled.div`
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+`;
+
 const InputIconWrapper = styled.div`
   position: absolute;
   left: 16px;
@@ -87,7 +103,7 @@ const InputIconWrapper = styled.div`
 
 const Input = styled.input`
   width: 100%;
-  padding: 14px 16px 14px ${props => props.$hasIcon ? "48px" : "16px"};
+  padding: 14px ${props => props.$hasEndAdornment ? "48px" : "16px"} 14px ${props => props.$hasIcon ? "48px" : "16px"};
   border: 2px solid ${props => props.$error ? "#ef4444" : "#eee"};
   border-radius: 12px;
   font-size: 16px;

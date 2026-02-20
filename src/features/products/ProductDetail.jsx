@@ -78,7 +78,7 @@ const ProductDetailPage = () => {
   const { useGetProductById } = useProduct();
   const { data: productData, isLoading, error } = useGetProductById(id);
   const { data: reviewsData, isLoading: reviewsLoading, error: reviewsError } = useGetProductReviews(id);
-  
+
   // Debug logging
   logger.log("reviewsData", reviewsData);
   logger.log("reviewsLoading", reviewsLoading);
@@ -101,7 +101,7 @@ const ProductDetailPage = () => {
   const { useCategoryById } = useCategory();
   const categoryId = product?.subCategory?._id || product?.subCategory || product?.parentCategory?._id || product?.parentCategory;
   const { data: categoryData } = useCategoryById(categoryId);
-  
+
   // Get category attributes
   const categoryAttributes = useMemo(() => {
     if (!categoryData) return [];
@@ -155,7 +155,7 @@ const ProductDetailPage = () => {
       hasRecordedView.current = true;
       const sessionId = getOrCreateSessionId();
       recordProductView.mutate({ productId: id, sessionId });
-      
+
       // Track activity for recommendations
       if (productId) {
         trackActivity.mutate({
@@ -182,9 +182,9 @@ const ProductDetailPage = () => {
   const hasAttributeBasedVariants = useMemo(() => {
     if (!variants.length) return false;
     // Check if any variant has attributes array with multiple attributes
-    return variants.some(v => 
-      v.attributes && 
-      Array.isArray(v.attributes) && 
+    return variants.some(v =>
+      v.attributes &&
+      Array.isArray(v.attributes) &&
       v.attributes.length > 0 &&
       v.attributes.some(attr => attr.key && attr.value)
     );
@@ -196,8 +196,8 @@ const ProductDetailPage = () => {
 
   // Use attribute-based selection for products with attributes (Color + Size, etc.)
   const attributeVariantSelection = useVariantSelection(variants, product);
-  const { 
-    selectedAttributes, 
+  const {
+    selectedAttributes,
     selectedVariant: attributeSelectedVariant,
     selectAttribute,
     selectVariant: selectVariantByObject,
@@ -212,16 +212,16 @@ const ProductDetailPage = () => {
 
   // Use attribute-based variant if enabled, otherwise fall back to name-based
   const selectedVariant = useAttributeBasedVariants ? attributeSelectedVariant : nameSelectedVariant;
-  
+
   // CRITICAL: Maintain selectedSku state separately (SKU is the unit of commerce)
   const [selectedSku, setSelectedSku] = useState(null);
-  
+
   // CRITICAL: Auto-select default SKU on product load (SKU is the unit of commerce)
   useEffect(() => {
     if (product?.variants?.length && !selectedVariant) {
       // Find active variant first, otherwise use first variant
       const defaultVariant = (product?.variants || []).find(v => v.status === "active") || (product?.variants || [])[0];
-      
+
       if (defaultVariant?.sku) {
         handleVariantSelect(defaultVariant);
         setSelectedSku(defaultVariant.sku.trim().toUpperCase());
@@ -229,7 +229,7 @@ const ProductDetailPage = () => {
       }
     }
   }, [product, selectedVariant, handleVariantSelect]);
-  
+
   // CRITICAL: Sync selectedSku when selectedVariant changes
   useEffect(() => {
     if (selectedVariant?.sku) {
@@ -238,7 +238,7 @@ const ProductDetailPage = () => {
       setSelectedSku(null);
     }
   }, [selectedVariant]);
-  
+
   // Handle variant image selection (from color gallery)
   const handleVariantImageSelect = useCallback((variant) => {
     handleVariantSelect(variant);
@@ -284,15 +284,15 @@ const ProductDetailPage = () => {
         quantity,
         hasVariants: variants.length > 0,
       });
-      
+
       // CRITICAL: Block invalid multi-variant adds - SKU is required
       if (variants.length > 1 && !selectedSku) {
         throw new Error("Please select a variant before adding to cart");
       }
-      
+
       // CRITICAL: Use selectedSku directly - no extraction needed
       const variantSku = selectedSku || (selectedVariant?.sku ? selectedVariant.sku.trim().toUpperCase() : null);
-      
+
       if (!variantSku && variants.length > 0) {
         logger.error("[ADD_TO_CART] SKU missing for variant product:", {
           productId: product?._id,
@@ -303,7 +303,7 @@ const ProductDetailPage = () => {
         });
         throw new Error("Variant SKU is required. Please select a variant.");
       }
-      
+
       await addToCart({
         product,
         quantity,
@@ -313,7 +313,7 @@ const ProductDetailPage = () => {
     } catch (error) {
       setIsAddingToCart(false);
       logger.error("Add to cart error:", error);
-      
+
       // Handle SKU_REQUIRED error specifically
       if (error?.code === 'SKU_REQUIRED' || error?.message?.includes('variant')) {
         toast.error("Please select a variant before adding to cart", {
@@ -370,7 +370,7 @@ const ProductDetailPage = () => {
         hasDataData: !!reviewsData.data?.data,
         dataDataKeys: reviewsData.data?.data ? Object.keys(reviewsData.data.data) : [],
       });
-      
+
       // Check if it's the wrapped response: reviewsData.data.data.reviews
       if (reviewsData.data?.data?.reviews && Array.isArray(reviewsData.data.data.reviews)) {
         logger.log("Found reviews in reviewsData.data.data.reviews:", reviewsData.data.data.reviews.length);
@@ -397,7 +397,7 @@ const ProductDetailPage = () => {
   const hasDiscount = hasProductDiscount(product, selectedVariant);
   const discountPercentage = getProductDiscountPercentage(product, selectedVariant);
   const displaySku = getProductSku(product, selectedVariant);
-  
+
   // Get stock - use selected variant if available, otherwise calculate from all active variants
   const variantStock = useMemo(() => {
     if (!product) return 0;
@@ -419,7 +419,7 @@ const ProductDetailPage = () => {
     // Fallback to product stock
     return getProductStock(product, selectedVariant);
   }, [selectedVariant, variants, product]);
-  
+
   // Check if in stock - must have stock > 0 and variant must be active (if variant exists)
   const isInStock = useMemo(() => {
     if (!product) return false;
@@ -440,7 +440,7 @@ const ProductDetailPage = () => {
     // Fallback to product stock check
     return isProductInStock(product, selectedVariant);
   }, [selectedVariant, variants, product]);
-  
+
   // Product-level images (fallback when variant has no images)
   const productImages = useMemo(() => {
     if (!product) return [];
@@ -468,7 +468,7 @@ const ProductDetailPage = () => {
   // Component to render variant attributes as a table
   const VariantAttributesTable = ({ variant, isInLabel = false }) => {
     const attributes = getVariantAttributes(variant);
-    
+
     if (!attributes || attributes.length === 0) {
       return variant?.name || null;
     }
@@ -659,8 +659,8 @@ const ProductDetailPage = () => {
 
           {/* Pricing Section */}
           <PricingCard>
-            <VariantPriceDisplay 
-              product={product} 
+            <VariantPriceDisplay
+              product={product}
               selectedVariant={selectedVariant}
               variantSelectionHook={variantSelection}
             />
@@ -817,8 +817,8 @@ const ProductDetailPage = () => {
               <PrimaryActionButton
                 onClick={handleAddToCart}
                 disabled={
-                  !isInStock || 
-                  !selectedVariant || 
+                  !isInStock ||
+                  !selectedVariant ||
                   isAddingToCart ||
                   (useAttributeBasedVariants && allAttributesSelected && !selectedVariant) // Disable if all selected but no match
                 }
@@ -832,12 +832,12 @@ const ProductDetailPage = () => {
                 ) : (
                   <>
                     <FaShoppingCart />
-                    {!selectedVariant 
-                      ? (useAttributeBasedVariants && allAttributesSelected 
-                          ? "Not Available" 
-                          : "Select Variant")
-                      : isInStock 
-                        ? "Add to Cart" 
+                    {!selectedVariant
+                      ? (useAttributeBasedVariants && allAttributesSelected
+                        ? "Not Available"
+                        : "Select Variant")
+                      : isInStock
+                        ? "Add to Cart"
                         : "Out of Stock"}
                   </>
                 )}
@@ -903,7 +903,7 @@ const ProductDetailPage = () => {
               ? "Saiisai Official Store ✓"
               : (typeof product.seller === 'object' && (product.seller?.shopName || product.seller?.name)) || "Seller";
             const sellerPagePath = sellerIdStr ? `${PATHS.SELLERS}/${sellerIdStr}` : null;
-            
+
             // Debug logging
             console.log('[ProductDetail] Seller section:', {
               hasSeller: !!product.seller,
@@ -1061,10 +1061,10 @@ const ProductDetailPage = () => {
                     const reviewDate = review.reviewDate || review.createdAt || review.updatedAt;
                     const formattedDate = reviewDate
                       ? new Date(reviewDate).toLocaleDateString("en-US", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })
                       : "";
                     const reviewText = review.review || review.comment || review.body || review.content || "—";
                     const hasImages = review.images && Array.isArray(review.images) && review.images.length > 0;
@@ -1189,20 +1189,20 @@ const ProductDetailPage = () => {
           <StickyAddButton
             onClick={handleAddToCart}
             disabled={
-              !isInStock || 
-              !selectedVariant || 
+              !isInStock ||
+              !selectedVariant ||
               isAddingToCart ||
               (useAttributeBasedVariants && allAttributesSelected && !selectedVariant)
             }
           >
             {isAddingToCart ? (
               <ButtonSpinner size="sm" />
-            ) : !selectedVariant 
-              ? (useAttributeBasedVariants && allAttributesSelected 
-                  ? "Not Available" 
-                  : "Select Variant")
-              : isInStock 
-                ? "Add to Cart" 
+            ) : !selectedVariant
+              ? (useAttributeBasedVariants && allAttributesSelected
+                ? "Not Available"
+                : "Select Variant")
+              : isInStock
+                ? "Add to Cart"
                 : "Out of Stock"}
           </StickyAddButton>
         </StickyActions>
@@ -1319,6 +1319,8 @@ const ImageSection = styled.div`
 const MainImageWrapper = styled.div`
   position: relative;
   width: 100%;
+  max-width: 450px;
+  margin: 0 auto;
   aspect-ratio: 1;
   background: white;
   border-radius: 2rem;
@@ -3380,8 +3382,8 @@ const AttributesTable = styled.table`
 
 const AttributeRow = styled.tr`
   &:not(:last-child) {
-    border-bottom: 1px solid ${(props) => 
-      props.$isInLabel ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'};
+    border-bottom: 1px solid ${(props) =>
+    props.$isInLabel ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'};
   }
 `;
 

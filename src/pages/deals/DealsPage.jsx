@@ -19,7 +19,7 @@ const DealsPageContainer = styled.div`
 
 const DealsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  
+
   // Get query parameters
   const sort = searchParams.get('sort') || 'default';
   const category = searchParams.get('category') || null;
@@ -32,8 +32,8 @@ const DealsPage = () => {
 
   useDynamicPageTitle({
     title: "Deals & Discounts",
-    description: "Enjoy exclusive discounts on top products at EazShop.",
-    defaultTitle: "Deals & Discounts • EazShop",
+    description: "Enjoy exclusive discounts on top products at Saiisai.",
+    defaultTitle: "Deals & Discounts • Saiisai",
   });
 
   // Fetch deals
@@ -97,7 +97,7 @@ const DealsPage = () => {
         title="Deals & Discounts"
         subtitle="Enjoy exclusive discounts on top products."
       />
-      
+
       <Container fluid>
         <DealsToolbar
           sortOption={sortOption}

@@ -56,10 +56,10 @@ import {
 const ProductCarePage = () => {
   // SEO
   useDynamicPageTitle({
-    title: 'Product Care Guide • EazShop',
+    title: 'Product Care Guide • Saiisai',
     description: 'Learn how to properly care for your clothes, electronics, home items, beauty products and more.',
-    keywords: 'product care, care guide, maintenance tips, cleaning instructions, EazShop',
-    defaultTitle: 'Product Care Guide • EazShop',
+    keywords: 'product care, care guide, maintenance tips, cleaning instructions, Saiisai',
+    defaultTitle: 'Product Care Guide • Saiisai',
     defaultDescription: 'Learn how to properly care for your clothes, electronics, home items, beauty products and more.',
   });
 

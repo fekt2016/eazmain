@@ -14,7 +14,7 @@ import {
 
 const NewArrivalsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  
+
   // Get query parameters
   const sort = searchParams.get('sort') || 'newest';
   const category = searchParams.get('category') || null;
@@ -27,8 +27,8 @@ const NewArrivalsPage = () => {
 
   useDynamicPageTitle({
     title: "New Arrivals",
-    description: "Discover the latest products added to EazShop.",
-    defaultTitle: "New Arrivals • EazShop",
+    description: "Discover the latest products added to Saiisai.",
+    defaultTitle: "New Arrivals • Saiisai",
   });
 
   // Fetch new arrivals
@@ -87,7 +87,7 @@ const NewArrivalsPage = () => {
   return (
     <NewArrivalsPageContainer>
       <NewArrivalsHero totalProducts={totalProducts} />
-      
+
       <Container fluid>
         <NewArrivalsToolbar
           sortOption={sortOption}
@@ -95,7 +95,7 @@ const NewArrivalsPage = () => {
           onSortChange={handleSortChange}
           onCategoryChange={handleCategoryChange}
         />
-        
+
         {isLoading ? (
           <SkeletonGrid count={12} />
         ) : products.length === 0 ? (
