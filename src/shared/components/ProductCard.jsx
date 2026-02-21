@@ -477,14 +477,15 @@ const ProductLink = styled(Link)`
 
 const ImageContainer = styled.div`
   position: relative;
-  height: ${({ $layout }) => ($layout === "horizontal" ? "100%" : "180px")}; /* Reduced from 220px */
+  height: ${({ $layout }) => ($layout === "horizontal" ? "100%" : "auto")};
+  aspect-ratio: ${({ $layout }) => ($layout === "horizontal" ? "auto" : "1 / 1")};
   width: ${({ $layout }) => ($layout === "horizontal" ? "140px" : "100%")};
   background: linear-gradient(135deg, var(--color-grey-50) 0%, var(--color-grey-100) 100%);
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: ${({ $layout }) => ($layout === "horizontal" ? "1.5rem" : "1.2rem")}; /* Reduced from 2rem */
+  padding: ${({ $layout }) => ($layout === "horizontal" ? "1rem" : "1.2rem")};
 
   ${({ $layout }) => $layout === "horizontal" && css`
     flex-shrink: 0;
@@ -493,20 +494,16 @@ const ImageContainer = styled.div`
 `;
 
 const ProductImage = styled.img`
-  max-height: 100%;
-  max-width: 100%;
-  object-fit: cover;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background-color: transparent;
   border-radius: var(--border-radius-md);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   ${CardContainer}:hover & {
     transform: scale(1.08);
   }
-
-  ${({ $layout }) => $layout === "horizontal" && css`
-    max-height: 120px;
-    max-width: 120px;
-  `}
 `;
 
 const ImageOverlay = styled.div`

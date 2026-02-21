@@ -31,7 +31,8 @@ const SlideBackground = styled.img`
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  background-color: transparent;
   transition: transform 0.6s ease;
 
   ${SlideLink}:hover &,
@@ -121,10 +122,10 @@ const AdCarousel = ({ ads, className }) => {
               <Wrapper
                 {...(safeLink
                   ? {
-                      href: ad.link,
-                      target: "_blank",
-                      rel: "noopener noreferrer",
-                    }
+                    href: ad.link,
+                    target: "_blank",
+                    rel: "noopener noreferrer",
+                  }
                   : {})}
               >
                 {ad.imageUrl ? (
