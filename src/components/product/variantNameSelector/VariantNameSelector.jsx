@@ -55,7 +55,6 @@ const SelectorLabel = styled.label`
   font-size: var(--font-size-md);
   font-weight: var(--font-semibold);
   color: var(--color-grey-900);
-  font-family: var(--font-heading);
 `;
 
 const VariantButtonsContainer = styled.div`
@@ -91,7 +90,6 @@ const VariantButton = styled.button`
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-md);
   font-weight: var(--font-semibold);
-  font-family: var(--font-body);
   cursor: ${(props) => (props.$isDisabled ? 'not-allowed' : 'pointer')};
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   opacity: ${(props) => (props.$isDisabled ? 0.6 : 1)};
@@ -130,6 +128,5 @@ const OutOfStockLabel = styled.span`
   font-weight: var(--font-medium);
   color: var(--color-red-600);
   margin-top: 0.2rem;
-  font-family: var(--font-body);
 `;
 

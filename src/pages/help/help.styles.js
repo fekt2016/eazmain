@@ -22,7 +22,7 @@ export const HeroSection = styled(motion.section)`
   background: linear-gradient(135deg, 
     var(--color-primary-50) 0%, 
     var(--color-white-0) 50%,
-    var(--color-brand-50) 100%
+    var(--primary-50) 100%
   );
   text-align: center;
   overflow: hidden;
@@ -75,7 +75,6 @@ export const HeroTitle = styled(motion.h1)`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin-bottom: var(--spacing-md);
-  font-family: var(--font-heading);
   line-height: 1.2;
   
   @media ${devicesMax.md} {
@@ -120,7 +119,6 @@ export const SectionTitle = styled.h2`
   color: var(--color-grey-900);
   text-align: center;
   margin-bottom: var(--spacing-md);
-  font-family: var(--font-heading);
   
   @media ${devicesMax.md} {
     font-size: var(--font-size-2xl);
@@ -252,7 +250,6 @@ export const CategoryTitle = styled.h3`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin-bottom: var(--spacing-sm);
-  font-family: var(--font-heading);
 `;
 
 export const CategoryDescription = styled.p`
@@ -263,7 +260,7 @@ export const CategoryDescription = styled.p`
 `;
 
 export const CategoryLink = styled(motion(Link))`
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   text-decoration: none;
   font-weight: var(--font-semibold);
   font-size: var(--font-size-base);
@@ -305,7 +302,7 @@ export const QuickLinkIcon = styled.div`
   height: 4rem;
   border-radius: 8px;
   background: var(--color-primary-100);
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -318,7 +315,6 @@ export const QuickLinkTitle = styled.h3`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin-bottom: var(--spacing-xs);
-  font-family: var(--font-heading);
 `;
 
 export const QuickLinkDescription = styled.p`
@@ -333,7 +329,7 @@ export const CTASection = styled(motion.section)`
   padding: var(--spacing-3xl) var(--spacing-lg);
   background: linear-gradient(135deg, 
     var(--color-primary-50) 0%, 
-    var(--color-brand-50) 100%
+    var(--primary-50) 100%
   );
   text-align: center;
   
@@ -347,7 +343,6 @@ export const CTATitle = styled.h2`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin-bottom: var(--spacing-md);
-  font-family: var(--font-heading);
   
   @media ${devicesMax.md} {
     font-size: var(--font-size-2xl);
@@ -387,7 +382,7 @@ export const CTAButton = styled(motion(Link))`
   
   ${props => props.$variant === 'outline' ? `
     background: transparent;
-    color: var(--color-primary-600);
+    color: var(--primary-700);
     border: 2px solid var(--color-primary-600);
     
     &:hover {

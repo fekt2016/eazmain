@@ -529,7 +529,7 @@ const ViewAllButton = styled.button`
   align-items: center;
   gap: 8px;
   background: transparent;
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   border: none;
   font-size: 1.5rem;
   font-weight: 600;

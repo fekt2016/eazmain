@@ -49,7 +49,6 @@ export const SidebarTitle = styled.h3`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin-bottom: var(--spacing-md);
-  font-family: var(--font-heading);
   padding-bottom: var(--spacing-sm);
   border-bottom: 2px solid var(--color-grey-200);
 `;
@@ -69,7 +68,6 @@ export const SidebarSectionTitle = styled.h4`
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: var(--spacing-sm);
-  font-family: var(--font-heading);
 `;
 
 export const SidebarNavList = styled.ul`
@@ -176,7 +174,6 @@ export const HeroTitle = styled.h1`
   font-size: var(--font-size-4xl);
   font-weight: var(--font-bold);
   margin-bottom: var(--spacing-md);
-  font-family: var(--font-heading);
   
   @media (max-width: 768px) {
     font-size: var(--font-size-2xl);
@@ -266,7 +263,6 @@ export const CardTitle = styled.h3`
   font-weight: var(--font-semibold);
   margin-bottom: var(--spacing-sm);
   color: var(--color-grey-800);
-  font-family: var(--font-heading);
 `;
 
 export const CardDescription = styled.p`
@@ -309,7 +305,6 @@ export const SectionTitle = styled.h2`
   font-weight: var(--font-bold);
   margin-bottom: var(--spacing-lg);
   color: var(--color-grey-800);
-  font-family: var(--font-heading);
   
   @media (max-width: 768px) {
     font-size: var(--font-size-xl);

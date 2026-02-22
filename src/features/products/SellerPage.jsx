@@ -18,7 +18,7 @@ import Container from '../../shared/components/Container';
 
 const PublicSellerProfile = () => {
   const { id: sellerId } = useParams();
-  
+
   // Guard against missing sellerId
   if (!sellerId) {
     return (
@@ -30,7 +30,7 @@ const PublicSellerProfile = () => {
       </Container>
     );
   }
-  
+
   const { useGetAllPublicProductBySeller } = useProduct();
   const [imageError, setImageError] = useState(false);
 
@@ -39,23 +39,23 @@ const PublicSellerProfile = () => {
     isLoading: isSellerLoading,
     error: sellerError,
   } = useGetSellerProfile(sellerId);
-  
+
   const { toggleFollow, isFollowing, isLoading: isFollowLoading } = useToggleFollow(sellerId);
   const { data: followerData, isLoading: isFollowersLoading } = useGetSellersFollowers(sellerId);
   const { data: productsData, isLoading: isProductsLoading, error: productsError } = useGetAllPublicProductBySeller(sellerId);
-  
+
   // Get similar sellers (best sellers excluding current seller)
   const { data: bestSellersData, isLoading: isSimilarSellersLoading } = useGetBestSellers({
     sort: 'orders',
     page: 1,
     limit: 10,
   });
-  
+
   const products = useMemo(() => {
     console.log("🔍 [SellerPage] productsData:", productsData);
     console.log("🔍 [SellerPage] productsError:", productsError);
     console.log("🔍 [SellerPage] sellerId:", sellerId);
-    
+
     if (!productsData) {
       console.log("⚠️ [SellerPage] No productsData");
       return [];
@@ -182,14 +182,14 @@ const PublicSellerProfile = () => {
           <BannerOverlay />
           <HeaderContent>
             <AvatarSection>
-              <Avatar 
-                src={imageError ? '/default-avatar.png' : seller.avatar} 
+              <Avatar
+                src={imageError ? '/default-avatar.png' : seller.avatar}
                 alt={seller.shopName}
                 onError={() => setImageError(true)}
               />
               <VerifiedBadge>✓</VerifiedBadge>
             </AvatarSection>
-            
+
             <ShopInfo>
               <ShopName>{seller.shopName}</ShopName>
               <ShopMeta>
@@ -202,7 +202,7 @@ const PublicSellerProfile = () => {
                   <span>Member since {new Date(seller.createdAt).getFullYear()}</span>
                 </MetaItem>
               </ShopMeta>
-              
+
               <RatingSection>
                 <StarRating rating={seller.ratings.average} />
                 <RatingText>
@@ -213,8 +213,8 @@ const PublicSellerProfile = () => {
             </ShopInfo>
 
             <ActionButtons>
-              <FollowButton 
-                onClick={toggleFollow} 
+              <FollowButton
+                onClick={toggleFollow}
                 $isFollowing={isFollowing}
                 disabled={isFollowLoading}
               >
@@ -225,7 +225,7 @@ const PublicSellerProfile = () => {
                 )}
                 {isFollowLoading ? "Processing..." : isFollowing ? "Following" : "Follow"}
               </FollowButton>
-              
+
               <ShareButton onClick={handleShare}>
                 <FaShare size={14} />
                 Share
@@ -259,7 +259,7 @@ const PublicSellerProfile = () => {
           <InfoCard>
             <CardTitle>About the Shop</CardTitle>
             <Description>{seller.description || "No description provided."}</Description>
-            
+
             <InfoList>
               <InfoListItem>
                 <FaMapMarkerAlt />
@@ -296,8 +296,8 @@ const PublicSellerProfile = () => {
               {products.map((product) => (
                 <ProductCard key={product?._id} to={`/product/${product?._id}`}>
                   <ProductImageContainer>
-                    <ProductImage 
-                      src={product?.imageCover} 
+                    <ProductImage
+                      src={product?.imageCover}
                       alt={product?.name}
                       loading="lazy"
                     />
@@ -310,12 +310,12 @@ const PublicSellerProfile = () => {
                       </QuickAction>
                     </ProductOverlay>
                   </ProductImageContainer>
-                  
+
                   <ProductInfo>
                     <ProductCategory>{product?.category?.name || "Uncategorized"}</ProductCategory>
                     <ProductName>{product?.name}</ProductName>
                     <ProductPrice>${product?.defaultPrice?.toFixed(2) || "0.00"}</ProductPrice>
-                    
+
                     <ProductFooter>
                       <StarRating rating={product?.rating || 0} size={14} />
                       {getProductTotalStock(product) > 0 ? (
@@ -339,7 +339,7 @@ const PublicSellerProfile = () => {
             <SimilarSellersTitle>Similar Sellers</SimilarSellersTitle>
             <SimilarSellersSubtitle>Other top sellers you might like</SimilarSellersSubtitle>
           </SimilarSellersHeader>
-          
+
           {isSimilarSellersLoading ? (
             <LoadingContainer>
               <LoadingSpinner size="md" />
@@ -347,12 +347,12 @@ const PublicSellerProfile = () => {
           ) : (
             <SimilarSellersGrid>
               {similarSellers.map((similarSeller) => (
-                <SimilarSellerCard 
-                  key={similarSeller._id || similarSeller.id} 
+                <SimilarSellerCard
+                  key={similarSeller._id || similarSeller.id}
                   to={`/seller/${similarSeller._id || similarSeller.id}`}
                 >
-                  <SimilarSellerAvatar 
-                    src={similarSeller.avatar || '/default-avatar.png'} 
+                  <SimilarSellerAvatar
+                    src={similarSeller.avatar || '/default-avatar.png'}
                     alt={similarSeller.shopName || similarSeller.name}
                   />
                   <SimilarSellerInfo>
@@ -360,9 +360,9 @@ const PublicSellerProfile = () => {
                       {similarSeller.shopName || similarSeller.name || 'Seller'}
                     </SimilarSellerName>
                     <SimilarSellerRating>
-                      <StarRating 
-                        rating={similarSeller.rating || similarSeller.ratings?.average || 0} 
-                        size={12} 
+                      <StarRating
+                        rating={similarSeller.rating || similarSeller.ratings?.average || 0}
+                        size={12}
                       />
                       <SimilarSellerRatingText>
                         {(similarSeller.rating || similarSeller.ratings?.average || 0).toFixed(1)}
@@ -794,7 +794,7 @@ const ProductGrid = styled.div`
 `;
 
 const ProductCard = styled(Link)`
-  background: #ffffff;
+  background: var(--bg-surface);
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);

@@ -21,7 +21,7 @@ export const HeroSection = styled(motion.section)`
   background: linear-gradient(135deg, 
     var(--color-primary-50) 0%, 
     var(--color-white-0) 50%,
-    var(--color-brand-50) 100%
+    var(--primary-50) 100%
   );
   text-align: center;
   overflow: hidden;
@@ -74,7 +74,6 @@ export const HeroTitle = styled(motion.h1)`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin-bottom: var(--spacing-md);
-  font-family: var(--font-heading);
   line-height: 1.2;
   
   @media ${devicesMax.md} {
@@ -161,7 +160,6 @@ export const ContactCardTitle = styled.h3`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin-bottom: var(--spacing-sm);
-  font-family: var(--font-heading);
 `;
 
 export const ContactCardDescription = styled.p`
@@ -188,7 +186,6 @@ export const ContactCardButton = styled(motion.button)`
   font-weight: var(--font-semibold);
   cursor: pointer;
   transition: all var(--transition-base);
-  font-family: var(--font-heading);
   
   &:hover {
     background: var(--color-primary-600);
@@ -223,7 +220,6 @@ export const FormTitle = styled.h2`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin-bottom: var(--spacing-lg);
-  font-family: var(--font-heading);
   text-align: center;
 `;
 
@@ -252,7 +248,6 @@ export const FormLabel = styled.label`
   font-weight: var(--font-semibold);
   color: var(--color-grey-700);
   margin-bottom: var(--spacing-xs);
-  font-family: var(--font-heading);
   
   ${props => props.$required && `
     &::after {
@@ -267,7 +262,6 @@ export const FormInput = styled.input`
   border: 1px solid ${props => props.$hasError ? 'var(--color-red-500)' : 'var(--color-grey-300)'};
   border-radius: var(--border-radius-lg);
   font-size: var(--font-size-md);
-  font-family: var(--font-body);
   transition: all var(--transition-base);
   background: var(--color-white-0);
   
@@ -292,7 +286,6 @@ export const FormTextarea = styled.textarea`
   border: 1px solid ${props => props.$hasError ? 'var(--color-red-500)' : 'var(--color-grey-300)'};
   border-radius: var(--border-radius-lg);
   font-size: var(--font-size-md);
-  font-family: var(--font-body);
   min-height: 15rem;
   resize: vertical;
   transition: all var(--transition-base);
@@ -359,7 +352,6 @@ export const SubmitButton = styled(motion.button)`
   font-weight: var(--font-semibold);
   cursor: pointer;
   transition: all var(--transition-base);
-  font-family: var(--font-heading);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -397,7 +389,6 @@ export const LocationContent = styled.div`
     font-weight: var(--font-bold);
     color: var(--color-grey-900);
     margin-bottom: var(--spacing-md);
-    font-family: var(--font-heading);
   }
   
   p {
@@ -447,7 +438,6 @@ export const SectionTitle = styled.h2`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin-bottom: var(--spacing-md);
-  font-family: var(--font-heading);
   text-align: center;
   
   @media ${devicesMax.md} {

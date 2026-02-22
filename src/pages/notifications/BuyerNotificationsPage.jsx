@@ -718,7 +718,7 @@ const SelectionActions = styled.div`
 const SelectionButton = styled.button`
   padding: var(--spacing-xs) var(--spacing-sm);
   background: var(--color-white-0);
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   border: 1px solid var(--color-primary-300);
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-xs);
@@ -834,7 +834,7 @@ const CheckboxContainer = styled.div`
   font-size: var(--font-size-lg);
   
   &:hover {
-    color: var(--color-primary-600);
+    color: var(--primary-700);
   }
 `;
 
@@ -1024,7 +1024,7 @@ const PaginationButton = styled.button`
   &:hover:not(:disabled) {
     background: var(--color-primary-50);
     border-color: var(--color-primary-500);
-    color: var(--color-primary-600);
+    color: var(--primary-700);
   }
 
   &:disabled {

@@ -15,7 +15,7 @@ import { ErrorState } from '../../components/loading';
 
 export default function CategoryPage() {
   const { id } = useParams();
-  
+
   // Guard against missing category id
   if (!id) {
     return (
@@ -27,7 +27,7 @@ export default function CategoryPage() {
       </Container>
     );
   }
-  
+
   const [showFilters, setShowFilters] = useState(false);
   const [sortOption, setSortOption] = useState("");
   const [priceRange, setPriceRange] = useState([0, 5000]);
@@ -238,163 +238,163 @@ export default function CategoryPage() {
         {/* Filters Sidebar */}
         <SidebarOverlay $show={showFilters} onClick={toggleFilters} />
         <FilterSidebar $show={showFilters}>
-            <FilterHeader>
-              <h3>Filters</h3>
-              <CloseFiltersButton onClick={toggleFilters}>
-                <FaTimes />
-              </CloseFiltersButton>
-            </FilterHeader>
+          <FilterHeader>
+            <h3>Filters</h3>
+            <CloseFiltersButton onClick={toggleFilters}>
+              <FaTimes />
+            </CloseFiltersButton>
+          </FilterHeader>
 
-            <FilterScroll>
-              <FilterGroup>
-                <FilterSectionTitle>Price Range</FilterSectionTitle>
-                <PriceRangeContainer>
-                  <PriceInputsWrapper>
-                    <PriceInputGroup>
-                      <label>Min</label>
-                      <PriceInput
-                        type="number"
-                        value={priceRange[0]}
-                        onChange={(e) => handlePriceChange(e, 0)}
-                        min="0"
-                      />
-                    </PriceInputGroup>
-                    <PriceSeparator>-</PriceSeparator>
-                    <PriceInputGroup>
-                      <label>Max</label>
-                      <PriceInput
-                        type="number"
-                        value={priceRange[1]}
-                        onChange={(e) => handlePriceChange(e, 1)}
-                        min={priceRange[0]}
-                      />
-                    </PriceInputGroup>
-                  </PriceInputsWrapper>
-
-                  <RangeSliderContainer>
-                    <SliderTrack>
-                      <SliderRange
-                        style={{
-                          left: `${(priceRange[0] / 5000) * 100}%`,
-                          right: `${100 - (priceRange[1] / 5000) * 100}%`
-                        }}
-                      />
-                    </SliderTrack>
-                    <RangeInput
-                      type="range"
-                      min="0"
-                      max="5000"
+          <FilterScroll>
+            <FilterGroup>
+              <FilterSectionTitle>Price Range</FilterSectionTitle>
+              <PriceRangeContainer>
+                <PriceInputsWrapper>
+                  <PriceInputGroup>
+                    <label>Min</label>
+                    <PriceInput
+                      type="number"
                       value={priceRange[0]}
                       onChange={(e) => handlePriceChange(e, 0)}
-                    />
-                    <RangeInput
-                      type="range"
                       min="0"
-                      max="5000"
+                    />
+                  </PriceInputGroup>
+                  <PriceSeparator>-</PriceSeparator>
+                  <PriceInputGroup>
+                    <label>Max</label>
+                    <PriceInput
+                      type="number"
                       value={priceRange[1]}
                       onChange={(e) => handlePriceChange(e, 1)}
+                      min={priceRange[0]}
                     />
-                  </RangeSliderContainer>
-                </PriceRangeContainer>
-              </FilterGroup>
+                  </PriceInputGroup>
+                </PriceInputsWrapper>
 
-              {/* Placeholder for more filters */}
-              <FilterGroup>
-                <FilterSectionTitle>
-                  <span>Availability</span>
-                  <FaChevronUp size={12} />
-                </FilterSectionTitle>
-                <CheckboxGroup>
-                  <CheckboxLabel>
-                    <input type="checkbox" />
-                    <span>In Stock</span>
-                  </CheckboxLabel>
-                  <CheckboxLabel>
-                    <input type="checkbox" />
-                    <span>On Sale</span>
-                  </CheckboxLabel>
-                </CheckboxGroup>
-              </FilterGroup>
-            </FilterScroll>
+                <RangeSliderContainer>
+                  <SliderTrack>
+                    <SliderRange
+                      style={{
+                        left: `${(priceRange[0] / 5000) * 100}%`,
+                        right: `${100 - (priceRange[1] / 5000) * 100}%`
+                      }}
+                    />
+                  </SliderTrack>
+                  <RangeInput
+                    type="range"
+                    min="0"
+                    max="5000"
+                    value={priceRange[0]}
+                    onChange={(e) => handlePriceChange(e, 0)}
+                  />
+                  <RangeInput
+                    type="range"
+                    min="0"
+                    max="5000"
+                    value={priceRange[1]}
+                    onChange={(e) => handlePriceChange(e, 1)}
+                  />
+                </RangeSliderContainer>
+              </PriceRangeContainer>
+            </FilterGroup>
 
-            <FilterFooter>
-              <ApplyButton onClick={toggleFilters}>
-                Show {products.length} Results
-              </ApplyButton>
-            </FilterFooter>
-          </FilterSidebar>
+            {/* Placeholder for more filters */}
+            <FilterGroup>
+              <FilterSectionTitle>
+                <span>Availability</span>
+                <FaChevronUp size={12} />
+              </FilterSectionTitle>
+              <CheckboxGroup>
+                <CheckboxLabel>
+                  <input type="checkbox" />
+                  <span>In Stock</span>
+                </CheckboxLabel>
+                <CheckboxLabel>
+                  <input type="checkbox" />
+                  <span>On Sale</span>
+                </CheckboxLabel>
+              </CheckboxGroup>
+            </FilterGroup>
+          </FilterScroll>
 
-          {/* Products Section */}
-          <ProductsSection>
-            <ProductsHeader>
-              <ResultsInfo>
-                <ResultsCount>
-                  Showing <strong>{products.length}</strong> of <strong>{totalProducts}</strong> products
-                </ResultsCount>
-                {selectedSubcategory && (
-                  <ActiveFilterBadge>
-                    {subcategories.find((s) => s._id === selectedSubcategory)?.name}
-                    <FaTimes onClick={clearSubcategory} />
-                  </ActiveFilterBadge>
-                )}
-              </ResultsInfo>
+          <FilterFooter>
+            <ApplyButton onClick={toggleFilters}>
+              Show {products.length} Results
+            </ApplyButton>
+          </FilterFooter>
+        </FilterSidebar>
 
-              <ControlsContainer>
-                <MobileFilterButton onClick={toggleFilters}>
-                  <FaFilter /> Filters
-                </MobileFilterButton>
+        {/* Products Section */}
+        <ProductsSection>
+          <ProductsHeader>
+            <ResultsInfo>
+              <ResultsCount>
+                Showing <strong>{products.length}</strong> of <strong>{totalProducts}</strong> products
+              </ResultsCount>
+              {selectedSubcategory && (
+                <ActiveFilterBadge>
+                  {subcategories.find((s) => s._id === selectedSubcategory)?.name}
+                  <FaTimes onClick={clearSubcategory} />
+                </ActiveFilterBadge>
+              )}
+            </ResultsInfo>
 
-                <SortContainer>
-                  <FaSortAmountDown />
-                  <SortSelect value={sortOption} onChange={handleSortChange}>
-                    <option value="">Featured</option>
-                    <option value="price">Price: Low to High</option>
-                    <option value="-price">Price: High to Low</option>
-                    <option value="-ratingsAverage">Top Rated</option>
-                    <option value="-createdAt">Newest Arrivals</option>
-                  </SortSelect>
-                </SortContainer>
-              </ControlsContainer>
-            </ProductsHeader>
+            <ControlsContainer>
+              <MobileFilterButton onClick={toggleFilters}>
+                <FaFilter /> Filters
+              </MobileFilterButton>
 
-            {/* Products Grid */}
-            {isProductsLoading ? (
+              <SortContainer>
+                <FaSortAmountDown />
+                <SortSelect value={sortOption} onChange={handleSortChange}>
+                  <option value="">Featured</option>
+                  <option value="price">Price: Low to High</option>
+                  <option value="-price">Price: High to Low</option>
+                  <option value="-ratingsAverage">Top Rated</option>
+                  <option value="-createdAt">Newest Arrivals</option>
+                </SortSelect>
+              </SortContainer>
+            </ControlsContainer>
+          </ProductsHeader>
+
+          {/* Products Grid */}
+          {isProductsLoading ? (
+            <ProductsGrid>
+              {Array.from({ length: 8 }).map((_, idx) => (
+                <SkeletonLoader key={idx} height="380px" borderRadius="16px" />
+              ))}
+            </ProductsGrid>
+          ) : products.length === 0 ? (
+            <EmptyState>
+              <EmptyImage src="https://cdn-icons-png.flaticon.com/512/4076/4076432.png" alt="No products" />
+              <h3>No Products Found</h3>
+              <p>Try adjusting your filters or check back later for new arrivals.</p>
+              <ClearButton onClick={() => {
+                setPriceRange([0, 5000]);
+                setSelectedSubcategory(null);
+                setSortOption("");
+              }}>Clear All Filters</ClearButton>
+            </EmptyState>
+          ) : (
+            <>
               <ProductsGrid>
-                {Array.from({ length: 8 }).map((_, idx) => (
-                  <SkeletonLoader key={idx} height="380px" borderRadius="16px" />
+                {products.map((product) => (
+                  <ProductCard key={product._id} product={product} />
                 ))}
               </ProductsGrid>
-            ) : products.length === 0 ? (
-              <EmptyState>
-                <EmptyImage src="https://cdn-icons-png.flaticon.com/512/4076/4076432.png" alt="No products" />
-                <h3>No Products Found</h3>
-                <p>Try adjusting your filters or check back later for new arrivals.</p>
-                <ClearButton onClick={() => {
-                  setPriceRange([0, 5000]);
-                  setSelectedSubcategory(null);
-                  setSortOption("");
-                }}>Clear All Filters</ClearButton>
-              </EmptyState>
-            ) : (
-              <>
-                <ProductsGrid>
-                  {products.map((product) => (
-                    <ProductCard key={product._id} product={product} />
-                  ))}
-                </ProductsGrid>
 
-                {totalPages > 1 && (
-                  <PaginationWrapper>
-                    <Pagination
-                      currentPage={page}
-                      totalPages={totalPages}
-                      onPageChange={handlePageChange}
-                    />
-                  </PaginationWrapper>
-                )}
-              </>
-            )}
-          </ProductsSection>
+              {totalPages > 1 && (
+                <PaginationWrapper>
+                  <Pagination
+                    currentPage={page}
+                    totalPages={totalPages}
+                    onPageChange={handlePageChange}
+                  />
+                </PaginationWrapper>
+              )}
+            </>
+          )}
+        </ProductsSection>
       </MainLayout>
     </PageContainer>
   );
@@ -544,7 +544,7 @@ const QuickCatTag = styled.button`
 
   &:hover {
     background: white;
-    color: var(--color-primary-600);
+    color: var(--primary-700);
     transform: translateY(-2px);
   }
 `;
@@ -670,7 +670,7 @@ const FilterSidebar = styled.aside`
     display: flex;
     flex-direction: column;
     width: 320px;
-    max-width: 100vw;
+    max-width: 100%;
   }
 `;
 
@@ -878,7 +878,7 @@ const CheckboxLabel = styled.label`
   }
 
   &:hover {
-    color: var(--color-primary-600);
+    color: var(--primary-700);
   }
 `;
 
@@ -955,7 +955,7 @@ const ActiveFilterBadge = styled.span`
   gap: 0.5rem;
   padding: 0.5rem 1.2rem;
   background: var(--color-primary-50);
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   border-radius: 20px;
   font-size: 1.2rem;
   font-weight: 600;
@@ -1033,19 +1033,19 @@ const SortSelect = styled.select`
 
 const ProductsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 3rem;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
   margin-bottom: 4rem;
   animation: ${fadeIn} 0.5s ease-out;
 
-  @media ${devicesMax.md} {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
     gap: 2rem;
   }
 
-  @media ${devicesMax.sm} {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 1.5rem;
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 3rem;
   }
 `;
 

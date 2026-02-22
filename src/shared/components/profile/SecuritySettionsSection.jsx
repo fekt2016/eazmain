@@ -148,7 +148,7 @@ const Input = styled.input`
 
   &:focus {
     outline: none;
-    border-color: var(--color-brand-500);
+    border-color: var(--primary-500);
     box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
   }
 
@@ -173,7 +173,7 @@ const SectionSubtitle = styled.h3`
 
 const SaveButton = styled.button`
   padding: 0.75rem 1.5rem;
-  background-color: var(--color-brand-500);
+  background-color: var(--primary-500);
   color: var(--color-white-0);
   border: none;
   border-radius: 6px;
@@ -182,7 +182,7 @@ const SaveButton = styled.button`
   transition: background-color 0.2s ease;
 
   &:hover:not(:disabled) {
-    background-color: var(--color-brand-600);
+    background-color: var(--primary-700);
   }
 
   &:disabled {

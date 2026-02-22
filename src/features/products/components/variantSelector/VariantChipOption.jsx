@@ -145,7 +145,6 @@ const ChipText = styled.span`
   font-weight: ${(props) => (props.$isSelected ? 'var(--font-semibold)' : 'var(--font-medium)')};
   color: ${(props) =>
     props.$isSelected ? 'var(--color-white-0)' : 'var(--color-grey-800)'};
-  font-family: var(--font-body);
   text-align: center;
   transition: color 0.2s ease;
 `;
@@ -189,7 +188,6 @@ const StockBadge = styled.span`
   gap: 0.1rem;
   white-space: nowrap;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-  font-family: var(--font-body);
 `;
 
 const OutOfStockBadge = styled.span`
@@ -205,6 +203,5 @@ const OutOfStockBadge = styled.span`
   border-radius: var(--border-radius-sm);
   white-space: nowrap;
   box-shadow: 0 1px 2px rgba(220, 38, 38, 0.15);
-  font-family: var(--font-body);
 `;
 

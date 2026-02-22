@@ -21,7 +21,7 @@ export const HeroSection = styled(motion.section)`
   background: linear-gradient(135deg, 
     var(--color-primary-50) 0%, 
     var(--color-white-0) 50%,
-    var(--color-brand-50) 100%
+    var(--primary-50) 100%
   );
   text-align: center;
   overflow: hidden;
@@ -55,7 +55,6 @@ export const HeroTitle = styled(motion.h1)`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin-bottom: var(--spacing-md);
-  font-family: var(--font-heading);
   line-height: 1.2;
   
   @media ${devicesMax.md} {
@@ -99,7 +98,6 @@ export const SectionTitle = styled.h2`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin-bottom: var(--spacing-lg);
-  font-family: var(--font-heading);
   text-align: center;
   
   @media ${devicesMax.md} {
@@ -139,7 +137,6 @@ export const OverviewContent = styled.div`
     font-weight: var(--font-bold);
     color: var(--color-grey-900);
     margin-bottom: var(--spacing-md);
-    font-family: var(--font-heading);
   }
   
   p {
@@ -219,7 +216,6 @@ export const MissionCard = styled(motion.div)`
     font-weight: var(--font-bold);
     color: var(--color-grey-900);
     margin-bottom: var(--spacing-md);
-    font-family: var(--font-heading);
   }
   
   p {
@@ -277,7 +273,6 @@ export const ValueTitle = styled.h3`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin-bottom: var(--spacing-sm);
-  font-family: var(--font-heading);
 `;
 
 export const ValueDescription = styled.p`
@@ -365,7 +360,6 @@ export const TimelineYear = styled.div`
   font-weight: var(--font-bold);
   color: var(--color-primary-500);
   margin-bottom: var(--spacing-xs);
-  font-family: var(--font-heading);
 `;
 
 export const TimelineTitle = styled.h3`
@@ -373,7 +367,6 @@ export const TimelineTitle = styled.h3`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin-bottom: var(--spacing-sm);
-  font-family: var(--font-heading);
 `;
 
 export const TimelineDescription = styled.p`
@@ -438,7 +431,6 @@ export const TeamName = styled.h3`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin-bottom: var(--spacing-xs);
-  font-family: var(--font-heading);
 `;
 
 export const TeamRole = styled.p`
@@ -485,7 +477,6 @@ export const MetricNumber = styled.div`
   font-weight: var(--font-bold);
   color: var(--color-primary-500);
   margin-bottom: var(--spacing-sm);
-  font-family: var(--font-heading);
   line-height: 1;
   
   @media ${devicesMax.md} {
@@ -524,7 +515,6 @@ export const CTATitle = styled.h2`
   font-size: var(--font-size-3xl);
   font-weight: var(--font-bold);
   margin-bottom: var(--spacing-md);
-  font-family: var(--font-heading);
   
   @media ${devicesMax.md} {
     font-size: var(--font-size-2xl);
@@ -568,7 +558,6 @@ export const CTAButton = styled(motion.a)`
   font-weight: var(--font-semibold);
   text-decoration: none;
   transition: all var(--transition-base);
-  font-family: var(--font-heading);
   
   &:hover {
     background: ${props => props.$variant === 'outline' 

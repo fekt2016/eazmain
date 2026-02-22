@@ -67,7 +67,6 @@ export const HeroTitle = styled(motion.h1)`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin-bottom: var(--spacing-md);
-  font-family: var(--font-heading);
   line-height: 1.2;
   
   @media ${devicesMax.md} {
@@ -111,7 +110,6 @@ export const SectionTitle = styled.h2`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin-bottom: var(--spacing-lg);
-  font-family: var(--font-heading);
   text-align: center;
   
   @media ${devicesMax.md} {
@@ -182,7 +180,6 @@ export const CategoryTitle = styled.h3`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin-bottom: var(--spacing-sm);
-  font-family: var(--font-heading);
 `;
 
 export const CategoryDescription = styled.p`
@@ -242,7 +239,6 @@ export const CareSectionTitle = styled.h2`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin: 0;
-  font-family: var(--font-heading);
   
   @media ${devicesMax.md} {
     font-size: var(--font-size-xl);
@@ -321,7 +317,6 @@ export const FAQQuestion = styled.h3`
   font-weight: var(--font-semibold);
   color: var(--color-grey-900);
   margin-bottom: var(--spacing-sm);
-  font-family: var(--font-heading);
   
   &::before {
     content: 'Q: ';
@@ -369,7 +364,6 @@ export const CTATitle = styled.h2`
   font-size: var(--font-size-3xl);
   font-weight: var(--font-bold);
   margin-bottom: var(--spacing-md);
-  font-family: var(--font-heading);
   
   @media ${devicesMax.md} {
     font-size: var(--font-size-2xl);
@@ -413,7 +407,6 @@ export const CTAButton = styled(motion.a)`
   font-weight: var(--font-semibold);
   text-decoration: none;
   transition: all var(--transition-base);
-  font-family: var(--font-heading);
   
   &:hover {
     background: ${props => props.$variant === 'outline' 

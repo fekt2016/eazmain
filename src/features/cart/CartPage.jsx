@@ -322,7 +322,6 @@ const PageContainer = styled.div`
   width: 100%;
   margin: 0 auto;
   padding: 20px;
-  font-family: var(--font-body);
 `;
 
 const PageTitle = styled.h1`

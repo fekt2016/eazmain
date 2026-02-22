@@ -8,14 +8,14 @@ const buttonBaseStyles = css`
   gap: var(--space-sm);
   padding: var(--space-md) var(--space-lg);
   font-size: var(--text-base);
-  font-weight: var(--font-medium);
+  font-weight: var(--font-bold);
+  letter-spacing: 0.3px;
   line-height: 1.5;
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all var(--transition-base);
   text-decoration: none;
-  font-family: var(--font-body);
 
   &:hover:not(:disabled) {
     transform: translateY(-1px);
@@ -39,12 +39,12 @@ const Button = styled.button`
     switch (variant) {
       case 'primary':
         return css`
-          background: var(--color-primary-500);
+          background: var(--color-button-primary);
           color: var(--color-white-0);
           box-shadow: var(--shadow-sm);
 
           &:hover:not(:disabled) {
-            background: var(--color-primary-600);
+            background: var(--color-button-primary-hover);
             box-shadow: var(--shadow-md);
           }
         `;
@@ -83,7 +83,7 @@ const Button = styled.button`
         `;
       default:
         return css`
-          background: var(--color-primary-500);
+          background: var(--color-button-primary);
           color: var(--color-white-0);
         `;
     }
@@ -122,20 +122,20 @@ const Spinner = styled(FaSpinner)`
   }
 `;
 
-const ButtonComponent = ({ 
-  children, 
-  variant = 'primary', 
-  size = 'md', 
-  fullWidth = false, 
-  loading = false, 
-  disabled = false, 
-  ...props 
+const ButtonComponent = ({
+  children,
+  variant = 'primary',
+  size = 'md',
+  fullWidth = false,
+  loading = false,
+  disabled = false,
+  ...props
 }) => {
   return (
-    <Button 
-      variant={variant} 
-      size={size} 
-      fullWidth={fullWidth} 
+    <Button
+      variant={variant}
+      size={size}
+      fullWidth={fullWidth}
       disabled={disabled || loading}
       {...props}
     >

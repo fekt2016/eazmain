@@ -236,7 +236,7 @@ const AboutPage = () => {
             <div style={{
               width: '100%',
               height: '100%',
-              background: 'linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-brand-50) 100%)',
+              background: 'linear-gradient(135deg, var(--color-primary-50) 0%, var(--primary-50) 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

@@ -19,7 +19,6 @@ const SearchInput = styled.input`
   border: 2px solid var(--color-grey-200);
   border-radius: var(--border-radius-lg);
   font-size: var(--font-size-base);
-  font-family: var(--font-body);
   color: var(--color-grey-900);
   background: var(--color-white-0);
   transition: all var(--transition-base);

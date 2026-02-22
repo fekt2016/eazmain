@@ -73,13 +73,11 @@ const GroupLabel = styled.label`
   font-weight: var(--font-semibold);
   color: var(--color-grey-800);
   margin-bottom: 0.5rem;
-  font-family: var(--font-heading);
 `;
 
 const SelectedIndicator = styled.span`
   font-weight: var(--font-medium);
-  color: var(--color-primary-600);
-  font-family: var(--font-body);
+  color: var(--primary-700);
   font-size: 0.8rem;
 `;
 

@@ -71,7 +71,6 @@ const PanelTitle = styled.h3`
   font-weight: var(--font-semibold);
   color: var(--color-grey-900);
   margin-bottom: var(--spacing-sm);
-  font-family: var(--font-heading);
 `;
 
 const VariantSummary = styled.div`
@@ -88,13 +87,11 @@ const SummaryLabel = styled.span`
   font-size: 0.75rem;
   font-weight: var(--font-medium);
   color: var(--color-grey-600);
-  font-family: var(--font-body);
 `;
 
 const SummaryValue = styled.span`
   font-size: 0.75rem;
   font-weight: var(--font-semibold);
-  color: var(--color-primary-600);
-  font-family: var(--font-body);
+  color: var(--primary-700);
 `;
 

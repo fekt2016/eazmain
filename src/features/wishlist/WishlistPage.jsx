@@ -129,7 +129,6 @@ const PageContainer = styled.div`
   width: 100%;
   background-color: #f8f9fc;
   min-height: 100vh;
-  font-family: var(--font-body);
 `;
 
 const MainContent = styled.div`

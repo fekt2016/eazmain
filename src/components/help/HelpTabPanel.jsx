@@ -21,7 +21,6 @@ const EmptyState = styled.div`
   padding: var(--spacing-3xl);
   color: var(--color-grey-500);
   font-size: var(--font-size-base);
-  font-family: var(--font-body);
   
   @media ${devicesMax.sm} {
     padding: var(--spacing-xl);

@@ -505,7 +505,6 @@ const ModalTitle = styled.h2`
   font-weight: var(--font-bold);
   color: var(--color-grey-800);
   margin: 0;
-  font-family: var(--font-heading);
 `;
 
 const CloseButton = styled.button`
@@ -550,7 +549,6 @@ const Label = styled.label`
   font-weight: var(--font-semibold);
   color: var(--color-grey-700);
   margin-bottom: var(--spacing-xs);
-  font-family: var(--font-heading);
 `;
 
 const Required = styled.span`
@@ -565,7 +563,6 @@ const Input = styled.input`
       props.$hasError ? 'var(--color-red-500)' : 'var(--color-grey-300)'};
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-md);
-  font-family: var(--font-body);
   color: var(--color-grey-900);
   transition: all var(--transition-base);
 
@@ -605,7 +602,6 @@ const Select = styled.select`
       props.$hasError ? 'var(--color-red-500)' : 'var(--color-grey-300)'};
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-md);
-  font-family: var(--font-body);
   color: var(--color-grey-900);
   background: var(--color-white-0);
   cursor: pointer;
@@ -636,7 +632,6 @@ const TextArea = styled.textarea`
       props.$hasError ? 'var(--color-red-500)' : 'var(--color-grey-300)'};
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-md);
-  font-family: var(--font-body);
   color: var(--color-grey-900);
   resize: vertical;
   min-height: 12rem;

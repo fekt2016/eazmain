@@ -33,7 +33,6 @@ const ErrorTitle = styled.h1`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin-bottom: 1rem;
-  font-family: var(--font-heading);
 `;
 
 const ErrorMessage = styled.p`
@@ -82,7 +81,6 @@ const Button = styled.button`
   transition: background var(--transition-base);
   cursor: pointer;
   font-size: var(--font-size-md);
-  font-family: var(--font-body);
 
   &:hover {
     background: var(--color-primary-600);

@@ -6,7 +6,7 @@
   <!-- Updated favicon to use new Saiisai logo -->
   <link rel="icon" type="image/png" href="/saiisailogo.png" />
   <link rel="apple-touch-icon" href="/saiisailogo.png" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <!-- SECURITY: Content Security Policy to prevent XSS attacks -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; 
                    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.paystack.com https://checkout.paystack.com; 
@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Open+Sans:wght@300;400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
     rel="stylesheet" />
   <meta name="description"
     content="Shop the best products from trusted sellers on Saiisai - Ghana's leading online marketplace. Fast delivery, secure payments, and excellent customer service." />
@@ -47,6 +47,51 @@
 <body>
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
+  <script>
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        const getSelector = (el) => {
+          if (el.id) return `#${el.id}`;
+          if (el.className && typeof el.className === 'string') return `.${el.className.trim().replace(/\s+/g, '.')}`;
+          return el.tagName.toLowerCase();
+        };
+
+        const viewport = window.innerWidth;
+        let viewportType = 'Desktop';
+        if (viewport <= 767) viewportType = 'Mobile';
+        else if (viewport <= 1023) viewportType = 'Tablet';
+
+        console.group(`🛠️ Responsiveness QA Report (${viewportType}: ${viewport}px)`);
+        let overflowCount = 0;
+
+        document.querySelectorAll('*').forEach(el => {
+          if (el === document.documentElement || el === document.body) return;
+
+          let parentElement = el.parentElement || document.body;
+          if (el.offsetWidth > document.documentElement.clientWidth) {
+            overflowCount++;
+            const selector = getSelector(el);
+            const width = el.offsetWidth;
+            const parentWidth = parentElement.offsetWidth;
+
+            console.warn(
+              `⚠️ Overflow Detected:\n` +
+              `- Element: ${selector}\n` +
+              `- Width: ${width}px\n` +
+              `- Parent Width: ${parentWidth}px\n` +
+              `- Suggestions: Use max-width: 100%, height: auto for images. Apply mobile-first grid rules.`
+            );
+            el.style.outline = '2px solid red';
+          }
+        });
+
+        if (overflowCount === 0) {
+          console.log('✅ No layout overflows detected for this viewport.');
+        }
+        console.groupEnd();
+      }, 3000);
+    });
+  </script>
 </body>
 
 </html>

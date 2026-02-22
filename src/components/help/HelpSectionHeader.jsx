@@ -15,7 +15,6 @@ const Title = styled.h2`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin-bottom: var(--spacing-md);
-  font-family: var(--font-heading);
   
   @media ${devicesMax.md} {
     font-size: var(--font-size-2xl);

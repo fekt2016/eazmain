@@ -41,7 +41,6 @@ export const PolicyTitle = styled.h1`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin-bottom: var(--spacing-md);
-  font-family: var(--font-heading);
   line-height: 1.2;
   
   @media ${devicesMax.md} {
@@ -86,7 +85,6 @@ export const SectionTitle = styled.h2`
   color: var(--color-grey-900);
   margin-bottom: var(--spacing-lg);
   margin-top: var(--spacing-2xl);
-  font-family: var(--font-heading);
   line-height: 1.3;
   
   &:first-of-type {
@@ -249,7 +247,6 @@ export const HelpTitle = styled.h2`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin-bottom: var(--spacing-md);
-  font-family: var(--font-heading);
   
   @media ${devicesMax.md} {
     font-size: var(--font-size-xl);
@@ -276,7 +273,6 @@ export const HelpButton = styled(motion.a)`
   font-weight: var(--font-semibold);
   text-decoration: none;
   transition: all var(--transition-base);
-  font-family: var(--font-heading);
   
   &:hover {
     background: var(--color-primary-600);

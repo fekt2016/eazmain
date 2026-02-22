@@ -35,7 +35,6 @@ const SectionTitle = styled.h2`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin: 0;
-  font-family: var(--font-heading);
 `;
 
 const ViewAllLink = styled(Link)`
@@ -49,7 +48,7 @@ const ViewAllLink = styled(Link)`
   transition: color var(--transition-base);
 
   &:hover {
-    color: var(--color-primary-600);
+    color: var(--primary-700);
   }
 
   svg {
@@ -109,7 +108,6 @@ const SellerName = styled.h3`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin: 0;
-  font-family: var(--font-heading);
 `;
 
 const ViewShopLink = styled(Link)`
@@ -123,7 +121,7 @@ const ViewShopLink = styled(Link)`
   transition: color var(--transition-base);
 
   &:hover {
-    color: var(--color-primary-600);
+    color: var(--primary-700);
   }
 
   svg {

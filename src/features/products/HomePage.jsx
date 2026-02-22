@@ -773,7 +773,7 @@ const HomePage = () => {
 
 // Styled Components
 const PageWrapper = styled.div`
-  background-color: #ffffff;
+  background-color: var(--bg-surface);
   min-height: 100vh;
   overflow-x: hidden;
 `;
@@ -942,6 +942,7 @@ const SlideTextContent = styled.div`
 `;
 
 const SlideTitle = styled.h1`
+  font-family: var(--font-display);
   font-size: 4rem;
   font-weight: 800;
   margin-bottom: 1rem;
@@ -1034,8 +1035,8 @@ const HeroDiscountBadge = styled.div`
   padding: 0.85rem 1.5rem;
   font-size: 2.25rem;
   font-weight: 800;
-  color: #ffffff;
-  background: #dc2626;
+  color: var(--color-white-0);
+  background: var(--error);
   border: 3px double rgba(255, 255, 255, 0.9);
   border-radius: 8px;
   letter-spacing: 0.05em;
@@ -1139,12 +1140,12 @@ const TrustSection = styled.div`
 
 const TrustGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2rem;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
   
-  @media ${devicesMax.sm} {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
   }
 `;
 
@@ -1175,24 +1176,25 @@ const TrustInfo = styled.div`
     margin-bottom: 0.2rem;
   }
   p {
-    color: #666;
+    color: var(--text-secondary);
     font-size: 0.9rem;
   }
 `;
 
 const CategoryGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(2, 250px);
+  grid-template-columns: 1fr;
+  grid-template-rows: auto;
   gap: 1.5rem;
   
-  @media ${devicesMax.md} {
+  @media (min-width: 768px) {
     grid-template-columns: repeat(2, 1fr);
     grid-template-rows: repeat(3, 200px);
   }
-  @media ${devicesMax.sm} {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto;
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(2, 250px);
   }
 `;
 
@@ -1257,31 +1259,37 @@ const CategoryContent = styled.div`
 
 const ProductGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* 4 cards per row */
-  gap: 1.5rem;
-  
-  @media (max-width: 1200px) {
-    grid-template-columns: repeat(3, 1fr); /* 3 cards on medium screens */
-  }
-  
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(2, 1fr); /* 2 cards on tablets */
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
   }
-  
-  @media ${devicesMax.sm} {
-    grid-template-columns: repeat(2, 1fr); /* 2 cards on mobile */
-    gap: 0.75rem;
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 1280px) {
+    grid-template-columns: repeat(4, 1fr);
   }
 `;
 
 const LoadingGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
+  grid-template-columns: 1fr;
+  gap: 1rem;
   
-  @media ${devicesMax.md} {
+  @media (min-width: 768px) {
     grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
   }
 `;
 

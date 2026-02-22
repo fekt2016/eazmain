@@ -47,7 +47,7 @@ const DealTag = styled.span`
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  background: #dc2626;
+  background: var(--error);
   color: white;
   padding: 0.4rem 1.25rem;
   border-radius: 50px;
@@ -60,6 +60,7 @@ const DealTag = styled.span`
 `;
 
 const DealTitle = styled.h2`
+  font-family: var(--font-display);
   font-size: clamp(1.75rem, 4vw, 2.75rem);
   font-weight: 800;
   margin-bottom: 0.5rem;
@@ -105,7 +106,7 @@ const CtaButton = styled(Link)`
   display: inline-block;
   padding: 0.75rem 2rem;
   background: white;
-  color: #0f172a;
+  color: var(--color-grey-900);
   font-weight: 700;
   text-decoration: none;
   border-radius: 50px;
@@ -126,7 +127,7 @@ const FallbackBar = styled(Link)`
   display: block;
   text-align: center;
   padding: 1.25rem;
-  background: linear-gradient(135deg, #dc2626 0%, #ea580c 100%);
+  background: linear-gradient(135deg, var(--error) 0%, var(--primary-600) 100%);
   color: white;
   text-decoration: none;
   font-weight: 700;

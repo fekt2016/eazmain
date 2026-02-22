@@ -672,7 +672,7 @@ const EditButton = styled.button`
   &:hover {
     background: var(--color-primary-50);
     border-color: var(--color-primary-500);
-    color: var(--color-primary-600);
+    color: var(--primary-700);
   }
 
   svg {

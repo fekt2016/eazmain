@@ -624,7 +624,7 @@ const StatItem = styled.div`
 const StatValue = styled.div`
   font-size: 2.4rem;
   font-weight: 800;
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   line-height: 1;
 `;
 
@@ -845,7 +845,7 @@ const CheckboxGroup = styled.div`
 const Checkbox = styled.input`
   width: 2rem;
   height: 2rem;
-  accent-color: var(--color-primary-600);
+  accent-color: var(--primary-700);
 `;
 
 const CheckboxLabel = styled.label`

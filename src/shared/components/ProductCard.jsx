@@ -607,7 +607,7 @@ const OutOfStockBadge = styled(Badge)`
 `;
 
 const ComingSoonBadge = styled(Badge)`
-  background: linear-gradient(135deg, var(--color-brand-500) 0%, var(--color-brand-600) 100%);
+  background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
   color: var(--color-white-0);
 `;
 
@@ -650,7 +650,7 @@ const ConditionBadge = styled(Badge)`
       case 'used':
         return 'linear-gradient(135deg, var(--color-yellow-700) 0%, var(--color-primary-700) 100%)';
       case 'refurbished':
-        return 'linear-gradient(135deg, var(--color-brand-500) 0%, var(--color-brand-600) 100%)';
+        return 'linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%)';
       case 'open_box':
         return 'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%)';
       case 'like_new':
@@ -714,7 +714,7 @@ const ProductCategory = styled.span`
 
 const ProductBrand = styled.span`
   font-size: 1.1rem; /* Reduced from 1.3rem */
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   font-weight: 600;
   margin-bottom: 0.1rem; /* Reduced from 0.2rem */
 `;
@@ -854,6 +854,8 @@ const AddToCartButton = styled.button`
   align-items: center;
   justify-content: center;
   gap: 0.8rem;
+  font-weight: var(--font-bold);
+  letter-spacing: 0.3px;
   transition: all 0.2s ease;
 
   &:disabled {

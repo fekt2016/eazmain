@@ -45,7 +45,6 @@ const QuestionText = styled.h3`
   color: var(--color-grey-900);
   margin: 0;
   flex: 1;
-  font-family: var(--font-heading);
   line-height: 1.4;
   
   @media ${devicesMax.sm} {
@@ -73,7 +72,6 @@ const AnswerContent = styled.div`
   padding: 0 var(--spacing-lg) var(--spacing-lg);
   color: var(--color-grey-700);
   font-size: var(--font-size-base);
-  font-family: var(--font-body);
   line-height: 1.7;
   
   @media ${devicesMax.sm} {

@@ -600,8 +600,6 @@ const EmptyStateWrapper = styled.div`
 
   margin: 0 auto;
 
-  font-family: var(--font-body);
-
 `;
 
 const EmptyStateIcon = styled.div`
@@ -628,8 +626,6 @@ const EmptyStateTitle = styled.h3`
 
   font-weight: var(--font-semibold);
 
-  font-family: var(--font-heading);
-
 `;
 
 const EmptyStateMessage = styled.p`
@@ -639,8 +635,6 @@ const EmptyStateMessage = styled.p`
   margin-bottom: var(--space-xl);
 
   font-size: var(--text-base);
-
-  font-family: var(--font-body);
 
   line-height: 1.6;
 
@@ -848,8 +842,6 @@ const LoadingStateWrapper = styled.div`
 
   min-height: 200px;
 
-  font-family: var(--font-body);
-
 `;
 
 const LoadingMessage = styled.p`
@@ -859,8 +851,6 @@ const LoadingMessage = styled.p`
   font-size: var(--text-lg);
 
   font-weight: var(--font-medium);
-
-  font-family: var(--font-body);
 
   margin: 0;
 

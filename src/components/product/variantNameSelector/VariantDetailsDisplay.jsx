@@ -66,7 +66,6 @@ const DetailsTitle = styled.h3`
   font-weight: var(--font-semibold);
   color: var(--color-grey-900);
   margin-bottom: var(--spacing-sm);
-  font-family: var(--font-heading);
 `;
 
 const DetailsList = styled.ul`
@@ -89,7 +88,6 @@ const DetailLabel = styled.span`
   font-size: var(--font-size-sm);
   font-weight: var(--font-semibold);
   color: var(--color-grey-700);
-  font-family: var(--font-body);
   min-width: 6rem;
 `;
 
@@ -97,13 +95,11 @@ const DetailValue = styled.span`
   font-size: var(--font-size-sm);
   font-weight: var(--font-medium);
   color: var(--color-grey-900);
-  font-family: var(--font-body);
 `;
 
 const ConditionValue = styled.span`
   font-size: var(--font-size-sm);
   font-weight: var(--font-semibold);
-  font-family: var(--font-body);
   padding: 0.2rem 0.6rem;
   border-radius: 0.4rem;
   display: inline-block;

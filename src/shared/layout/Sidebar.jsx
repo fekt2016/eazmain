@@ -288,7 +288,7 @@ const UserName = styled.div`
 
 const UserTier = styled.div`
   font-size: 1.2rem;
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   font-weight: 500;
   background: var(--color-primary-50);
   padding: 0.2rem 0.8rem;
@@ -446,11 +446,11 @@ const NavItem = styled(NavLink)`
     box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
     
     ${NavIcon} {
-      color: var(--color-primary-600);
+      color: var(--primary-700);
     }
     
     ${NavArrow} {
-      color: var(--color-primary-600);
+      color: var(--primary-700);
       opacity: 1;
     }
     

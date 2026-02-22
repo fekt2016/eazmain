@@ -2,7 +2,6 @@ import styled from "styled-components";
 import { devicesMax } from "../../styles/breakpoint";
 
 const Input = styled.input`
-  font-family: var(--font-body);
   font-size: var(--font-size-md);
   font-weight: 400;
   padding: var(--spacing-sm) var(--spacing-md);

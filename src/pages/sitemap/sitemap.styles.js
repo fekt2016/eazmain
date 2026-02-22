@@ -54,7 +54,6 @@ export const HeroTitle = styled.h1`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin-bottom: var(--spacing-md);
-  font-family: var(--font-heading);
   
   @media (max-width: 768px) {
     font-size: var(--font-size-3xl);
@@ -91,7 +90,6 @@ export const SearchLabel = styled.label`
   font-weight: var(--font-semibold);
   color: var(--color-grey-700);
   margin-bottom: var(--spacing-sm);
-  font-family: var(--font-heading);
 `;
 
 export const SearchInput = styled.input`
@@ -100,7 +98,6 @@ export const SearchInput = styled.input`
   border: 2px solid var(--color-grey-300);
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-md);
-  font-family: var(--font-body);
   color: var(--color-grey-900);
   transition: all var(--transition-base);
   background: var(--color-white-0);
@@ -152,7 +149,6 @@ export const SectionHeader = styled.h2`
   margin-bottom: var(--spacing-lg);
   padding-bottom: var(--spacing-sm);
   border-bottom: 2px solid var(--color-grey-200);
-  font-family: var(--font-heading);
   
   @media (max-width: 768px) {
     font-size: var(--font-size-lg);
@@ -181,7 +177,6 @@ export const SitemapLink = styled.a`
   padding: var(--spacing-xs) 0;
   transition: all var(--transition-base);
   position: relative;
-  font-family: var(--font-body);
   
   &::after {
     content: '';
@@ -195,7 +190,7 @@ export const SitemapLink = styled.a`
   }
   
   &:hover {
-    color: var(--color-primary-600);
+    color: var(--primary-700);
     padding-left: var(--spacing-sm);
     
     &::after {
@@ -231,7 +226,6 @@ export const CTATitle = styled.h2`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin-bottom: var(--spacing-md);
-  font-family: var(--font-heading);
   
   @media (max-width: 768px) {
     font-size: var(--font-size-xl);
@@ -270,7 +264,6 @@ export const CTAButton = styled.a`
   font-weight: var(--font-semibold);
   text-decoration: none;
   transition: all var(--transition-base);
-  font-family: var(--font-body);
   min-width: 16rem;
   
   &:hover {

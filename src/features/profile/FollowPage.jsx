@@ -474,7 +474,7 @@ const SectionAction = styled.button`
   &:hover {
     background: var(--color-primary-50);
     border-color: var(--color-primary-500);
-    color: var(--color-primary-600);
+    color: var(--primary-700);
   }
 `;
 
@@ -514,7 +514,7 @@ const SectionSubtitle = styled.p`
 
 const ViewAllButton = styled(Link)`
   background: var(--color-primary-50);
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   border: 1px solid var(--color-primary-200);
   padding: 0.8rem 1.6rem;
   border-radius: 8px;
@@ -840,7 +840,7 @@ const ProductName = styled.h3`
 const ProductPrice = styled.div`
   font-size: 1.8rem;
   font-weight: 700;
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   margin-bottom: 1.2rem;
 `;
 

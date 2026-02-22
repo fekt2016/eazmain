@@ -133,7 +133,7 @@ export default function Modal({
       <ModalContent $maxWidth={maxWidth}>
         {title && (
           <ModalHeader>
-            <h2 style={{ margin: 0, fontFamily: "var(--font-heading)" }}>{title}</h2>
+            <h2 style={{ margin: 0 }}>{title}</h2>
             <CloseButton onClick={onClose} aria-label="Close modal">
               ×
             </CloseButton>

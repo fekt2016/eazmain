@@ -61,7 +61,7 @@ const SlideContent = styled.div`
   flex-direction: column;
   justify-content: flex-end;
   padding: 2rem;
-  color: #ffffff;
+  color: var(--color-white-0);
   gap: 0.5rem;
 
   @media ${devicesMax.md} {
@@ -70,6 +70,7 @@ const SlideContent = styled.div`
 `;
 
 const SlideTitle = styled.h3`
+  font-family: var(--font-display);
   margin: 0;
   font-size: clamp(1.1rem, 2vw, 1.6rem);
   font-weight: 700;

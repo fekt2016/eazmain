@@ -907,7 +907,7 @@ const ShippingCardDetails = styled.div`
 
 const ShippingPrice = styled.span`
   font-weight: var(--font-semibold);
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   font-size: var(--font-size-lg);
 `;
 

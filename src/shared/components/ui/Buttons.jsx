@@ -22,8 +22,8 @@ export const Button = styled.button`
     }
   }};
   border-radius: var(--radius-lg);
-  font-family: var(--font-body);
-  font-weight: var(--font-semibold);
+  font-weight: var(--font-bold);
+  letter-spacing: 0.3px;
   font-size: ${({ $size }) => {
     switch ($size) {
       case "sm":

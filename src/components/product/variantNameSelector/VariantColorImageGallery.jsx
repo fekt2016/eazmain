@@ -68,7 +68,6 @@ const GalleryLabel = styled.label`
   font-size: var(--font-size-md);
   font-weight: var(--font-semibold);
   color: var(--color-grey-900);
-  font-family: var(--font-heading);
 `;
 
 const ImageSwatches = styled.div`

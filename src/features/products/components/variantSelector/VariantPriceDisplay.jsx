@@ -67,8 +67,7 @@ const PriceRow = styled.div`
 const CurrentPrice = styled.span`
   font-size: var(--font-size-2xl);
   font-weight: var(--font-bold);
-  color: var(--color-primary-600);
-  font-family: var(--font-heading);
+  color: var(--primary-700);
 `;
 
 const OriginalPrice = styled.span`
@@ -76,7 +75,6 @@ const OriginalPrice = styled.span`
   font-weight: var(--font-medium);
   color: var(--color-grey-500);
   text-decoration: line-through;
-  font-family: var(--font-body);
 `;
 
 const PriceIncludesVat = styled.span`
@@ -92,6 +90,5 @@ const SavingsBadge = styled.span`
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-md);
   display: inline-block;
-  font-family: var(--font-body);
 `;
 

@@ -309,7 +309,7 @@ const OrderConfirmationPage = () => {
           <FaExclamationTriangle />
         </ErrorIcon>
         <h2>Invalid Order Confirmation Link</h2>
-        <p style={{ color: "#dc3545", marginBottom: "2rem" }}>
+        <p style={{ color: "var(--error)", marginBottom: "2rem" }}>
           {paramValidation.error}
         </p>
         <ContinueButton onClick={() => navigate("/orders")}>
@@ -327,11 +327,11 @@ const OrderConfirmationPage = () => {
           <FaExclamationTriangle />
         </ErrorIcon>
         <h2>Error Loading Order</h2>
-        <p style={{ color: "#dc3545", marginBottom: "1rem" }}>
+        <p style={{ color: "var(--error)", marginBottom: "1rem" }}>
           {orderError?.message || "Failed to load order details"}
         </p>
         {paymentVerificationError && (
-          <p style={{ color: "#f39c12", marginBottom: "2rem" }}>
+          <p style={{ color: "var(--warning)", marginBottom: "2rem" }}>
             Payment verification error: {paymentVerificationError}
           </p>
         )}
@@ -364,7 +364,7 @@ const OrderConfirmationPage = () => {
           </>
         )}
         {orderIdFromUrl && (
-          <p style={{ fontSize: "0.9rem", color: "#7f8c8d", marginTop: "1rem" }}>
+          <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)", marginTop: "1rem" }}>
             Order ID: {orderIdFromUrl}
           </p>
         )}
@@ -380,7 +380,7 @@ const OrderConfirmationPage = () => {
           <FaExclamationTriangle />
         </ErrorIcon>
         <h2>Payment Verification Failed</h2>
-        <p style={{ color: "#dc3545", marginBottom: "1rem" }}>
+        <p style={{ color: "var(--error)", marginBottom: "1rem" }}>
           {paymentVerificationError || "We couldn't verify your payment. Please contact support if payment was deducted."}
         </p>
         <ActionButtons>
@@ -403,7 +403,7 @@ const OrderConfirmationPage = () => {
           <FaExclamationTriangle />
         </ErrorIcon>
         <h2>Order Data Error</h2>
-        <p style={{ color: "#dc3545", marginBottom: "2rem" }}>
+        <p style={{ color: "var(--error)", marginBottom: "2rem" }}>
           There was an issue processing your order data. Please contact support.
         </p>
         <ContinueButton onClick={() => navigate("/orders")}>
@@ -693,7 +693,7 @@ const OrderConfirmationPage = () => {
                     <strong>Payment Reference:</strong> {paymentReference}
                   </p>
                   {verificationStatus === "success" && (
-                    <p style={{ color: "#28a745", marginTop: "0.5rem" }}>
+                    <p style={{ color: "var(--success)", marginTop: "0.5rem" }}>
                       ✓ Payment verified successfully
                     </p>
                   )}

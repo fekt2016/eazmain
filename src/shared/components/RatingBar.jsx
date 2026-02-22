@@ -40,7 +40,7 @@ const BarContainer = styled.div`
 
 const BarFill = styled.div`
   height: 100%;
-  background-color: var(--color-brand-500);
+  background-color: var(--primary-500);
   width: ${(props) => props.$width}%;
   transition: width 0.5s ease;
 `;

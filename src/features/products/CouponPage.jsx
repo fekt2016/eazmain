@@ -366,7 +366,7 @@ const StatItem = styled.div`
 const StatNumber = styled.div`
   font-size: 2.4rem;
   font-weight: 800;
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   line-height: 1;
 `;
 
@@ -560,7 +560,7 @@ const FilterTab = styled.button`
   box-shadow: ${props => props.active ? '0 2px 8px rgba(0, 0, 0, 0.1)' : 'none'};
 
   &:hover {
-    color: var(--color-primary-600);
+    color: var(--primary-700);
   }
 `;
 
@@ -666,7 +666,7 @@ const DiscountBadge = styled.div`
 const DiscountValue = styled.div`
   font-size: 2.8rem;
   font-weight: 800;
-  color: var(--color-primary-600);
+  color: var(--primary-700);
 `;
 
 const StatusIndicator = styled.div`
@@ -784,7 +784,7 @@ const CopyButton = styled.button`
 
   &:hover {
     background: var(--color-primary-50);
-    color: var(--color-primary-600);
+    color: var(--primary-700);
   }
 `;
 

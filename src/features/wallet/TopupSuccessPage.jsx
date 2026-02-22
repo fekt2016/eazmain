@@ -308,7 +308,7 @@ const RedirectMessage = styled.span`
   display: block;
   margin-top: 1rem;
   font-size: 1.4rem;
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   font-weight: 500;
 `;
 

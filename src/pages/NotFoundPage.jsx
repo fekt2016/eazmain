@@ -36,7 +36,6 @@ const NotFoundTitle = styled.h1`
   font-weight: var(--font-bold);
   color: var(--color-grey-900);
   margin-bottom: 1rem;
-  font-family: var(--font-heading);
 `;
 
 const NotFoundMessage = styled.p`

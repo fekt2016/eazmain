@@ -185,7 +185,7 @@ export const OptionTitle = styled.h3`
 
 export const OptionTimeline = styled.span`
   font-size: var(--font-size-md);
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   font-weight: var(--font-semibold);
 `;
 
@@ -444,7 +444,7 @@ export const CostType = styled.h3`
 export const CostAmount = styled.div`
   font-size: var(--font-size-2xl);
   font-weight: var(--font-bold);
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   margin: 0.5rem 0;
 `;
 
@@ -592,7 +592,6 @@ export const TrackingButton = styled(motion.button)`
   border-radius: var(--border-radius-lg);
   font-size: var(--font-size-md);
   font-weight: var(--font-semibold);
-  font-family: var(--font-heading);
   cursor: pointer;
   transition: all var(--transition-base);
   margin-top: auto;

@@ -14,7 +14,7 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import styled from "styled-components";
-import {  slideDown } from "../styles/animations";
+import { slideDown } from "../styles/animations";
 import useAuth from '../hooks/useAuth';
 import { Link, useNavigate } from "react-router-dom";
 import { useWishlist } from '../hooks/useWishlist';
@@ -42,7 +42,7 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
   const searchRef = useRef(null);
 
   const { logout, userData } = useAuth();
-  
+
   const { count: cartCount, total: cartTotal } = useCartTotals();
   const { getParentCategories } = useCategory();
   const { data: categoriesData, isLoading: isCategoriesLoading, isError: isCategoriesError } =
@@ -99,7 +99,7 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
     // - After getCurrentUser: userData might be { data: {...user} } or { data: { data: {...user} } }
     // - After refetch: userData could be either structure
     const extractedUser = userData?.data?.data || userData?.data?.user || userData?.user || userData || null;
-    
+
     // Debug logging in development
     if (process.env.NODE_ENV === 'development' && extractedUser) {
       console.log('[Header] User extracted:', {
@@ -108,7 +108,7 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
         userId: extractedUser?.id || extractedUser?._id
       });
     }
-    
+
     return extractedUser;
   }, [userData]);
 
@@ -118,11 +118,11 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
   // Extract wishlist and calculate product count
   const { wishlist, wishlistCount } = useMemo(() => {
     const wishlistObj = wishlistData?.data?.wishlist || wishlistData?.data || null;
-    
+
     // Calculate count from products array
     const products = wishlistObj?.products || [];
     const count = Array.isArray(products) ? products.length : 0;
-    
+
     return {
       wishlist: wishlistObj,
       wishlistCount: count,
@@ -250,11 +250,11 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
                 <span>24/7 Support</span>
               </TopLink>
             </TopLinks>
-            
+
             <PromoText>
               🚀 Free shipping on eligible orders | 🔥 Hot Deals Live Now
             </PromoText>
-            
+
             <RightLinks>
               <TopLink to={PATHS.DEALS}>Daily Deals</TopLink>
               <TopLink to={PATHS.NEW_ARRIVALS}>New Arrivals</TopLink>
@@ -269,14 +269,14 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
           <HeaderContent>
             {/* Mobile Menu Button / Sidebar Toggle - Left Side */}
             {onToggleSidebar ? (
-              <MobileMenuButton 
+              <MobileMenuButton
                 onClick={onToggleSidebar}
                 aria-label="Toggle sidebar"
               >
                 {isSidebarOpen ? <FaTimes /> : <FaBars />}
               </MobileMenuButton>
             ) : (
-              <MobileMenuButton 
+              <MobileMenuButton
                 onClick={toggleMobileMenu}
                 aria-label="Toggle mobile menu"
               >
@@ -356,8 +356,8 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
                           </PanelTitle>
                           <SubCategoriesGrid>
                             {hoveredCategory &&
-                            hoveredCategory.subcategories &&
-                            hoveredCategory.subcategories.length > 0 ? (
+                              hoveredCategory.subcategories &&
+                              hoveredCategory.subcategories.length > 0 ? (
                               hoveredCategory.subcategories.map((subCategory) => (
                                 <SubCategoryGridItem key={subCategory._id}>
                                   <SubCategoryGridLink
@@ -423,8 +423,8 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
                       >
                         <UserAvatar>
                           {user?.photo ? (
-                            <AvatarImage 
-                              src={`${getAvatarUrl(user.photo)}?t=${Date.now()}`} 
+                            <AvatarImage
+                              src={`${getAvatarUrl(user.photo)}?t=${Date.now()}`}
                               alt={user?.name || 'User'}
                               key={`avatar-${user?.photo}-${user?._id || user?.id}-${Date.now()}`} // Force re-render when photo or user changes
                               onError={(e) => {
@@ -439,11 +439,11 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
                             <AvatarFallback>
                               {user?.name
                                 ? user.name
-                                    .split(' ')
-                                    .map((n) => n[0])
-                                    .join('')
-                                    .toUpperCase()
-                                    .slice(0, 2)
+                                  .split(' ')
+                                  .map((n) => n[0])
+                                  .join('')
+                                  .toUpperCase()
+                                  .slice(0, 2)
                                 : user?.email?.[0]?.toUpperCase() || 'U'}
                             </AvatarFallback>
                           )}
@@ -635,24 +635,23 @@ const ModernHeader = styled.header`
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: ${props => props.isScrolled 
-    ? 'rgba(255, 255, 255, 0.95)' 
+  background: ${props => props.isScrolled
+    ? 'rgba(255, 255, 255, 0.95)'
     : 'var(--color-white-0)'
   };
   backdrop-filter: ${props => props.isScrolled ? 'blur(20px)' : 'none'};
-  box-shadow: ${props => props.isScrolled 
-    ? '0 4px 20px rgba(0, 0, 0, 0.08)' 
+  box-shadow: ${props => props.isScrolled
+    ? '0 4px 20px rgba(0, 0, 0, 0.08)'
     : '0 1px 0 rgba(0, 0, 0, 0.05)'
   };
   transition: all 0.3s ease;
 `;
 
 const TopBar = styled.div`
-  background: linear-gradient(135deg, var(--color-brand-500) 0%, var(--color-brand-700) 100%);
+  background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%);
   padding: 0.8rem 0;
   color: var(--color-white-0);
   font-size: var(--text-sm);
-  font-family: var(--font-heading);
 
   @media (max-width: 768px) {
     display: none;
@@ -691,7 +690,6 @@ const TopLink = styled(Link)`
   font-size: var(--text-sm);
   font-weight: 400;
   transition: all var(--transition-base);
-  font-family: var(--font-heading);
 
   &:hover {
     color: var(--color-white-0);
@@ -702,7 +700,6 @@ const TopLink = styled(Link)`
 const PromoText = styled.div`
   font-weight: var(--font-semibold);
   font-size: var(--text-sm);
-  font-family: var(--font-body);
   text-align: center;
   flex: 1;
 `;
@@ -783,8 +780,8 @@ const CategoriesButton = styled.button`
   align-items: center;
   gap: var(--space-sm);
   padding: var(--space-sm) var(--space-lg);
-  background: ${props => props.isActive 
-    ? 'linear-gradient(135deg, var(--color-brand-500) 0%, var(--color-brand-700) 100%)' 
+  background: ${props => props.isActive
+    ? 'linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%)'
     : 'var(--color-white-0)'
   };
   color: ${props => props.isActive ? 'var(--color-white-0)' : 'var(--color-grey-700)'};
@@ -795,13 +792,12 @@ const CategoriesButton = styled.button`
   font-size: var(--text-sm);
   transition: all var(--transition-base);
   white-space: nowrap;
-  font-family: var(--font-heading);
 
   &:hover {
-    background: ${props => props.isActive 
-      ? 'linear-gradient(135deg, var(--color-brand-500) 0%, var(--color-brand-700) 100%)' 
-      : 'var(--color-grey-50)'
-    };
+    background: ${props => props.isActive
+    ? 'linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%)'
+    : 'var(--color-grey-50)'
+  };
     transform: translateY(-1px);
     box-shadow: var(--shadow-sm);
   }
@@ -834,8 +830,9 @@ const CategoriesDropdown = styled.div`
   }
 
   @media (max-width: 768px) {
-    width: 90vw;
-    left: -5rem;
+    width: calc(100vw - 3rem);
+    left: -1rem;
+    max-width: 400px;
   }
 `;
 
@@ -885,7 +882,6 @@ const PanelTitle = styled.div`
   color: var(--color-grey-800);
   background: var(--color-white-0);
   border-bottom: 1px solid var(--color-grey-200);
-  font-family: var(--font-heading);
 `;
 
 const CategoriesList = styled.ul`
@@ -913,7 +909,6 @@ const CategoryLink = styled(Link)`
   text-decoration: none;
   color: var(--color-grey-700);
   transition: all 0.3s ease;
-  font-family: var(--font-body);
 
   &:hover {
     color: var(--color-primary-500);
@@ -934,7 +929,6 @@ const CategoryName = styled.span`
   flex: 1;
   font-weight: 500;
   font-size: 1.4rem;
-  font-family: var(--font-heading);
 `;
 
 const SubCategoriesGrid = styled.div`
@@ -996,7 +990,6 @@ const SubCategoryGridName = styled.span`
   font-weight: 500;
   text-align: center;
   line-height: 1.3;
-  font-family: var(--font-heading);
 `;
 
 const NoSubCategories = styled.div`
@@ -1102,7 +1095,6 @@ const AvatarFallback = styled.div`
   color: var(--color-white-0);
   font-size: 1.6rem;
   font-weight: 600;
-  font-family: var(--font-heading);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 `;
@@ -1123,7 +1115,6 @@ const UserName = styled.span`
   color: var(--color-grey-800);
   line-height: 1.2;
   text-transform: capitalize;
-  font-family: var(--font-heading);
   max-width: 15rem;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1134,7 +1125,6 @@ const UserRole = styled.span`
   font-size: 1.1rem;
   color: var(--color-grey-500);
   line-height: 1.2;
-  font-family: var(--font-body);
 `;
 
 const ActionBadge = styled.span`
@@ -1245,7 +1235,6 @@ const DropdownItem = styled(Link)`
   background: none;
   width: 100%;
   text-align: left;
-  font-family: var(--font-body);
 
   &:hover {
     background: var(--color-grey-50);
@@ -1299,7 +1288,6 @@ const mobileMenuItemStyles = `
   font-weight: 500;
   border-bottom: 1px solid var(--color-grey-100);
   transition: all 0.3s ease;
-  font-family: var(--font-heading);
   position: relative;
   cursor: pointer;
   border: none;
@@ -1324,17 +1312,17 @@ const mobileMenuItemStyles = `
 
 const MobileMenuItem = styled.a`
   ${mobileMenuItemStyles}
-  background: ${props => props.$highlight 
-    ? 'linear-gradient(135deg, var(--color-brand-500) 0%, var(--color-brand-700) 100%)' 
+  background: ${props => props.$highlight
+    ? 'linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%)'
     : 'transparent'
   };
   color: ${props => props.$highlight ? 'var(--color-white-0)' : 'var(--color-grey-700)'};
 
   &:hover {
-    background: ${props => props.$highlight 
-      ? 'linear-gradient(135deg, var(--color-brand-600) 0%, var(--color-brand-800) 100%)' 
-      : 'var(--color-grey-50)'
-    };
+    background: ${props => props.$highlight
+    ? 'linear-gradient(135deg, var(--primary-600) 0%, var(--primary-800) 100%)'
+    : 'var(--color-grey-50)'
+  };
     color: ${props => props.$highlight ? 'var(--color-white-0)' : 'var(--color-primary-500)'};
     padding-left: ${props => props.$highlight ? '2rem' : '2.5rem'};
   }

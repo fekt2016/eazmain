@@ -102,7 +102,6 @@ export const HeroButton = styled(motion.button)`
   border-radius: var(--border-radius-lg);
   font-size: var(--font-size-md);
   font-weight: var(--font-semibold);
-  font-family: var(--font-heading);
   cursor: pointer;
   transition: all var(--transition-base);
   border: none;
@@ -404,7 +403,6 @@ export const CategoryButton = styled(motion.button)`
   border-radius: var(--border-radius-lg);
   font-size: var(--font-size-md);
   font-weight: var(--font-semibold);
-  font-family: var(--font-heading);
   cursor: pointer;
   transition: all var(--transition-base);
   margin-top: auto;
@@ -750,7 +748,6 @@ export const CTAButtonPrimary = styled(motion.button)`
   border-radius: var(--border-radius-lg);
   font-size: var(--font-size-md);
   font-weight: var(--font-semibold);
-  font-family: var(--font-heading);
   cursor: pointer;
   transition: all var(--transition-base);
   box-shadow: 0 4px 12px rgba(255, 196, 0, 0.3);
@@ -775,7 +772,6 @@ export const CTAButtonSecondary = styled(motion.button)`
   border-radius: var(--border-radius-lg);
   font-size: var(--font-size-md);
   font-weight: var(--font-semibold);
-  font-family: var(--font-heading);
   cursor: pointer;
   transition: all var(--transition-base);
 

@@ -560,7 +560,7 @@ const StatItem = styled.div`
 const StatValue = styled.div`
   font-size: 2.4rem;
   font-weight: 800;
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   line-height: 1;
 `;
 
@@ -876,7 +876,7 @@ const CalendarIcon = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   font-size: 1.6rem;
 `;
 

@@ -31,11 +31,11 @@ const sizeStyles = {
 
 const variantStyles = {
   primary: css`
-    background-color: var(--color-primary-500);
+    background-color: var(--color-button-primary);
     color: var(--color-white-0);
     border: none;
     &:hover:not(:disabled) {
-      background-color: var(--color-primary-400);
+      background-color: var(--color-button-primary-hover);
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(255, 196, 0, 0.3);
     }
@@ -45,7 +45,7 @@ const variantStyles = {
   `,
   secondary: css`
     background-color: var(--color-white-0);
-    color: var(--color-primary-600);
+    color: var(--primary-700);
     border: 1px solid var(--color-primary-300);
     &:hover:not(:disabled) {
       background-color: var(--color-primary-50);
@@ -105,7 +105,7 @@ const variantStyles = {
     padding: 0;
     min-height: auto;
     &:hover:not(:disabled) {
-      color: var(--color-primary-600);
+      color: var(--primary-700);
     }
   `,
 };
@@ -115,8 +115,8 @@ const ButtonStyled = styled.button`
   align-items: center;
   justify-content: center;
   gap: var(--spacing-xs);
-  font-family: var(--font-body);
-  font-weight: ${({ $weight }) => $weight || 500};
+  font-weight: ${({ $weight }) => $weight || 'var(--font-semibold)'};
+  letter-spacing: 0.3px;
   cursor: pointer;
   transition: var(--transition-base);
   width: ${({ $fullWidth }) => ($fullWidth ? "100%" : "auto")};
@@ -166,15 +166,15 @@ const ButtonStyled = styled.button`
   
   @media ${devicesMax.sm} {
     font-size: ${({ $size }) => {
-      if ($size === "lg") return "var(--font-size-md)";
-      if ($size === "md") return "var(--font-size-sm)";
-      return "var(--font-size-xs)";
-    }};
+    if ($size === "lg") return "var(--font-size-md)";
+    if ($size === "md") return "var(--font-size-sm)";
+    return "var(--font-size-xs)";
+  }};
     padding: ${({ $size, $iconOnly }) => {
-      if ($iconOnly) return "0";
-      if ($size === "lg") return "var(--spacing-sm) var(--spacing-md)";
-      return "var(--spacing-xs) var(--spacing-sm)";
-    }};
+    if ($iconOnly) return "0";
+    if ($size === "lg") return "var(--spacing-sm) var(--spacing-md)";
+    return "var(--spacing-xs) var(--spacing-sm)";
+  }};
   }
 `;
 
@@ -237,7 +237,7 @@ export default function Button({
 }) {
   // Determine button content
   const buttonContent = label || children;
-  
+
   // When loading, show spinner instead of content (unless iconOnly)
   const showSpinner = loading && !iconOnly;
   const showContent = !loading || iconOnly;

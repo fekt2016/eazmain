@@ -1489,7 +1489,7 @@ const BackButton = styled.button`
   gap: var(--spacing-sm);
   background: none;
   border: none;
-  color: var(--color-brand-600);
+  color: var(--primary-700);
   font-weight: var(--font-semibold);
   cursor: pointer;
   padding: var(--spacing-sm) var(--spacing-md);
@@ -1498,7 +1498,7 @@ const BackButton = styled.button`
   font-size: var(--font-size-sm);
 
   &:hover {
-    background: var(--color-brand-50);
+    background: var(--primary-50);
   }
 
   svg {
@@ -1605,7 +1605,7 @@ const PreorderBadge = styled.span`
 `;
 
 const TrackingLink = styled.span`
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   cursor: pointer;
   text-decoration: underline;
   font-weight: 500;
@@ -1952,7 +1952,7 @@ const SellerAvatar = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   font-size: var(--font-size-lg);
 `;
 
@@ -2063,7 +2063,7 @@ const ReviewButton = styled.button`
 
 const ItemTotal = styled.div`
   font-weight: var(--font-semibold);
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   font-size: var(--font-size-sm);
   flex-shrink: 0;
 `;

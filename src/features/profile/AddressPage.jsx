@@ -779,7 +779,7 @@ const BackButton = styled.button`
   align-items: center;
   gap: 0.8rem;
   background: var(--color-white-0);
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   border: 1px solid var(--color-grey-300);
   padding: 0.8rem 1.6rem;
   border-radius: 8px;
@@ -844,7 +844,7 @@ const StatItem = styled.div`
 const StatValue = styled.div`
   font-size: 2.4rem;
   font-weight: 800;
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   line-height: 1;
 `;
 
@@ -1322,7 +1322,7 @@ const SetDefaultButton = styled(ActionButton)`
 
 const EditButton = styled(ActionButton)`
   &:hover:not(:disabled) {
-    color: var(--color-primary-600);
+    color: var(--primary-700);
     border-color: var(--color-primary-300);
   }
 `;
@@ -1352,7 +1352,7 @@ const AddressLine = styled.p`
 
 const AreaLabel = styled.span`
   font-weight: 600;
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   font-size: 1.3rem;
 `;
 
@@ -1364,7 +1364,7 @@ const LandmarkLabel = styled.span`
 
 const DigitalAddress = styled.p`
   font-size: 1.3rem;
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   font-weight: 600;
   display: flex;
   align-items: center;

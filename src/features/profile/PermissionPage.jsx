@@ -799,7 +799,7 @@ const StatItem = styled.div`
 const StatValue = styled.div`
   font-size: 2.4rem;
   font-weight: 800;
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   line-height: 1;
 `;
 
@@ -1249,7 +1249,7 @@ const PrivacyText = styled.span`
 `;
 
 const PrivacyLink = styled.a`
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   text-decoration: none;
   font-weight: 600;
 

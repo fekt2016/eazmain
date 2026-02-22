@@ -307,7 +307,7 @@ const QuickAmountButton = styled.button`
   transition: all 0.3s;
 
   &:hover {
-    border-color: var(--color-primary-600);
+    border-color: var(--primary-700);
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
   }
@@ -358,7 +358,7 @@ const CustomAmountInput = styled.input`
 
   &:focus {
     outline: none;
-    border-color: var(--color-primary-600);
+    border-color: var(--primary-700);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
   }
 
@@ -393,7 +393,7 @@ const SelectedAmountLabel = styled.span`
 const SelectedAmountValue = styled.span`
   font-size: 2.4rem;
   font-weight: 700;
-  color: var(--color-primary-600);
+  color: var(--primary-700);
 `;
 
 const SubmitButton = styled.button`

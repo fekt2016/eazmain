@@ -49,7 +49,6 @@ const Tab = styled.button`
   transition: all var(--transition-base);
   border-bottom: 3px solid transparent;
   white-space: nowrap;
-  font-family: var(--font-body);
   position: relative;
   
   ${({ $active }) => $active && `

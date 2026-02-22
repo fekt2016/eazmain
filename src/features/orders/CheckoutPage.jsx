@@ -2114,7 +2114,7 @@ const CheckoutPage = () => {
           </SummaryItem>
 
           {hasPreorderItem && (
-            <SummaryItem style={{ fontSize: "0.85rem", color: "#4b5563" }}>
+            <SummaryItem style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
               <span>Order type:</span>
               <span>
                 {isInternationalPreorderEnabled
@@ -2123,7 +2123,7 @@ const CheckoutPage = () => {
               </span>
             </SummaryItem>
           )}
-          <SummaryItem style={{ fontSize: "0.85rem", color: "#666" }}>
+          <SummaryItem style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
             <span>Price includes applicable taxes</span>
           </SummaryItem>
 
@@ -2135,7 +2135,7 @@ const CheckoutPage = () => {
           )}
 
           {isInternationalPreorderEnabled && (
-            <SummaryItem style={{ fontSize: "0.85rem", color: "#4b5563" }}>
+            <SummaryItem style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
               <span>Country of origin:</span>
               <span>{supplierCountry}</span>
             </SummaryItem>
@@ -2155,7 +2155,7 @@ const CheckoutPage = () => {
                 <span>Clearing Fee:</span>
                 <span>GH₵{(internationalBreakdown.clearingFee || 0).toFixed(2)}</span>
               </SummaryItem>
-              <SummaryItem style={{ fontSize: "0.8rem", color: "#4b5563" }}>
+              <SummaryItem style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
                 <span>
                   International pre-order. Estimated arrival 15–25 days. Customs
                   delays may occur.
@@ -2455,7 +2455,6 @@ const DeliveryTitle = styled.h4`
   margin-bottom: 0.5rem;
   color: ${(props) =>
     props.$selected ? "var(--color-primary)" : "var(--color-grey-900)"};
-  font-family: var(--font-heading);
 `;
 
 const DeliveryDescription = styled.p`
@@ -2586,7 +2585,6 @@ const PickupCenterName = styled.h5`
   font-weight: 500;
   color: ${(props) =>
     props.$selected ? "var(--color-primary)" : "var(--color-grey-900)"};
-  font-family: var(--font-heading);
 `;
 
 const PickupCenterAddress = styled.p`
@@ -2624,7 +2622,6 @@ const BreakdownTitle = styled.h5`
   font-weight: 500;
   margin-bottom: 0.75rem;
   color: var(--color-grey-900);
-  font-family: var(--font-heading);
 `;
 
 const BreakdownItem = styled.div`
@@ -2678,7 +2675,7 @@ const AddressItem = styled.div`
   border-radius: 1.6rem;
   background: ${(props) =>
     props.$selected
-      ? "linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-brand-50) 100%)"
+      ? "linear-gradient(135deg, var(--color-primary-50) 0%, var(--primary-50) 100%)"
       : "white"};
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -2950,7 +2947,7 @@ const PaymentOption = styled.div`
   border-radius: 1.6rem;
   background: ${(props) =>
     props.$selected
-      ? "linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-brand-50) 100%)"
+      ? "linear-gradient(135deg, var(--color-primary-50) 0%, var(--primary-50) 100%)"
       : props.$disabled
         ? "var(--color-grey-50)"
         : "white"};

@@ -24,17 +24,24 @@ const GlobalStyles = createGlobalStyle`
   --color-instagram: #FFDC80;
 
 
-   /* Primary (amber/gold) – darker steps for contrast with white (WCAG AA) */
-  --color-primary-50: #ffffea;
-  --color-primary-100: #fffcc5;
-  --color-primary-200: #fffa85;
-  --color-primary-300: #fff146;
-  --color-primary-400: #ffe31b;
-  --color-primary-500: #e29800;
-  --color-primary-600: #bb6c02;
-  --color-primary-700: #985308;
-  --color-primary-800: #7c440b;
-  --color-primary-900: #5c3308;
+   /* Primary (Amber) – Final Scale */
+  --primary-50: #fffbeb;
+  --primary-100: #fef3c7;
+  --primary-500: #f59e0b;
+  --primary-600: #d97706; /* Main brand */
+  --primary-700: #b45309; /* Accessible on white */
+
+  /* Backwards compatibility for components still referencing the old scale temporarily */
+  --color-primary-50: var(--primary-50);
+  --color-primary-100: var(--primary-100);
+  --color-primary-200: var(--primary-100);
+  --color-primary-300: var(--primary-100);
+  --color-primary-400: var(--primary-500);
+  --color-primary-500: var(--primary-500);
+  --color-primary-600: var(--primary-600);
+  --color-primary-700: var(--primary-700);
+  --color-primary-800: var(--primary-700);
+  --color-primary-900: var(--primary-700);
   
 
 
@@ -195,12 +202,20 @@ const GlobalStyles = createGlobalStyle`
 
   /* Gradients */
   --gradient-primary: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-700) 100%);
-  --gradient-accent: linear-gradient(135deg, var(--color-brand-500) 0%, var(--color-brand-600) 100%);
+  --gradient-accent: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
 
   /* Primary aliases – darker shades for contrast with white (WCAG AA) */
-  --primary: var(--color-primary-600);
-  --primary-light: var(--color-primary-500);
-  --color-primary-on-light: var(--color-primary-700);
+  --primary: var(--primary-600);
+  --primary-light: var(--primary-500);
+  --color-primary-on-light: var(--primary-700);
+
+  /* Semantic assignments */
+  --color-button-primary: var(--primary-600);
+  --color-button-primary-hover: var(--primary-700);
+  --color-link: var(--primary-600);
+  --color-link-hover: var(--primary-700);
+  --color-focus-ring: var(--primary-500);
+  --bg-surface: #ffffff;
   --secondary: var(--color-grey-700);
   --white: var(--color-white-0);
   --text-secondary: var(--color-grey-600);
@@ -216,17 +231,29 @@ const GlobalStyles = createGlobalStyle`
   /* Additional shadows */
   --shadow-gold: 0 4px 20px rgba(255, 196, 0, 0.3);
 
-  /* Font aliases */
-  --font-body: 'Open Sans', sans-serif;
-  --font-heading: 'Montserrat', sans-serif;
+  /* Primary Font System */
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-mono: 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
+
+  /* Font aliases for backwards compatibility */
+  --font-body: var(--font-primary);
+  --font-heading: var(--font-primary);
+  --font-brand: var(--font-primary);
+  
   --font-semibold: 600;
   --font-bold: 700;
 
-  /* Text size aliases */
+  /* Text size aliases - Fluid Responsive */
   --text-xs: var(--font-size-xs);
   --text-sm: var(--font-size-sm);
   --text-base: var(--font-size-md);
-  --text-lg: var(--font-size-lg);
+  --text-md: clamp(1rem, 0.95rem + 0.3vw, 1.125rem);
+  --text-lg: clamp(1.125rem, 1rem + 0.4vw, 1.25rem);
+  --text-xl: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
+  --text-2xl: clamp(1.5rem, 1.3rem + 0.8vw, 1.875rem);
+  --text-3xl: clamp(1.875rem, 1.6rem + 1vw, 2.25rem);
+  --text-4xl: clamp(2.25rem, 2rem + 1.2vw, 2.75rem);
 
   /* Spacing aliases */
   --space-xs: var(--spacing-xs);
@@ -268,38 +295,38 @@ const GlobalStyles = createGlobalStyle`
 }
 
 html {
-  width: 100vw;
+  width: 100%;
   font-size: 62.5%;
   @media ${devicesMax.md} {
     font-size: 60%;
   }
   @media ${devicesMax.sm} {
     font-size: 55%;
-    width: 100vw;
+    width: 100%;
   }
 }
 
 body {
-  font-family: var(--font-body);
+  font-family: var(--font-primary);
   font-weight: 400;
   color: var(--color-grey-700);
   transition: color 0.3s, background-color 0.3s;
   min-height: 100vh;
   line-height: 1.5;
   font-size: 1.6rem;
-  width: 100vw;
+  width: 100%;
   overflow-x: hidden;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-heading);
-  font-weight: 500;
+  font-family: var(--font-primary);
+  font-weight: 600;
   line-height: 1.2;
   color: var(--color-grey-900);
 }
 
 h1 {
-  font-weight: 600;
+  font-weight: 700;
   font-size: 3.2rem;
 }
 
@@ -385,6 +412,7 @@ h6 {
 
 img {
   max-width: 100%;
+  height: auto;
 
   /* For dark mode */
   filter: grayscale(var(--image-grayscale)) opacity(var(--image-opacity));

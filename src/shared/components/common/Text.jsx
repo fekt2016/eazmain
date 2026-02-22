@@ -2,7 +2,6 @@ import styled from "styled-components";
 import { devicesMax } from "../../styles/breakpoint";
 
 const Text = styled.p`
-  font-family: var(--font-body);
   font-weight: ${({ $weight }) => $weight || 400};
   font-size: ${({ $size }) => $size || "var(--font-size-md)"};
   color: ${({ $color }) => $color || "var(--color-grey-700)"};

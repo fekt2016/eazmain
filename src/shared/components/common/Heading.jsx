@@ -2,7 +2,6 @@ import styled from "styled-components";
 import { devicesMax } from "../../styles/breakpoint";
 
 const Heading = styled.h1`
-  font-family: var(--font-heading);
   font-weight: ${({ $weight }) => $weight || 500};
   font-size: ${({ $size, $as }) => {
     if ($size) return $size;

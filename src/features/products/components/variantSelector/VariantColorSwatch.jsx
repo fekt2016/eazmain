@@ -183,6 +183,5 @@ const StockIndicator = styled.span`
   gap: 0.1rem;
   white-space: nowrap;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-  font-family: var(--font-body);
 `;
 

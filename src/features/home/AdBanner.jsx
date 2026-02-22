@@ -56,7 +56,7 @@ const BannerContent = styled.figcaption`
   right: 0;
   bottom: 0;
   padding: 2.25rem 2.5rem;
-  color: #ffffff;
+  color: var(--color-white-0);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -67,6 +67,7 @@ const BannerContent = styled.figcaption`
 `;
 
 const BannerTitle = styled.h3`
+  font-family: var(--font-display);
   font-size: clamp(1.5rem, 3vw, 2.3rem);
   font-weight: 700;
   line-height: 1.2;

@@ -672,7 +672,7 @@ const ItemCount = styled.span`
 
 const OrderTotal = styled.span`
   font-weight: var(--font-semibold);
-  color: var(--color-primary-600);
+  color: var(--primary-700);
 `;
 
 const StatusBadge = styled.span`
@@ -870,7 +870,7 @@ const DetailValue = styled.span`
 `;
 
 const TrackingLink = styled.span`
-  color: var(--color-primary-600);
+  color: var(--primary-700);
   cursor: pointer;
   text-decoration: underline;
   font-weight: 500;
