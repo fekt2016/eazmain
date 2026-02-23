@@ -1,6 +1,7 @@
 import { GoogleLogin } from "@react-oauth/google";
 import { FcGoogle } from "react-icons/fc";
 import api from "../../shared/services/api";
+import { PATHS } from "../../routes/routePaths";
 import logger from "../../shared/utils/logger";
 import styled from "styled-components";
 
@@ -36,7 +37,8 @@ export default function GoogleLoginButton({ appType = "buyer", onComplete, class
       if (onComplete) {
         onComplete(response.data);
       } else {
-        window.location.href = "/";
+        // Full page load so cookie is sent; redirect to home so buyer is signed in there
+        window.location.href = PATHS.HOME;
       }
     } catch (error) {
       logger.error("[GoogleLogin] Google login failed", {

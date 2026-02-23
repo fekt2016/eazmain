@@ -11,6 +11,7 @@ const SearchResult = lazy(() => import("../features/search/SearchResult"));
 const Partners = lazy(() => import("../features/Partners"));
 const Press = lazy(() => import("../features/Press"));
 const AboutPage = lazy(() => import("../pages/about/AboutPage"));
+const BlogPage = lazy(() => import("../pages/blog/BlogPage"));
 const PermissionPage = lazy(() => import("../features/profile/PermissionPage"));
 const FollowPage = lazy(() => import("../features/profile/FollowPage"));
 const Creditbalance = lazy(() => import("../features/profile/Creditbalance"));
@@ -183,6 +184,14 @@ const MainRoutes = () => {
         element={
           <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
             <ContactPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.BLOG}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <BlogPage />
           </Suspense>
         }
       />
