@@ -9,7 +9,6 @@ import Card from "../../components/ui/Card";
 import Container from "../../components/ui/Container";
 import ProductCard from "../../shared/components/ProductCard";
 import { PATHS } from "../../routes/routePaths";
-import useDynamicPageTitle from "../../shared/hooks/useDynamicPageTitle";
 
 const PageWrapper = styled.div`
   background: var(--color-grey-50);
@@ -91,11 +90,6 @@ const PromotionalProductsPage = () => {
   const title = promoId
     ? promoId.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
     : "Special Offer";
-
-  useDynamicPageTitle({
-    title: `${title} - Saiisai`,
-    description: `Discover products in the ${title} promotion on Saiisai. Limited time offers from trusted sellers.`,
-  });
 
   return (
     <PageWrapper>

@@ -3,7 +3,9 @@
  * Centralized SEO metadata for all public pages
  */
 
-const BASE_URL = (typeof process !== 'undefined' && process.env?.REACT_APP_FRONTEND_URL) || window.location.origin || 'https://saiisai.com';
+import { FRONTEND_URL } from "./appConfig";
+
+const BASE_URL = FRONTEND_URL;
 const DEFAULT_IMAGE = `${BASE_URL}/images/saiisai-og-image.jpg`;
 const DEFAULT_DESCRIPTION = 'Shop the best products from trusted sellers on Saiisai - Ghana\'s leading online marketplace';
 

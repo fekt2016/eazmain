@@ -101,7 +101,7 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
     const extractedUser = userData?.data?.data || userData?.data?.user || userData?.user || userData || null;
 
     // Debug logging in development
-    if (process.env.NODE_ENV === 'development' && extractedUser) {
+    if (import.meta.env.DEV && extractedUser) {
       console.log('[Header] User extracted:', {
         hasPhoto: !!extractedUser?.photo,
         photo: extractedUser?.photo,

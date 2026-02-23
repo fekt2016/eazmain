@@ -122,7 +122,7 @@ const ProfilePage = () => {
           </TabPanelContainer>
 
           <TabPanelContainer active={activeTab === "security"}>
-            <SecurityTab userInfo={userInfo} />
+            <SecurityTab userInfo={userInfo} connectedAccounts={profileData.connectedAccounts} />
           </TabPanelContainer>
 
           <TabPanelContainer active={activeTab === "twofactor"}>

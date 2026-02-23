@@ -98,6 +98,7 @@ export const PATHS = {
   // Legal
   PRIVACY: "/privacy",
   TERMS: "/terms",
+  DATA_DELETION: "/data-deletion",
   REFUND_POLICY: "/refund-policy",
   VAT_TAX_POLICY: "/vat-tax-policy",
   SHIPPING_POLICY: "/shipping-policy",
@@ -271,6 +272,12 @@ export const ROUTE_CONFIG = {
     title: "Terms of Service - Saiisai",
     description: "Review the terms and conditions for using Saiisai",
     keywords: "terms, conditions, policy, Saiisai",
+  },
+
+  [PATHS.DATA_DELETION]: {
+    title: "Facebook Data Deletion Instructions - Saiisai",
+    description: "Request deletion of your Saiisai data if you signed up or logged in using Facebook. Learn how to submit a data deletion request.",
+    keywords: "Facebook data deletion, delete account, data removal, Saiisai, privacy",
   },
 
   [PATHS.REFUND_POLICY]: {

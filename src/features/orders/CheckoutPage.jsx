@@ -41,8 +41,6 @@ import NeighborhoodAutocomplete from "../../shared/components/NeighborhoodAutoco
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import locationApi from "../../shared/services/locationApi";
 import neighborhoodService from "../../shared/services/neighborhoodApi";
-import { ACCRA_NEIGHBORHOODS, TEMA_NEIGHBORHOODS, getCityForNeighborhood } from "../../shared/config/neighborhoods";
-
 
 // ────────────────────────────────────────────────
 // Helper functions
@@ -68,10 +66,10 @@ const resolveSkuFromCartItem = (cartItem) => {
 
   // Case 3: variant ID → resolve from product variants (backward compatibility)
   if (cartItem.variant && Array.isArray(cartItem.product?.variants)) {
-    const variantId = typeof cartItem.variant === 'string'
-      ? cartItem.variant
+    const variantId = typeof cartItem.variant === 'string' 
+      ? cartItem.variant 
       : (cartItem.variant._id || cartItem.variant.id);
-
+    
     if (variantId) {
       const found = cartItem.product.variants.find(
         (v) => {
@@ -117,10 +115,10 @@ const normalizeApiResponse = (response) => {
     logger.warn("[normalizeApiResponse] Response is null/undefined");
     return null;
   }
-
+  
   // Try multiple normalization paths
   let payload = null;
-
+  
   // Path 1: response.data.data (double nested)
   if (response?.data?.data) {
     payload = response.data.data;
@@ -133,7 +131,7 @@ const normalizeApiResponse = (response) => {
   else {
     payload = response;
   }
-
+  
   return payload;
 };
 
@@ -142,12 +140,12 @@ const getShippingItems = (rawItems) => {
   logger.log("📦 rawItems type:", typeof rawItems);
   logger.log("📦 rawItems is array?", Array.isArray(rawItems));
   logger.log("📦 rawItems.length:", rawItems?.length);
-
+  
   if (!rawItems || !Array.isArray(rawItems) || rawItems.length === 0) {
     logger.warn("⚠️ getShippingItems: rawItems is empty or not an array");
     return [];
   }
-
+  
   const mapped = rawItems
     .map((item, index) => {
       logger.log(`📦 Processing item ${index}:`, item);
@@ -156,13 +154,13 @@ const getShippingItems = (rawItems) => {
       logger.log(`📦 Item ${index} - product.seller:`, item.product?.seller);
       logger.log(`📦 Item ${index} - product.seller._id:`, item.product?.seller?._id);
       logger.log(`📦 Item ${index} - quantity:`, item.quantity);
-
+      
       // Handle different seller formats:
       // 1. seller is an object with _id: { _id: "...", name: "..." }
       // 2. seller is just an ID string: "507f1f77bcf86cd799439011"
       // 3. seller is in product.seller field
       let sellerId = null;
-
+      
       if (item.product?.seller) {
         if (typeof item.product.seller === 'string') {
           sellerId = item.product.seller;
@@ -172,27 +170,27 @@ const getShippingItems = (rawItems) => {
           sellerId = item.product.seller.id;
         }
       }
-
+      
       // Also check if seller is directly on the product
       if (!sellerId && item.product?.sellerId) {
         sellerId = item.product.sellerId;
       }
-
+      
       const mappedItem = {
         productId: item.product?._id || item.product?.id || item.productId,
         sellerId: sellerId,
         quantity: item.quantity || 1,
       };
-
+      
       logger.log(`📦 Item ${index} mapped:`, mappedItem);
       logger.log(`📦 Item ${index} - hasProductId:`, !!mappedItem.productId);
       logger.log(`📦 Item ${index} - hasSellerId:`, !!mappedItem.sellerId);
       logger.log(`📦 Item ${index} - sellerId value:`, sellerId);
       logger.log(`📦 Item ${index} - productId value:`, mappedItem.productId);
-
+      
       return mappedItem;
     });
-
+  
   const filtered = mapped.filter((item) => {
     const isValid = item.productId && item.sellerId;
     if (!isValid) {
@@ -200,7 +198,7 @@ const getShippingItems = (rawItems) => {
     }
     return isValid;
   });
-
+  
   logger.log("📦 Final shippingItems:", filtered);
   logger.log("📦 Final shippingItems.length:", filtered.length);
   return filtered;
@@ -304,7 +302,7 @@ const CheckoutPage = () => {
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState("");
   const [couponData, setCouponData] = useState(null);
-
+  
   // Delivery method states
   const [deliveryMethod, setDeliveryMethod] = useState("dispatch");
   const [deliverySpeed, setDeliverySpeed] = useState("standard");
@@ -316,25 +314,25 @@ const CheckoutPage = () => {
   // Credit balance data
   const creditBalance = useMemo(() => {
     // Use availableBalance first (what user can actually spend), then fallback to balance
-    const availableBalance = walletData?.data?.wallet?.availableBalance ??
-      walletData?.data?.wallet?.balance ??
-      0;
-
+    const availableBalance = walletData?.data?.wallet?.availableBalance ?? 
+                             walletData?.data?.wallet?.balance ?? 
+                             0;
+    
     // DEBUG: Log wallet balance details for troubleshooting
-    if ((typeof __DEV__ !== 'undefined' && __DEV__) || process.env.NODE_ENV !== 'production') {
+    if ((typeof __DEV__ !== 'undefined' && __DEV__) || !import.meta.env.PROD) {
       if (walletData) {
         logger.debug('[CheckoutPage] 💰 Wallet balance details:', {
           availableBalance: walletData?.data?.wallet?.availableBalance,
           balance: walletData?.data?.wallet?.balance,
           holdAmount: walletData?.data?.wallet?.holdAmount,
-          calculatedAvailableBalance: walletData?.data?.wallet?.balance
+          calculatedAvailableBalance: walletData?.data?.wallet?.balance 
             ? Math.max(0, (walletData.data.wallet.balance || 0) - (walletData.data.wallet.holdAmount || 0))
             : 0,
           finalCreditBalance: availableBalance,
         });
       }
     }
-
+    
     return availableBalance;
   }, [walletData]);
 
@@ -384,7 +382,7 @@ const CheckoutPage = () => {
       (rawItems || []).map((item) => {
         // CRITICAL: Extract sku (standardized field name) with backward compatibility
         let sku = item.sku || item.variantSku || null;
-
+        
         // Backward compatibility: If sku missing, try to resolve from variant
         if (!sku && item.variant) {
           // Case 1: variant object with SKU
@@ -393,10 +391,10 @@ const CheckoutPage = () => {
           }
           // Case 2: variant ID - resolve from product variants
           else if (Array.isArray(item.product?.variants)) {
-            const variantId = typeof item.variant === 'string'
-              ? item.variant
+            const variantId = typeof item.variant === 'string' 
+              ? item.variant 
               : (item.variant._id?.toString ? item.variant._id.toString() : String(item.variant._id || item.variant));
-
+            
             if (variantId) {
               const found = item.product.variants.find(
                 (v) => {
@@ -410,7 +408,7 @@ const CheckoutPage = () => {
             }
           }
         }
-
+        
         // Case 3: Single-variant product auto-assignment
         if (!sku && Array.isArray(item.product?.variants) && item.product.variants.length === 1) {
           const variantSku = item.product.variants[0].sku;
@@ -418,7 +416,7 @@ const CheckoutPage = () => {
             sku = variantSku.trim().toUpperCase();
           }
         }
-
+        
         return {
           product: item.product,
           quantity: item.quantity,
@@ -447,18 +445,18 @@ const CheckoutPage = () => {
           .filter(Boolean),
       ),
     );
-
+    
     // If we have a single origin, use it
     if (origins.length === 1) {
       return origins[0];
     }
-
+    
     // If pre-order exists but no origin specified, default to "China"
     // (all pre-orders are assumed to be international from China/USA)
     if (hasPreorderItem && origins.length === 0) {
       return "China"; // Default for pre-orders without specified origin
     }
-
+    
     return null;
   }, [products, hasPreorderItem]);
 
@@ -485,17 +483,17 @@ const CheckoutPage = () => {
   // Buyer city: prefer selected address on "existing" tab, else new address on "new" tab
   const buyerCity =
     activeTab === "existing" && selectedAddress?.city
-      ? selectedAddress.city.toUpperCase()
+    ? selectedAddress.city.toUpperCase()
       : activeTab === "new" && newAddress?.city
-        ? newAddress.city.toUpperCase()
-        : selectedAddress?.city?.toUpperCase() || null;
-
+    ? newAddress.city.toUpperCase()
+    : selectedAddress?.city?.toUpperCase() || null;
+  
   // Shipping hooks based on buyer city
   const {
     data: pickupCentersData,
     isLoading: isPickupCentersLoading,
   } = useGetPickupCenters(buyerCity);
-
+  
   // Extract pickup centers from response - handle different response structures
   const pickupCenters = useMemo(() => {
     if (!pickupCentersData) return [];
@@ -512,7 +510,7 @@ const CheckoutPage = () => {
   // SECURITY: Use backend-calculated totals instead of frontend calculations
   // Frontend calculations are for display only - backend must validate all amounts
   const round = (val) => Math.round(val * 100) / 100;
-
+  
   // Use backend totals if available, otherwise fallback to frontend calculation for display
   const backendTotal = backendTotals?.totalAmount ?? backendTotals?.total ?? null;
   const backendDiscount = backendTotals?.discount || discount;
@@ -532,9 +530,9 @@ const CheckoutPage = () => {
   const hasInsufficientBalance = useMemo(() => {
     if (paymentMethod !== "credit_balance") return false;
     const isInsufficient = creditBalance < total;
-
+    
     // DEBUG: Log balance check details
-    if ((typeof __DEV__ !== 'undefined' && __DEV__) || process.env.NODE_ENV !== 'production') {
+    if ((typeof __DEV__ !== 'undefined' && __DEV__) || !import.meta.env.PROD) {
       logger.debug('[CheckoutPage] 💰 Balance check:', {
         creditBalance,
         total,
@@ -543,7 +541,7 @@ const CheckoutPage = () => {
         paymentMethod,
       });
     }
-
+    
     return isInsufficient;
   }, [paymentMethod, creditBalance, total]);
 
@@ -606,11 +604,11 @@ const CheckoutPage = () => {
 
       if (savedState.selectedAddressId)
         setSelectedAddressId(savedState.selectedAddressId);
-      if (savedState.paymentMethod) setPaymentMethod(savedState.paymentMethod);
-      if (savedState.couponCode) setCouponCode(savedState.couponCode);
-      if (savedState.couponData) setCouponData(savedState.couponData);
-      if (savedState.discount) setDiscount(savedState.discount);
-      if (savedState.newAddress) setNewAddress(savedState.newAddress);
+        if (savedState.paymentMethod) setPaymentMethod(savedState.paymentMethod);
+        if (savedState.couponCode) setCouponCode(savedState.couponCode);
+        if (savedState.couponData) setCouponData(savedState.couponData);
+        if (savedState.discount) setDiscount(savedState.discount);
+        if (savedState.newAddress) setNewAddress(savedState.newAddress);
     }
   }, [isAuthenticated]);
 
@@ -660,10 +658,10 @@ const CheckoutPage = () => {
   useEffect(() => {
     if (isAddressLoading || address.length === 0) return;
 
-    if (defaultAddress) {
-      setSelectedAddressId(defaultAddress._id);
+      if (defaultAddress) {
+        setSelectedAddressId(defaultAddress._id);
     } else {
-      setSelectedAddressId(address[0]._id);
+        setSelectedAddressId(address[0]._id);
     }
   }, [isAddressLoading, address, defaultAddress]);
 
@@ -861,17 +859,17 @@ const CheckoutPage = () => {
           const extractedTown = (addressData.town || addressData.neighborhood || addressData.area || "").trim();
           const extractedCityRaw = addressData.city || "";
           // Normalize city: backend expects "Accra" or "Tema" (capitalized), form uses "ACCRA"/"TEMA" (uppercase)
-          const extractedCityNormalized = extractedCityRaw
+          const extractedCityNormalized = extractedCityRaw 
             ? extractedCityRaw.trim().charAt(0).toUpperCase() + extractedCityRaw.trim().slice(1).toLowerCase()
             : "";
-          const extractedCityUppercase = extractedCityRaw
+          const extractedCityUppercase = extractedCityRaw 
             ? extractedCityRaw.toUpperCase().trim()
             : "";
-          const extractedRegion = addressData.region
+          const extractedRegion = addressData.region 
             ? addressData.region.toLowerCase().trim()
-              .split(' ')
-              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-              .join(' ')
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ')
             : "";
 
           // Search for matching neighborhood in the database
@@ -886,10 +884,10 @@ const CheckoutPage = () => {
                 extractedTown,
                 extractedCityNormalized
               );
-
-              const neighborhoods = neighborhoodResponse?.data?.neighborhoods ||
-                neighborhoodResponse?.neighborhoods || [];
-
+              
+              const neighborhoods = neighborhoodResponse?.data?.neighborhoods || 
+                                   neighborhoodResponse?.neighborhoods || [];
+              
               if (neighborhoods.length > 0) {
                 hadNeighborhoodResults = true;
                 // Store all matching neighborhoods so user can select from a list
@@ -900,9 +898,9 @@ const CheckoutPage = () => {
                   n => n.name.toLowerCase().trim() === extractedTown.toLowerCase().trim()
                 ) || neighborhoods.find(
                   n => n.name.toLowerCase().includes(extractedTown.toLowerCase()) ||
-                    extractedTown.toLowerCase().includes(n.name.toLowerCase())
+                       extractedTown.toLowerCase().includes(n.name.toLowerCase())
                 ) || neighborhoods[0];
-
+                
                 logger.info('[Auto-detect] Found matching neighborhood:', {
                   searchTerm: extractedTown,
                   city: extractedCityNormalized,
@@ -959,7 +957,7 @@ const CheckoutPage = () => {
           }));
         } catch (error) {
           logger.error("Reverse geocoding error:", error);
-
+          
           // Provide user-friendly error messages
           if (error.response?.status === 400) {
             setLocationError(
@@ -988,10 +986,10 @@ const CheckoutPage = () => {
       },
       (error) => {
         logger.error("Geolocation error:", error);
-
+        
         // Handle different geolocation error codes
         let errorMessage = "Location access denied. Please enable location services.";
-
+        
         switch (error.code) {
           case error.PERMISSION_DENIED:
             errorMessage = "Location access denied. Please enable location services in your browser settings.";
@@ -1006,7 +1004,7 @@ const CheckoutPage = () => {
             errorMessage = "Failed to get your location. Please enter address manually.";
             break;
         }
-
+        
         setLocationError(errorMessage);
         setIsFetchingLocation(false);
       },
@@ -1077,7 +1075,7 @@ const CheckoutPage = () => {
 
     // SECURITY: Use backend-calculated subtotal, not frontend
     applyCoupon(
-      {
+      { 
         couponCode: sanitizedCode, // SECURITY: Sanitized coupon code
         orderAmount: backendSubtotal || subTotal, // Use backend subtotal if available
         productIds,
@@ -1164,10 +1162,10 @@ const CheckoutPage = () => {
       orderItems = products.map((product) => {
         // SECURITY: Validate quantity
         const validatedQuantity = validateQuantity(product.quantity, product.product.stock || 999);
-
+        
         // CRITICAL: Use sku directly from cart item - NO resolution logic
         const sku = product.sku || null;
-
+        
         // Guardrail: If product has variants and SKU is missing, show error
         const hasVariants = product.product.variants && product.product.variants.length > 0;
         if (hasVariants && !sku) {
@@ -1181,7 +1179,7 @@ const CheckoutPage = () => {
 
         // SECURITY: Do NOT send price from frontend - backend will fetch from database
         // Price here is only for reference/logging, backend ignores it
-        const displayPrice = sku
+        const displayPrice = sku 
           ? product.product.variants?.find((v) => v.sku && v.sku.toUpperCase() === sku.toUpperCase())?.price
           : (product.product.defaultPrice || product.product.price || 0);
 
@@ -1238,7 +1236,7 @@ const CheckoutPage = () => {
       onSuccess: async (orderResponse) => {
         const responseData = orderResponse?.data || orderResponse;
         const order = responseData?.data?.order || responseData?.order;
-
+        
         if (!order) {
           setFormError("Failed to create order");
           return;
@@ -1259,15 +1257,15 @@ const CheckoutPage = () => {
             });
 
             logger.log("[CheckoutPage] Redirecting to Paystack:", redirectTo);
-
+            
             // SECURITY: Validate redirect URL before redirecting (already validated in paymentApi)
             // Additional validation here as defense in depth
             try {
               const url = new URL(redirectTo);
-              const isValidPaystack = url.hostname === 'paystack.com' ||
-                url.hostname.endsWith('.paystack.com') ||
-                url.hostname === 'checkout.paystack.com';
-
+              const isValidPaystack = url.hostname === 'paystack.com' || 
+                                     url.hostname.endsWith('.paystack.com') ||
+                                     url.hostname === 'checkout.paystack.com';
+              
               if (!isValidPaystack) {
                 throw new Error('Invalid payment redirect URL');
               }
@@ -1276,7 +1274,7 @@ const CheckoutPage = () => {
               setFormError('Invalid payment redirect URL. Please contact support.');
               return;
             }
-
+            
             // Use window.location.href for full page redirect to Paystack
             // After payment, Paystack will redirect back to our callback URL
             window.location.href = redirectTo;
@@ -1284,7 +1282,7 @@ const CheckoutPage = () => {
             logger.error("[CheckoutPage] Payment initialization error:", paymentError);
             setFormError(
               paymentError.response?.data?.message ||
-              "Failed to initialize payment. Please try again."
+                "Failed to initialize payment. Please try again."
             );
             // IMPORTANT: Order has been created but payment did not start.
             // Redirect user to order confirmation page so they can retry payment safely.
@@ -1306,17 +1304,17 @@ const CheckoutPage = () => {
           // Use the same URL structure as Paystack: /order-confirmation?orderId=xxx
           // This ensures consistency between payment methods
           logger.log("[CheckoutPage] Navigating to order confirmation (non-Paystack payment)");
-
+          
           // Safety check: Ensure we're in the eazmain app (port 5173), not admin app (port 5174)
           const currentPort = window.location.port;
           const isEazmain = currentPort === '5173' || currentPort === '' || !currentPort.includes('5174');
-
+          
           if (!isEazmain) {
             logger.error(`[CheckoutPage] ❌ CRITICAL: Current port is ${currentPort}, expected 5173 (eazmain)`);
             logger.error(`[CheckoutPage] Current URL: ${window.location.href}`);
             logger.error(`[CheckoutPage] This should not happen - you may be in the wrong app!`);
           }
-
+          
           // CRITICAL: Invalidate wallet balance immediately for UI update (if wallet payment)
           if (paymentMethod === "credit_balance" || paymentMethod === "wallet") {
             logger.log('[CheckoutPage] 💰 Wallet payment detected - invalidating wallet balance');
@@ -1324,16 +1322,16 @@ const CheckoutPage = () => {
             queryClient.invalidateQueries({ queryKey: ['creditBalance'] });
             queryClient.refetchQueries({ queryKey: ['wallet', 'balance'] });
           }
-
+          
           // Build URL with query parameter (same format as Paystack redirect)
           // Paystack redirects to: /order-confirmation?orderId=XXX&reference=YYY&trxref=YYY
           // We'll use: /order-confirmation?orderId=XXX (reference/trxref only for Paystack)
           const confirmationPath = `/order-confirmation?orderId=${order._id}`;
-
+          
           logger.log(`[CheckoutPage] Navigating to: ${confirmationPath}`);
           logger.log(`[CheckoutPage] Current location: ${window.location.pathname}`);
           logger.log(`[CheckoutPage] Current origin: ${window.location.origin}`);
-
+          
           // Navigate with both URL query param and state (for backward compatibility)
           navigate(confirmationPath, {
             state: {
@@ -1508,36 +1506,53 @@ const CheckoutPage = () => {
                 <FormRow>
                   <FormGroup>
                     <Label>Neighborhood/Area *</Label>
-                    <Select
-                      name="area"
-                      value={newAddress.area}
-                      onChange={(e) => {
-                        const selectedName = e.target.value;
-                        const detectedCity = getCityForNeighborhood(selectedName);
-                        setNewAddress((prev) => ({
-                          ...prev,
-                          area: selectedName,
-                          ...(detectedCity && { city: detectedCity.toUpperCase() }),
-                        }));
-                        setErrors((prev) => ({ ...prev, area: undefined, city: undefined }));
-                      }}
-                      required
-                    >
-                      <option value="">— Select your neighborhood —</option>
-                      <optgroup label="📍 Accra">
-                        {ACCRA_NEIGHBORHOODS.map((name) => (
-                          <option key={name} value={name}>{name}</option>
-                        ))}
-                      </optgroup>
-                      <optgroup label="📍 Tema">
-                        {TEMA_NEIGHBORHOODS.map((name) => (
-                          <option key={name} value={name}>{name}</option>
-                        ))}
-                      </optgroup>
-                    </Select>
-                    <HintText>
-                      Select your neighborhood — city will be auto-filled
-                    </HintText>
+                    {autoNeighborhoodOptions.length > 0 ? (
+                      <>
+                        <Select
+                          name="area"
+                          value={newAddress.area}
+                          onChange={(e) => {
+                            const selectedName = e.target.value;
+                            setNewAddress((prev) => ({
+                              ...prev,
+                              area: selectedName,
+                            }));
+                          }}
+                        >
+                          <option value="">Select neighborhood</option>
+                          {autoNeighborhoodOptions.map((n) => (
+                            <option
+                              key={n._id || n.name}
+                              value={n.name}
+                            >
+                              {n.name}
+                              {n.municipality ? ` (${n.municipality})` : ""}
+                            </option>
+                          ))}
+                        </Select>
+                        <HintText>
+                          We detected multiple neighborhoods for your area. Please choose the correct one.
+                        </HintText>
+                      </>
+                    ) : (
+                      <>
+                        <NeighborhoodAutocomplete
+                          value={newAddress.area}
+                          onChange={handleAddressChange}
+                          city={newAddress.city}
+                          placeholder="Search neighborhood (e.g., Nima, Cantonments, Tema Community 1)"
+                          onSelect={(neighborhood) => {
+                            setNewAddress((prev) => ({
+                              ...prev,
+                              area: neighborhood.name,
+                            }));
+                          }}
+                        />
+                        <HintText>
+                          Start typing to search for your neighborhood
+                        </HintText>
+                      </>
+                    )}
                     {errors.area && (
                       <ErrorText>{errors.area}</ErrorText>
                     )}
@@ -1643,8 +1658,8 @@ const CheckoutPage = () => {
                   >
                     Cancel
                   </Button>
-                  <Button
-                    type="submit"
+                  <Button 
+                    type="submit" 
                     variant="success"
                     size="sm"
                     loading={isAddressCreating}
@@ -1668,198 +1683,198 @@ const CheckoutPage = () => {
             </SectionHeader>
 
             <DeliveryOptions>
-              {/* Pickup Center */}
-              <DeliveryOption
-                $selected={deliveryMethod === "pickup_center"}
-                onClick={() => {
+            {/* Pickup Center */}
+            <DeliveryOption
+              $selected={deliveryMethod === "pickup_center"}
+              onClick={() => {
+                setDeliveryMethod("pickup_center");
+                setSelectedPickupCenterId(null);
+              }}
+            >
+              <DeliveryContent>
+                <DeliveryIcon $selected={deliveryMethod === "pickup_center"}>
+                  <FaStore />
+                </DeliveryIcon>
+                <DeliveryInfo>
+                  <DeliveryTitle $selected={deliveryMethod === "pickup_center"}>
+                    Pickup from Saiisai Center
+                  </DeliveryTitle>
+                  <DeliveryDescription>
+                    Collect your order from one of our pickup centers. Free or
+                    minimal fee.
+                  </DeliveryDescription>
+                  <DispatchFeeDisplay>
+                    {buyerCity ? (
+                      <strong>Shipping Fee: Free</strong>
+                    ) : (
+                      <span>Select address to see shipping fee</span>
+                    )}
+                  </DispatchFeeDisplay>
+                </DeliveryInfo>
+                {deliveryMethod === "pickup_center" && (
+                  <SelectionCheckmark>
+                    <FaCheck />
+                  </SelectionCheckmark>
+                )}
+              </DeliveryContent>
+              <RadioInput
+                type="radio"
+                name="deliveryMethod"
+                checked={deliveryMethod === "pickup_center"}
+                onChange={() => {
                   setDeliveryMethod("pickup_center");
                   setSelectedPickupCenterId(null);
                 }}
-              >
-                <DeliveryContent>
-                  <DeliveryIcon $selected={deliveryMethod === "pickup_center"}>
-                    <FaStore />
-                  </DeliveryIcon>
-                  <DeliveryInfo>
-                    <DeliveryTitle $selected={deliveryMethod === "pickup_center"}>
-                      Pickup from Saiisai Center
-                    </DeliveryTitle>
-                    <DeliveryDescription>
-                      Collect your order from one of our pickup centers. Free or
-                      minimal fee.
-                    </DeliveryDescription>
-                    <DispatchFeeDisplay>
-                      {buyerCity ? (
-                        <strong>Shipping Fee: Free</strong>
-                      ) : (
-                        <span>Select address to see shipping fee</span>
-                      )}
-                    </DispatchFeeDisplay>
-                  </DeliveryInfo>
-                  {deliveryMethod === "pickup_center" && (
-                    <SelectionCheckmark>
-                      <FaCheck />
-                    </SelectionCheckmark>
-                  )}
-                </DeliveryContent>
-                <RadioInput
-                  type="radio"
-                  name="deliveryMethod"
-                  checked={deliveryMethod === "pickup_center"}
-                  onChange={() => {
-                    setDeliveryMethod("pickup_center");
-                    setSelectedPickupCenterId(null);
-                  }}
-                />
-              </DeliveryOption>
+              />
+            </DeliveryOption>
 
-              {deliveryMethod === "pickup_center" && (
-                <PickupCenterSelector>
-                  {isPickupCentersLoading ? (
-                    <LoadingState message="Loading pickup centers..." />
-                  ) : pickupCenters.length === 0 ? (
-                    <ErrorState message="No pickup centers available for this city" />
-                  ) : (
-                    <>
-                      <Label>Select Pickup Center *</Label>
-                      <PickupCenterList>
-                        {pickupCenters.map((center) => (
-                          <PickupCenterItem
-                            key={center._id}
-                            $selected={selectedPickupCenterId === center._id}
-                            onClick={() =>
+            {deliveryMethod === "pickup_center" && (
+              <PickupCenterSelector>
+                {isPickupCentersLoading ? (
+                  <LoadingState message="Loading pickup centers..." />
+                ) : pickupCenters.length === 0 ? (
+                  <ErrorState message="No pickup centers available for this city" />
+                ) : (
+                  <>
+                    <Label>Select Pickup Center *</Label>
+                    <PickupCenterList>
+                      {pickupCenters.map((center) => (
+                        <PickupCenterItem
+                          key={center._id}
+                          $selected={selectedPickupCenterId === center._id}
+                          onClick={() =>
+                            setSelectedPickupCenterId(center._id)
+                          }
+                        >
+                          <PickupCenterContent>
+                            <PickupCenterName
+                              $selected={
+                                selectedPickupCenterId === center._id
+                              }
+                            >
+                              {center.pickupName}
+                            </PickupCenterName>
+                            <PickupCenterAddress>
+                              <strong>Address:</strong> {center.address}
+                            </PickupCenterAddress>
+                            {center.area && (
+                              <PickupCenterAddress>
+                                <strong>Area:</strong> {center.area},{" "}
+                                {center.city}
+                              </PickupCenterAddress>
+                            )}
+                            {center.openingHours && (
+                              <PickupCenterHours>
+                                <strong>Opening Hours:</strong>{" "}
+                                {center.openingHours}
+                              </PickupCenterHours>
+                            )}
+                            {center.googleMapLink && (
+                              <MapLink
+                                href={center.googleMapLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                View on Google Maps →
+                              </MapLink>
+                            )}
+                          </PickupCenterContent>
+                          {selectedPickupCenterId === center._id && (
+                            <SelectionCheckmark>
+                              <FaCheck />
+                            </SelectionCheckmark>
+                          )}
+                          <RadioInput
+                            type="radio"
+                            name="pickupCenter"
+                            checked={selectedPickupCenterId === center._id}
+                            onChange={() =>
                               setSelectedPickupCenterId(center._id)
                             }
-                          >
-                            <PickupCenterContent>
-                              <PickupCenterName
-                                $selected={
-                                  selectedPickupCenterId === center._id
-                                }
-                              >
-                                {center.pickupName}
-                              </PickupCenterName>
-                              <PickupCenterAddress>
-                                <strong>Address:</strong> {center.address}
-                              </PickupCenterAddress>
-                              {center.area && (
-                                <PickupCenterAddress>
-                                  <strong>Area:</strong> {center.area},{" "}
-                                  {center.city}
-                                </PickupCenterAddress>
-                              )}
-                              {center.openingHours && (
-                                <PickupCenterHours>
-                                  <strong>Opening Hours:</strong>{" "}
-                                  {center.openingHours}
-                                </PickupCenterHours>
-                              )}
-                              {center.googleMapLink && (
-                                <MapLink
-                                  href={center.googleMapLink}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  View on Google Maps →
-                                </MapLink>
-                              )}
-                            </PickupCenterContent>
-                            {selectedPickupCenterId === center._id && (
-                              <SelectionCheckmark>
-                                <FaCheck />
-                              </SelectionCheckmark>
-                            )}
-                            <RadioInput
-                              type="radio"
-                              name="pickupCenter"
-                              checked={selectedPickupCenterId === center._id}
-                              onChange={() =>
-                                setSelectedPickupCenterId(center._id)
-                              }
-                            />
-                          </PickupCenterItem>
-                        ))}
-                      </PickupCenterList>
-                    </>
-                  )}
-                </PickupCenterSelector>
-              )}
+                          />
+                        </PickupCenterItem>
+                      ))}
+                    </PickupCenterList>
+                  </>
+                )}
+              </PickupCenterSelector>
+            )}
 
-              {/* Dispatch */}
-              <DeliveryOption
-                $selected={deliveryMethod === "dispatch"}
-                onClick={() => handleDeliveryMethodChange("dispatch")}
-              >
-                <DeliveryContent>
-                  <DeliveryIcon $selected={deliveryMethod === "dispatch"}>
-                    <FaTruck />
-                  </DeliveryIcon>
-                  <DeliveryInfo>
-                    <DeliveryTitle $selected={deliveryMethod === "dispatch"}>
-                      Saiisai Dispatch Rider
-                    </DeliveryTitle>
-                    <DeliveryDescription>
-                      Fast delivery by Saiisai&apos;s own dispatch riders.
-                      Calculated based on location and item type.
-                    </DeliveryDescription>
-                  </DeliveryInfo>
-                  {deliveryMethod === "dispatch" && (
-                    <SelectionCheckmark>
-                      <FaCheck />
-                    </SelectionCheckmark>
-                  )}
-                </DeliveryContent>
-                <RadioInput
-                  type="radio"
-                  name="deliveryMethod"
-                  checked={deliveryMethod === "dispatch"}
-                  onChange={() => handleDeliveryMethodChange("dispatch")}
-                />
-              </DeliveryOption>
+            {/* Dispatch */}
+            <DeliveryOption
+              $selected={deliveryMethod === "dispatch"}
+              onClick={() => handleDeliveryMethodChange("dispatch")}
+            >
+              <DeliveryContent>
+                <DeliveryIcon $selected={deliveryMethod === "dispatch"}>
+                  <FaTruck />
+                </DeliveryIcon>
+                <DeliveryInfo>
+                  <DeliveryTitle $selected={deliveryMethod === "dispatch"}>
+                    Saiisai Dispatch Rider
+                  </DeliveryTitle>
+                  <DeliveryDescription>
+                    Fast delivery by Saiisai&apos;s own dispatch riders.
+                    Calculated based on location and item type.
+                  </DeliveryDescription>
+                </DeliveryInfo>
+                {deliveryMethod === "dispatch" && (
+                  <SelectionCheckmark>
+                    <FaCheck />
+                  </SelectionCheckmark>
+                )}
+              </DeliveryContent>
+              <RadioInput
+                type="radio"
+                name="deliveryMethod"
+                checked={deliveryMethod === "dispatch"}
+                onChange={() => handleDeliveryMethodChange("dispatch")}
+              />
+            </DeliveryOption>
 
-              {/* Shipping Options - Only show when dispatch is selected */}
-              {deliveryMethod === "dispatch" && buyerCity && (
-                <>
-                  {/* Saiisai Dispatch Rider Shipping Options */}
-                  <DispatchShippingSection>
-                    {/* <DispatchShippingTitle>Saiisai Dispatch Rider</DispatchShippingTitle> */}
-                    <ShippingOptions
-                      weight={null} // Will be calculated from items
-                      city={buyerCity}
-                      neighborhoodName={
-                        // Use area field as neighborhood name (preferred), fallback to landmark or streetAddress
-                        activeTab === "existing" && selectedAddress
-                          ? (selectedAddress.area || selectedAddress.landmark || selectedAddress.streetAddress)
-                          : activeTab === "new" && newAddress
-                            ? (newAddress.area || newAddress.landmark || newAddress.streetAddress)
-                            : null
-                      }
-                      fragile={isFragileItem}
-                      items={shippingItems}
-                      selectedShippingType={deliverySpeed || "standard"}
-                      onSelect={handleShippingSelect}
+            {/* Shipping Options - Only show when dispatch is selected */}
+            {deliveryMethod === "dispatch" && buyerCity && (
+              <>
+                {/* Saiisai Dispatch Rider Shipping Options */}
+                <DispatchShippingSection>
+                  {/* <DispatchShippingTitle>Saiisai Dispatch Rider</DispatchShippingTitle> */}
+                  <ShippingOptions
+                  weight={null} // Will be calculated from items
+                  city={buyerCity}
+                  neighborhoodName={
+                    // Use area field as neighborhood name (preferred), fallback to landmark or streetAddress
+                    activeTab === "existing" && selectedAddress
+                      ? (selectedAddress.area || selectedAddress.landmark || selectedAddress.streetAddress)
+                      : activeTab === "new" && newAddress
+                      ? (newAddress.area || newAddress.landmark || newAddress.streetAddress)
+                      : null
+                  }
+                  fragile={isFragileItem}
+                  items={shippingItems}
+                  selectedShippingType={deliverySpeed || "standard"}
+                  onSelect={handleShippingSelect}
+                  />
+                </DispatchShippingSection>
+                
+                {/* Fragile Item Checkbox - Below shipping options */}
+                <FragileCheckboxContainer>
+                  <FragileCheckboxLabel>
+                    <input
+                      type="checkbox"
+                      checked={isFragileItem}
+                      onChange={(e) => setIsFragileItem(e.target.checked)}
                     />
-                  </DispatchShippingSection>
-
-                  {/* Fragile Item Checkbox - Below shipping options */}
-                  <FragileCheckboxContainer>
-                    <FragileCheckboxLabel>
-                      <input
-                        type="checkbox"
-                        checked={isFragileItem}
-                        onChange={(e) => setIsFragileItem(e.target.checked)}
-                      />
-                      <span>Fragile Item (Additional handling required)</span>
-                    </FragileCheckboxLabel>
-                    {isFragileItem && (
-                      <FragileHint>
-                        Fragile items require special handling and may incur additional charges.
-                      </FragileHint>
-                    )}
-                  </FragileCheckboxContainer>
-                </>
-              )}
+                    <span>Fragile Item (Additional handling required)</span>
+                  </FragileCheckboxLabel>
+                  {isFragileItem && (
+                    <FragileHint>
+                      Fragile items require special handling and may incur additional charges.
+                    </FragileHint>
+                  )}
+                </FragileCheckboxContainer>
+              </>
+            )}
 
             </DeliveryOptions>
 
@@ -1977,19 +1992,16 @@ const CheckoutPage = () => {
                     <PaymentDetails>
                       <BankDetails>
                         <BankInfo>
-                          <strong>Bank Name:</strong> CBG Bank
+                          <strong>Bank Name:</strong> Ghana Commercial Bank
                         </BankInfo>
                         <BankInfo>
-                          <strong>Branch:</strong> Nima Branch
+                          <strong>Account Name:</strong> ShopGH Ltd
                         </BankInfo>
                         <BankInfo>
-                          <strong>Account Name:</strong> EasyworldPc
+                          <strong>Account Number:</strong> 1234567890
                         </BankInfo>
                         <BankInfo>
-                          <strong>Account Number:</strong> 2297931640001
-                        </BankInfo>
-                        <BankInfo>
-                          <strong>Reference:</strong> Your Order Number
+                          <strong>Reference:</strong> Order #ORD-20230708
                         </BankInfo>
                       </BankDetails>
                       <p style={{ marginTop: "10px", fontSize: "0.9rem" }}>
@@ -2099,7 +2111,7 @@ const CheckoutPage = () => {
                 {couponMessage}
               </CouponMessage>
             )}
-
+            
             {couponError && (
               <ErrorState
                 message={couponError?.message || "Failed to apply coupon"}
@@ -2114,7 +2126,7 @@ const CheckoutPage = () => {
           </SummaryItem>
 
           {hasPreorderItem && (
-            <SummaryItem style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+            <SummaryItem style={{ fontSize: "0.85rem", color: "#4b5563" }}>
               <span>Order type:</span>
               <span>
                 {isInternationalPreorderEnabled
@@ -2123,7 +2135,7 @@ const CheckoutPage = () => {
               </span>
             </SummaryItem>
           )}
-          <SummaryItem style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+          <SummaryItem style={{ fontSize: "0.85rem", color: "#666" }}>
             <span>Price includes applicable taxes</span>
           </SummaryItem>
 
@@ -2135,7 +2147,7 @@ const CheckoutPage = () => {
           )}
 
           {isInternationalPreorderEnabled && (
-            <SummaryItem style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+            <SummaryItem style={{ fontSize: "0.85rem", color: "#4b5563" }}>
               <span>Country of origin:</span>
               <span>{supplierCountry}</span>
             </SummaryItem>
@@ -2155,7 +2167,7 @@ const CheckoutPage = () => {
                 <span>Clearing Fee:</span>
                 <span>GH₵{(internationalBreakdown.clearingFee || 0).toFixed(2)}</span>
               </SummaryItem>
-              <SummaryItem style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+              <SummaryItem style={{ fontSize: "0.8rem", color: "#4b5563" }}>
                 <span>
                   International pre-order. Estimated arrival 15–25 days. Customs
                   delays may occur.
@@ -2182,7 +2194,7 @@ const CheckoutPage = () => {
             <span>GH₵{total.toFixed(2)}</span>
           </SummaryTotal>
 
-          <PrimaryButton
+          <PrimaryButton 
             $size="lg"
             onClick={handlePlaceOrder}
             disabled={isCreatingOrder || hasInsufficientBalance}
@@ -2198,9 +2210,9 @@ const CheckoutPage = () => {
               "Place Order"
             )}
           </PrimaryButton>
-
+          
           {(createOrderError || formError) && (
-            <ErrorState
+            <ErrorState 
               message={
                 createOrderError?.response?.data?.message ||
                 formError ||
@@ -2223,7 +2235,7 @@ const CheckoutPage = () => {
           </SecurityFooter>
         </OrderSummary>
       </CheckoutGrid>
-    </CheckoutContainer >
+    </CheckoutContainer>
   );
 };
 
@@ -2455,6 +2467,7 @@ const DeliveryTitle = styled.h4`
   margin-bottom: 0.5rem;
   color: ${(props) =>
     props.$selected ? "var(--color-primary)" : "var(--color-grey-900)"};
+  font-family: var(--font-heading);
 `;
 
 const DeliveryDescription = styled.p`
@@ -2585,6 +2598,7 @@ const PickupCenterName = styled.h5`
   font-weight: 500;
   color: ${(props) =>
     props.$selected ? "var(--color-primary)" : "var(--color-grey-900)"};
+  font-family: var(--font-heading);
 `;
 
 const PickupCenterAddress = styled.p`
@@ -2622,6 +2636,7 @@ const BreakdownTitle = styled.h5`
   font-weight: 500;
   margin-bottom: 0.75rem;
   color: var(--color-grey-900);
+  font-family: var(--font-heading);
 `;
 
 const BreakdownItem = styled.div`
@@ -2671,11 +2686,11 @@ const AddressItem = styled.div`
   padding: 1.8rem;
   border: 2.5px solid
     ${(props) =>
-    props.$selected ? "var(--color-primary-500)" : "var(--color-grey-200)"};
+      props.$selected ? "var(--color-primary-500)" : "var(--color-grey-200)"};
   border-radius: 1.6rem;
   background: ${(props) =>
     props.$selected
-      ? "linear-gradient(135deg, var(--color-primary-50) 0%, var(--primary-50) 100%)"
+      ? "linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-brand-50) 100%)"
       : "white"};
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -2686,14 +2701,14 @@ const AddressItem = styled.div`
 
   &:hover {
     border-color: ${(props) =>
-    props.$selected
-      ? "var(--color-primary-600)"
-      : "var(--color-primary-500)"};
+      props.$selected
+        ? "var(--color-primary-600)"
+        : "var(--color-primary-500)"};
     transform: translateY(-3px) scale(1.02);
     box-shadow: ${(props) =>
-    props.$selected
-      ? "0 6px 24px rgba(0, 120, 204, 0.3)"
-      : "0 6px 20px rgba(0, 0, 0, 0.12)"};
+      props.$selected
+        ? "0 6px 24px rgba(0, 120, 204, 0.3)"
+        : "0 6px 20px rgba(0, 0, 0, 0.12)"};
   }
 
   &:active {
@@ -2822,7 +2837,7 @@ const Input = styled.input`
   padding: var(--spacing-sm);
   border: 1px solid
     ${(props) =>
-    props.error ? "var(--color-red-700)" : "var(--color-grey-300)"};
+      props.error ? "var(--color-red-700)" : "var(--color-grey-300)"};
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-md);
 
@@ -2865,7 +2880,7 @@ const TabButton = styled.div`
   border-radius: 0.8rem 0.8rem 0 0;
   border-bottom: 2px solid
     ${({ $active }) =>
-    $active ? "var(--color-primary-500)" : "transparent"};
+      $active ? "var(--color-primary-500)" : "transparent"};
   
   ${({ $active }) =>
     !$active &&
@@ -2939,18 +2954,18 @@ const PaymentOption = styled.div`
   padding: 1.8rem;
   border: 2.5px solid
     ${(props) =>
-    props.$selected
-      ? "var(--color-primary-500)"
-      : props.$disabled
+      props.$selected
+        ? "var(--color-primary-500)"
+        : props.$disabled
         ? "var(--color-grey-300)"
         : "var(--color-grey-200)"};
   border-radius: 1.6rem;
   background: ${(props) =>
     props.$selected
-      ? "linear-gradient(135deg, var(--color-primary-50) 0%, var(--primary-50) 100%)"
+      ? "linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-brand-50) 100%)"
       : props.$disabled
-        ? "var(--color-grey-50)"
-        : "white"};
+      ? "var(--color-grey-50)"
+      : "white"};
   cursor: ${(props) => (props.$disabled ? "not-allowed" : "pointer")};
   opacity: ${(props) => (props.$disabled ? 0.6 : 1)};
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -2961,14 +2976,14 @@ const PaymentOption = styled.div`
 
   &:hover {
     border-color: ${(props) =>
-    props.$selected
-      ? "var(--color-primary-600)"
-      : "var(--color-primary-500)"};
+      props.$selected
+        ? "var(--color-primary-600)"
+        : "var(--color-primary-500)"};
     transform: translateY(-3px) scale(1.02);
     box-shadow: ${(props) =>
-    props.$selected
-      ? "0 6px 24px rgba(0, 120, 204, 0.3)"
-      : "0 6px 20px rgba(0, 0, 0, 0.12)"};
+      props.$selected
+        ? "0 6px 24px rgba(0, 120, 204, 0.3)"
+        : "0 6px 20px rgba(0, 0, 0, 0.12)"};
   }
 
   &:active {

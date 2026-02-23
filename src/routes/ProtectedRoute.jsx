@@ -74,7 +74,7 @@ const ProtectedRoutes = ({ children }) => {
       // Only redirect on actual auth endpoint failures
       // 401 is expected when user is not authenticated - not an error
       if (error?.response?.status === 401) {
-        if ((typeof __DEV__ !== 'undefined' && __DEV__) || process.env.NODE_ENV !== 'production') {
+        if ((typeof __DEV__ !== 'undefined' && __DEV__) || !import.meta.env.PROD) {
           logger.debug("User unauthenticated (401) on auth endpoint");
         }
       } else {

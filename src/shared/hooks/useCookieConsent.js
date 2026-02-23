@@ -1,4 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
+import {
+  GA_MEASUREMENT_ID,
+  FB_PIXEL_ID,
+  TIKTOK_PIXEL_ID,
+} from '../config/appConfig';
 
 // ────────────────────────────────────────────────
 // Constants
@@ -8,10 +13,7 @@ const COOKIE_CONSENT_KEY = 'cookie_consent_eazshop';
 const BANNER_DISMISSED_KEY = 'cookie_banner_dismissed_eazshop';
 const COOKIE_EXPIRY_DAYS = 365;
 
-// Tracking IDs (should be moved to environment variables)
-const GA_MEASUREMENT_ID = process.env.REACT_APP_GA_MEASUREMENT_ID || '';
-const FB_PIXEL_ID = process.env.REACT_APP_FB_PIXEL_ID || '';
-const TT_PIXEL_ID = process.env.REACT_APP_TT_PIXEL_ID || '';
+// Tracking IDs are provided via appConfig (Vite env wrapper)
 
 // ────────────────────────────────────────────────
 // Cookie Utilities
@@ -146,7 +148,7 @@ const unloadFacebookPixel = () => {
 };
 
 const loadTikTokPixel = () => {
-  if (!TT_PIXEL_ID || window.ttq) return;
+  if (!TIKTOK_PIXEL_ID || window.ttq) return;
 
   !(function (w, d, t) {
     w.ttq = w.ttq || function () {
@@ -159,7 +161,7 @@ const loadTikTokPixel = () => {
     d.getElementsByTagName('head')[0].appendChild(js);
   })(window, document, 'script');
 
-  window.ttq.load(TT_PIXEL_ID);
+  window.ttq.load(TIKTOK_PIXEL_ID);
   window.ttq.page();
 };
 
@@ -188,7 +190,7 @@ const manageScripts = (consent) => {
   }
 
   // TikTok Pixel (marketing)
-  if (consent.marketing && TT_PIXEL_ID) {
+  if (consent.marketing && TIKTOK_PIXEL_ID) {
     loadTikTokPixel();
   } else {
     unloadTikTokPixel();

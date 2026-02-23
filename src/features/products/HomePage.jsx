@@ -30,7 +30,6 @@ import AdBanner from '../home/AdBanner';
 import AdPopup from '../home/AdPopup';
 import DealOfTheDaySection from '../home/DealOfTheDaySection';
 import { useDealOfTheDay } from '../../shared/hooks/useDealOfTheDay';
-import SaiisaiStories from '../home/SaiisaiStories';
 
 // Animations
 const fadeInUp = keyframes`
@@ -138,9 +137,9 @@ const HomePage = () => {
 
   const products = useMemo(() => {
     if (!productsData) return [];
-
+    
     let productsList = [];
-
+    
     // Handle nested data.data.data structure (from getAllProduct controller)
     if (productsData.data?.data && Array.isArray(productsData.data.data)) {
       productsList = productsData.data.data;
@@ -165,32 +164,32 @@ const HomePage = () => {
     else if (Array.isArray(productsData)) {
       productsList = productsData;
     }
-
+    
     // CRITICAL: Filter out deleted products and unapproved products (client-side safety check)
     // Backend should already filter these via buildBuyerSafeQuery, but this ensures no deleted/unapproved products are shown
     return productsList.filter(product => {
       // Exclude products deleted by admin or seller
-      if (product.isDeleted === true ||
-        product.isDeletedByAdmin === true ||
-        product.isDeletedBySeller === true ||
-        product.status === 'archived') {
+      if (product.isDeleted === true || 
+          product.isDeletedByAdmin === true || 
+          product.isDeletedBySeller === true ||
+          product.status === 'archived') {
         return false;
       }
-
+      
       // CRITICAL: Only show products that have been approved by admin
       // Backend buildBuyerSafeQuery requires: moderationStatus: 'approved'
       // Frontend safety check: Ensure moderationStatus is 'approved' if it exists
       if (product.moderationStatus && product.moderationStatus !== 'approved') {
         return false;
       }
-
+      
       // NOTE: We no longer check isVisible - approved products are visible regardless of seller verification
-
+      
       // Additional check: Ensure status is active or out_of_stock (backend also filters this)
       if (product.status && !['active', 'out_of_stock'].includes(product.status)) {
         return false;
       }
-
+      
       return true;
     });
   }, [productsData]);
@@ -215,11 +214,11 @@ const HomePage = () => {
   const resolveAdLink = useCallback((link) => {
     if (!link || typeof link !== "string") return PATHS.PRODUCTS;
     const raw = link.trim();
-
+    
     // Get current origin (in production: https://saiisai.com, in dev: http://localhost:5173)
     const currentOrigin = window.location.origin;
     const isProduction = !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(currentOrigin);
-
+    
     // In DEVELOPMENT: Keep localhost URLs as-is, don't replace them
     if (!isProduction) {
       // If it's already a full URL (including localhost), return as-is
@@ -230,16 +229,16 @@ const HomePage = () => {
       const cleanLink = raw.startsWith("/") ? raw.substring(1) : raw;
       return `${currentOrigin}/${cleanLink}`;
     }
-
+    
     // In PRODUCTION: Replace localhost URLs with production domain
     // Determine the production frontend URL to use for replacing localhost links
     let productionFrontendUrl = import.meta.env.VITE_FRONTEND_URL;
-
+    
     // Ignore localhost env vars in production
     if (productionFrontendUrl && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(productionFrontendUrl)) {
       productionFrontendUrl = null;
     }
-
+    
     // Try to derive from API URL (if it's production API)
     if (!productionFrontendUrl) {
       const apiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
@@ -248,23 +247,23 @@ const HomePage = () => {
         productionFrontendUrl = apiUrl.replace(/\/api\/?.*$/, '').replace(/\/$/, '');
       }
     }
-
+    
     // Use current origin as fallback in production
     if (!productionFrontendUrl) {
       productionFrontendUrl = currentOrigin;
     }
-
+    
     const cleanFrontendUrl = productionFrontendUrl.trim().replace(/\/$/, ''); // Remove trailing slash
-
+    
     // In PRODUCTION: Replace localhost URLs with production URL
     if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(raw)) {
       try {
         const url = new URL(raw);
         const path = url.pathname + url.search + url.hash;
-
+        
         // Determine production URL to use for replacement
         let replacementUrl = null;
-
+        
         // First, check API URL - if it contains api.saiisai.com, use saiisai.com
         const apiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
         if (apiUrl && apiUrl.includes('api.saiisai.com')) {
@@ -273,22 +272,22 @@ const HomePage = () => {
           // If API URL is production (not localhost), derive frontend URL
           replacementUrl = apiUrl.replace(/\/api\/?.*$/, '').replace(/\/$/, '');
         }
-
+        
         // If still not set, use cleanFrontendUrl only if it's NOT localhost
         if (!replacementUrl && !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(cleanFrontendUrl)) {
           replacementUrl = cleanFrontendUrl;
         }
-
+        
         // Use current origin as fallback
         if (!replacementUrl) {
           replacementUrl = currentOrigin;
         }
-
+        
         const normalized = `${replacementUrl}${path}`;
         // Debug log
-        console.log('[resolveAdLink] Normalized localhost URL (production):', {
-          original: raw,
-          normalized,
+        console.log('[resolveAdLink] Normalized localhost URL (production):', { 
+          original: raw, 
+          normalized, 
           replacementUrl,
           isProduction,
           currentOrigin
@@ -301,10 +300,10 @@ const HomePage = () => {
         return normalized;
       }
     }
-
+    
     // If it's already an absolute URL (and not localhost), return as-is
     if (/^https?:\/\//i.test(raw)) return raw;
-
+    
     // If it's a relative path, prepend FRONTEND_URL
     const cleanLink = raw.startsWith("/") ? raw.substring(1) : raw; // Remove leading slash
     return `${cleanFrontendUrl}/${cleanLink}`;
@@ -353,11 +352,11 @@ const HomePage = () => {
     // Handle different response structures
     // Backend returns: { status: 'success', results: [...], meta: {...} }
     // Service now returns response.data directly
-    const categoriesList =
-      categoriesData?.results ||
-      categoriesData?.data?.results ||
+    const categoriesList = 
+      categoriesData?.results || 
+      categoriesData?.data?.results || 
       [];
-
+    
     if (!categoriesList || !Array.isArray(categoriesList) || categoriesList.length === 0) return [];
 
     // Filter to show only parent categories (top-level categories)
@@ -404,7 +403,7 @@ const HomePage = () => {
             const formattedEnd = slide.endDate ? formatPromoEndDate(slide.endDate) : null;
             // CRITICAL: Always normalize the link to ensure no localhost URLs
             let normalizedSlideLink = slide.link ? resolveAdLink(slide.link) : PATHS.PRODUCTS;
-
+            
             // Double-check: if somehow localhost still exists, replace it again
             if (normalizedSlideLink && typeof normalizedSlideLink === 'string') {
               if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(normalizedSlideLink)) {
@@ -431,7 +430,7 @@ const HomePage = () => {
                 }
               }
             }
-
+            
             // Determine if it's an external link (full URL) or internal (relative path)
             const external = normalizedSlideLink && /^https?:\/\//i.test(normalizedSlideLink);
             const ctaEl = external ? (
@@ -617,7 +616,7 @@ const HomePage = () => {
                           </SellerRating>
                         </SellerHeaderContent>
                       </SellerCardHeader>
-
+                      
                       <SellerCardBody>
                         <SellerStats>
                           <StatItem>
@@ -637,7 +636,7 @@ const HomePage = () => {
                             </StatItem>
                           )}
                         </SellerStats>
-
+                        
                         {productImages.length > 0 && (
                           <ProductPreviewSection>
                             <PreviewLabel>Featured Products</PreviewLabel>
@@ -647,9 +646,9 @@ const HomePage = () => {
                                   <PreviewImage
                                     src={image}
                                     alt={`Product ${index + 1}`}
-                                    onError={(e) => {
-                                      e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect fill='%23e2e8f0' width='80' height='80'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2364748b' font-size='24'%3EP%3C/text%3E%3C/svg%3E";
-                                    }}
+                                  onError={(e) => {
+                                    e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect fill='%23e2e8f0' width='80' height='80'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2364748b' font-size='24'%3EP%3C/text%3E%3C/svg%3E";
+                                  }}
                                   />
                                 </PreviewImageWrapper>
                               ))}
@@ -662,7 +661,7 @@ const HomePage = () => {
                           </ProductPreviewSection>
                         )}
                       </SellerCardBody>
-
+                      
                       <SellerCardFooter>
                         <ViewShopButton>
                           View Shop <FaArrowRight />
@@ -727,9 +726,6 @@ const HomePage = () => {
         endOfDay={dealOfTheDay.endOfDay}
       />
 
-      {/* Saiisai Stories: Success stories from sellers and customers */}
-      <SaiisaiStories />
-
       {/* All Products */}
       <Section>
         <Container>
@@ -773,7 +769,7 @@ const HomePage = () => {
 
 // Styled Components
 const PageWrapper = styled.div`
-  background-color: var(--bg-surface);
+  background-color: #ffffff;
   min-height: 100vh;
   overflow-x: hidden;
 `;
@@ -942,7 +938,6 @@ const SlideTextContent = styled.div`
 `;
 
 const SlideTitle = styled.h1`
-  font-family: var(--font-display);
   font-size: 4rem;
   font-weight: 800;
   margin-bottom: 1rem;
@@ -1035,8 +1030,8 @@ const HeroDiscountBadge = styled.div`
   padding: 0.85rem 1.5rem;
   font-size: 2.25rem;
   font-weight: 800;
-  color: var(--color-white-0);
-  background: var(--error);
+  color: #ffffff;
+  background: #dc2626;
   border: 3px double rgba(255, 255, 255, 0.9);
   border-radius: 8px;
   letter-spacing: 0.05em;
@@ -1140,12 +1135,12 @@ const TrustSection = styled.div`
 
 const TrustGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
   
-  @media (min-width: 768px) {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 2rem;
+  @media ${devicesMax.sm} {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
   }
 `;
 
@@ -1176,25 +1171,24 @@ const TrustInfo = styled.div`
     margin-bottom: 0.2rem;
   }
   p {
-    color: var(--text-secondary);
+    color: #666;
     font-size: 0.9rem;
   }
 `;
 
 const CategoryGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: auto;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(2, 250px);
   gap: 1.5rem;
   
-  @media (min-width: 768px) {
+  @media ${devicesMax.md} {
     grid-template-columns: repeat(2, 1fr);
     grid-template-rows: repeat(3, 200px);
   }
-
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(2, 250px);
+  @media ${devicesMax.sm} {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
   }
 `;
 
@@ -1259,37 +1253,31 @@ const CategoryContent = styled.div`
 
 const ProductGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.75rem;
-
-  @media (min-width: 768px) {
-    grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(4, 1fr); /* 4 cards per row */
+  gap: 1.5rem;
+  
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(3, 1fr); /* 3 cards on medium screens */
+  }
+  
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(2, 1fr); /* 2 cards on tablets */
     gap: 1rem;
   }
-
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
-  }
-
-  @media (min-width: 1280px) {
-    grid-template-columns: repeat(4, 1fr);
+  
+  @media ${devicesMax.sm} {
+    grid-template-columns: repeat(2, 1fr); /* 2 cards on mobile */
+    gap: 0.75rem;
   }
 `;
 
 const LoadingGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
   
-  @media (min-width: 768px) {
+  @media ${devicesMax.md} {
     grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
-  }
-
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 24px;
   }
 `;
 

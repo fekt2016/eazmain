@@ -37,12 +37,12 @@ const CartPage = () => {
   const { total: subTotal } = useCartTotals();
   const { promotionDiscountMap } = useAds();
 
-  const {
-    updateCartItem,
-    removeCartItem,
-    addToCart,
-    isUpdating,
-    isRemoving,
+  const { 
+    updateCartItem, 
+    removeCartItem, 
+    addToCart, 
+    isUpdating, 
+    isRemoving, 
     isAdding,
     updateCartItemMutation,
     removeCartItemMutation,
@@ -80,7 +80,7 @@ const CartPage = () => {
   }, [trendingData, cartProductIds]);
 
   const navigate = useNavigate();
-
+  
   // Redirect to homepage when cart becomes empty
   useEffect(() => {
     if (!isCartLoading && products.length === 0) {
@@ -155,13 +155,13 @@ const CartPage = () => {
           </CartHeader>
 
           {isError ? (
-            <ErrorState
-              title="Failed to load cart"
+            <ErrorState 
+              title="Failed to load cart" 
               message="Error loading cart data. Please try again later."
             />
           ) : products.length === 0 ? (
-            <EmptyState
-              title="Your cart is empty"
+            <EmptyState 
+              title="Your cart is empty" 
               message="Browse our products and add items to your cart"
             />
           ) : (
@@ -172,7 +172,7 @@ const CartPage = () => {
                 if (!item.product) {
                   return null;
                 }
-
+                
                 return (
                   <CartItem key={item._id}>
                     <ItemImage
@@ -208,61 +208,61 @@ const CartPage = () => {
                           )}
                         </ItemPrice>
                       </div>
-                      <ItemActions>
-                        <QuantityButton
-                          onClick={() =>
-                            handleQuantityChange(item._id, item.quantity - 1)
-                          }
-                          disabled={
-                            item.quantity <= 1 || isUpdating
-                          }
-                          aria-label="Decrease quantity"
-                        >
-                          −
-                        </QuantityButton>
-                        <QuantityInput
-                          type="number"
-                          min="1"
-                          value={item.quantity}
-                          onChange={(e) => {
-                            // SECURITY: Validate quantity input
-                            const inputValue = parseInt(e.target.value) || 1;
-                            const maxStock = item.product?.stock || 999;
-                            handleQuantityChange(item._id, inputValue, maxStock);
-                          }}
-                          disabled={isUpdating}
-                        />
-                        <QuantityButton
-                          onClick={() =>
-                            handleQuantityChange(item._id, item.quantity + 1)
-                          }
-                          disabled={isUpdating}
-                          aria-label="Increase quantity"
-                        >
-                          +
-                        </QuantityButton>
-                        <RemoveButton
-                          $size="sm"
-                          onClick={() => handleRemoveItem(item._id)}
-                          disabled={isRemoving}
-                        >
-                          {isRemoving ? <ButtonSpinner size="sm" /> : "Remove"}
-                        </RemoveButton>
-                      </ItemActions>
-                    </ItemDetails>
-                    <ItemPrice>
-                      {getItemOriginalUnitPrice(item) != null ? (
-                        <>
-                          <OriginalPrice>GH₵{(getItemOriginalUnitPrice(item) * item.quantity).toFixed(2)}</OriginalPrice>
-                          <PromoPrice>GH₵{(getItemUnitPrice(item) * item.quantity).toFixed(2)}</PromoPrice>
-                        </>
-                      ) : (
-                        <>GH₵{(getItemUnitPrice(item) * item.quantity).toFixed(2)}</>
-                      )}
-                    </ItemPrice>
-                  </CartItem>
-                );
-              })
+                    <ItemActions>
+                      <QuantityButton
+                        onClick={() =>
+                          handleQuantityChange(item._id, item.quantity - 1)
+                        }
+                        disabled={
+                          item.quantity <= 1 || isUpdating
+                        }
+                        aria-label="Decrease quantity"
+                      >
+                        −
+                      </QuantityButton>
+                      <QuantityInput
+                        type="number"
+                        min="1"
+                        value={item.quantity}
+                        onChange={(e) => {
+                          // SECURITY: Validate quantity input
+                          const inputValue = parseInt(e.target.value) || 1;
+                          const maxStock = item.product?.stock || 999;
+                          handleQuantityChange(item._id, inputValue, maxStock);
+                        }}
+                        disabled={isUpdating}
+                      />
+                      <QuantityButton
+                        onClick={() =>
+                          handleQuantityChange(item._id, item.quantity + 1)
+                        }
+                        disabled={isUpdating}
+                        aria-label="Increase quantity"
+                      >
+                        +
+                      </QuantityButton>
+                      <RemoveButton
+                        $size="sm"
+                        onClick={() => handleRemoveItem(item._id)}
+                        disabled={isRemoving}
+                      >
+                        {isRemoving ? <ButtonSpinner size="sm" /> : "Remove"}
+                      </RemoveButton>
+                    </ItemActions>
+                  </ItemDetails>
+                  <ItemPrice>
+                    {getItemOriginalUnitPrice(item) != null ? (
+                      <>
+                        <OriginalPrice>GH₵{(getItemOriginalUnitPrice(item) * item.quantity).toFixed(2)}</OriginalPrice>
+                        <PromoPrice>GH₵{(getItemUnitPrice(item) * item.quantity).toFixed(2)}</PromoPrice>
+                      </>
+                    ) : (
+                      <>GH₵{(getItemUnitPrice(item) * item.quantity).toFixed(2)}</>
+                    )}
+                  </ItemPrice>
+                </CartItem>
+              );
+            })
           )}
           {/* <div>sku:{cart.variant.sku}</div> */}
         </CartItems>
@@ -322,6 +322,7 @@ const PageContainer = styled.div`
   width: 100%;
   margin: 0 auto;
   padding: 20px;
+  font-family: var(--font-body);
 `;
 
 const PageTitle = styled.h1`
@@ -383,8 +384,7 @@ const CartItem = styled.div`
 const ItemImage = styled.img`
   width: 100px;
   height: 100px;
-  object-fit: contain;
-  background-color: transparent;
+  object-fit: cover;
   border-radius: 8px;
   margin-right: 20px;
 `;

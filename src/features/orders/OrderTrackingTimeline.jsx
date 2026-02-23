@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import styled from 'styled-components';
+import { GOOGLE_MAPS_API_KEY } from '../../shared/config/appConfig';
 import {
   FaClock,
   FaCheckCircle,
@@ -169,7 +170,7 @@ const OrderTrackingTimeline = ({ orderId, showLiveTracking = true }) => {
             height="300"
             frameBorder="0"
             style={{ border: 0 }}
-            src={`https://www.google.com/maps/embed/v1/place?key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY || ''}&q=${driverLocation.lat},${driverLocation.lng}&zoom=15`}
+            src={`https://www.google.com/maps/embed/v1/place?key=${GOOGLE_MAPS_API_KEY || ''}&q=${driverLocation.lat},${driverLocation.lng}&zoom=15`}
             allowFullScreen
             title="Driver Location"
           />

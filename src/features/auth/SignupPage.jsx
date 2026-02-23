@@ -11,6 +11,11 @@ import InputField from './components/InputField';
 import PasswordField from './components/PasswordField';
 import CheckboxField from './components/CheckboxField';
 import { DEFAULT_FORM_VALUES, VALIDATION_RULES, sanitizeFormData } from './constants/formValidation';
+import {
+  getFacebookOAuthConfig,
+  getGoogleOAuthConfig,
+  getAppleOAuthConfig,
+} from '../../shared/config/oauthConfig';
 
 // Animations
 const fadeIn = keyframes`
@@ -39,18 +44,30 @@ export default function SignupPage() {
   const watchedEmail = watch("email");
   const watchedPhone = watch("phone");
 
+  const origin =
+    typeof window !== "undefined" && window.location?.origin
+      ? window.location.origin
+      : "";
+
+  const { enabled: isFacebookEnabled, url: facebookAuthUrl } =
+    getFacebookOAuthConfig(origin);
+  const { enabled: isGoogleEnabled, url: googleAuthUrl } =
+    getGoogleOAuthConfig(origin);
+  const { enabled: isAppleEnabled, url: appleAuthUrl } =
+    getAppleOAuthConfig(origin);
+
   const handleFacebookSignup = () => {
-    const facebookAuthUrl = `https://www.facebook.com/v17.0/dialog/oauth?client_id=1046655936440828&redirect_uri=${window.location.origin}/facebook-callback&scope=email,public_profile`;
+    if (!isFacebookEnabled || !facebookAuthUrl) return;
     window.location.href = facebookAuthUrl;
   };
 
   const handleGoogleSignup = () => {
-    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=YOUR_GOOGLE_CLIENT_ID&redirect_uri=${window.location.origin}/google-callback&response_type=code&scope=openid%20email%20profile`;
+    if (!isGoogleEnabled || !googleAuthUrl) return;
     window.location.href = googleAuthUrl;
   };
 
   const handleAppleSignup = () => {
-    const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=YOUR_APPLE_SERVICE_ID&redirect_uri=${window.location.origin}/apple-callback&response_type=code%20id_token&scope=email%20name&response_mode=web_message`;
+    if (!isAppleEnabled || !appleAuthUrl) return;
     window.location.href = appleAuthUrl;
   };
 
@@ -269,6 +286,7 @@ export default function SignupPage() {
               type="button"
               $bg="#1877f2" 
               $hover="#166fe5" 
+              disabled={!isFacebookEnabled}
               onClick={handleFacebookSignup}
               aria-label="Sign up with Facebook"
             >
@@ -280,6 +298,7 @@ export default function SignupPage() {
               $bg="#fff" 
               $hover="#f5f5f5" 
               $border="#e0e0e0" 
+              disabled={!isGoogleEnabled}
               onClick={handleGoogleSignup}
               aria-label="Sign up with Google"
             >
@@ -290,6 +309,7 @@ export default function SignupPage() {
               type="button"
               $bg="#000" 
               $hover="#333" 
+              disabled={!isAppleEnabled}
               onClick={handleAppleSignup}
               aria-label="Sign up with Apple"
             >

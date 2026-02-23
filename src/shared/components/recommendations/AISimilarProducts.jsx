@@ -9,13 +9,19 @@ import ProductCard from '../ProductCard';
 import { useAISimilar } from '../../hooks/useRecommendations';
 import { LoadingState, ErrorState } from '../../../components/loading';
 
-const AISimilarProducts = ({ productId, title = 'AI-Powered Similar Products', limit = 10 }) => {
+const AISimilarProducts = ({ productId, currentProduct, title = 'AI-Powered Similar Products', limit = 10 }) => {
   const { data, isLoading, error } = useAISimilar(productId, limit);
 
   const products = useMemo(() => {
     if (!data?.data?.products) return [];
-    return data.data.products;
-  }, [data]);
+
+    return data.data.products.filter(p => {
+      const isSameId = p.id === productId || p._id === productId || p.id === currentProduct?.id || p._id === currentProduct?._id;
+      const isSameName = p.name && currentProduct?.name && p.name.trim().toLowerCase() === currentProduct.name.trim().toLowerCase();
+
+      return !isSameId && !isSameName;
+    });
+  }, [data, productId, currentProduct]);
 
   const aiEnabled = useMemo(() => {
     return data?.aiEnabled || false;

@@ -1,49 +1,49 @@
 import api from './api';
 import logger from '../utils/logger';
 
-export const eazshopService = {
-  // Get all EazShop products (public endpoint)
-  getEazShopProducts: async () => {
+export const officialStoreService = {
+  // Get all Official Store products (public endpoint)
+  getOfficialStoreProducts: async () => {
     try {
       // Use public endpoint for homepage display
       const response = await api.get('/product/eazshop');
       return response.data;
     } catch (error) {
-      logger.error('Error fetching EazShop products:', error);
+      logger.error('Error fetching Official Store products:', error);
       // Return empty array on error to prevent homepage crash
       return { data: { products: [] }, results: 0 };
     }
   },
 
-  // Get EazShop orders (for admin)
-  getEazShopOrders: async () => {
+  // Get Official Store orders (for admin)
+  getOfficialStoreOrders: async () => {
     try {
       const response = await api.get('/eazshop/orders');
       return response.data;
     } catch (error) {
-      logger.error('Error fetching EazShop orders:', error);
+      logger.error('Error fetching Official Store orders:', error);
       throw error;
     }
   },
 
-  // Get EazShop shipping fees
-  getEazShopShippingFees: async () => {
+  // Get Official Store shipping fees
+  getOfficialStoreShippingFees: async () => {
     try {
       const response = await api.get('/eazshop/shipping-fees');
       return response.data;
     } catch (error) {
-      logger.error('Error fetching EazShop shipping fees:', error);
+      logger.error('Error fetching Official Store shipping fees:', error);
       throw error;
     }
   },
 
-  // Update EazShop shipping fees (admin only)
-  updateEazShopShippingFees: async (fees) => {
+  // Update Official Store shipping fees (admin only)
+  updateOfficialStoreShippingFees: async (fees) => {
     try {
       const response = await api.patch('/eazshop/shipping-fees', fees);
       return response.data;
     } catch (error) {
-      logger.error('Error updating EazShop shipping fees:', error);
+      logger.error('Error updating Official Store shipping fees:', error);
       throw error;
     }
   },

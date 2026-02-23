@@ -9,13 +9,19 @@ import ProductCard from '../ProductCard';
 import { useRelatedProducts } from '../../hooks/useRecommendations';
 import { LoadingState, ErrorState, EmptyState } from '../../../components/loading';
 
-const RelatedProductsCarousel = ({ productId, title = 'Related Products', limit = 10 }) => {
+const RelatedProductsCarousel = ({ productId, currentProduct, title = 'Related Products', limit = 10 }) => {
   const { data, isLoading, error } = useRelatedProducts(productId, limit);
 
   const products = useMemo(() => {
     if (!data?.data?.products) return [];
-    return data.data.products;
-  }, [data]);
+
+    return data.data.products.filter(p => {
+      const isSameId = p.id === productId || p._id === productId || p.id === currentProduct?.id || p._id === currentProduct?._id;
+      const isSameName = p.name && currentProduct?.name && p.name.trim().toLowerCase() === currentProduct.name.trim().toLowerCase();
+
+      return !isSameId && !isSameName;
+    });
+  }, [data, productId, currentProduct]);
 
   if (isLoading) {
     return (

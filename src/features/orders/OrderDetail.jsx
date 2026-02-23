@@ -34,7 +34,7 @@ import Button from '../../shared/components/Button';
 const OrderDetail = () => {
   const { id: orderId } = useParams();
   const navigate = useNavigate();
-
+  
   // Guard against missing orderId
   if (!orderId) {
     return (
@@ -45,7 +45,7 @@ const OrderDetail = () => {
       />
     );
   }
-
+  
   const { data: orderData, isLoading, isError, refetch } = useGetUserOrderById(orderId);
   const order = useMemo(() => orderData?.order, [orderData]);
   const { data: myReviewsData } = useGetMyReviews({}, { enabled: !!order?._id });
@@ -228,8 +228,8 @@ const OrderDetail = () => {
       console.error('[OrderDetail] Pay Now error:', error);
       setPayNowError(
         error?.response?.data?.message ||
-        error?.message ||
-        'Failed to initialize payment. Please try again.'
+          error?.message ||
+          'Failed to initialize payment. Please try again.'
       );
     } finally {
       setIsPayNowLoading(false);
@@ -267,7 +267,7 @@ const OrderDetail = () => {
   // Check if order is eligible for refund
   const isEligibleForRefund = useMemo(() => {
     if (!order) return false;
-
+    
     // Order must be paid (consider all paid indicators)
     const orderIsPaid =
       order.paymentStatus === 'paid' ||
@@ -277,36 +277,36 @@ const OrderDetail = () => {
     if (!orderIsPaid) {
       return false;
     }
-
+    
     // Order cannot already be refunded
     if (order.paymentStatus === 'refunded' || order.currentStatus === 'refunded') {
       return false;
     }
-
+    
     // Order cannot be cancelled
     if (order.currentStatus === 'cancelled' || order.status === 'cancelled') {
       return false;
     }
-
+    
     // Check if refund already requested and pending
     if (refundStatus?.requested && refundStatus?.status === 'pending') {
       return false;
     }
-
+    
     // Check if refund already approved
     if (refundStatus?.requested && refundStatus?.status === 'approved') {
       return false;
     }
-
+    
     // Check refund window (30 days from delivery or order date)
     const refundWindowDays = 30;
     const orderDate = order.deliveredAt ? new Date(order.deliveredAt) : new Date(order.createdAt);
     const daysSinceOrder = (Date.now() - orderDate.getTime()) / (1000 * 60 * 60 * 24);
-
+    
     if (daysSinceOrder > refundWindowDays) {
       return false;
     }
-
+    
     return true;
   }, [order, refundStatus]);
 
@@ -400,11 +400,11 @@ const OrderDetail = () => {
 
   const handleSubmitRefundRequest = async (e) => {
     e.preventDefault();
-
+    
     // ITEM-LEVEL REFUND
     if (refundMode === 'items') {
       const selectedItemsArray = Object.keys(selectedItems);
-
+      
       if (selectedItemsArray.length === 0) {
         alert('Please select at least one item to refund');
         return;
@@ -424,7 +424,7 @@ const OrderDetail = () => {
         selectedItemsArray.map(async (itemId) => {
           const itemData = selectedItems[itemId];
           const orderItem = order.orderItems.find(i => (i._id || i.id) === itemId);
-
+          
           let imageUrls = [];
           if (itemData.images && itemData.images.length > 0) {
             imageUrls = await convertImagesToBase64(itemData.images);
@@ -471,9 +471,9 @@ const OrderDetail = () => {
         alert('Please select a refund reason');
         return;
       }
-
+      
       const amount = parseFloat(refundAmount) || order?.totalPrice || 0;
-
+      
       requestRefund(
         {
           orderId,
@@ -566,7 +566,7 @@ const OrderDetail = () => {
             <FaArrowLeft />
             <span>Back to Orders</span>
           </BackButton>
-
+          
           <OrderNumber>
             <FaShoppingBag />
             <span>Order #{order.orderNumber}</span>
@@ -586,7 +586,7 @@ const OrderDetail = () => {
             </MetaItem>
           )}
           <MetaItem>
-            <strong>Status:</strong>
+            <strong>Status:</strong> 
             <StatusBadge $status={order ? getOrderDisplayStatus(order).badgeStatus : 'pending'}>
               {order ? getOrderDisplayStatus(order).displayLabel : 'Pending'}
             </StatusBadge>
@@ -594,10 +594,10 @@ const OrderDetail = () => {
               order.paymentStatus === 'paid' ||
               order.isPaid === true ||
               !!order.paidAt) && (
-                <PaymentStatusBadge>
-                  Payment Completed
-                </PaymentStatusBadge>
-              )}
+              <PaymentStatusBadge>
+                Payment Completed
+              </PaymentStatusBadge>
+            )}
             {(isPreorderLocal || isPreorderInternational) && (
               <PreorderBadge>
                 {isPreorderInternational ? 'International Pre-Order' : 'Pre-Order'}
@@ -764,18 +764,18 @@ const OrderDetail = () => {
                     )}
                   </>
                 )}
-
+                
                 {/* Delivery Information */}
                 <InfoItem>
                   <InfoLabel>Delivery Method</InfoLabel>
                   <InfoValue>
-                    {order.deliveryMethod === 'pickup_center'
+                    {order.deliveryMethod === 'pickup_center' 
                       ? 'Pickup from Saiisai Center'
                       : order.deliveryMethod === 'dispatch'
-                        ? 'Saiisai Dispatch Rider'
-                        : order.deliveryMethod === 'seller_delivery'
-                          ? "Seller's Own Delivery"
-                          : 'Standard Delivery'}
+                      ? 'Saiisai Dispatch Rider'
+                      : order.deliveryMethod === 'seller_delivery'
+                      ? "Seller's Own Delivery"
+                      : 'Standard Delivery'}
                   </InfoValue>
                 </InfoItem>
                 {order.shippingType && (
@@ -785,16 +785,16 @@ const OrderDetail = () => {
                       {isPreorderInternational
                         ? 'International Shipping'
                         : order.shippingType === 'same_day'
-                          ? 'Express Shipping (Same Day)'
-                          : order.shippingType === 'express'
-                            ? 'Express Delivery (1-2 Days)'
-                            : order.shippingType === 'standard'
-                              ? 'Standard Delivery (2-3 Days)'
-                              : order.deliverySpeed === 'same_day'
-                                ? 'Express Shipping (Same Day)'
-                                : order.deliverySpeed === 'next_day'
-                                  ? 'Next Day Delivery'
-                                  : 'Standard Delivery'}
+                        ? 'Express Shipping (Same Day)'
+                        : order.shippingType === 'express'
+                        ? 'Express Delivery (1-2 Days)'
+                        : order.shippingType === 'standard'
+                        ? 'Standard Delivery (2-3 Days)'
+                        : order.deliverySpeed === 'same_day'
+                        ? 'Express Shipping (Same Day)'
+                        : order.deliverySpeed === 'next_day'
+                        ? 'Next Day Delivery'
+                        : 'Standard Delivery'}
                     </InfoValue>
                   </InfoItem>
                 )}
@@ -875,8 +875,8 @@ const OrderDetail = () => {
                           <BreakdownReason>
                             ({breakdown.reason === 'sameCity' ? 'Same City'
                               : breakdown.reason === 'crossCity' ? 'Cross City'
-                                : breakdown.reason === 'heavyItem' ? 'Heavy Item'
-                                  : breakdown.reason})
+                              : breakdown.reason === 'heavyItem' ? 'Heavy Item'
+                              : breakdown.reason})
                           </BreakdownReason>
                         )}
                       </BreakdownValue>
@@ -970,16 +970,16 @@ const OrderDetail = () => {
                 <OrderItemsList>
                   {(order?.orderItems || []).map((item, index) => {
                     // Check if order is completed or delivered (not just shipped)
-                    const isCompleted = order.status === 'completed' ||
-                      order.status === 'delivered' ||
-                      order.orderStatus === 'completed' ||
-                      order.orderStatus === 'delievered' ||
-                      order.FulfillmentStatus === 'completed' ||
-                      order.FulfillmentStatus === 'delievered';
-
+                    const isCompleted = order.status === 'completed' || 
+                                       order.status === 'delivered' ||
+                                       order.orderStatus === 'completed' ||
+                                       order.orderStatus === 'delievered' ||
+                                       order.FulfillmentStatus === 'completed' ||
+                                       order.FulfillmentStatus === 'delievered';
+                    
                     // Use a unique key: prefer item's own _id, fallback to product._id-index combination
                     const uniqueKey = item._id || item.id || `${item.product?._id || item.product?.id || 'item'}-${index}`;
-
+                    
                     return (
                       <OrderItemCard key={uniqueKey}>
                         <ItemImage src={item.product.imageCover} alt={item.product.name} />
@@ -1080,8 +1080,8 @@ const OrderDetail = () => {
         </DangerButton>
         <ActionGroup>
           {isEligibleForRefund && (
-            <Button
-              variant="secondary"
+            <Button 
+              variant="secondary" 
               onClick={handleRequestRefund}
               leftIcon={<FaUndo />}
             >
@@ -1094,10 +1094,10 @@ const OrderDetail = () => {
               style={{ textDecoration: 'none' }}
             >
               <RefundStatusBadge $status={refundStatus.status} $clickable>
-                Refund {refundStatus.status === 'pending' ? 'Pending' :
-                  refundStatus.status === 'approved' ? 'Approved' :
-                    refundStatus.status === 'rejected' ? 'Rejected' :
-                      refundStatus.status === 'processing' ? 'Processing' :
+                Refund {refundStatus.status === 'pending' ? 'Pending' : 
+                        refundStatus.status === 'approved' ? 'Approved' :
+                        refundStatus.status === 'rejected' ? 'Rejected' :
+                        refundStatus.status === 'processing' ? 'Processing' :
                         refundStatus.status === 'completed' ? 'Completed' : 'Requested'}
                 {' →'}
               </RefundStatusBadge>
@@ -1214,11 +1214,11 @@ const OrderDetail = () => {
                           const availableQty = maxQty - alreadyRefundedQty;
                           // Check if item can be refunded (not already fully refunded and not in pending/approved state)
                           const refundStatus = item.refundStatus || 'none';
-                          const canRefund = availableQty > 0 &&
+                          const canRefund = availableQty > 0 && 
                             (refundStatus === 'none' || refundStatus === 'rejected') &&
-                            refundStatus !== 'requested' &&
-                            refundStatus !== 'seller_review' &&
-                            refundStatus !== 'admin_review' &&
+                            refundStatus !== 'requested' && 
+                            refundStatus !== 'seller_review' && 
+                            refundStatus !== 'admin_review' && 
                             refundStatus !== 'approved';
 
                           return (
@@ -1429,10 +1429,10 @@ const OrderDetail = () => {
                   >
                     Cancel
                   </CancelButton>
-                  <SubmitButton
-                    type="submit"
+                  <SubmitButton 
+                    type="submit" 
                     disabled={
-                      isRefundPending ||
+                      isRefundPending || 
                       (refundMode === 'items' && Object.keys(selectedItems).length === 0) ||
                       (refundMode === 'whole' && !refundReason)
                     }
@@ -1489,7 +1489,7 @@ const BackButton = styled.button`
   gap: var(--spacing-sm);
   background: none;
   border: none;
-  color: var(--primary-700);
+  color: var(--color-brand-600);
   font-weight: var(--font-semibold);
   cursor: pointer;
   padding: var(--spacing-sm) var(--spacing-md);
@@ -1498,7 +1498,7 @@ const BackButton = styled.button`
   font-size: var(--font-size-sm);
 
   &:hover {
-    background: var(--primary-50);
+    background: var(--color-brand-50);
   }
 
   svg {
@@ -1605,7 +1605,7 @@ const PreorderBadge = styled.span`
 `;
 
 const TrackingLink = styled.span`
-  color: var(--primary-700);
+  color: var(--color-primary-600);
   cursor: pointer;
   text-decoration: underline;
   font-weight: 500;
@@ -1625,7 +1625,7 @@ const StatusBadge = styled.span`
   text-transform: capitalize;
   
   background: ${props => {
-    switch (props.$status) {
+    switch(props.$status) {
       case 'paid': return 'var(--color-green-100)';
       case 'delivered': return 'var(--color-green-100)';
       case 'shipped': return 'var(--color-blue-100)';
@@ -1635,7 +1635,7 @@ const StatusBadge = styled.span`
   }};
   
   color: ${props => {
-    switch (props.$status) {
+    switch(props.$status) {
       case 'paid': return 'var(--color-green-700)';
       case 'delivered': return 'var(--color-green-700)';
       case 'shipped': return 'var(--color-blue-700)';
@@ -1952,7 +1952,7 @@ const SellerAvatar = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--primary-700);
+  color: var(--color-primary-600);
   font-size: var(--font-size-lg);
 `;
 
@@ -1997,7 +1997,7 @@ const OrderItemCard = styled.div`
 const ItemImage = styled.img`
   width: 60px;
   height: 60px;
-  object-fit: contain;
+  object-fit: cover;
   border-radius: var(--border-radius-md);
   border: 2px solid var(--color-primary-200);
   flex-shrink: 0;
@@ -2063,7 +2063,7 @@ const ReviewButton = styled.button`
 
 const ItemTotal = styled.div`
   font-weight: var(--font-semibold);
-  color: var(--primary-700);
+  color: var(--color-primary-600);
   font-size: var(--font-size-sm);
   flex-shrink: 0;
 `;
@@ -2556,7 +2556,7 @@ const ImagePreviewItem = styled.div`
   img {
     width: 80px;
     height: 80px;
-    object-fit: contain;
+    object-fit: cover;
     border-radius: var(--border-radius-sm);
     border: 1px solid var(--color-grey-200);
   }

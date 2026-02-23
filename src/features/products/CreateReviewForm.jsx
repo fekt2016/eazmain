@@ -1,8 +1,50 @@
 import styled from "styled-components";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FaStar, FaStarHalfAlt, FaImage, FaTimes } from "react-icons/fa";
 import { useCreateReview } from "../../shared/hooks/useReview";
 import { toast } from "react-toastify";
+import api from "../../shared/services/api";
+import logger from "../../shared/utils/logger";
+
+const MAX_IMAGES = 5;
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+
+async function uploadReviewImages(files) {
+  if (!files || files.length === 0) return [];
+
+  const uploadSingle = async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await api.post("/uploads/reviews", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      const url =
+        response?.data?.data?.url ||
+        response?.data?.data?.secureUrl ||
+        response?.data?.url ||
+        response?.data?.secureUrl;
+
+      if (!url || typeof url !== "string") {
+        throw new Error("Upload succeeded but no image URL was returned");
+      }
+
+      return url;
+    } catch (error) {
+      logger.error("[CreateReviewForm] Image upload failed:", {
+        message: error?.message,
+        name: error?.name,
+      });
+      throw error;
+    }
+  };
+
+  return Promise.all(files.map(uploadSingle));
+}
 
 export default function CreateReviewForm({ productId, orderId, orderItemId, onSuccess, onCancel }) {
   const [rating, setRating] = useState(0);
@@ -11,7 +53,22 @@ export default function CreateReviewForm({ productId, orderId, orderItemId, onSu
   const [review, setReview] = useState("");
   const [images, setImages] = useState([]);
   const [imageFiles, setImageFiles] = useState([]);
+   const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const createReviewMutation = useCreateReview();
+  const imageUrlsRef = useRef([]);
+
+  useEffect(() => {
+    imageUrlsRef.current = images;
+  }, [images]);
+
+  useEffect(() => {
+    return () => {
+      imageUrlsRef.current.forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
+    };
+  }, []);
 
   // Handle half-star rating click
   const handleStarClick = (starValue, isHalf) => {
@@ -30,39 +87,82 @@ export default function CreateReviewForm({ productId, orderId, orderItemId, onSu
   };
 
   const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length + images.length > 5) {
-      toast.error("Maximum 5 images allowed");
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    const existingCount = images.length;
+    if (existingCount >= MAX_IMAGES) {
+      toast.error(`You can upload a maximum of ${MAX_IMAGES} images`);
       return;
     }
 
-    files.forEach((file) => {
+    const existingKeys = new Set(
+      imageFiles.map(
+        (file) => `${file.name}_${file.size}_${file.lastModified}`
+      )
+    );
+
+    const nextFiles = [];
+
+    for (const file of files) {
+      const key = `${file.name}_${file.size}_${file.lastModified}`;
+
+      if (existingKeys.has(key)) {
+        toast.error(`"${file.name}" is already selected`);
+        continue;
+      }
+
       if (!file.type.startsWith("image/")) {
         toast.error(`${file.name} is not an image file`);
-        return;
+        continue;
       }
 
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error(`${file.name} is too large. Maximum size is 5MB`);
-        return;
+      if (file.size > MAX_IMAGE_SIZE_BYTES) {
+        toast.error(
+          `${file.name} is too large. Maximum size is 5MB`
+        );
+        continue;
       }
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImages((prev) => [...prev, e.target.result]);
-        setImageFiles((prev) => [...prev, file]);
-      };
-      reader.readAsDataURL(file);
-    });
+      nextFiles.push(file);
+      existingKeys.add(key);
+    }
+
+    const availableSlots = MAX_IMAGES - existingCount;
+    const filesToAdd = nextFiles.slice(0, availableSlots);
+
+    if (!filesToAdd.length) {
+      return;
+    }
+
+    const newUrls = filesToAdd.map((file) => URL.createObjectURL(file));
+
+    setImages((prev) => [...prev, ...newUrls]);
+    setImageFiles((prev) => [...prev, ...filesToAdd]);
+
+    if (filesToAdd.length < nextFiles.length) {
+      toast.error(`You can upload a maximum of ${MAX_IMAGES} images`);
+    }
+
+    // Reset input so the same file can be re-selected after removal
+    e.target.value = "";
   };
 
   const removeImage = (index) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
+    setImages((prev) => {
+      const url = prev[index];
+      if (url) URL.revokeObjectURL(url);
+      return prev.filter((_, i) => i !== index);
+    });
     setImageFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (isUploading || createReviewMutation.isPending) {
+      return;
+    }
 
     if (!rating || !title || !review) {
       toast.error("Please fill all required fields");
@@ -74,11 +174,28 @@ export default function CreateReviewForm({ productId, orderId, orderItemId, onSu
       return;
     }
 
+    setUploadError("");
+
+    let uploadedImageUrls = [];
+
+    if (imageFiles.length > 0) {
+      try {
+        setIsUploading(true);
+        uploadedImageUrls = await uploadReviewImages(imageFiles);
+      } catch (error) {
+        setUploadError(
+          error?.response?.data?.message ||
+            error?.message ||
+            "Failed to upload images. Please check your connection and try again."
+        );
+        setIsUploading(false);
+        return;
+      } finally {
+        setIsUploading(false);
+      }
+    }
+
     try {
-      // TODO: Upload images to cloud storage and get URLs
-      // For now, we'll send the review without images
-      // In production, upload images first, then create review with image URLs
-      
       const reviewData = {
         product: productId,
         order: orderId,
@@ -86,7 +203,7 @@ export default function CreateReviewForm({ productId, orderId, orderItemId, onSu
         rating,
         title: title.trim(),
         review: review.trim(),
-        images: [], // Will be populated after image upload
+        images: uploadedImageUrls,
       };
 
       await createReviewMutation.mutateAsync(reviewData);
@@ -177,10 +294,10 @@ export default function CreateReviewForm({ productId, orderId, orderItemId, onSu
             onChange={handleImageUpload}
             style={{ display: "none" }}
             id="image-upload"
-            disabled={images.length >= 5}
+            disabled={images.length >= MAX_IMAGES}
           />
-          <UploadButton htmlFor="image-upload" as="label" $disabled={images.length >= 5}>
-            <FaImage /> Add Photos ({images.length}/5)
+          <UploadButton htmlFor="image-upload" as="label" $disabled={images.length >= MAX_IMAGES}>
+            <FaImage /> Add Photos ({images.length}/{MAX_IMAGES})
           </UploadButton>
         </ImageUpload>
         {images.length > 0 && (
@@ -195,6 +312,10 @@ export default function CreateReviewForm({ productId, orderId, orderItemId, onSu
             ))}
           </ImagePreview>
         )}
+        {isUploading && (
+          <UploadStatusText>Uploading images… Please wait.</UploadStatusText>
+        )}
+        {uploadError && <UploadErrorText>{uploadError}</UploadErrorText>}
       </InputGroup>
 
       <FormActions>
@@ -205,9 +326,19 @@ export default function CreateReviewForm({ productId, orderId, orderItemId, onSu
         )}
         <SubmitButton
           type="submit"
-          disabled={createReviewMutation.isPending || !rating || !title || !review}
+          disabled={
+            createReviewMutation.isPending ||
+            isUploading ||
+            !rating ||
+            !title ||
+            !review
+          }
         >
-          {createReviewMutation.isPending ? "Submitting..." : "Submit Review"}
+          {createReviewMutation.isPending || isUploading
+            ? "Submitting..."
+            : uploadError
+            ? "Retry upload & submit"
+            : "Submit Review"}
         </SubmitButton>
       </FormActions>
     </FormContainer>

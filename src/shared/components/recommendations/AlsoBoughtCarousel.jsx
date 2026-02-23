@@ -9,13 +9,19 @@ import ProductCard from '../ProductCard';
 import { useAlsoBought } from '../../hooks/useRecommendations';
 import { LoadingState, ErrorState } from '../../../components/loading';
 
-const AlsoBoughtCarousel = ({ productId, title = 'Customers Also Bought', limit = 10 }) => {
+const AlsoBoughtCarousel = ({ productId, currentProduct, title = 'Customers Also Bought', limit = 10 }) => {
   const { data, isLoading, error } = useAlsoBought(productId, limit);
 
   const products = useMemo(() => {
     if (!data?.data?.products) return [];
-    return data.data.products;
-  }, [data]);
+
+    return data.data.products.filter(p => {
+      const isSameId = p.id === productId || p._id === productId || p.id === currentProduct?.id || p._id === currentProduct?._id;
+      const isSameName = p.name && currentProduct?.name && p.name.trim().toLowerCase() === currentProduct.name.trim().toLowerCase();
+
+      return !isSameId && !isSameName;
+    });
+  }, [data, productId, currentProduct]);
 
   if (isLoading) {
     return (

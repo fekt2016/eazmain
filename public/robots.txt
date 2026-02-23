@@ -32,4 +32,4 @@ Allow: /policies/
 Allow: /sitemap
 
 # Sitemap location
-Sitemap: https://saiisai.com/sitemap.xml
+Sitemap: https://api.saiisai.com/api/v1/seo/sitemap.xml

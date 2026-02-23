@@ -312,7 +312,7 @@ export const useCartActions = () => {
       // STEP 2: HARD GUARD - Block multi-variant products without SKU
       if (variantCount > 1 && (!finalSku || typeof finalSku !== 'string' || !finalSku.trim())) {
         // DEV ASSERTION
-        if ((typeof __DEV__ !== 'undefined' && __DEV__) || process.env.NODE_ENV !== 'production') {
+        if ((typeof __DEV__ !== 'undefined' && __DEV__) || !import.meta.env.PROD) {
           logger.warn('[useCart] 🚫 DEV ASSERT: Multi-variant item without SKU blocked', {
             productId,
             productName: product?.name,

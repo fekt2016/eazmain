@@ -27,7 +27,7 @@ const PasswordField = ({ id, label, error, required = false, ...inputProps }) =>
             aria-pressed={showPassword}
             tabIndex={0}
           >
-            {showPassword ? <FaEyeSlash /> : <FaEye />}
+            {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
           </ToggleButton>
         }
         {...inputProps}
@@ -45,13 +45,18 @@ const ToggleButton = styled.button`
   background: none;
   border: none;
   color: #999;
-  font-size: 18px;
   cursor: pointer;
   padding: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: color 0.2s;
+
+  svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+  }
   
   &:hover {
     color: #667eea;

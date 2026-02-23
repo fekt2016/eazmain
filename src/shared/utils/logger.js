@@ -15,6 +15,7 @@
 
 const isDevelopment = import.meta.env.DEV;
 const isProduction = import.meta.env.PROD;
+import { captureError } from "../services/errorMonitoring";
 
 class Logger {
   /**
@@ -51,11 +52,23 @@ class Logger {
    */
   error(...args) {
     console.error(...args);
-    
-    // In production, also send to error reporting service (when implemented)
-    if (isProduction) {
-      // TODO: Send to error reporting service (e.g., Sentry)
-      // errorReportingService.captureException(new Error(args.join(' ')));
+
+    // In development, keep errors local to console only
+    if (!isProduction) return;
+
+    try {
+      const [first, ...rest] = args;
+      const baseError =
+        first instanceof Error ? first : new Error(String(first || 'Unknown error'));
+
+      const hasAdditional = rest && rest.length > 0;
+
+      captureError(baseError, {
+        source: 'logger',
+        hasAdditionalContext: hasAdditional,
+      });
+    } catch {
+      // Never let monitoring failures break the app
     }
   }
 

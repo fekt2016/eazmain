@@ -61,6 +61,7 @@ const SitemapPage = lazy(() => import("../pages/sitemap/SitemapPage"));
 const ReturnRefundPolicyPage = lazy(() => import("../pages/policies/ReturnRefundPolicyPage"));
 const PrivacyPolicyPage = lazy(() => import("../pages/policies/PrivacyPolicyPage"));
 const TermsPage = lazy(() => import("../pages/policies/TermsPage"));
+const DataDeletionPage = lazy(() => import("../pages/policies/DataDeletionPage"));
 const VatTaxPolicyPage = lazy(() => import("../pages/policies/VatTaxPolicyPage"));
 const ProductCarePage = lazy(() => import("../pages/product-care/ProductCarePage"));
 const PartnerPage = lazy(() => import("../pages/partner/PartnerPage"));
@@ -214,6 +215,14 @@ const MainRoutes = () => {
         element={
           <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
             <TermsPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.DATA_DELETION}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <DataDeletionPage />
           </Suspense>
         }
       />

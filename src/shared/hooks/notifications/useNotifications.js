@@ -140,7 +140,7 @@ export const useUnreadCount = () => {
   });
 
   // Debug logging
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     console.log('[EazMain useUnreadCount] 📊 Query state:', {
       isLoading: query.isLoading,
       isError: query.isError,

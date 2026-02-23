@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
-import { FaEnvelope, FaLock, FaPhone, FaArrowLeft } from "react-icons/fa";
+import { FaEnvelope, FaLock, FaPhone, FaArrowLeft, FaEye, FaEyeSlash, FaFacebook } from "react-icons/fa";
 import useAuth from '../../shared/hooks/useAuth';
 import { useMergeWishlists } from '../../shared/hooks/useWishlist';
 import { useCartActions } from '../../shared/hooks/useCart';
@@ -10,6 +10,8 @@ import storage from '../../shared/utils/storage';
 import { devicesMax } from '../../shared/styles/breakpoint';
 import logger from '../../shared/utils/logger';
 import { sanitizeEmail, sanitizePhone, sanitizeText } from '../../shared/utils/sanitize';
+import { getFacebookOAuthConfig } from '../../shared/config/oauthConfig';
+import GoogleLoginButton from "./GoogleLoginButton";
 
 // Animations
 const fadeIn = keyframes`
@@ -31,6 +33,7 @@ export default function LoginPage() {
     twoFactorCode: "",
   });
   const [step, setStep] = useState("credentials"); // 'credentials', '2fa'
+  const [showPassword, setShowPassword] = useState(false);
   const [twoFactorCode, setTwoFactorCode] = useState("");
   const [loginSessionId, setLoginSessionId] = useState(null);
   const { mutate: merge } = useMergeWishlists();
@@ -45,6 +48,16 @@ export default function LoginPage() {
   // Get redirectTo from URL params or storage
   const redirectTo = searchParams.get('redirectTo') || storage.getRedirect() || '/';
 
+  const origin = typeof window !== "undefined" && window.location?.origin ? window.location.origin : "";
+  const { enabled: isFacebookEnabled, url: facebookAuthUrl } = getFacebookOAuthConfig(origin);
+
+  const handleFacebookLogin = () => {
+    if (!isFacebookEnabled || !facebookAuthUrl) {
+      setFieldErrors((prev) => ({ ...prev, password: "Facebook sign-in is not configured for this app." }));
+      return;
+    }
+    window.location.href = facebookAuthUrl;
+  };
   const submitHandler = (e) => {
     e.preventDefault();
 
@@ -325,7 +338,7 @@ export default function LoginPage() {
                   <InputWrapper>
                     <InputIcon><FaLock /></InputIcon>
                     <Input
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       id="password"
                       value={state.password}
                       onChange={(e) => {
@@ -340,7 +353,17 @@ export default function LoginPage() {
                       required
                       maxLength={128}
                       autoComplete="current-password"
+                      $hasPasswordToggle
                     />
+                    <PasswordToggleButton
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      aria-pressed={showPassword}
+                      tabIndex={0}
+                    >
+                      {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                    </PasswordToggleButton>
                   </InputWrapper>
                   <ForgotPasswordLink to="/forgot-password">
                     Forgot password?
@@ -431,6 +454,29 @@ export default function LoginPage() {
               </Button>
             )}
           </StyledForm>
+
+          {step === "credentials" && (
+            <>
+              <Divider>
+                <DividerLine />
+                <DividerText>or continue with</DividerText>
+                <DividerLine />
+              </Divider>
+              <SocialButtons>
+                <SocialButton
+                  type="button"
+                  $bg="#1877f2"
+                  $hover="#166fe5"
+                  onClick={handleFacebookLogin}
+                  aria-label="Continue with Facebook"
+                >
+                  <FaFacebook color="white" size={18} />
+                  <span>Facebook</span>
+                </SocialButton>
+                <GoogleLoginButton appType="buyer" />
+              </SocialButtons>
+            </>
+          )}
 
           <Footer>
             Don't have an account? <Link to="/signup">Create account</Link>
@@ -575,6 +621,8 @@ const Label = styled.label`
 
 const InputWrapper = styled.div`
   position: relative;
+  display: flex;
+  align-items: center;
 `;
 
 const InputIcon = styled.div`
@@ -586,9 +634,42 @@ const InputIcon = styled.div`
   font-size: 18px;
 `;
 
+const PasswordToggleButton = styled.button`
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #555;
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+  z-index: 3;
+
+  svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+  }
+
+  &:hover {
+    color: #667eea;
+  }
+
+  &:focus {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+`;
+
 const Input = styled.input`
   width: 100%;
-  padding: 14px 16px 14px 48px;
+  padding: 14px ${(props) => (props.$hasPasswordToggle ? "48px" : "16px")} 14px 48px;
   border: 2px solid #eee;
   border-radius: 12px;
   font-size: 16px;
@@ -636,6 +717,66 @@ const ForgotPasswordLink = styled(Link)`
   
   &:hover {
     color: #667eea;
+  }
+`;
+
+const Divider = styled.div`
+  display: flex;
+  align-items: center;
+  margin: 24px 0 16px;
+`;
+
+const DividerLine = styled.div`
+  flex: 1;
+  height: 1px;
+  background-color: #eee;
+`;
+
+const DividerText = styled.span`
+  padding: 0 16px;
+  color: #999;
+  font-size: 14px;
+  font-weight: 500;
+`;
+
+const SocialButtons = styled.div`
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+`;
+
+const SocialButton = styled.button`
+  flex: 1;
+  min-width: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: ${(props) => (props.$border ? `1px solid ${props.$border}` : "none")};
+  background: ${(props) => props.$bg || "#fff"};
+  color: ${(props) => (props.$bg === "#1877f2" ? "white" : "#333")};
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    background: ${(props) => props.$hover || "#f5f5f5"};
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  }
+
+  &:focus {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
   }
 `;
 

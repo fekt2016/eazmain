@@ -1,5 +1,6 @@
 import axios from "axios";
 import logger from "../utils/logger";
+import { API_BASE_URL } from "../config/appConfig";
 
 // API configuration
 // SECURITY: Use environment variables for API URLs
@@ -84,9 +85,8 @@ const getBaseURL = () => {
     return "http://localhost:4000/api/v1";
   }
   
-  // Check for API_BASE_URL environment variable
-  // Supports both VITE_API_BASE_URL and VITE_API_URL for backward compatibility
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
+  // Check for API_BASE_URL environment variable (centralized in appConfig)
+  const apiBaseUrl = API_BASE_URL;
   
   if (apiBaseUrl) {
     // Remove trailing slashes and ensure /api/v1 is appended if not present
@@ -468,7 +468,7 @@ api.interceptors.response.use(
       // Check if this is a notification endpoint (should NOT trigger logout)
       if (isNotification) {
         // 401 on notification endpoint = might be cookie issue, not auth failure
-        if ((typeof __DEV__ !== 'undefined' && __DEV__) || process.env.NODE_ENV !== 'production') {
+        if ((typeof __DEV__ !== 'undefined' && __DEV__) || !import.meta.env.PROD) {
           console.debug('[API] 401 on notification endpoint - NOT triggering logout');
           console.debug('[API] Endpoints: /notifications, /notifications/:id/read');
           console.debug('[API] This might be a cookie issue. User session may still be valid.');
@@ -477,13 +477,13 @@ api.interceptors.response.use(
         error.isNotificationError = true;
       } else if (isCriticalAuthEndpoint) {
         // 401 on auth endpoint = user is not authenticated (normal state)
-        if ((typeof __DEV__ !== 'undefined' && __DEV__) || process.env.NODE_ENV !== 'production') {
+        if ((typeof __DEV__ !== 'undefined' && __DEV__) || !import.meta.env.PROD) {
           console.debug('[API] User unauthenticated (401) on critical auth endpoint - will trigger logout');
         }
         // Don't set isNotificationError - let useAuth handle logout
       } else {
         // 401 on other endpoint = might be temporary or session issue
-        if ((typeof __DEV__ !== 'undefined' && __DEV__) || process.env.NODE_ENV !== 'production') {
+        if ((typeof __DEV__ !== 'undefined' && __DEV__) || !import.meta.env.PROD) {
           console.debug('[API] 401 on non-critical endpoint - NOT auto-logging out');
         }
       }

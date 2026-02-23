@@ -7,7 +7,7 @@ import Card from '../../components/ui/Card';
 import SectionTitle from '../../components/ui/SectionTitle';
 import Button from '../../components/ui/Button';
 import useProduct from '../../shared/hooks/useProduct';
-import { useEazShop } from '../../shared/hooks/useEazShop';
+import { useOfficialStore } from '../../shared/hooks/useOfficialStore';
 import useCategory from '../../shared/hooks/useCategory';
 import ProductCard from '../../shared/components/ProductCard';
 import HeroSection from './components/HeroSection';
@@ -31,8 +31,8 @@ const HomePage = () => {
   // Fetch data
   const { getProducts } = useProduct();
   const { data: productsData } = getProducts;
-  const { useGetEazShopProducts } = useEazShop();
-  const { data: eazshopData } = useGetEazShopProducts();
+  const { useGetOfficialStoreProducts } = useOfficialStore();
+  const { data: officialStoreData } = useGetOfficialStoreProducts();
   const { getCategories } = useCategory();
   const { data: categoriesData } = getCategories;
 
@@ -63,10 +63,10 @@ const HomePage = () => {
   return (
     <HomePageWrapper>
       <HeroSection />
-      
+
       <Container>
         <CategoriesSection categories={categories} />
-        
+
         <SectionTitle title="Featured Products" subtitle="Our hand-picked selection" />
         <Grid responsiveColumns>
           {featuredProducts.map(product => (

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FcGoogle } from "react-icons/fc";
 import {
   ContentCard,
   CardTitle,
@@ -12,8 +13,9 @@ import {
 import { ButtonSpinner } from "../../../components/loading";
 import useAuth from "../../../shared/hooks/useAuth";
 import SecuritySettingsSection from "../../../shared/components/profile/SecuritySettionsSection";
+import styled from "styled-components";
 
-const SecurityTab = ({ userInfo }) => {
+const SecurityTab = ({ userInfo, connectedAccounts: connectedAccountsProp }) => {
   const { changePassword } = useAuth();
   const [passwordForm, setPasswordForm] = useState({
     passwordCurrent: "",
@@ -43,8 +45,29 @@ const SecurityTab = ({ userInfo }) => {
     });
   };
 
+  const connectedAccounts = connectedAccountsProp || userInfo?.connectedAccounts || {};
+  const googleConnected = !!connectedAccounts.google;
+
   return (
     <>
+      <ContentCard>
+        <CardTitle>Connected accounts</CardTitle>
+        <CardDescription>
+          Sign-in methods linked to your account. You can use these to log in.
+        </CardDescription>
+        <ConnectedList>
+          <ConnectedItem>
+            <FcGoogle size={20} />
+            <span>Google</span>
+            {googleConnected ? (
+              <ConnectedBadge $connected>Connected</ConnectedBadge>
+            ) : (
+              <ConnectedBadge>Not connected</ConnectedBadge>
+            )}
+          </ConnectedItem>
+        </ConnectedList>
+      </ContentCard>
+
       <ContentCard>
         <CardTitle>Change Password</CardTitle>
         <CardDescription>
@@ -62,6 +85,37 @@ const SecurityTab = ({ userInfo }) => {
     </>
   );
 };
+
+const ConnectedList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+`;
+
+const ConnectedItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--color-grey-50, #f9fafb);
+  border-radius: 8px;
+
+  span {
+    flex: 1;
+    font-weight: 500;
+    color: var(--color-grey-900, #111);
+  }
+`;
+
+const ConnectedBadge = styled.span`
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  background: ${(p) => (p.$connected ? "var(--color-success, #22c55e)" : "var(--color-grey-200, #e5e7eb)")};
+  color: ${(p) => (p.$connected ? "#fff" : "var(--color-grey-600, #4b5563)")};
+`;
 
 export default SecurityTab;
 

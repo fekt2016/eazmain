@@ -274,12 +274,12 @@ export default function ProductCard({
               {isInactive && (
                 <InactiveBadge>Inactive</InactiveBadge>
               )}
-              {/* EazShop Official Product Badge */}
-              {(product.isEazShopProduct || product.seller?.role === 'eazshop_store') && (
-                <EazShopBadge>
-                  <EazShopIcon>✓</EazShopIcon>
+              {/* Official Store Product Badge */}
+              {(product.isEazShopProduct || product.seller?.role === 'official_store') && (
+                <OfficialStoreBadge>
+                  <OfficialStoreIcon>✓</OfficialStoreIcon>
                   Saiisai Official
-                </EazShopBadge>
+                </OfficialStoreBadge>
               )}
               {hasDiscount && !isComingSoon && !isDiscontinued && (
                 <DiscountBadge>-{discountPercentage}%</DiscountBadge>
@@ -668,7 +668,7 @@ const ConditionBadge = styled(Badge)`
   color: var(--color-white-0);
 `;
 
-const EazShopBadge = styled(Badge)`
+const OfficialStoreBadge = styled(Badge)`
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   font-weight: 700;
@@ -683,7 +683,7 @@ const EazShopBadge = styled(Badge)`
   animation: ${pulse} 3s infinite;
 `;
 
-const EazShopIcon = styled.span`
+const OfficialStoreIcon = styled.span`
   font-size: 0.9rem; /* Reduced from 1rem */
   font-weight: 800;
   display: inline-flex;

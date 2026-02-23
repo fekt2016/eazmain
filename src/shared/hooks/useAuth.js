@@ -58,7 +58,7 @@ const useAuth = () => {
           // Check if this is a notification endpoint error (flagged in api.js)
           if (error.isNotificationError) {
             // 401 on notification endpoint = might be cookie issue, not auth failure
-            if ((typeof __DEV__ !== 'undefined' && __DEV__) || process.env.NODE_ENV !== 'production') {
+            if ((typeof __DEV__ !== 'undefined' && __DEV__) || !import.meta.env.PROD) {
               logger.debug("[useAuth] 401 on notification endpoint - NOT clearing auth data");
               logger.debug("[useAuth] User session may still be valid. Cookie might not be sent properly.");
             }
@@ -66,7 +66,7 @@ const useAuth = () => {
             // This prevents ProtectedRoute from redirecting when notification endpoints fail
             const cachedUser = queryClient.getQueryData(["auth"]);
             if (cachedUser) {
-              if ((typeof __DEV__ !== 'undefined' && __DEV__) || process.env.NODE_ENV !== 'production') {
+              if ((typeof __DEV__ !== 'undefined' && __DEV__) || !import.meta.env.PROD) {
                 logger.debug("[useAuth] Returning cached user data despite notification endpoint failure");
               }
               return cachedUser;
@@ -81,14 +81,14 @@ const useAuth = () => {
           
           if (isAuthEndpoint) {
             // 401 on auth endpoint = user is not authenticated (normal state, not an error)
-            if ((typeof __DEV__ !== 'undefined' && __DEV__) || process.env.NODE_ENV !== 'production') {
+            if ((typeof __DEV__ !== 'undefined' && __DEV__) || !import.meta.env.PROD) {
               logger.debug("[useAuth] User unauthenticated (401) on auth endpoint - clearing auth data");
             }
             // Clear any stale auth data
             queryClient.setQueryData(["auth"], null);
           } else {
             // 401 on non-auth endpoint = might be temporary or session issue
-            if ((typeof __DEV__ !== 'undefined' && __DEV__) || process.env.NODE_ENV !== 'production') {
+            if ((typeof __DEV__ !== 'undefined' && __DEV__) || !import.meta.env.PROD) {
               logger.debug("[useAuth] 401 on non-auth endpoint - NOT clearing auth data");
               logger.debug("[useAuth] Endpoint:", url);
             }
@@ -96,7 +96,7 @@ const useAuth = () => {
             // This prevents ProtectedRoute from redirecting when other endpoints fail
             const cachedUser = queryClient.getQueryData(["auth"]);
             if (cachedUser) {
-              if ((typeof __DEV__ !== 'undefined' && __DEV__) || process.env.NODE_ENV !== 'production') {
+              if ((typeof __DEV__ !== 'undefined' && __DEV__) || !import.meta.env.PROD) {
                 logger.debug("[useAuth] Returning cached user data despite non-auth endpoint failure");
               }
               return cachedUser;
@@ -104,7 +104,7 @@ const useAuth = () => {
           }
         } else {
           // For network errors, don't clear auth - might be temporary
-          if ((typeof __DEV__ !== 'undefined' && __DEV__) || process.env.NODE_ENV !== 'production') {
+          if ((typeof __DEV__ !== 'undefined' && __DEV__) || !import.meta.env.PROD) {
             logger.debug("[useAuth] Network error (not 401) - keeping auth state");
           }
           // CRITICAL FIX: Return cached user data on network errors

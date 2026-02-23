@@ -78,7 +78,7 @@ const ProductDetailPage = () => {
   const { useGetProductById } = useProduct();
   const { data: productData, isLoading, error } = useGetProductById(id);
   const { data: reviewsData, isLoading: reviewsLoading, error: reviewsError } = useGetProductReviews(id);
-
+  
   // Debug logging
   logger.log("reviewsData", reviewsData);
   logger.log("reviewsLoading", reviewsLoading);
@@ -101,7 +101,7 @@ const ProductDetailPage = () => {
   const { useCategoryById } = useCategory();
   const categoryId = product?.subCategory?._id || product?.subCategory || product?.parentCategory?._id || product?.parentCategory;
   const { data: categoryData } = useCategoryById(categoryId);
-
+  
   // Get category attributes
   const categoryAttributes = useMemo(() => {
     if (!categoryData) return [];
@@ -155,7 +155,7 @@ const ProductDetailPage = () => {
       hasRecordedView.current = true;
       const sessionId = getOrCreateSessionId();
       recordProductView.mutate({ productId: id, sessionId });
-
+      
       // Track activity for recommendations
       if (productId) {
         trackActivity.mutate({
@@ -182,9 +182,9 @@ const ProductDetailPage = () => {
   const hasAttributeBasedVariants = useMemo(() => {
     if (!variants.length) return false;
     // Check if any variant has attributes array with multiple attributes
-    return variants.some(v =>
-      v.attributes &&
-      Array.isArray(v.attributes) &&
+    return variants.some(v => 
+      v.attributes && 
+      Array.isArray(v.attributes) && 
       v.attributes.length > 0 &&
       v.attributes.some(attr => attr.key && attr.value)
     );
@@ -196,8 +196,8 @@ const ProductDetailPage = () => {
 
   // Use attribute-based selection for products with attributes (Color + Size, etc.)
   const attributeVariantSelection = useVariantSelection(variants, product);
-  const {
-    selectedAttributes,
+  const { 
+    selectedAttributes, 
     selectedVariant: attributeSelectedVariant,
     selectAttribute,
     selectVariant: selectVariantByObject,
@@ -212,16 +212,16 @@ const ProductDetailPage = () => {
 
   // Use attribute-based variant if enabled, otherwise fall back to name-based
   const selectedVariant = useAttributeBasedVariants ? attributeSelectedVariant : nameSelectedVariant;
-
+  
   // CRITICAL: Maintain selectedSku state separately (SKU is the unit of commerce)
   const [selectedSku, setSelectedSku] = useState(null);
-
+  
   // CRITICAL: Auto-select default SKU on product load (SKU is the unit of commerce)
   useEffect(() => {
     if (product?.variants?.length && !selectedVariant) {
       // Find active variant first, otherwise use first variant
       const defaultVariant = (product?.variants || []).find(v => v.status === "active") || (product?.variants || [])[0];
-
+      
       if (defaultVariant?.sku) {
         handleVariantSelect(defaultVariant);
         setSelectedSku(defaultVariant.sku.trim().toUpperCase());
@@ -229,7 +229,7 @@ const ProductDetailPage = () => {
       }
     }
   }, [product, selectedVariant, handleVariantSelect]);
-
+  
   // CRITICAL: Sync selectedSku when selectedVariant changes
   useEffect(() => {
     if (selectedVariant?.sku) {
@@ -238,7 +238,7 @@ const ProductDetailPage = () => {
       setSelectedSku(null);
     }
   }, [selectedVariant]);
-
+  
   // Handle variant image selection (from color gallery)
   const handleVariantImageSelect = useCallback((variant) => {
     handleVariantSelect(variant);
@@ -284,15 +284,15 @@ const ProductDetailPage = () => {
         quantity,
         hasVariants: variants.length > 0,
       });
-
+      
       // CRITICAL: Block invalid multi-variant adds - SKU is required
       if (variants.length > 1 && !selectedSku) {
         throw new Error("Please select a variant before adding to cart");
       }
-
+      
       // CRITICAL: Use selectedSku directly - no extraction needed
       const variantSku = selectedSku || (selectedVariant?.sku ? selectedVariant.sku.trim().toUpperCase() : null);
-
+      
       if (!variantSku && variants.length > 0) {
         logger.error("[ADD_TO_CART] SKU missing for variant product:", {
           productId: product?._id,
@@ -303,7 +303,7 @@ const ProductDetailPage = () => {
         });
         throw new Error("Variant SKU is required. Please select a variant.");
       }
-
+      
       await addToCart({
         product,
         quantity,
@@ -313,7 +313,7 @@ const ProductDetailPage = () => {
     } catch (error) {
       setIsAddingToCart(false);
       logger.error("Add to cart error:", error);
-
+      
       // Handle SKU_REQUIRED error specifically
       if (error?.code === 'SKU_REQUIRED' || error?.message?.includes('variant')) {
         toast.error("Please select a variant before adding to cart", {
@@ -370,7 +370,7 @@ const ProductDetailPage = () => {
         hasDataData: !!reviewsData.data?.data,
         dataDataKeys: reviewsData.data?.data ? Object.keys(reviewsData.data.data) : [],
       });
-
+      
       // Check if it's the wrapped response: reviewsData.data.data.reviews
       if (reviewsData.data?.data?.reviews && Array.isArray(reviewsData.data.data.reviews)) {
         logger.log("Found reviews in reviewsData.data.data.reviews:", reviewsData.data.data.reviews.length);
@@ -397,7 +397,7 @@ const ProductDetailPage = () => {
   const hasDiscount = hasProductDiscount(product, selectedVariant);
   const discountPercentage = getProductDiscountPercentage(product, selectedVariant);
   const displaySku = getProductSku(product, selectedVariant);
-
+  
   // Get stock - use selected variant if available, otherwise calculate from all active variants
   const variantStock = useMemo(() => {
     if (!product) return 0;
@@ -419,7 +419,7 @@ const ProductDetailPage = () => {
     // Fallback to product stock
     return getProductStock(product, selectedVariant);
   }, [selectedVariant, variants, product]);
-
+  
   // Check if in stock - must have stock > 0 and variant must be active (if variant exists)
   const isInStock = useMemo(() => {
     if (!product) return false;
@@ -440,7 +440,7 @@ const ProductDetailPage = () => {
     // Fallback to product stock check
     return isProductInStock(product, selectedVariant);
   }, [selectedVariant, variants, product]);
-
+  
   // Product-level images (fallback when variant has no images)
   const productImages = useMemo(() => {
     if (!product) return [];
@@ -468,7 +468,7 @@ const ProductDetailPage = () => {
   // Component to render variant attributes as a table
   const VariantAttributesTable = ({ variant, isInLabel = false }) => {
     const attributes = getVariantAttributes(variant);
-
+    
     if (!attributes || attributes.length === 0) {
       return variant?.name || null;
     }
@@ -659,8 +659,8 @@ const ProductDetailPage = () => {
 
           {/* Pricing Section */}
           <PricingCard>
-            <VariantPriceDisplay
-              product={product}
+            <VariantPriceDisplay 
+              product={product} 
               selectedVariant={selectedVariant}
               variantSelectionHook={variantSelection}
             />
@@ -817,8 +817,8 @@ const ProductDetailPage = () => {
               <PrimaryActionButton
                 onClick={handleAddToCart}
                 disabled={
-                  !isInStock ||
-                  !selectedVariant ||
+                  !isInStock || 
+                  !selectedVariant || 
                   isAddingToCart ||
                   (useAttributeBasedVariants && allAttributesSelected && !selectedVariant) // Disable if all selected but no match
                 }
@@ -832,12 +832,12 @@ const ProductDetailPage = () => {
                 ) : (
                   <>
                     <FaShoppingCart />
-                    {!selectedVariant
-                      ? (useAttributeBasedVariants && allAttributesSelected
-                        ? "Not Available"
-                        : "Select Variant")
-                      : isInStock
-                        ? "Add to Cart"
+                    {!selectedVariant 
+                      ? (useAttributeBasedVariants && allAttributesSelected 
+                          ? "Not Available" 
+                          : "Select Variant")
+                      : isInStock 
+                        ? "Add to Cart" 
                         : "Out of Stock"}
                   </>
                 )}
@@ -903,7 +903,7 @@ const ProductDetailPage = () => {
               ? "Saiisai Official Store ✓"
               : (typeof product.seller === 'object' && (product.seller?.shopName || product.seller?.name)) || "Seller";
             const sellerPagePath = sellerIdStr ? `${PATHS.SELLERS}/${sellerIdStr}` : null;
-
+            
             // Debug logging
             console.log('[ProductDetail] Seller section:', {
               hasSeller: !!product.seller,
@@ -1061,10 +1061,10 @@ const ProductDetailPage = () => {
                     const reviewDate = review.reviewDate || review.createdAt || review.updatedAt;
                     const formattedDate = reviewDate
                       ? new Date(reviewDate).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })
                       : "";
                     const reviewText = review.review || review.comment || review.body || review.content || "—";
                     const hasImages = review.images && Array.isArray(review.images) && review.images.length > 0;
@@ -1189,20 +1189,20 @@ const ProductDetailPage = () => {
           <StickyAddButton
             onClick={handleAddToCart}
             disabled={
-              !isInStock ||
-              !selectedVariant ||
+              !isInStock || 
+              !selectedVariant || 
               isAddingToCart ||
               (useAttributeBasedVariants && allAttributesSelected && !selectedVariant)
             }
           >
             {isAddingToCart ? (
               <ButtonSpinner size="sm" />
-            ) : !selectedVariant
-              ? (useAttributeBasedVariants && allAttributesSelected
-                ? "Not Available"
-                : "Select Variant")
-              : isInStock
-                ? "Add to Cart"
+            ) : !selectedVariant 
+              ? (useAttributeBasedVariants && allAttributesSelected 
+                  ? "Not Available" 
+                  : "Select Variant")
+              : isInStock 
+                ? "Add to Cart" 
                 : "Out of Stock"}
           </StickyAddButton>
         </StickyActions>
@@ -1213,35 +1213,23 @@ const ProductDetailPage = () => {
 
 
 const ModernPageContainer = styled.div`
-  /* Stitch Redesign Custom Properties */
-  --primary-500: #e06c11;
-  --primary-600: #c95d0a;
-  --primary-700: #b45309; /* Stitch Primary Amber */
-  --primary-800: #92400e;
-  --color-white-0: #ffffff;
-  --slate-50:  #f8fafc;
-  --slate-100: #f1f5f9;
-  --slate-200: #e2e8f0;
-  --slate-500: #64748b;
-  --slate-800: #1e293b;
-  --slate-900: #0f172a;
-
-  width: 100%;
-  max-width: 1280px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 2rem;
   background: var(--color-grey-50);
   min-height: 100vh;
+  width: 100%;
   box-sizing: border-box;
-  overflow-x: hidden;
-  overflow-y: visible;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+  overflow-y: visible; /* Allow vertical scroll */
 
-  @media (min-width: 768px) {
-    padding: 0 1.5rem;
+  @media (max-width: 1024px) {
+    padding: 1.5rem;
   }
 
-  @media (min-width: 1024px) {
-    padding: 2rem;
+  @media (max-width: 640px) {
+    padding: 1rem;
+    padding-bottom: 8rem; /* Space for sticky bottom bar */
   }
 `;
 
@@ -1302,18 +1290,18 @@ const BreadcrumbActive = styled.span`
 
 const ModernProductGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  margin-bottom: 3rem;
 
-  @media (min-width: 768px) {
-    grid-template-columns: 1fr 1fr;
+  @media (max-width: 1024px) {
     gap: 2rem;
-    margin-bottom: 3rem;
   }
 
-  @media (min-width: 1024px) {
-    gap: 3rem;
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
   }
 `;
 
@@ -1331,8 +1319,6 @@ const ImageSection = styled.div`
 const MainImageWrapper = styled.div`
   position: relative;
   width: 100%;
-  max-width: 450px;
-  margin: 0 auto;
   aspect-ratio: 1;
   background: white;
   border-radius: 2rem;
@@ -1366,7 +1352,6 @@ const ModernMainImage = styled.img`
   width: 100%;
   height: 100%;
   object-fit: contain;
-  background-color: var(--color-grey-50);
   transition: transform 0.2s ease-out;
   transform: ${(props) =>
     props.$isZoomed
@@ -1583,8 +1568,7 @@ const ModernThumbnail = styled.div`
   img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
-    background-color: var(--color-grey-50);
+    object-fit: cover;
   }
 
   &:hover {
@@ -1654,7 +1638,6 @@ const CategoryBadge = styled.span`
 `;
 
 const ModernProductTitle = styled.h1`
-  font-family: var(--font-heading, inherit);
   font-size: 3.2rem;
   font-weight: 800;
   color: var(--color-grey-900);
@@ -1682,19 +1665,19 @@ const ModernProductTitle = styled.h1`
 
 const ProductMetaGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  grid-template-columns: auto auto auto;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
   align-items: center;
 
-  @media (min-width: 641px) {
-    grid-template-columns: auto auto auto;
+  @media (max-width: 1024px) {
     gap: 1.5rem;
-    margin-bottom: 1.5rem;
   }
 
-  @media (min-width: 1025px) {
-    gap: 2rem;
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
   }
 `;
 
@@ -1830,6 +1813,7 @@ const VariantSectionTitle = styled.h3`
   font-weight: 700;
   color: var(--color-grey-900);
   margin: 0 0 0.35rem 0;
+  font-family: var(--font-heading);
 
   @media (max-width: 640px) {
     font-size: 1.5rem;
@@ -1840,6 +1824,7 @@ const VariantSectionSubtitle = styled.p`
   font-size: 1rem;
   color: var(--color-grey-600);
   margin: 0 0 1.5rem 0;
+  font-family: var(--font-body);
 
   @media (max-width: 640px) {
     font-size: 0.95rem;
@@ -1857,8 +1842,11 @@ const PriceDisplay = styled.div`
 const CurrentPrice = styled.div`
   font-size: 4.8rem;
   font-weight: 800;
-  color: var(--primary-700);
+  color: var(--color-primary-500);
   line-height: 1;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 
   @media (max-width: 1024px) {
     font-size: 4rem;
@@ -1871,7 +1859,7 @@ const CurrentPrice = styled.div`
 
 const OriginalPrice = styled.div`
   font-size: 2.4rem;
-  color: var(--slate-500);
+  color: var(--color-grey-400);
   text-decoration: line-through;
 
   @media (max-width: 1024px) {
@@ -1884,21 +1872,20 @@ const OriginalPrice = styled.div`
 `;
 
 const SavingsAlert = styled.div`
-  background: var(--success, #10b981);
-  color: var(--color-white-0, #ffffff);
-  padding: 0.5rem 1rem;
-  border-radius: 2rem;
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  color: white;
+  padding: 1rem 1.5rem;
+  border-radius: 1rem;
   font-weight: 600;
   font-size: 1.4rem;
   margin-bottom: 1.5rem;
-  display: inline-flex;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
 
   @media (max-width: 640px) {
-    padding: 0.4rem 0.8rem;
+    padding: 0.8rem 1.2rem;
     font-size: 1.2rem;
     margin-bottom: 1rem;
-    border-radius: 1.5rem;
+    border-radius: 0.8rem;
   }
 `;
 
@@ -2029,22 +2016,22 @@ const QtyLabel = styled.span`
 const QtyControls = styled.div`
   display: flex;
   align-items: center;
-  border: 1px solid var(--slate-200);
-  border-radius: 0.75rem;
+  border: 2px solid var(--color-grey-200);
+  border-radius: 1.2rem;
   overflow: hidden;
-  background: var(--color-white-0);
+  background: white;
 `;
 
 const QtyButton = styled.button`
-  width: 4rem;
-  height: 4rem;
+  width: 5rem;
+  height: 5rem;
   border: none;
-  background: var(--slate-50);
-  font-size: 2rem;
+  background: var(--color-grey-50);
+  font-size: 2.4rem;
   font-weight: 600;
   cursor: ${(props) => (props.disabled ? "not-allowed" : "pointer")};
-  color: ${(props) => (props.disabled ? "var(--slate-500)" : "var(--slate-900)")};
-  transition: all 0.2s ease;
+  color: ${(props) => (props.disabled ? "var(--color-grey-400)" : "var(--color-grey-800)")};
+  transition: all 0.3s ease;
   min-width: 44px; /* Touch-friendly */
   min-height: 44px; /* Touch-friendly */
 
@@ -2057,23 +2044,24 @@ const QtyButton = styled.button`
   }
 
   &:hover:not(:disabled) {
-    background: var(--slate-100);
+    background: var(--color-primary-500);
+    color: white;
   }
 `;
 
 const QtyDisplay = styled.span`
-  width: 5rem;
-  height: 4.4rem;
+  width: 6rem;
+  height: 5rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.6rem;
-  font-weight: 600;
-  color: var(--slate-900);
-  background: transparent;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--color-grey-800);
+  background: white;
 
   @media (max-width: 640px) {
-    width: 4.4rem;
+    width: 5rem;
     height: 4.4rem;
     font-size: 1.6rem;
   }
@@ -2081,38 +2069,50 @@ const QtyDisplay = styled.span`
 
 const ActionButtonsGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.8rem;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 1rem;
 
-  @media (min-width: 641px) {
-    grid-template-columns: 2fr 1fr 1fr;
+  @media (max-width: 1024px) {
     gap: 0.8rem;
   }
 
-  @media (min-width: 1025px) {
-    gap: 1rem;
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+    gap: 0.8rem;
   }
 `;
 
 const BaseActionButton = styled.button`
-  padding: 1.2rem 2rem; /* Adjusted for Stitch 8px grid (approx) */
+  padding: 1.6rem 2.4rem;
   border: none;
-  border-radius: 0.75rem; /* Stitch border radius */
-  font-family: var(--font-primary, 'Inter', sans-serif);
-  font-weight: 600;
+  border-radius: 1.2rem;
+  font-weight: 700;
   font-size: 1.6rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  min-height: 48px; /* Touch target safe */
-  min-width: 44px;
-  width: 100%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-height: 44px; /* Touch-friendly */
 
-  @media (min-width: 768px) {
-    width: auto;
+  @media (max-width: 1024px) {
+    padding: 1.4rem 2rem;
+    font-size: 1.5rem;
+  }
+
+  @media (max-width: 640px) {
+    padding: 1.4rem 1.8rem;
+    font-size: 1.4rem;
+    border-radius: 1rem;
+    gap: 0.8rem;
+    min-height: 48px; /* Larger touch target on mobile */
+  }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
   }
 
   &:disabled {
@@ -2122,29 +2122,26 @@ const BaseActionButton = styled.button`
 `;
 
 const PrimaryActionButton = styled(BaseActionButton)`
-  background: var(--primary-700, #b45309);
-  color: var(--color-white-0, #ffffff);
-  box-shadow: 0 4px 12px rgba(180, 83, 9, 0.2);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
+  color: white;
 
   &:hover:not(:disabled) {
-    background: var(--primary-800, #92400e);
-    transform: translateY(-2px);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--primary-500, #e06c11);
-    outline-offset: 2px;
+    background: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-700) 100%);
   }
 `;
 
 const SecondaryActionButton = styled(BaseActionButton)`
-  background: ${(props) => (props.$active ? "var(--slate-100)" : "var(--slate-50)")};
-  color: ${(props) => (props.$active ? "var(--primary-700)" : "var(--slate-800)")};
-  border: 1px solid var(--slate-200);
+  background: ${(props) =>
+    props.$active
+      ? "linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)"
+      : "var(--color-grey-100)"};
+  color: ${(props) => (props.$active ? "white" : "var(--color-grey-700)")};
 
   &:hover:not(:disabled) {
-    background: var(--slate-100);
-    transform: translateY(-2px);
+    background: ${(props) =>
+    props.$active
+      ? "linear-gradient(135deg, #ee5a6f 0%, #e04f5f 100%)"
+      : "var(--color-grey-200)"};
   }
 `;
 
@@ -2194,7 +2191,7 @@ const StickyPrice = styled.div`
   .price {
     font-size: 1.8rem;
     font-weight: 700;
-    color: var(--primary-700);
+    color: var(--color-primary-600);
   }
 `;
 
@@ -2262,16 +2259,16 @@ const ActionSpinner = styled.div`
 
 const TrustSection = styled.div`
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
 
-  @media (min-width: 641px) {
-    grid-template-columns: repeat(2, 1fr);
+  @media (max-width: 1024px) {
     gap: 1.2rem;
   }
 
-  @media (min-width: 1025px) {
-    gap: 1.5rem;
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 `;
 
@@ -2425,7 +2422,7 @@ const SellerDetailButton = styled.button`
   margin-top: 0.8rem;
   font-size: 1.4rem;
   font-weight: 600;
-  color: var(--primary-700);
+  color: var(--color-primary-600);
   text-decoration: none;
   transition: color 0.2s;
   cursor: pointer;
@@ -2618,7 +2615,7 @@ const ShowMoreButton = styled.button`
   transition: all 0.3s ease;
 
   &:hover {
-    color: var(--primary-700);
+    color: var(--color-primary-600);
     transform: translateY(-2px);
   }
 `;
@@ -2632,14 +2629,14 @@ const ChevronIcon = styled.span`
 
 const SpecificationsGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-  margin-top: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
 
-  @media (min-width: 641px) {
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-top: 2rem;
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-top: 1.5rem;
   }
 `;
 
@@ -2669,24 +2666,24 @@ const ModernReviewsSection = styled.div``;
 
 const ReviewsSummary = styled.div`
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 2rem;
-  padding: 1.5rem;
+  grid-template-columns: auto 1fr;
+  gap: 3rem;
+  padding: 2.5rem;
   background: var(--color-grey-50);
-  border-radius: 1.2rem;
-  margin-bottom: 2rem;
+  border-radius: 1.5rem;
+  margin-bottom: 2.5rem;
 
-  @media (min-width: 641px) {
-    grid-template-columns: auto 1fr;
+  @media (max-width: 1024px) {
     gap: 2.5rem;
     padding: 2rem;
-    border-radius: 1.5rem;
-    margin-bottom: 2.5rem;
   }
 
-  @media (min-width: 1025px) {
-    gap: 3rem;
-    padding: 2.5rem;
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border-radius: 1.2rem;
   }
 `;
 
@@ -2766,14 +2763,14 @@ const BarPercentage = styled.div`
 
 const ReviewGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
 
-  @media (min-width: 641px) {
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-    margin-bottom: 2rem;
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
   }
 `;
 
@@ -2883,8 +2880,7 @@ const ReviewImages = styled.div`
 const ReviewImage = styled.img`
   width: 80px;
   height: 80px;
-  object-fit: contain;
-  background-color: var(--color-grey-50);
+  object-fit: cover;
   border-radius: 0.8rem;
   border: 1px solid var(--color-grey-200, #e5e7eb);
 `;
@@ -3284,12 +3280,12 @@ const VariantImagesTitle = styled.h3`
 
 const VariantImagesGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
-  gap: 0.4rem;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: 0.5rem;
 
-  @media (min-width: 641px) {
-    grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
-    gap: 0.5rem;
+  @media (max-width: 640px) {
+    grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+    gap: 0.4rem;
   }
 `;
 
@@ -3319,8 +3315,7 @@ const VariantImageItem = styled.div`
 const VariantImage = styled.img`
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  background-color: var(--color-grey-50);
+  object-fit: cover;
 `;
 
 const VariantImageLabel = styled.span`
@@ -3385,8 +3380,8 @@ const AttributesTable = styled.table`
 
 const AttributeRow = styled.tr`
   &:not(:last-child) {
-    border-bottom: 1px solid ${(props) =>
-    props.$isInLabel ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'};
+    border-bottom: 1px solid ${(props) => 
+      props.$isInLabel ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'};
   }
 `;
 

@@ -63,7 +63,7 @@ const NotificationDropdown = ({ unreadCount }) => {
   // Debug: Log unreadCount to verify it's being passed correctly
   // CRITICAL FIX: This hook must be called before any conditional returns
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.log('[EazMain NotificationDropdown] 🔔 unreadCount prop:', {
         unreadCount,
         type: typeof unreadCount,
@@ -102,7 +102,7 @@ const NotificationDropdown = ({ unreadCount }) => {
       });
 
     // Debug logging (development only)
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.log('[NotificationDropdown] 📊 Notification filtering:', {
         totalNotifications: allNotifications.length,
         unreadCount: unread.length,

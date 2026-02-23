@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { FaExclamationTriangle, FaHome, FaRedo } from 'react-icons/fa';
 import { PATHS } from '../../routes/routePaths';
+import { captureError } from '../services/errorMonitoring';
 // Container not needed for ErrorBoundary - using full viewport
 
 const ErrorContainer = styled.div`
@@ -116,15 +117,17 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    // In production, send to error reporting service (don't log to console)
-    if (import.meta.env.PROD) {
-      // TODO: Send to error reporting service (e.g., Sentry, LogRocket)
-      // Do NOT log to console in production to prevent leaking sensitive data
-      // errorReportingService.captureException(error, { extra: errorInfo });
-    } else {
-      // Only log in development
+    if (import.meta.env.DEV) {
+      // Only log in development to aid local debugging
+      // eslint-disable-next-line no-console
       console.error('Error caught by boundary:', error, errorInfo);
     }
+
+    // Forward to centralized error monitoring in production (no PII-rich context)
+    captureError(error, {
+      component: 'ErrorBoundary',
+      hasErrorInfo: !!errorInfo,
+    });
 
     this.setState({
       error,
