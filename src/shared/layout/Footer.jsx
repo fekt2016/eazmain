@@ -163,6 +163,7 @@ export default function Footer() {
               <LegalLink to={PATHS.SITEMAP}>Sitemap</LegalLink>
               <LegalLink to={PATHS.PRIVACY}>Privacy Policy</LegalLink>
               <LegalLink to={PATHS.TERMS}>Terms & Service</LegalLink>
+              <LegalLink to={PATHS.DATA_DELETION}>Data Deletion</LegalLink>
               <LegalLink to={PATHS.VAT_TAX_POLICY}>VAT & Tax Policy</LegalLink>
               <LegalLink to="/cookies">Cookie Policy</LegalLink>
             </LegalLinks>

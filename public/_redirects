@@ -1,0 +1,2 @@
+# Serve static data-deletion page so Facebook crawler and users get full HTML (no JS required)
+/data-deletion  /data-deletion.html  200

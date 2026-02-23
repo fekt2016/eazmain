@@ -42,6 +42,9 @@ export const FRONTEND_URL = (() => {
   return "https://saiisai.com";
 })();
 
+// Data Deletion Instructions URL (Facebook App Review; canonical buyer app URL)
+export const DATA_DELETION_URL = `${FRONTEND_URL}/data-deletion`;
+
 // Optional: Google Maps API key
 export const GOOGLE_MAPS_API_KEY = readEnv("VITE_GOOGLE_MAPS_API_KEY");
 
@@ -51,6 +54,7 @@ const appConfig = {
   FB_PIXEL_ID,
   TIKTOK_PIXEL_ID,
   FRONTEND_URL,
+  DATA_DELETION_URL,
   GOOGLE_MAPS_API_KEY,
 };
 
