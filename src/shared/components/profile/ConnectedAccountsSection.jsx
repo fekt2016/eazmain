@@ -15,14 +15,6 @@ const ConnectedAccountsSection = ({ accounts }) => (
             {accounts?.google ? "Connected" : "Connect"}
           </ConnectButton>
         </SocialConnection>
-
-        <SocialConnection connected={accounts?.facebook}>
-          <SocialIcon>f</SocialIcon>
-          <SocialName>Facebook</SocialName>
-          <ConnectButton>
-            {accounts?.facebook ? "Connected" : "Connect"}
-          </ConnectButton>
-        </SocialConnection>
       </SocialConnections>
     </SectionContent>
   </NotificationSection>

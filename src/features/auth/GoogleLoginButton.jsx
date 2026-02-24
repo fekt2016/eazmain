@@ -6,7 +6,7 @@ import logger from "../../shared/utils/logger";
 import styled from "styled-components";
 
 /**
- * Google OAuth login/signup button. Renders a visible "Google" button (same row as Facebook).
+ * Google OAuth login/signup button. Renders a visible "Google" button.
  * Uses SDK when clientId is set; otherwise shows a disabled placeholder.
  */
 export default function GoogleLoginButton({ appType = "buyer", onComplete, className }) {

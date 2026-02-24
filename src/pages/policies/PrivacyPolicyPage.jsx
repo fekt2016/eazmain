@@ -153,7 +153,7 @@ const PrivacyPolicyPage = () => {
             <BulletList>
               <li>
                 <Paragraph>
-                  <strong>Social Media Logins:</strong> If you choose to sign in using social media accounts (such as Google or Facebook), we receive information from those platforms, including your name, email address, profile picture, and other information you have authorized them to share.
+                  <strong>Social Media Logins:</strong> If you choose to sign in using social media accounts (such as Google or Apple), we receive information from those platforms, including your name, email address, profile picture, and other information you have authorized them to share.
                 </Paragraph>
               </li>
               <li>

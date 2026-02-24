@@ -16,6 +16,11 @@ const warnMissingEnv = (provider, envKey) => {
 
 const getSafeOrigin = (explicitOrigin) => {
   if (explicitOrigin) return explicitOrigin;
+  // Production: use VITE_FRONTEND_URL so redirect_uri matches buyer.saiisai.com
+  const envOrigin = import.meta.env.VITE_FRONTEND_URL;
+  if (envOrigin && typeof envOrigin === "string" && envOrigin.trim()) {
+    return envOrigin.trim().replace(/\/$/, "");
+  }
   if (typeof window !== "undefined" && window.location?.origin) {
     return window.location.origin;
   }
@@ -26,33 +31,6 @@ const getApiBaseUrl = () => {
   // Deprecated in favor of appConfig.API_BASE_URL; kept for backward compatibility if needed
   const apiBase = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
   return typeof apiBase === "string" ? apiBase.trim() : "";
-};
-
-export const getFacebookOAuthConfig = (origin) => {
-  const clientId = import.meta.env.VITE_FACEBOOK_CLIENT_ID;
-
-  if (!clientId) {
-    warnMissingEnv("Facebook", "VITE_FACEBOOK_CLIENT_ID");
-    return { enabled: false, url: null };
-  }
-
-  const safeOrigin = getSafeOrigin(origin);
-  if (!safeOrigin) {
-    if (isDev) {
-      // eslint-disable-next-line no-console
-      console.warn("[oauthConfig] Facebook OAuth disabled: unable to determine redirect origin.");
-    }
-    return { enabled: false, url: null };
-  }
-
-  const redirectUri = `${safeOrigin}/facebook-callback`;
-
-  const url = `https://www.facebook.com/v17.0/dialog/oauth` +
-    `?client_id=${encodeURIComponent(clientId)}` +
-    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-    `&scope=email,public_profile`;
-
-  return { enabled: true, url };
 };
 
 export const getGoogleOAuthConfig = (origin) => {
@@ -117,7 +95,6 @@ export const oauthEnvironment = {
 };
 
 export default {
-  getFacebookOAuthConfig,
   getGoogleOAuthConfig,
   getAppleOAuthConfig,
   oauthEnvironment,

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
-import { FaEnvelope, FaLock, FaPhone, FaArrowLeft, FaEye, FaEyeSlash, FaFacebook } from "react-icons/fa";
+import { FaEnvelope, FaLock, FaPhone, FaArrowLeft, FaEye, FaEyeSlash } from "react-icons/fa";
 import useAuth from '../../shared/hooks/useAuth';
 import { useMergeWishlists } from '../../shared/hooks/useWishlist';
 import { useCartActions } from '../../shared/hooks/useCart';
@@ -10,7 +10,6 @@ import storage from '../../shared/utils/storage';
 import { devicesMax } from '../../shared/styles/breakpoint';
 import logger from '../../shared/utils/logger';
 import { sanitizeEmail, sanitizePhone, sanitizeText } from '../../shared/utils/sanitize';
-import { getFacebookOAuthConfig } from '../../shared/config/oauthConfig';
 import GoogleLoginButton from "./GoogleLoginButton";
 
 // Animations
@@ -48,16 +47,6 @@ export default function LoginPage() {
   // Get redirectTo from URL params or storage
   const redirectTo = searchParams.get('redirectTo') || storage.getRedirect() || '/';
 
-  const origin = typeof window !== "undefined" && window.location?.origin ? window.location.origin : "";
-  const { enabled: isFacebookEnabled, url: facebookAuthUrl } = getFacebookOAuthConfig(origin);
-
-  const handleFacebookLogin = () => {
-    if (!isFacebookEnabled || !facebookAuthUrl) {
-      setFieldErrors((prev) => ({ ...prev, password: "Facebook sign-in is not configured for this app." }));
-      return;
-    }
-    window.location.href = facebookAuthUrl;
-  };
   const submitHandler = (e) => {
     e.preventDefault();
 
@@ -463,16 +452,6 @@ export default function LoginPage() {
                 <DividerLine />
               </Divider>
               <SocialButtons>
-                <SocialButton
-                  type="button"
-                  $bg="#1877f2"
-                  $hover="#166fe5"
-                  onClick={handleFacebookLogin}
-                  aria-label="Continue with Facebook"
-                >
-                  <FaFacebook color="white" size={18} />
-                  <span>Facebook</span>
-                </SocialButton>
                 <GoogleLoginButton appType="buyer" />
               </SocialButtons>
             </>

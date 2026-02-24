@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
-import { FaFacebook, FaApple, FaEnvelope, FaArrowLeft } from "react-icons/fa";
+import { FaApple, FaEnvelope, FaArrowLeft } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import useAuth from '../../shared/hooks/useAuth';
 import { devicesMax } from '../../shared/styles/breakpoint';
@@ -12,7 +12,6 @@ import PasswordField from './components/PasswordField';
 import CheckboxField from './components/CheckboxField';
 import { DEFAULT_FORM_VALUES, VALIDATION_RULES, sanitizeFormData } from './constants/formValidation';
 import {
-  getFacebookOAuthConfig,
   getGoogleOAuthConfig,
   getAppleOAuthConfig,
 } from '../../shared/config/oauthConfig';
@@ -49,17 +48,10 @@ export default function SignupPage() {
       ? window.location.origin
       : "";
 
-  const { enabled: isFacebookEnabled, url: facebookAuthUrl } =
-    getFacebookOAuthConfig(origin);
   const { enabled: isGoogleEnabled, url: googleAuthUrl } =
     getGoogleOAuthConfig(origin);
   const { enabled: isAppleEnabled, url: appleAuthUrl } =
     getAppleOAuthConfig(origin);
-
-  const handleFacebookSignup = () => {
-    if (!isFacebookEnabled || !facebookAuthUrl) return;
-    window.location.href = facebookAuthUrl;
-  };
 
   const handleGoogleSignup = () => {
     if (!isGoogleEnabled || !googleAuthUrl) return;
@@ -282,17 +274,6 @@ export default function SignupPage() {
           </Divider>
 
           <SocialButtons>
-            <SocialButton 
-              type="button"
-              $bg="#1877f2" 
-              $hover="#166fe5" 
-              disabled={!isFacebookEnabled}
-              onClick={handleFacebookSignup}
-              aria-label="Sign up with Facebook"
-            >
-              <FaFacebook color="white" size={20} />
-              <span>Facebook</span>
-            </SocialButton>
             <SocialButton 
               type="button"
               $bg="#fff" 

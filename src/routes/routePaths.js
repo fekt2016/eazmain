@@ -275,9 +275,9 @@ export const ROUTE_CONFIG = {
   },
 
   [PATHS.DATA_DELETION]: {
-    title: "Facebook Data Deletion Instructions - Saiisai",
-    description: "Request deletion of your Saiisai data if you signed up or logged in using Facebook. Learn how to submit a data deletion request.",
-    keywords: "Facebook data deletion, delete account, data removal, Saiisai, privacy",
+    title: "Data Deletion Instructions - Saiisai",
+    description: "Request deletion of your Saiisai data. Learn how to submit a data deletion request.",
+    keywords: "data deletion, delete account, data removal, Saiisai, privacy",
   },
 
   [PATHS.REFUND_POLICY]: {

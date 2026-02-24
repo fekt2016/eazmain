@@ -206,7 +206,6 @@ describe('SignupPage', () => {
 
     // Check if social signup buttons exist
     await waitFor(() => {
-      expect(screen.getByText(/facebook/i)).toBeInTheDocument();
       expect(screen.getByText(/google/i)).toBeInTheDocument();
       expect(screen.getByText(/apple/i)).toBeInTheDocument();
     });

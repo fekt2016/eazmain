@@ -42,7 +42,7 @@ export const FRONTEND_URL = (() => {
   return "https://saiisai.com";
 })();
 
-// Data Deletion Instructions URL (Facebook App Review; canonical buyer app URL)
+// Data Deletion Instructions URL (canonical buyer app URL)
 export const DATA_DELETION_URL = `${FRONTEND_URL}/data-deletion`;
 
 // Optional: Google Maps API key

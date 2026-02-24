@@ -15,6 +15,16 @@ const COOKIE_EXPIRY_DAYS = 365;
 
 // Tracking IDs are provided via appConfig (Vite env wrapper)
 
+// Facebook Pixel ID must be a numeric string (from Events Manager), not the Facebook App ID.
+// Empty, "0", or "disabled" = do not load Pixel.
+const isValidFacebookPixelId = (id) => {
+  if (id == null) return false;
+  const s = String(id).trim();
+  if (s === '' || s === '0' || s.toLowerCase() === 'disabled') return false;
+  return /^\d{15,16}$/.test(s);
+};
+
+
 // ────────────────────────────────────────────────
 // Cookie Utilities
 // ────────────────────────────────────────────────
@@ -109,7 +119,7 @@ const unloadGoogleAnalytics = () => {
 };
 
 const loadFacebookPixel = () => {
-  if (!FB_PIXEL_ID || window.fbq) return;
+  if (!isValidFacebookPixelId(FB_PIXEL_ID) || window.fbq) return;
 
   !(function (f, b, e, v, n, t, s) {
     if (f.fbq) return;
@@ -133,8 +143,15 @@ const loadFacebookPixel = () => {
     'https://connect.facebook.net/en_US/fbevents.js'
   );
 
-  window.fbq('init', FB_PIXEL_ID);
-  window.fbq('track', 'PageView');
+  const pixelId = FB_PIXEL_ID.trim();
+  try {
+    window.fbq('init', pixelId);
+    window.fbq('track', 'PageView');
+  } catch (err) {
+    if (typeof console !== 'undefined' && console.warn) {
+      console.warn('[CookieConsent] Facebook Pixel init failed. Use a Pixel ID from Events Manager, not the App ID.', err?.message || err);
+    }
+  }
 };
 
 const unloadFacebookPixel = () => {
@@ -182,8 +199,8 @@ const manageScripts = (consent) => {
     unloadGoogleAnalytics();
   }
 
-  // Facebook Pixel (marketing)
-  if (consent.marketing && FB_PIXEL_ID) {
+  // Facebook Pixel (marketing) – use only if ID is valid
+  if (consent.marketing && isValidFacebookPixelId(FB_PIXEL_ID)) {
     loadFacebookPixel();
   } else {
     unloadFacebookPixel();
