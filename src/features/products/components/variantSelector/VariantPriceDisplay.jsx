@@ -38,7 +38,6 @@ const VariantPriceDisplay = ({ product, selectedVariant, variantSelectionHook })
           <OriginalPrice>GH₵{originalPrice.toFixed(2)}</OriginalPrice>
         )}
       </PriceRow>
-      <PriceIncludesVat>Price includes applicable taxes</PriceIncludesVat>
       {hasDiscount && originalPrice > 0 && displayPrice > 0 && (
         <SavingsBadge>
           🎉 You save GH₵{(originalPrice - displayPrice).toFixed(2)} ({discountPercentage}% off)
@@ -75,11 +74,6 @@ const OriginalPrice = styled.span`
   font-weight: var(--font-medium);
   color: var(--color-grey-500);
   text-decoration: line-through;
-`;
-
-const PriceIncludesVat = styled.span`
-  font-size: var(--font-size-sm);
-  color: var(--color-grey-500);
 `;
 
 const SavingsBadge = styled.span`

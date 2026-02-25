@@ -2135,10 +2135,6 @@ const CheckoutPage = () => {
               </span>
             </SummaryItem>
           )}
-          <SummaryItem style={{ fontSize: "0.85rem", color: "#666" }}>
-            <span>Price includes applicable taxes</span>
-          </SummaryItem>
-
           {discount > 0 && (
             <SummaryItem>
               <span>Discount:</span>

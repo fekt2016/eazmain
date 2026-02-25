@@ -19,11 +19,21 @@ import { highlightSearchTerm } from '../utils/searchUtils.jsx';
 import logger from '../utils/logger';
 import { toast } from 'react-toastify';
 
-// Helper function to get grid image - MUST use product.images ONLY
+// Helper function to get grid image for cards (homepage, grids, carousels)
+// Prefer product.imageCover when available, then fall back to first product.images entry
 const getGridImage = (product) => {
-  if (product?.images?.length > 0) {
+  if (!product) {
+    return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600"%3E%3Crect width="600" height="600" fill="%23f0f0f0"/%3E%3Ctext x="50%25" y="50%25" font-family="Arial" font-size="24" fill="%23999" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E';
+  }
+
+  if (product.imageCover) {
+    return product.imageCover;
+  }
+
+  if (Array.isArray(product.images) && product.images.length > 0) {
     return product.images[0];
   }
+
   // Fallback placeholder
   return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600"%3E%3Crect width="600" height="600" fill="%23f0f0f0"/%3E%3Ctext x="50%25" y="50%25" font-family="Arial" font-size="24" fill="%23999" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E';
 };

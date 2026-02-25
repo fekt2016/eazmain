@@ -35,6 +35,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [twoFactorCode, setTwoFactorCode] = useState("");
   const [loginSessionId, setLoginSessionId] = useState(null);
+  const [rememberMe, setRememberMe] = useState(false);
   const { mutate: merge } = useMergeWishlists();
 
   const { syncCart } = useCartActions();
@@ -46,6 +47,22 @@ export default function LoginPage() {
 
   // Get redirectTo from URL params or storage
   const redirectTo = searchParams.get('redirectTo') || storage.getRedirect() || '/';
+
+  // Load remembered email (if any)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem("buyerRememberMe");
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed?.email) {
+        setState((prev) => ({ ...prev, email: parsed.email }));
+        setRememberMe(true);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const submitHandler = (e) => {
     e.preventDefault();
@@ -146,6 +163,18 @@ export default function LoginPage() {
               const finalRedirect = redirectTo || '/';
               console.log('🚀 [Login] Navigating to:', finalRedirect);
               navigate(finalRedirect);
+
+              // Remember-me: store or clear saved email
+              if (typeof window !== "undefined") {
+                if (rememberMe) {
+                  window.localStorage.setItem(
+                    "buyerRememberMe",
+                    JSON.stringify({ email: trimmedEmail })
+                  );
+                } else {
+                  window.localStorage.removeItem("buyerRememberMe");
+                }
+              }
 
               setState({ email: "", password: "" });
             }
@@ -354,9 +383,19 @@ export default function LoginPage() {
                       {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
                     </PasswordToggleButton>
                   </InputWrapper>
-                  <ForgotPasswordLink to="/forgot-password">
-                    Forgot password?
-                  </ForgotPasswordLink>
+                  <LoginMetaRow>
+                    <RememberMeLabel>
+                      <input
+                        type="checkbox"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                      />
+                      <span>Remember me</span>
+                    </RememberMeLabel>
+                    <ForgotPasswordLink to="/forgot-password">
+                      Forgot password?
+                    </ForgotPasswordLink>
+                  </LoginMetaRow>
                   {fieldErrors.password && (
                     <FieldError>{fieldErrors.password}</FieldError>
                   )}
@@ -696,6 +735,27 @@ const ForgotPasswordLink = styled(Link)`
   
   &:hover {
     color: #667eea;
+  }
+`;
+
+const LoginMetaRow = styled.div`
+  margin-top: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+`;
+
+const RememberMeLabel = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: #4a5568;
+
+  input {
+    width: 14px;
+    height: 14px;
   }
 `;
 

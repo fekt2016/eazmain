@@ -8,7 +8,6 @@ import {
   FaShoppingCart,
   FaHeart,
   FaChevronLeft,
-  FaCheck,
   FaShare,
   FaChevronRight,
   FaChevronDown,
@@ -24,7 +23,6 @@ import {
   FaStore,
   FaMapMarkerAlt,
   FaShippingFast,
-  FaExclamationTriangle,
 } from "react-icons/fa";
 import useProduct from '../../shared/hooks/useProduct.js';
 import { useGetProductReviews } from '../../shared/hooks/useReview.js';
@@ -55,9 +53,11 @@ import {
   getProductStock,
   isProductInStock,
 } from '../../shared/utils/productHelpers';
+import { getGalleryImagesForVariant } from '../../shared/utils/productVariantLogic';
 
 import VariantColorImageGallery from '../../components/product/variantNameSelector/VariantColorImageGallery';
 import VariantMainImageSwitcher from '../../components/product/variantNameSelector/VariantMainImageSwitcher';
+import VariantRadioSelector from '../../components/product/variantNameSelector/VariantRadioSelector';
 import VariantPriceDisplay from './components/variantSelector/VariantPriceDisplay';
 import { useVariantSelectionByName } from '../../shared/hooks/products/useVariantSelectionByName';
 import { useVariantSelection } from '../../shared/hooks/products/useVariantSelection';
@@ -190,20 +190,22 @@ const ProductDetailPage = () => {
     );
   }, [variants]);
 
-  // UX rule: when there is only ONE variant, always show it and treat it
-  // like a simple variant selector (no need to force attribute-based flow).
-  const useAttributeBasedVariants = hasAttributeBasedVariants && !isSingleVariant;
+  // Use attribute-based radios when variants have attributes (even for one variant,
+  // so we show e.g. Storage: 32GB, Color: White with values selected).
+  const useAttributeBasedVariants = hasAttributeBasedVariants;
 
   // Use attribute-based selection for products with attributes (Color + Size, etc.)
   const attributeVariantSelection = useVariantSelection(variants, product);
   const { 
-    selectedAttributes, 
+    selectedAttributes,
     selectedVariant: attributeSelectedVariant,
     selectAttribute,
     selectVariant: selectVariantByObject,
     allAttributesSelected,
     missingAttributes,
     getVariantSummary,
+    attributeKeys,
+    computeAvailableOptions,
   } = attributeVariantSelection;
 
   // Use the variant selection by name hook for simple variants (manages its own state and auto-initializes)
@@ -447,8 +449,11 @@ const ProductDetailPage = () => {
     return getProductImages(product);
   }, [product]);
 
-  // Main gallery always shows the general product images (not variant images)
-  const galleryImages = productImages;
+  // Gallery images: prefer selected variant images, fall back to product images
+  const galleryImages = useMemo(
+    () => getGalleryImagesForVariant(selectedVariant, productImages),
+    [selectedVariant, productImages],
+  );
 
   // Clamp selectedImage when gallery length changes (e.g. switch product)
   useEffect(() => {
@@ -619,6 +624,180 @@ const ProductDetailPage = () => {
               </ThumbnailScrollButton>
             </ThumbnailGallery>
           )}
+          {/* Product Details & Reviews below image preview */}
+          <DetailsTabs>
+            <TabSection>
+              <TabHeader>
+                <TabTitle>Product Details</TabTitle>
+              </TabHeader>
+              <TabContent>
+                <DescriptionSection $expanded={showFullDescription}>
+                  <DescriptionText>
+                    {product.description || "No description available."}
+                  </DescriptionText>
+                  <ShowMoreButton onClick={() => setShowFullDescription(!showFullDescription)}>
+                    {showFullDescription ? "Show Less" : "Show More"}
+                    <ChevronIcon $rotated={showFullDescription}>
+                      <FaChevronDown />
+                    </ChevronIcon>
+                  </ShowMoreButton>
+                </DescriptionSection>
+
+                {/* Specifications */}
+                {product.specifications && (
+                  <SpecificationsGrid>
+                    {product.specifications.weight?.value && (
+                      <SpecItem>
+                        <SpecLabel>Weight</SpecLabel>
+                        <SpecValue>
+                          {product.specifications.weight.value} {product.specifications.weight.unit}
+                        </SpecValue>
+                      </SpecItem>
+                    )}
+                    {product.specifications.dimensions && (
+                      <SpecItem>
+                        <SpecLabel>Dimensions</SpecLabel>
+                        <SpecValue>
+                          {product.specifications.dimensions.length} × {product.specifications.dimensions.width} × {product.specifications.dimensions.height} {product.specifications.dimensions.unit}
+                        </SpecValue>
+                      </SpecItem>
+                    )}
+                    {product.specifications.material && product.specifications.material.length > 0 && (
+                      <SpecItem>
+                        <SpecLabel>Material</SpecLabel>
+                        <SpecValue>
+                          {product.specifications.material.map(m => m.value).join(', ')}
+                        </SpecValue>
+                      </SpecItem>
+                    )}
+                  </SpecificationsGrid>
+                )}
+              </TabContent>
+            </TabSection>
+
+            {/* Reviews Section */}
+            <TabSection>
+              <TabHeader>
+                <TabTitle>Customer Reviews ({reviewCount})</TabTitle>
+              </TabHeader>
+
+              <TabContent>
+                {reviewCount > 0 ? (
+                  <ModernReviewsSection>
+                    <ReviewsSummary>
+                      <OverallRating>
+                        <RatingNumber>{averageRating.toFixed(1)}</RatingNumber>
+                        <RatingStars>
+                          <StarRating rating={averageRating} />
+                        </RatingStars>
+                        <RatingText>out of 5</RatingText>
+                      </OverallRating>
+
+                      <RatingBars>
+                        {[5, 4, 3, 2, 1].map((stars) => {
+                          const count = reviews.filter((r) => r.rating === stars).length;
+                          const percentage = reviewCount > 0 ? (count / reviewCount) * 100 : 0;
+                          return (
+                            <RatingBar key={stars}>
+                              <StarCount>{stars} stars</StarCount>
+                              <BarTrack>
+                                <BarProgress $percentage={percentage} />
+                              </BarTrack>
+                              <BarPercentage>{percentage.toFixed(0)}%</BarPercentage>
+                            </RatingBar>
+                          );
+                        })}
+                      </RatingBars>
+                    </ReviewsSummary>
+
+                    <ReviewGrid>
+                      {reviews.slice(0, 3).map((review) => {
+                        const reviewDate = review.reviewDate || review.createdAt || review.updatedAt;
+                        const formattedDate = reviewDate
+                          ? new Date(reviewDate).toLocaleDateString("en-US", {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            })
+                          : "";
+                        const reviewText = review.review || review.comment || review.body || review.content || "—";
+                        const hasImages = review.images && Array.isArray(review.images) && review.images.length > 0;
+                        const sellerReply = review.sellerReply?.reply;
+                        const sellerRepliedAt = review.sellerReply?.repliedAt;
+                        const sellerName = review.sellerReply?.repliedBy?.shopName || review.sellerReply?.repliedBy?.name || "Seller";
+                        return (
+                          <ReviewCard key={review._id}>
+                            <ReviewHeader>
+                              <ReviewerInfo>
+                                <ReviewerAvatar>
+                                  {review.user?.name?.charAt(0) || "A"}
+                                </ReviewerAvatar>
+                                <div>
+                                  <ReviewerName>{review.user?.name || "Anonymous"}</ReviewerName>
+                                  <ReviewMeta>
+                                    <ReviewDate>Reviewed on {formattedDate}</ReviewDate>
+                                    {review.verifiedPurchase && (
+                                      <VerifiedBadge title="Verified purchase">Verified purchase</VerifiedBadge>
+                                    )}
+                                  </ReviewMeta>
+                                </div>
+                              </ReviewerInfo>
+                              <ReviewRating>
+                                <StarRating rating={review.rating} size="14px" />
+                              </ReviewRating>
+                            </ReviewHeader>
+                            <ReviewTitle>{review.title || "Review"}</ReviewTitle>
+                            <ReviewComment>{reviewText}</ReviewComment>
+                            {hasImages && (
+                              <ReviewImages>
+                                {review.images.map((img, idx) => (
+                                  <ReviewImage key={idx} src={img} alt={`Review ${idx + 1}`} />
+                                ))}
+                              </ReviewImages>
+                            )}
+                            {sellerReply && (
+                              <SellerReplyBlock>
+                                <SellerReplyLabel>{sellerName} replied</SellerReplyLabel>
+                                <SellerReplyText>{sellerReply}</SellerReplyText>
+                                {sellerRepliedAt && (
+                                  <SellerReplyDate>
+                                    {new Date(sellerRepliedAt).toLocaleDateString("en-US", {
+                                      year: "numeric",
+                                      month: "short",
+                                      day: "numeric",
+                                    })}
+                                  </SellerReplyDate>
+                                )}
+                              </SellerReplyBlock>
+                            )}
+                            {(review.helpfulVotes > 0 || review.nothelpfulVotes > 0) && (
+                              <HelpfulCount>
+                                {review.helpfulVotes > 0 && (
+                                  <span>{review.helpfulVotes} {review.helpfulVotes === 1 ? "person" : "people"} found this helpful</span>
+                                )}
+                              </HelpfulCount>
+                            )}
+                          </ReviewCard>
+                        );
+                      })}
+                    </ReviewGrid>
+
+                    {reviewCount > 2 && (
+                      <ViewAllReviews to={`/product/${id}/reviews`}>
+                        View all {reviewCount} reviews
+                      </ViewAllReviews>
+                    )}
+                  </ModernReviewsSection>
+                ) : (
+                  <NoReviewsState>
+                    <NoReviewsIcon>💬</NoReviewsIcon>
+                    <h3>No reviews yet</h3>
+                    <p>Be the first to share your thoughts!</p>
+                  </NoReviewsState>
+                )}
+              </TabContent>
+            </TabSection>
+          </DetailsTabs>
         </ImageSection>
 
         {/* Product Info */}
@@ -689,7 +868,7 @@ const ProductDetailPage = () => {
             </StockRow>
           </PricingCard>
 
-          {/* Variant Section — selection based on variant image; section holds the variant image grid */}
+          {/* Variant Section — variant images at top, then radio selection, then status */}
           {variants.length > 0 && (
             <VariantSectionCard>
               <VariantSectionTitle>Choose your option</VariantSectionTitle>
@@ -699,92 +878,53 @@ const ProductDetailPage = () => {
                   : `${variants.length} options available`}
               </VariantSectionSubtitle>
 
-              {/* Variant image grid — always use image-based selection */}
+              {/* Variant image grid at top — image with details below */}
               <VariantImagesGrid>
                 {variants.map((variant) => {
                   // Use variant image if available, otherwise fallback to product image or placeholder
                   const image = variant.images?.[0] || product?.imageCover || '/placeholder-image.png';
                   const isSelected = selectedVariant?._id === variant._id;
                   const isOutOfStock = variant.status === 'inactive' || (variant.stock || 0) === 0;
-                  const attributes = getVariantAttributes(variant);
 
                   return (
-                    <VariantImageItem
-                      key={variant._id || variant.sku}
-                      $selected={isSelected}
-                      $disabled={isOutOfStock}
-                      onClick={() => {
-                        if (isOutOfStock) return;
-                        if (useAttributeBasedVariants && variant?.attributes?.length && selectVariantByObject) {
-                          selectVariantByObject(variant);
-                        } else if (useAttributeBasedVariants && variant?.attributes?.length && selectAttribute) {
-                          variant.attributes.forEach((attr) => {
-                            if (attr.key && attr.value) selectAttribute(attr.key, attr.value);
-                          });
-                        } else {
-                          handleVariantSelectCallback(variant);
-                        }
-                        setSelectedImage(0);
-                      }}
-                    >
-                      <VariantImage src={image} alt={variant.name || variant.sku || 'Variant'} />
-                      {isSelected && !isOutOfStock && <VariantImageSelectedBadge>Selected</VariantImageSelectedBadge>}
-                      {isOutOfStock && <VariantImageSelectedBadge $outOfStock>Out of Stock</VariantImageSelectedBadge>}
-                      {attributes && attributes.length > 0 && (
-                        <VariantImageLabel>
-                          <VariantAttributesTable variant={variant} isInLabel={true} />
-                        </VariantImageLabel>
-                      )}
-                      {(!attributes || attributes.length === 0) && variant?.name && (
-                        <VariantImageLabel>{variant.name}</VariantImageLabel>
-                      )}
-                    </VariantImageItem>
+                    <VariantImageColumn key={variant._id || variant.sku}>
+                      <VariantImageItem
+                        $selected={isSelected}
+                        $disabled={isOutOfStock}
+                        onClick={() => {
+                          if (isOutOfStock) return;
+                          if (useAttributeBasedVariants && variant?.attributes?.length && selectVariantByObject) {
+                            selectVariantByObject(variant);
+                          } else if (useAttributeBasedVariants && variant?.attributes?.length && selectAttribute) {
+                            variant.attributes.forEach((attr) => {
+                              if (attr.key && attr.value) selectAttribute(attr.key, attr.value);
+                            });
+                          } else {
+                            handleVariantSelectCallback(variant);
+                          }
+                          setSelectedImage(0);
+                        }}
+                      >
+                        <VariantImage src={image} alt={variant.name || variant.sku || 'Variant'} />
+                        {isSelected && !isOutOfStock && <VariantImageSelectedBadge>Selected</VariantImageSelectedBadge>}
+                        {isOutOfStock && <VariantImageSelectedBadge $outOfStock>Out of Stock</VariantImageSelectedBadge>}
+                      </VariantImageItem>
+                    </VariantImageColumn>
                   );
                 })}
               </VariantImagesGrid>
 
-              {/* Status line under the grid */}
-              <VariantStatusCard>
-                {selectedVariant ? (
-                  isInStock ? (
-                    <VariantMatched>
-                      <StatusIcon $status="success">
-                        <FaCheck />
-                      </StatusIcon>
-                      <StatusContent>
-                        <StatusTitle>
-                          {useAttributeBasedVariants ? (
-                            getVariantSummary() || 'Selected'
-                          ) : (
-                            <VariantAttributesTable variant={selectedVariant} />
-                          ) || 'Selected'}
-                        </StatusTitle>
-                        <StatusSubtitle>Available - ready to ship</StatusSubtitle>
-                      </StatusContent>
-                    </VariantMatched>
-                  ) : (
-                    <VariantOutOfStock>
-                      <StatusIcon $status="warning">
-                        <FaExclamationTriangle />
-                      </StatusIcon>
-                      <StatusContent>
-                        <StatusTitle>This option is out of stock</StatusTitle>
-                        <StatusSubtitle>Please select a different option</StatusSubtitle>
-                      </StatusContent>
-                    </VariantOutOfStock>
-                  )
-                ) : (
-                  <VariantNotSelected>
-                    <StatusIcon $status="info">
-                      <FaExclamationTriangle />
-                    </StatusIcon>
-                    <StatusContent>
-                      <StatusTitle>Select an option above</StatusTitle>
-                      <StatusSubtitle>Click an image to choose your variant</StatusSubtitle>
-                    </StatusContent>
-                  </VariantNotSelected>
-                )}
-              </VariantStatusCard>
+              {/* Radio-based variant options: attribute-based or name-based */}
+              {variants.length >= 1 && (
+                <VariantRadioSelector
+                  attributeKeys={useAttributeBasedVariants ? attributeKeys : []}
+                  computeAvailableOptions={computeAvailableOptions}
+                  selectAttribute={selectAttribute}
+                  variants={!useAttributeBasedVariants ? variants : []}
+                  selectedVariant={!useAttributeBasedVariants ? selectedVariant : undefined}
+                  onSelectVariant={!useAttributeBasedVariants ? handleVariantSelect : undefined}
+                />
+              )}
 
               <VariantMainImageSwitcher
                 selectedVariant={selectedVariant}
@@ -969,181 +1109,6 @@ const ProductDetailPage = () => {
           })()}
         </InfoSection>
       </ModernProductGrid>
-
-      {/* Product Details Tabs */}
-      <DetailsTabs>
-        <TabSection>
-          <TabHeader>
-            <TabTitle>Product Details</TabTitle>
-          </TabHeader>
-          <TabContent>
-            <DescriptionSection $expanded={showFullDescription}>
-              <DescriptionText>
-                {product.description || "No description available."}
-              </DescriptionText>
-              <ShowMoreButton onClick={() => setShowFullDescription(!showFullDescription)}>
-                {showFullDescription ? "Show Less" : "Show More"}
-                <ChevronIcon $rotated={showFullDescription}>
-                  <FaChevronDown />
-                </ChevronIcon>
-              </ShowMoreButton>
-            </DescriptionSection>
-
-            {/* Specifications */}
-            {product.specifications && (
-              <SpecificationsGrid>
-                {product.specifications.weight?.value && (
-                  <SpecItem>
-                    <SpecLabel>Weight</SpecLabel>
-                    <SpecValue>
-                      {product.specifications.weight.value} {product.specifications.weight.unit}
-                    </SpecValue>
-                  </SpecItem>
-                )}
-                {product.specifications.dimensions && (
-                  <SpecItem>
-                    <SpecLabel>Dimensions</SpecLabel>
-                    <SpecValue>
-                      {product.specifications.dimensions.length} × {product.specifications.dimensions.width} × {product.specifications.dimensions.height} {product.specifications.dimensions.unit}
-                    </SpecValue>
-                  </SpecItem>
-                )}
-                {product.specifications.material && product.specifications.material.length > 0 && (
-                  <SpecItem>
-                    <SpecLabel>Material</SpecLabel>
-                    <SpecValue>
-                      {product.specifications.material.map(m => m.value).join(', ')}
-                    </SpecValue>
-                  </SpecItem>
-                )}
-              </SpecificationsGrid>
-            )}
-          </TabContent>
-        </TabSection>
-
-        {/* Reviews Section */}
-        <TabSection>
-          <TabHeader>
-            <TabTitle>Customer Reviews ({reviewCount})</TabTitle>
-          </TabHeader>
-
-          <TabContent>
-            {reviewCount > 0 ? (
-              <ModernReviewsSection>
-                <ReviewsSummary>
-                  <OverallRating>
-                    <RatingNumber>{averageRating.toFixed(1)}</RatingNumber>
-                    <RatingStars>
-                      <StarRating rating={averageRating} />
-                    </RatingStars>
-                    <RatingText>out of 5</RatingText>
-                  </OverallRating>
-
-                  <RatingBars>
-                    {[5, 4, 3, 2, 1].map((stars) => {
-                      const count = reviews.filter((r) => r.rating === stars).length;
-                      const percentage = reviewCount > 0 ? (count / reviewCount) * 100 : 0;
-                      return (
-                        <RatingBar key={stars}>
-                          <StarCount>{stars} stars</StarCount>
-                          <BarTrack>
-                            <BarProgress $percentage={percentage} />
-                          </BarTrack>
-                          <BarPercentage>{percentage.toFixed(0)}%</BarPercentage>
-                        </RatingBar>
-                      );
-                    })}
-                  </RatingBars>
-                </ReviewsSummary>
-
-                <ReviewGrid>
-                  {reviews.slice(0, 3).map((review) => {
-                    const reviewDate = review.reviewDate || review.createdAt || review.updatedAt;
-                    const formattedDate = reviewDate
-                      ? new Date(reviewDate).toLocaleDateString("en-US", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })
-                      : "";
-                    const reviewText = review.review || review.comment || review.body || review.content || "—";
-                    const hasImages = review.images && Array.isArray(review.images) && review.images.length > 0;
-                    const sellerReply = review.sellerReply?.reply;
-                    const sellerRepliedAt = review.sellerReply?.repliedAt;
-                    const sellerName = review.sellerReply?.repliedBy?.shopName || review.sellerReply?.repliedBy?.name || "Seller";
-                    return (
-                      <ReviewCard key={review._id}>
-                        <ReviewHeader>
-                          <ReviewerInfo>
-                            <ReviewerAvatar>
-                              {review.user?.name?.charAt(0) || "A"}
-                            </ReviewerAvatar>
-                            <div>
-                              <ReviewerName>{review.user?.name || "Anonymous"}</ReviewerName>
-                              <ReviewMeta>
-                                <ReviewDate>Reviewed on {formattedDate}</ReviewDate>
-                                {review.verifiedPurchase && (
-                                  <VerifiedBadge title="Verified purchase">Verified purchase</VerifiedBadge>
-                                )}
-                              </ReviewMeta>
-                            </div>
-                          </ReviewerInfo>
-                          <ReviewRating>
-                            <StarRating rating={review.rating} size="14px" />
-                          </ReviewRating>
-                        </ReviewHeader>
-                        <ReviewTitle>{review.title || "Review"}</ReviewTitle>
-                        <ReviewComment>{reviewText}</ReviewComment>
-                        {hasImages && (
-                          <ReviewImages>
-                            {review.images.map((img, idx) => (
-                              <ReviewImage key={idx} src={img} alt={`Review ${idx + 1}`} />
-                            ))}
-                          </ReviewImages>
-                        )}
-                        {sellerReply && (
-                          <SellerReplyBlock>
-                            <SellerReplyLabel>{sellerName} replied</SellerReplyLabel>
-                            <SellerReplyText>{sellerReply}</SellerReplyText>
-                            {sellerRepliedAt && (
-                              <SellerReplyDate>
-                                {new Date(sellerRepliedAt).toLocaleDateString("en-US", {
-                                  year: "numeric",
-                                  month: "short",
-                                  day: "numeric",
-                                })}
-                              </SellerReplyDate>
-                            )}
-                          </SellerReplyBlock>
-                        )}
-                        {(review.helpfulVotes > 0 || review.nothelpfulVotes > 0) && (
-                          <HelpfulCount>
-                            {review.helpfulVotes > 0 && (
-                              <span>{review.helpfulVotes} {review.helpfulVotes === 1 ? "person" : "people"} found this helpful</span>
-                            )}
-                          </HelpfulCount>
-                        )}
-                      </ReviewCard>
-                    );
-                  })}
-                </ReviewGrid>
-
-                {reviewCount > 2 && (
-                  <ViewAllReviews to={`/product/${id}/reviews`}>
-                    View all {reviewCount} reviews
-                  </ViewAllReviews>
-                )}
-              </ModernReviewsSection>
-            ) : (
-              <NoReviewsState>
-                <NoReviewsIcon>💬</NoReviewsIcon>
-                <h3>No reviews yet</h3>
-                <p>Be the first to share your thoughts!</p>
-              </NoReviewsState>
-            )}
-          </TabContent>
-        </TabSection>
-      </DetailsTabs>
 
       {/* Similar Products */}
       {product.category && (
@@ -2272,6 +2237,8 @@ const TrustSection = styled.div`
   }
 `;
 
+// (Product details tabs now live under the image column, so InfoLowerRow is no longer needed.)
+
 const TrustItem = styled.div`
   display: flex;
   align-items: center;
@@ -3084,168 +3051,6 @@ const BackButton = styled.button`
   }
 `;
 
-// Variant Status Display Components
-const VariantStatusCard = styled.div`
-  background: white;
-  padding: 2rem;
-  border-radius: 1.6rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  border: 1px solid var(--color-grey-100);
-  margin-bottom: 2rem;
-
-  @media (max-width: 1024px) {
-    padding: 1.8rem;
-    border-radius: 1.4rem;
-  }
-
-  @media (max-width: 640px) {
-    padding: 1.5rem;
-    border-radius: 1.2rem;
-    margin-bottom: 1.5rem;
-  }
-`;
-
-const VariantMatched = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
-  border-radius: 1.2rem;
-  border-left: 4px solid var(--color-green-500);
-
-  @media (max-width: 640px) {
-    padding: 1.2rem;
-    gap: 1rem;
-    border-radius: 1rem;
-    border-left-width: 3px;
-  }
-`;
-
-const VariantOutOfStock = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #fed7d7 0%, #feb2b2 100%);
-  border-radius: 1.2rem;
-  border-left: 4px solid var(--color-red-500);
-
-  @media (max-width: 640px) {
-    padding: 1.2rem;
-    gap: 1rem;
-    border-radius: 1rem;
-    border-left-width: 3px;
-  }
-`;
-
-const VariantNotAvailable = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #fed7d7 0%, #feb2b2 100%);
-  border-radius: 1.2rem;
-  border-left: 4px solid var(--color-red-500);
-
-  @media (max-width: 640px) {
-    padding: 1.2rem;
-    gap: 1rem;
-    border-radius: 1rem;
-    border-left-width: 3px;
-  }
-`;
-
-const VariantIncomplete = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
-  border-radius: 1.2rem;
-  border-left: 4px solid var(--color-primary-500);
-
-  @media (max-width: 640px) {
-    padding: 1.2rem;
-    gap: 1rem;
-    border-radius: 1rem;
-    border-left-width: 3px;
-  }
-`;
-
-const VariantNotSelected = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-  border-radius: 1.2rem;
-  border-left: 4px solid var(--color-grey-400);
-
-  @media (max-width: 640px) {
-    padding: 1.2rem;
-    gap: 1rem;
-    border-radius: 1rem;
-    border-left-width: 3px;
-  }
-`;
-
-const StatusIcon = styled.div`
-  width: 4rem;
-  height: 4rem;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.8rem;
-  flex-shrink: 0;
-  background: ${(props) => {
-    if (props.$status === 'success') return 'var(--color-green-500)';
-    if (props.$status === 'warning') return 'var(--color-yellow-500)';
-    if (props.$status === 'error') return 'var(--color-red-500)';
-    return 'var(--color-primary-500)';
-  }};
-  color: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  min-width: 44px; /* Touch-friendly */
-  min-height: 44px; /* Touch-friendly */
-
-  @media (max-width: 640px) {
-    width: 3.6rem;
-    height: 3.6rem;
-    font-size: 1.6rem;
-    min-width: 44px;
-    min-height: 44px;
-  }
-`;
-
-const StatusContent = styled.div`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-`;
-
-const StatusTitle = styled.div`
-  font-size: 1.6rem;
-  font-weight: 600;
-  color: var(--color-grey-900);
-  width: 100%;
-
-  @media (max-width: 640px) {
-    font-size: 1.4rem;
-  }
-`;
-
-const StatusSubtitle = styled.div`
-  font-size: 1.4rem;
-  color: var(--color-grey-600);
-
-  @media (max-width: 640px) {
-    font-size: 1.2rem;
-  }
-`;
-
 const VariantImagesCard = styled.div`
   background: white;
   padding: 2rem;
@@ -3280,19 +3085,32 @@ const VariantImagesTitle = styled.h3`
 
 const VariantImagesGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
-  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 0.5rem 0.75rem;
+  max-width: 320px;
+  margin-bottom: 1rem;
 
   @media (max-width: 640px) {
-    grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
-    gap: 0.4rem;
+    grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+    gap: 0.35rem 0.5rem;
+    max-width: 280px;
+  }
+`;
+
+const VariantImageColumn = styled.div`
+  display: flex;
+  flex-direction: column;
+  max-width: 80px;
+
+  @media (max-width: 640px) {
+    max-width: 56px;
   }
 `;
 
 const VariantImageItem = styled.div`
   position: relative;
   aspect-ratio: 1;
-  border-radius: 0.7rem;
+  border-radius: 0.5rem;
   overflow: hidden;
   cursor: ${(props) => (props.$disabled ? 'not-allowed' : 'pointer')};
   opacity: ${(props) => (props.$disabled ? 0.6 : 1)};
@@ -3318,34 +3136,17 @@ const VariantImage = styled.img`
   object-fit: cover;
 `;
 
-const VariantImageLabel = styled.span`
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 0.4rem 0.5rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: white;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.5), transparent);
-  text-align: left;
-  overflow: visible;
-  display: flex;
-  flex-direction: column;
-  max-height: 60%;
-`;
-
 const VariantImageSelectedBadge = styled.div`
   position: absolute;
-  top: 0.35rem;
-  right: 0.35rem;
+  top: 0.2rem;
+  right: 0.2rem;
   background: ${(props) => (props.$outOfStock ? 'var(--color-red-500)' : 'var(--color-primary-500)')};
   color: white;
-  padding: 0.18rem 0.55rem;
-  border-radius: 0.45rem;
-  font-size: 0.75rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.35rem;
+  font-size: 0.65rem;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   z-index: 1;
 `;
 
