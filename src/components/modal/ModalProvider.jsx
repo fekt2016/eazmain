@@ -1,7 +1,9 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import { ModalContext } from './modalContext';
 import { ModalRoot } from './ModalRoot';
+
+// Use the built-in crypto.randomUUID() — no external uuid package needed
+const generateId = () => crypto.randomUUID();
 
 export const ModalProvider = ({ children, theme }) => {
     const [modals, setModals] = useState([]);
@@ -11,7 +13,7 @@ export const ModalProvider = ({ children, theme }) => {
     }, []);
 
     const openModal = useCallback((type, options) => {
-        const id = uuidv4();
+        const id = generateId();
 
         // For confirm modals, handle the async onConfirm to manage loading state
         let wrappedOnConfirm = options.onConfirm;
