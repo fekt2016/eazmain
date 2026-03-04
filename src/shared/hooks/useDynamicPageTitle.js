@@ -4,8 +4,8 @@ const useDynamicPageTitle = ({
   title,
   dynamicTitle,
   description,
-  defaultTitle = 'Saiisai',
-  defaultDescription = 'Shop the best products on Saiisai',
+  defaultTitle = 'Saiisai - Online Shopping in Ghana | E-commerce Ghana',
+  defaultDescription = "saiisai.com is Ghana's online shopping platform. Buy and sell products easily. The best e-commerce website in Ghana.",
 }) => {
   // FIX: Memoize computed values to prevent unnecessary DOM updates
   const finalTitle = useMemo(() => {

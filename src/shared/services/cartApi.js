@@ -16,15 +16,22 @@ const cartApi = {
         ? variantId._id 
         : variantId;
       
-      logger.log("Add to cart request:", { productId, quantity, variantId: variantIdValue });
-      
-      const response = await api.post("/cart", {
+      const payload = {
         productId,
         quantity,
-        variantId: variantIdValue || undefined, // Only include if it exists
+        variantId: variantIdValue || undefined,
+      };
+      console.log('[CART_DEBUG] cartApi.addToCart request:', payload);
+      logger.log("Add to cart request:", payload);
+
+      const response = await api.post("/cart", payload);
+      console.log('[CART_DEBUG] cartApi.addToCart response:', {
+        status: response?.status,
+        dataKeys: response?.data ? Object.keys(response.data) : [],
+        cartProductCount: response?.data?.data?.cart?.products?.length ?? response?.data?.cart?.products?.length,
       });
       logger.log("Add to cart API response:", response.data);
-      return response; // Return full response
+      return response; // Return full response (mutation uses response.data)
     } catch (error) {
       logger.error("Error adding to cart:", error);
       logger.error("Error details:", {

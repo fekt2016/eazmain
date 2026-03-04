@@ -7,11 +7,11 @@ import {
   useResetNotificationSettings,
 } from '../../shared/hooks/useNotification';
 import { LoadingState, ErrorState, ButtonSpinner } from '../../components/loading';
-import { 
-  FaBell, 
-  FaEnvelope, 
-  FaMobile, 
-  FaComment, 
+import {
+  FaBell,
+  FaEnvelope,
+  FaMobile,
+  FaComment,
   FaMoon,
   FaSave,
   FaUndo,
@@ -21,11 +21,13 @@ import {
   FaRocket,
   FaInfoCircle
 } from "react-icons/fa";
+import { useModal } from '../../shared/hooks/useModal';
 
 const NotificationSettingsPage = () => {
   const { data: settings, isLoading, isError } = useNotificationSettings();
   const updateSetting = useUpdateNotificationSetting();
   const resetSettings = useResetNotificationSettings();
+  const { showWarning } = useModal();
 
   // Toggle notification setting
   const toggleSetting = (channel, type) => {
@@ -53,9 +55,12 @@ const NotificationSettingsPage = () => {
 
   // Reset to defaults
   const resetToDefaults = () => {
-    if (window.confirm("Are you sure you want to reset to default settings?")) {
-      resetSettings.mutate();
-    }
+    showWarning({
+      title: "Reset Settings?",
+      message: "Are you sure you want to reset to default settings?",
+      confirmText: "Reset",
+      onConfirm: () => resetSettings.mutate()
+    });
   };
 
   if (isLoading) {
@@ -64,8 +69,8 @@ const NotificationSettingsPage = () => {
 
   if (isError) {
     return (
-      <ErrorState 
-        title="Failed to load notification settings" 
+      <ErrorState
+        title="Failed to load notification settings"
         message="Please try again later."
       />
     );
@@ -79,13 +84,13 @@ const NotificationSettingsPage = () => {
             <Title>Notification Settings</Title>
             <Subtitle>Customize how and when you receive notifications</Subtitle>
           </TitleSection>
-          
+
           <StatsCard>
             <StatItem>
               <StatValue>
                 {Object.values(settings.email).filter(Boolean).length +
-                 Object.values(settings.push).filter(Boolean).length +
-                 Object.values(settings.sms).filter(Boolean).length}
+                  Object.values(settings.push).filter(Boolean).length +
+                  Object.values(settings.sms).filter(Boolean).length}
               </StatValue>
               <StatLabel>Active Notifications</StatLabel>
             </StatItem>
@@ -378,7 +383,7 @@ const NotificationSettingsPage = () => {
             Important Note
           </InfoHeader>
           <InfoContent>
-            Urgent notifications about your orders and account security will always be sent, 
+            Urgent notifications about your orders and account security will always be sent,
             regardless of your notification preferences or quiet hours settings.
           </InfoContent>
         </InfoSection>

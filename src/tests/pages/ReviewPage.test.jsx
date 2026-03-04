@@ -29,7 +29,7 @@ const mockUseGetProductReviews = jest.fn(() => ({
   error: null,
 }));
 
-jest.mock('@/shared/hooks/useReview', () => ({
+jest.mock('@/shared/hooks/useReviews', () => ({
   __esModule: true,
   useGetProductReviews: (...args) => mockUseGetProductReviews(...args),
 }));

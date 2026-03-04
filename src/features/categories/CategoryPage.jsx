@@ -1,17 +1,17 @@
 import { useMemo, useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import styled, { css } from "styled-components";
 import { FaFilter, FaChevronDown, FaChevronUp, FaTimes, FaSortAmountDown } from "react-icons/fa";
 import useCategory from '../../shared/hooks/useCategory';
 import useProducts from '../../shared/hooks/useProduct';
 import ProductCard from '../../shared/components/ProductCard';
 import Pagination from '../../shared/components/pagination';
+import { ShimmerProductGrid, ErrorState } from '../../components/loading';
 import SkeletonLoader from '../../shared/components/SkeletonLoader';
 import Container from '../../shared/components/Container';
 import { devicesMax } from '../../shared/styles/breakpoint';
 import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 import { fadeIn, slideUp } from '../../shared/styles/animations';
-import { ErrorState } from '../../components/loading';
 
 export default function CategoryPage() {
   const { id } = useParams();
@@ -30,7 +30,7 @@ export default function CategoryPage() {
 
   const [showFilters, setShowFilters] = useState(false);
   const [sortOption, setSortOption] = useState("");
-  const [priceRange, setPriceRange] = useState([0, 5000]);
+  const [priceRange, setPriceRange] = useState([0, 100000]);
   const [selectedSubcategory, setSelectedSubcategory] = useState(null);
   const [page, setPage] = useState(1);
   const [itemsPerPage] = useState(12);
@@ -158,7 +158,10 @@ export default function CategoryPage() {
             <HeroWrapper>
               <HeroBackground>
                 <HeroImage
-                  src={category.image || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80"}
+                  src={
+                    (category.image && (Array.isArray(category.image) ? (category.image[0]?.url || category.image[0]) : (category.image.url || category.image)))
+                    || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80"
+                  }
                   alt={category.name}
                 />
                 <HeroOverlay />
@@ -204,7 +207,7 @@ export default function CategoryPage() {
                   onClick={clearSubcategory}
                 >
                   <TabImageWrapper $isActive={!selectedSubcategory}>
-                    <img src="https://images.unsplash.com/photo-1557683316-973673baf926?w=100&h=100&fit=crop" alt="All" />
+                    <img src="https://images.unsplash.com/photo-1557683316-973673baf926?w=100&h=100&fit=crop" alt="All categories – Saiisai Ghana online shopping" />
                   </TabImageWrapper>
                   <TabLabel>All Items</TabLabel>
                 </SubcategoryTab>
@@ -217,8 +220,8 @@ export default function CategoryPage() {
                   >
                     <TabImageWrapper $isActive={selectedSubcategory === sub._id}>
                       <img
-                        src={sub.image || `https://source.unsplash.com/random/100x100?${sub.name}`}
-                        alt={sub.name}
+                        src={(sub.image && (Array.isArray(sub.image) ? (sub.image[0]?.url || sub.image[0]) : (sub.image.url || sub.image))) || `https://source.unsplash.com/random/100x100?${sub.name}`}
+                        alt={`${sub.name} category – Saiisai Ghana e-commerce`}
                         onError={(e) => {
                           const initial = sub.name.charAt(0).toUpperCase();
                           e.target.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect fill='%23ffc400' width='100' height='100'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='36' font-weight='bold'%3E${initial}%3C/text%3E%3C/svg%3E`;
@@ -275,22 +278,22 @@ export default function CategoryPage() {
                   <SliderTrack>
                     <SliderRange
                       style={{
-                        left: `${(priceRange[0] / 5000) * 100}%`,
-                        right: `${100 - (priceRange[1] / 5000) * 100}%`
+                        left: `${(priceRange[0] / 100000) * 100}%`,
+                        right: `${100 - (priceRange[1] / 100000) * 100}%`
                       }}
                     />
                   </SliderTrack>
                   <RangeInput
                     type="range"
                     min="0"
-                    max="5000"
+                    max="100000"
                     value={priceRange[0]}
                     onChange={(e) => handlePriceChange(e, 0)}
                   />
                   <RangeInput
                     type="range"
                     min="0"
-                    max="5000"
+                    max="100000"
                     value={priceRange[1]}
                     onChange={(e) => handlePriceChange(e, 1)}
                   />
@@ -359,22 +362,22 @@ export default function CategoryPage() {
 
           {/* Products Grid */}
           {isProductsLoading ? (
-            <ProductsGrid>
-              {Array.from({ length: 8 }).map((_, idx) => (
-                <SkeletonLoader key={idx} height="380px" borderRadius="16px" />
-              ))}
-            </ProductsGrid>
+            <ShimmerProductGrid />
           ) : products.length === 0 ? (
-            <EmptyState>
-              <EmptyImage src="https://cdn-icons-png.flaticon.com/512/4076/4076432.png" alt="No products" />
-              <h3>No Products Found</h3>
-              <p>Try adjusting your filters or check back later for new arrivals.</p>
-              <ClearButton onClick={() => {
-                setPriceRange([0, 5000]);
-                setSelectedSubcategory(null);
-                setSortOption("");
-              }}>Clear All Filters</ClearButton>
-            </EmptyState>
+            <EmptyState
+              title="No products found"
+              message="Try browsing another category"
+              action={
+                <>
+                  <ClearButton onClick={() => {
+                    setPriceRange([0, 100000]);
+                    setSelectedSubcategory(null);
+                    setSortOption("");
+                  }}>Clear All Filters</ClearButton>
+                  <BrowseCategoriesButton to="/categories">Browse Categories</BrowseCategoriesButton>
+                </>
+              }
+            />
           ) : (
             <>
               <ProductsGrid>
@@ -1086,11 +1089,25 @@ const ClearButton = styled.button`
   font-size: 1.4rem;
   cursor: pointer;
   transition: all 0.3s ease;
+  margin-right: 8px;
 
   &:hover {
     background: var(--color-primary-600);
     transform: translateY(-2px);
   }
+`;
+
+const BrowseCategoriesButton = styled(Link)`
+  display: inline-block;
+  margin-top: 8px;
+  padding: 1.2rem 2.4rem;
+  background: var(--primary, #D4882A);
+  color: white;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s;
+  &:hover { background: #B8711F; color: white; }
 `;
 
 const PaginationWrapper = styled.div`

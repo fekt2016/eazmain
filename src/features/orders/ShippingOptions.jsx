@@ -137,7 +137,7 @@ const ShippingOptions = ({
 
   return (
     <ShippingOptionsContainer>
-      
+
       {/* Standard Delivery - First Option */}
       {standardOption && (
         <ShippingOptionCard
@@ -221,31 +221,29 @@ const ShippingOptions = ({
         </ShippingOptionCard>
       )}
 
-      {/* Express Delivery (1-2 days) - Third Option */}
+      {/* Express Delivery - Third Option */}
       {expressOption && (
         <ShippingOptionCard
           $selected={localSelected === 'express'}
           onClick={() => handleSelect('express')}
-          $disabled={!expressOption.available}
         >
           <RadioButton
             type="radio"
             name="shippingType"
             checked={localSelected === 'express'}
             onChange={() => handleSelect('express')}
-            disabled={!expressOption.available}
           />
           <OptionContent>
             <OptionHeader>
               <OptionIcon $selected={localSelected === 'express'} $express>
-                <FaTruck />
+                <FaRocket />
               </OptionIcon>
               <OptionInfo>
                 <OptionTitle $selected={localSelected === 'express'}>
                   Express Delivery
                 </OptionTitle>
                 <OptionDescription>
-                  On its way for delivery
+                  {expressOption.estimate || 'Starts at next working hours (8:00 AM)'}
                 </OptionDescription>
               </OptionInfo>
               {localSelected === 'express' && (
@@ -287,9 +285,9 @@ const OptionsTitle = styled.h3`
 const ShippingOptionCard = styled.div`
   border: 2px solid
     ${(props) =>
-      props.$selected
-        ? 'var(--color-primary)'
-        : props.$disabled
+    props.$selected
+      ? 'var(--color-primary)'
+      : props.$disabled
         ? 'var(--color-grey-200)'
         : 'var(--color-grey-200)'};
   border-radius: var(--border-radius-md);
@@ -300,21 +298,21 @@ const ShippingOptionCard = styled.div`
     props.$selected
       ? 'var(--color-primary-50)'
       : props.$disabled
-      ? 'var(--color-grey-50)'
-      : 'white'};
+        ? 'var(--color-grey-50)'
+        : 'white'};
   opacity: ${(props) => (props.$disabled ? 0.6 : 1)};
 
   &:hover {
     border-color: ${(props) =>
-      props.$disabled
-        ? 'var(--color-grey-200)'
-        : props.$selected
+    props.$disabled
+      ? 'var(--color-grey-200)'
+      : props.$selected
         ? 'var(--color-primary)'
         : 'var(--color-primary-300)'};
     background: ${(props) =>
-      props.$disabled
-        ? 'var(--color-grey-50)'
-        : props.$selected
+    props.$disabled
+      ? 'var(--color-grey-50)'
+      : props.$selected
         ? 'var(--color-primary-50)'
         : 'var(--color-primary-50)'};
   }

@@ -5,10 +5,10 @@ import useAuth from '../shared/hooks/useAuth';
 import { LoadingState, PageSpinner, SpinnerContainer } from '../components/loading';
 import logger from '../shared/utils/logger';
 
-const ProtectedRoutes = ({ children }) => {
+const ProtectedRoutes = ({ children, allowedStatuses }) => {
   const { userData, isLoading, error } = useAuth();
   const queryClient = useQueryClient();
-  
+
   const user = useMemo(() => {
     if (!userData) return null;
 
@@ -29,7 +29,7 @@ const ProtectedRoutes = ({ children }) => {
       null
     );
   }, [userData]);
-  
+
   // CRITICAL FIX: Check for cached user data if current query failed
   // This prevents redirect when notification endpoints fail but user is still authenticated
   const cachedUser = useMemo(() => {
@@ -45,7 +45,7 @@ const ProtectedRoutes = ({ children }) => {
     }
     return null;
   }, [user, queryClient]);
- 
+
   // FIX: Removed localAuthCheck state - it was causing unnecessary re-renders
   // Use userData and isLoading directly instead
 
@@ -65,7 +65,7 @@ const ProtectedRoutes = ({ children }) => {
     const errorUrl = error?.config?.url || '';
     const isAuthEndpoint = errorUrl.includes('/auth/me') || errorUrl.includes('/auth/current-user');
     const isNotificationError = error?.isNotificationError;
-    
+
     // If error is from notification endpoint, don't redirect - use cached user if available
     if (isNotificationError && cachedUser) {
       logger.warn("[ProtectedRoute] Notification endpoint error but cached user exists - allowing access");
@@ -104,7 +104,7 @@ const ProtectedRoutes = ({ children }) => {
       }
     }
   }
-  
+
   // User authenticated and verified
   // Allow access for buyers (role "buyer", "user", or undefined/null)
   // Block only admin and seller roles from buyer routes
@@ -114,7 +114,7 @@ const ProtectedRoutes = ({ children }) => {
     logger.warn("[ProtectedRoute] No user data found (current or cached), redirecting to login");
     return <Navigate to="/login" replace />;
   }
-  
+
   // Block admin and seller from buyer routes (they should use their own apps),
   // but do NOT send them back to the login page if they are already authenticated.
   // Instead, send them to a dedicated unauthorized page.
@@ -139,8 +139,10 @@ const ProtectedRoutes = ({ children }) => {
     );
   }
 
-  if (activeUser.status !== "active") {
-    return handleStatusRedirect(activeUser.status);
+  if (allowedStatuses && allowedStatuses.length > 0) {
+    if (!allowedStatuses.includes(activeUser.status)) {
+      return handleStatusRedirect(activeUser.status);
+    }
   }
 
   return <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>{children}</Suspense>;

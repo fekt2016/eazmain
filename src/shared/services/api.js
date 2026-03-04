@@ -64,53 +64,34 @@ const PUBLIC_GET_ENDPOINTS = [
 ];
 
 // Helper functions
-// Determine base URL based on environment variable or defaults
-// Priority: Localhost detection > VITE_API_BASE_URL > VITE_API_URL > production default
+const PRODUCTION_API_HOST = 'api.saiisai.com';
+// RULE: Never use api.saiisai.com in development. Only in production builds.
 const getBaseURL = () => {
-  // STRICT LOCAL DEV: Always use localhost in development mode
   const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
-  
-  // Local development detection (highest priority)
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    if (hostname === "localhost" || hostname === "127.0.0.1") {
-      console.log('[getBaseURL] 🔒 Detected localhost - forcing http://localhost:4000/api/v1');
-      return "http://localhost:4000/api/v1";
-    }
+  const isLocalhost =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+  if (isDevelopment || isLocalhost) {
+    return 'http://localhost:4000/api/v1';
   }
-  
-  // If in development mode, default to localhost (even if env var is set to production)
-  if (isDevelopment) {
-    console.warn('[getBaseURL] ⚠️ Development mode detected - using localhost (ignoring env vars if set to production)');
-    return "http://localhost:4000/api/v1";
-  }
-  
-  // Check for API_BASE_URL environment variable (centralized in appConfig)
+
   const apiBaseUrl = API_BASE_URL;
-  
   if (apiBaseUrl) {
-    // Remove trailing slashes and ensure /api/v1 is appended if not present
     let url = apiBaseUrl.trim().replace(/\/+$/, '');
-    
-    // Force HTTP for localhost URLs (even if env var has https)
     if (url.includes('localhost') || url.includes('127.0.0.1') || url.includes(':4000')) {
       url = url.replace(/^https:\/\//i, 'http://');
       if (!url.startsWith('http://') && !url.startsWith('https://')) {
         url = 'http://' + url.replace(/^\/\//, '');
       }
-      console.log('[getBaseURL] 🔒 Forced HTTP for localhost:', url);
     }
-    
-    // If URL doesn't already include /api/v1, append it
     if (!url.includes('/api/v1')) {
       url = `${url}/api/v1`;
     }
-    
     return url;
   }
-  
-  // Production: Default to https://api.saiisai.com/api/v1
-  return "https://api.saiisai.com/api/v1";
+
+  return `https://${PRODUCTION_API_HOST}/api/v1`;
 };
 
 const getRelativePath = (url) => {

@@ -137,9 +137,9 @@ const HomePage = () => {
 
   const products = useMemo(() => {
     if (!productsData) return [];
-    
+
     let productsList = [];
-    
+
     // Handle nested data.data.data structure (from getAllProduct controller)
     if (productsData.data?.data && Array.isArray(productsData.data.data)) {
       productsList = productsData.data.data;
@@ -164,32 +164,32 @@ const HomePage = () => {
     else if (Array.isArray(productsData)) {
       productsList = productsData;
     }
-    
+
     // CRITICAL: Filter out deleted products and unapproved products (client-side safety check)
     // Backend should already filter these via buildBuyerSafeQuery, but this ensures no deleted/unapproved products are shown
     return productsList.filter(product => {
       // Exclude products deleted by admin or seller
-      if (product.isDeleted === true || 
-          product.isDeletedByAdmin === true || 
-          product.isDeletedBySeller === true ||
-          product.status === 'archived') {
+      if (product.isDeleted === true ||
+        product.isDeletedByAdmin === true ||
+        product.isDeletedBySeller === true ||
+        product.status === 'archived') {
         return false;
       }
-      
+
       // CRITICAL: Only show products that have been approved by admin
       // Backend buildBuyerSafeQuery requires: moderationStatus: 'approved'
       // Frontend safety check: Ensure moderationStatus is 'approved' if it exists
       if (product.moderationStatus && product.moderationStatus !== 'approved') {
         return false;
       }
-      
+
       // NOTE: We no longer check isVisible - approved products are visible regardless of seller verification
-      
+
       // Additional check: Ensure status is active or out_of_stock (backend also filters this)
       if (product.status && !['active', 'out_of_stock'].includes(product.status)) {
         return false;
       }
-      
+
       return true;
     });
   }, [productsData]);
@@ -214,11 +214,11 @@ const HomePage = () => {
   const resolveAdLink = useCallback((link) => {
     if (!link || typeof link !== "string") return PATHS.PRODUCTS;
     const raw = link.trim();
-    
+
     // Get current origin (in production: https://saiisai.com, in dev: http://localhost:5173)
     const currentOrigin = window.location.origin;
     const isProduction = !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(currentOrigin);
-    
+
     // In DEVELOPMENT: Keep localhost URLs as-is, don't replace them
     if (!isProduction) {
       // If it's already a full URL (including localhost), return as-is
@@ -229,16 +229,16 @@ const HomePage = () => {
       const cleanLink = raw.startsWith("/") ? raw.substring(1) : raw;
       return `${currentOrigin}/${cleanLink}`;
     }
-    
+
     // In PRODUCTION: Replace localhost URLs with production domain
     // Determine the production frontend URL to use for replacing localhost links
     let productionFrontendUrl = import.meta.env.VITE_FRONTEND_URL;
-    
+
     // Ignore localhost env vars in production
     if (productionFrontendUrl && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(productionFrontendUrl)) {
       productionFrontendUrl = null;
     }
-    
+
     // Try to derive from API URL (if it's production API)
     if (!productionFrontendUrl) {
       const apiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
@@ -247,23 +247,23 @@ const HomePage = () => {
         productionFrontendUrl = apiUrl.replace(/\/api\/?.*$/, '').replace(/\/$/, '');
       }
     }
-    
+
     // Use current origin as fallback in production
     if (!productionFrontendUrl) {
       productionFrontendUrl = currentOrigin;
     }
-    
+
     const cleanFrontendUrl = productionFrontendUrl.trim().replace(/\/$/, ''); // Remove trailing slash
-    
+
     // In PRODUCTION: Replace localhost URLs with production URL
     if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(raw)) {
       try {
         const url = new URL(raw);
         const path = url.pathname + url.search + url.hash;
-        
+
         // Determine production URL to use for replacement
         let replacementUrl = null;
-        
+
         // First, check API URL - if it contains api.saiisai.com, use saiisai.com
         const apiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
         if (apiUrl && apiUrl.includes('api.saiisai.com')) {
@@ -272,26 +272,18 @@ const HomePage = () => {
           // If API URL is production (not localhost), derive frontend URL
           replacementUrl = apiUrl.replace(/\/api\/?.*$/, '').replace(/\/$/, '');
         }
-        
+
         // If still not set, use cleanFrontendUrl only if it's NOT localhost
         if (!replacementUrl && !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(cleanFrontendUrl)) {
           replacementUrl = cleanFrontendUrl;
         }
-        
+
         // Use current origin as fallback
         if (!replacementUrl) {
           replacementUrl = currentOrigin;
         }
-        
+
         const normalized = `${replacementUrl}${path}`;
-        // Debug log
-        console.log('[resolveAdLink] Normalized localhost URL (production):', { 
-          original: raw, 
-          normalized, 
-          replacementUrl,
-          isProduction,
-          currentOrigin
-        });
         return normalized;
       } catch (error) {
         const pathMatch = raw.match(/^https?:\/\/[^\/]+(\/.*)?$/);
@@ -300,10 +292,10 @@ const HomePage = () => {
         return normalized;
       }
     }
-    
+
     // If it's already an absolute URL (and not localhost), return as-is
     if (/^https?:\/\//i.test(raw)) return raw;
-    
+
     // If it's a relative path, prepend FRONTEND_URL
     const cleanLink = raw.startsWith("/") ? raw.substring(1) : raw; // Remove leading slash
     return `${cleanFrontendUrl}/${cleanLink}`;
@@ -352,11 +344,11 @@ const HomePage = () => {
     // Handle different response structures
     // Backend returns: { status: 'success', results: [...], meta: {...} }
     // Service now returns response.data directly
-    const categoriesList = 
-      categoriesData?.results || 
-      categoriesData?.data?.results || 
+    const categoriesList =
+      categoriesData?.results ||
+      categoriesData?.data?.results ||
       [];
-    
+
     if (!categoriesList || !Array.isArray(categoriesList) || categoriesList.length === 0) return [];
 
     // Filter to show only parent categories (top-level categories)
@@ -367,19 +359,32 @@ const HomePage = () => {
     if (parentCategories.length === 0) return [];
 
     // Map API categories to display format, adding images and sizes
-    return parentCategories.slice(0, 5).map((cat, index) => ({
-      id: cat._id,
-      name: cat.name,
-      image: cat.image || [
-        "https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&q=80",
-        "https://images.unsplash.com/photo-1498049860654-af1a5c5668ba?w=800&q=80",
-        "https://images.unsplash.com/photo-1484101403633-562f891dc89a?w=800&q=80",
-        "https://images.unsplash.com/photo-1596462502278-27bfdd403348?w=800&q=80",
-        "https://images.unsplash.com/photo-1517649763962-0c623066013b?w=800&q=80"
-      ][index % 5],
-      count: `${Math.floor(Math.random() * 2000) + 500}+ Items`, // Placeholder count
-      size: index === 0 ? "large" : "medium"
-    }));
+    return parentCategories.slice(0, 5).map((cat, index) => {
+      let resolvedImage = null;
+      if (cat.image) {
+        if (Array.isArray(cat.image)) {
+          resolvedImage = cat.image[0]?.url || (typeof cat.image[0] === 'string' ? cat.image[0] : null);
+        } else if (typeof cat.image === 'object') {
+          resolvedImage = cat.image.url;
+        } else if (typeof cat.image === 'string') {
+          resolvedImage = cat.image;
+        }
+      }
+
+      return {
+        id: cat._id,
+        name: cat.name,
+        image: resolvedImage || [
+          "https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&q=80",
+          "https://images.unsplash.com/photo-1498049860654-af1a5c5668ba?w=800&q=80",
+          "https://images.unsplash.com/photo-1484101403633-562f891dc89a?w=800&q=80",
+          "https://images.unsplash.com/photo-1596462502278-27bfdd403348?w=800&q=80",
+          "https://images.unsplash.com/photo-1517649763962-0c623066013b?w=800&q=80"
+        ][index % 5],
+        count: "",
+        size: index === 0 ? "large" : "medium"
+      };
+    });
   }, [categoriesData]);
 
   return (
@@ -403,7 +408,7 @@ const HomePage = () => {
             const formattedEnd = slide.endDate ? formatPromoEndDate(slide.endDate) : null;
             // CRITICAL: Always normalize the link to ensure no localhost URLs
             let normalizedSlideLink = slide.link ? resolveAdLink(slide.link) : PATHS.PRODUCTS;
-            
+
             // Double-check: if somehow localhost still exists, replace it again
             if (normalizedSlideLink && typeof normalizedSlideLink === 'string') {
               if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(normalizedSlideLink)) {
@@ -430,7 +435,7 @@ const HomePage = () => {
                 }
               }
             }
-            
+
             // Determine if it's an external link (full URL) or internal (relative path)
             const external = normalizedSlideLink && /^https?:\/\//i.test(normalizedSlideLink);
             const ctaEl = external ? (
@@ -472,6 +477,16 @@ const HomePage = () => {
           <FaArrowRight />
         </button>
       </HeroSection>
+
+      {/* SEO: H1 and intro - Ghana e-commerce keywords */}
+      <Section>
+        <Container>
+          <HomepageH1>Online shopping in Ghana – Ghana's e-commerce platform</HomepageH1>
+          <HomepageIntro>
+            Shop Ghana's favourite e-commerce website. Buy and sell online with Saiisai – the best online shopping platform in Ghana.
+          </HomepageIntro>
+        </Container>
+      </Section>
 
       {/* Featured Promotion Banner */}
       {isAdsLoading ? (
@@ -616,7 +631,7 @@ const HomePage = () => {
                           </SellerRating>
                         </SellerHeaderContent>
                       </SellerCardHeader>
-                      
+
                       <SellerCardBody>
                         <SellerStats>
                           <StatItem>
@@ -636,7 +651,7 @@ const HomePage = () => {
                             </StatItem>
                           )}
                         </SellerStats>
-                        
+
                         {productImages.length > 0 && (
                           <ProductPreviewSection>
                             <PreviewLabel>Featured Products</PreviewLabel>
@@ -646,9 +661,9 @@ const HomePage = () => {
                                   <PreviewImage
                                     src={image}
                                     alt={`Product ${index + 1}`}
-                                  onError={(e) => {
-                                    e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect fill='%23e2e8f0' width='80' height='80'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2364748b' font-size='24'%3EP%3C/text%3E%3C/svg%3E";
-                                  }}
+                                    onError={(e) => {
+                                      e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect fill='%23e2e8f0' width='80' height='80'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2364748b' font-size='24'%3EP%3C/text%3E%3C/svg%3E";
+                                    }}
                                   />
                                 </PreviewImageWrapper>
                               ))}
@@ -661,7 +676,7 @@ const HomePage = () => {
                           </ProductPreviewSection>
                         )}
                       </SellerCardBody>
-                      
+
                       <SellerCardFooter>
                         <ViewShopButton>
                           View Shop <FaArrowRight />
@@ -740,9 +755,13 @@ const HomePage = () => {
               ))}
             </LoadingGrid>
           ) : products.length === 0 ? (
-            <EmptyState>
-              <p>No products available at the moment.</p>
-            </EmptyState>
+            <EmptyState
+              title="No products found"
+              message="Try browsing another category"
+              action={
+                <SectionLink to={PATHS.CATEGORIES}>Browse Categories</SectionLink>
+              }
+            />
           ) : (
             <ProductGrid>
               {products.map((product) => (
@@ -772,6 +791,24 @@ const PageWrapper = styled.div`
   background-color: #ffffff;
   min-height: 100vh;
   overflow-x: hidden;
+`;
+
+const HomepageH1 = styled.h1`
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: 700;
+  color: var(--color-grey-900, #0f172a);
+  text-align: center;
+  margin: 0 0 0.75rem 0;
+  line-height: 1.3;
+`;
+
+const HomepageIntro = styled.p`
+  font-size: 1.05rem;
+  color: var(--color-grey-600, #475569);
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto;
+  line-height: 1.6;
 `;
 
 const HeroSection = styled.div`
@@ -977,10 +1014,10 @@ const SlideButton = styled(Link)`
   align-items: center;
   gap: 10px;
   padding: 1rem 2.5rem;
-  background: white;
-  color: black;
+  background: #D4882A;
+  color: white;
   font-weight: 600;
-  border-radius: 50px;
+  border-radius: 8px;
   text-decoration: none;
   transition: all 0.3s ease;
   opacity: 0;
@@ -991,9 +1028,10 @@ const SlideButton = styled(Link)`
   }
 
   &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(255,255,255,0.2);
-    gap: 15px;
+    background: #B8711F;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    color: white;
   }
 `;
 
@@ -1002,10 +1040,10 @@ const SlideButtonAsAnchor = styled.a`
   align-items: center;
   gap: 10px;
   padding: 1rem 2.5rem;
-  background: white;
-  color: black;
+  background: #D4882A;
+  color: white;
   font-weight: 600;
-  border-radius: 50px;
+  border-radius: 8px;
   text-decoration: none;
   transition: all 0.3s ease;
   opacity: 0;
@@ -1016,9 +1054,10 @@ const SlideButtonAsAnchor = styled.a`
   }
 
   &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(255,255,255,0.2);
-    gap: 15px;
+    background: #B8711F;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    color: white;
   }
 `;
 
@@ -1134,34 +1173,32 @@ const TrustSection = styled.div`
 `;
 
 const TrustGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: stretch;
   gap: 2rem;
+  flex-wrap: wrap;
   
   @media ${devicesMax.sm} {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
+    flex-direction: row;
+    gap: 1rem;
   }
 `;
 
 const TrustItem = styled.div`
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
-  padding: 1.5rem;
-  border-radius: 12px;
-  background: #f8f9fa;
-  transition: transform 0.3s;
-  
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-  }
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  text-align: center;
+  min-width: 120px;
 `;
 
 const TrustIcon = styled.div`
-  font-size: 2rem;
-  color: #667eea;
+  font-size: 1.5rem;
+  color: #D4882A;
 `;
 
 const TrustInfo = styled.div`
@@ -1232,7 +1269,7 @@ const CategoryContent = styled.div`
   left: 0;
   width: 100%;
   padding: 2rem;
-  background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+  background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
   color: white;
   
   h3 {

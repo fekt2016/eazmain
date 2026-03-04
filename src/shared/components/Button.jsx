@@ -37,9 +37,10 @@ const variantStyles = {
     &:hover:not(:disabled) {
       background-color: var(--color-button-primary-hover);
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(255, 196, 0, 0.3);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
     }
     &:active:not(:disabled) {
+      background-color: var(--color-button-primary-hover);
       transform: translateY(0);
     }
   `,

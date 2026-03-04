@@ -15,6 +15,7 @@ import {
   getGoogleOAuthConfig,
   getAppleOAuthConfig,
 } from '../../shared/config/oauthConfig';
+import Logo from '../../shared/components/Logo';
 
 // Animations
 const fadeIn = keyframes`
@@ -86,7 +87,6 @@ export default function SignupPage() {
   };
 
   const onSubmit = async (data) => {
-    console.log("onsubmit",data);  
     clearErrors("root");
 
     try {
@@ -95,7 +95,7 @@ export default function SignupPage() {
       registerMutation.mutate(sanitizedData, {
         onSuccess: (response) => {
           logger.debug("Registration successful:", response?.data);
-          
+
           if (response?.data?.requiresVerification || response?.data?.status === "success") {
             navigate("/verify-account", {
               state: {
@@ -110,10 +110,10 @@ export default function SignupPage() {
         },
         onError: (error) => {
           logger.error("Registration error:", error);
-          
+
           const errorResponse = error.response?.data || {};
           const fieldErrors = errorResponse.details || errorResponse.fieldErrors;
-          
+
           // Handle field-level validation errors only (e.g. invalid phone, short password)
           if (fieldErrors && typeof fieldErrors === "object" && Object.keys(fieldErrors).length > 0) {
             Object.keys(fieldErrors).forEach((field) => {
@@ -147,7 +147,9 @@ export default function SignupPage() {
       <ImageSection>
         <Overlay />
         <ImageContent>
-          <BrandLogo to="/">Saiisai</BrandLogo>
+          <BrandLogo to="/">
+            <Logo variant="default" />
+          </BrandLogo>
           <HeroText>
             <h1>Join Our Community</h1>
             <p>Create an account to unlock exclusive features and personalized recommendations.</p>
@@ -157,6 +159,9 @@ export default function SignupPage() {
 
       <FormSection>
         <FormContainer>
+          <FormLogoWrapper>
+            <Logo to="/" variant="default" />
+          </FormLogoWrapper>
           <Header>
             <h2>Create Account</h2>
             <p>Enter your details to get started</p>
@@ -254,9 +259,9 @@ export default function SignupPage() {
               })()}
             />
 
-            <Button 
-              type="submit" 
-              variant="primary" 
+            <Button
+              type="submit"
+              variant="primary"
               fullWidth
               disabled={isSubmitting || registerMutation.isPending}
               loading={isSubmitting || registerMutation.isPending}
@@ -274,11 +279,11 @@ export default function SignupPage() {
           </Divider>
 
           <SocialButtons>
-            <SocialButton 
+            <SocialButton
               type="button"
-              $bg="#fff" 
-              $hover="#f5f5f5" 
-              $border="#e0e0e0" 
+              $bg="#fff"
+              $hover="#f5f5f5"
+              $border="#e0e0e0"
               disabled={!isGoogleEnabled}
               onClick={handleGoogleSignup}
               aria-label="Sign up with Google"
@@ -286,10 +291,10 @@ export default function SignupPage() {
               <FcGoogle size={20} />
               <span>Google</span>
             </SocialButton>
-            <SocialButton 
+            <SocialButton
               type="button"
-              $bg="#000" 
-              $hover="#333" 
+              $bg="#000"
+              $hover="#333"
               disabled={!isAppleEnabled}
               onClick={handleAppleSignup}
               aria-label="Sign up with Apple"
@@ -350,11 +355,18 @@ const ImageContent = styled.div`
 `;
 
 const BrandLogo = styled(Link)`
-  font-size: 28px;
-  font-weight: 800;
-  color: white;
+  display: inline-flex;
   text-decoration: none;
-  letter-spacing: 1px;
+  filter: brightness(0) invert(1);
+`;
+
+const FormLogoWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+  @media (min-width: 769px) {
+    display: none;
+  }
 `;
 
 const HeroText = styled.div`

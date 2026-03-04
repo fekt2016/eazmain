@@ -14,36 +14,44 @@ import {
   FaUserCog,
   FaSignOutAlt,
   FaChevronRight,
-  FaUserCircle,
-  FaGem
+  FaHome,
+  FaThLarge,
+  FaTag,
+  FaHeadset,
+  FaEnvelope,
 } from "react-icons/fa";
 import useAuth from '../hooks/useAuth';
 import { getAvatarUrl } from '../utils/avatarUtils';
 import { useWalletBalance } from '../hooks/useWallet';
 import { useGetUserOrders, getOrderStructure } from '../hooks/useOrder';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import { PATHS } from '../../routes/routePaths';
+
+const getInitials = (name) => {
+  if (!name || typeof name !== 'string') return '?';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return (name[0] || '?').toUpperCase();
+};
 
 const SideBar = ({ $isOpen, onClose }) => {
   const navigate = useNavigate();
   const { logout, userData } = useAuth();
-  
+
   const user = userData?.data?.data || userData?.data?.user || userData?.user || null;
-  
-  // Get wallet balance
+
   const { data: walletData, isLoading: isBalanceLoading } = useWalletBalance();
   const wallet = useMemo(() => {
     return walletData?.data?.wallet || { balance: 0, availableBalance: 0 };
   }, [walletData]);
-  
-  // Use availableBalance first (what user can actually spend), then fallback to balance
   const balance = wallet.availableBalance ?? wallet.balance ?? 0;
 
-  // Get order count
+  const [avatarError, setAvatarError] = useState(false);
   const { data: ordersData } = useGetUserOrders();
   const orders = useMemo(() => getOrderStructure(ordersData) || [], [ordersData]);
   const orderCount = orders.length;
+  const showAvatarPhoto = user?.photo && !avatarError;
 
   const handleLogout = () => {
     logout.mutate(undefined, {
@@ -51,20 +59,17 @@ const SideBar = ({ $isOpen, onClose }) => {
     });
   };
 
-  const navItems = [
-    { path: PATHS.ORDERS, icon: <FaShoppingBag />, label: "Orders", badge: orderCount > 0 ? orderCount : null },
-    { path: PATHS.REVIEWS, icon: <FaStar />, label: "My Reviews" },
-    { path: PATHS.ADDRESS, icon: <FaMapMarkerAlt />, label: "Addresses" },
+  const browseItems = [
+    { path: PATHS.HOME, icon: <FaHome />, label: "Home" },
+  ];
+  const accountItems = [
+    { path: PATHS.PROFILE, icon: <FaUserCog />, label: "My Profile" },
+    { path: PATHS.ORDERS, icon: <FaShoppingBag />, label: "My Orders", badge: orderCount > 0 ? orderCount : null },
+    { path: PATHS.WISHLIST, icon: <FaHeart />, label: "Wishlist" },
     { path: PATHS.CREDIT, icon: <FaMoneyBill />, label: "Balance", amount: isBalanceLoading ? "..." : `GH₵${balance.toFixed(2)}` },
-    { path: PATHS.FOLLOWED, icon: <FaHeart />, label: "Followed Shops" },
-    { path: PATHS.COUPON, icon: <FaTicketAlt />, label: "Coupons", badge: 5 },
-    { path: PATHS.PAYMENT, icon: <FaCreditCard />, label: "Payments" },
-    { path: PATHS.BROWSER, icon: <FaHistory />, label: "History" },
-    { path: PATHS.PERMISSION, icon: <FaUserShield />, label: "Permissions" },
-    { path: PATHS.PROFILE, icon: <FaUserCog />, label: "Settings" },
+    { path: PATHS.COUPON, icon: <FaTicketAlt />, label: "Coupons" },
   ];
 
-  // Close sidebar when clicking on a nav item on mobile
   const handleNavClick = () => {
     if (window.innerWidth <= 768 && onClose) {
       onClose();
@@ -73,80 +78,60 @@ const SideBar = ({ $isOpen, onClose }) => {
 
   return (
     <SidebarContainer $isOpen={$isOpen}>
-      {/* Quick Stats */}
-      <StatsSection>
-        <StatItem>
-          <StatValue>{orderCount}</StatValue>
-          <StatLabel>Orders</StatLabel>
-        </StatItem>
-        <StatDivider />
-        <StatItem>
-          <StatValue>8</StatValue>
-          <StatLabel>Points</StatLabel>
-        </StatItem>
-        <StatDivider />
-        <StatItem>
-          <StatValue>
-            {isBalanceLoading ? "..." : `GH₵${balance.toFixed(2)}`}
-          </StatValue>
-          <StatLabel>Balance</StatLabel>
-        </StatItem>
-      </StatsSection>
+      {/* User name and avatar at top */}
+      <UserSectionTop>
+        <SidebarUserAvatar>
+          {showAvatarPhoto ? (
+            <img src={getAvatarUrl(user.photo)} alt={user?.name || 'User'} onError={() => setAvatarError(true)} />
+          ) : null}
+          <SidebarInitials $show={!showAvatarPhoto}>{getInitials(user?.name || user?.email)}</SidebarInitials>
+        </SidebarUserAvatar>
+        <SidebarUserName>{user?.name || user?.email || 'Account'}</SidebarUserName>
+      </UserSectionTop>
 
-      {/* Navigation */}
       <NavContainer>
         <NavGroup>
-          <NavGroupLabel>Main Menu</NavGroupLabel>
-          {navItems.slice(0, 6).map((item) => (
-            <NavItem 
-              key={item.path} 
-              to={item.path} 
-              $activeclassname="active"
-              onClick={handleNavClick}
-            >
+          <NavGroupLabel>Browse</NavGroupLabel>
+          {browseItems.map((item) => (
+            <NavItem key={item.path} to={item.path} $activeclassname="active" onClick={handleNavClick}>
+              <NavIcon>{item.icon}</NavIcon>
+              <NavLabel>{item.label}</NavLabel>
+              <NavArrow><FaChevronRight /></NavArrow>
+            </NavItem>
+          ))}
+        </NavGroup>
+        <NavGroup>
+          <NavGroupLabel>Account</NavGroupLabel>
+          {accountItems.map((item) => (
+            <NavItem key={item.path} to={item.path} $activeclassname="active" onClick={handleNavClick}>
               <NavIcon>{item.icon}</NavIcon>
               <NavLabel>{item.label}</NavLabel>
               <NavMeta>
                 {item.badge && <NotificationBadge>{item.badge}</NotificationBadge>}
                 {item.amount && <NavAmount>{item.amount}</NavAmount>}
-                <NavArrow>
-                  <FaChevronRight />
-                </NavArrow>
+                <NavArrow><FaChevronRight /></NavArrow>
               </NavMeta>
             </NavItem>
           ))}
         </NavGroup>
-
         <NavGroup>
-          <NavGroupLabel>Preferences</NavGroupLabel>
-          {navItems.slice(6).map((item) => (
-            <NavItem 
-              key={item.path} 
-              to={item.path} 
-              $activeclassname="active"
-            >
-              <NavIcon>{item.icon}</NavIcon>
-              <NavLabel>{item.label}</NavLabel>
-              <NavMeta>
-                {item.badge && <NotificationBadge>{item.badge}</NotificationBadge>}
-                <NavArrow>
-                  <FaChevronRight />
-                </NavArrow>
-              </NavMeta>
-            </NavItem>
-          ))}
+          <NavGroupLabel>Help</NavGroupLabel>
+          <NavItem to={PATHS.SUPPORT} $activeclassname="active" onClick={handleNavClick}>
+            <NavIcon><FaHeadset /></NavIcon>
+            <NavLabel>24/7 Support</NavLabel>
+            <NavArrow><FaChevronRight /></NavArrow>
+          </NavItem>
+          <NavItem to={PATHS.CONTACT} $activeclassname="active" onClick={handleNavClick}>
+            <NavIcon><FaEnvelope /></NavIcon>
+            <NavLabel>Contact Us</NavLabel>
+            <NavArrow><FaChevronRight /></NavArrow>
+          </NavItem>
+          <LogoutButton onClick={handleLogout}>
+            <LogoutIcon><FaSignOutAlt /></LogoutIcon>
+            <LogoutText>Logout</LogoutText>
+          </LogoutButton>
         </NavGroup>
       </NavContainer>
-
-      {/* Logout Section */}
-      <LogoutSection>
-        <LogoutButton onClick={handleLogout}>
-          <LogoutIcon>
-            <FaSignOutAlt />
-          </LogoutIcon>
-          <LogoutText>Sign Out</LogoutText>
-        </LogoutButton>
-      </LogoutSection>
     </SidebarContainer>
   );
 };
@@ -222,6 +207,46 @@ const BrandSubtitle = styled.span`
   color: var(--color-grey-500);
   font-weight: 500;
   margin-top: 0.2rem;
+`;
+
+const UserSectionTop = styled.div`
+  padding: var(--spacing-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  border-bottom: 1px solid var(--color-grey-200);
+  margin-bottom: var(--spacing-sm);
+`;
+const SidebarUserAvatar = styled.div`
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #9CA3AF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  position: relative;
+  img { width: 100%; height: 100%; object-fit: cover; }
+`;
+const SidebarInitials = styled.span`
+  display: ${(p) => (p.$show ? 'flex' : 'none')};
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  inset: 0;
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 600;
+`;
+const SidebarUserName = styled.div`
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--color-grey-900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 const UserSection = styled.div`
@@ -440,17 +465,16 @@ const NavItem = styled(NavLink)`
 
   &.active {
     background: var(--color-primary-50);
-    color: var(--color-primary-700);
+    color: var(--color-primary-600);
     border-left: 4px solid var(--color-primary-600);
     font-weight: 600;
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
     
     ${NavIcon} {
-      color: var(--primary-700);
+      color: var(--color-primary-600);
     }
     
     ${NavArrow} {
-      color: var(--primary-700);
+      color: var(--color-primary-600);
       opacity: 1;
     }
     
@@ -501,17 +525,18 @@ const LogoutButton = styled.button`
   width: 100%;
   padding: var(--spacing-md) var(--spacing-sm);
   background: transparent;
-  border: 1px solid var(--color-grey-300);
+  border: none;
   border-radius: 12px;
   color: var(--color-grey-700);
-  transition: all 0.2s ease;
   cursor: pointer;
+  font-size: 1.4rem;
+  font-weight: 500;
+  text-align: left;
+  margin-top: 0.4rem;
   
   &:hover {
-    background: var(--color-error-50);
-    border-color: var(--color-error-300);
-    color: var(--color-error-600);
-    transform: translateX(4px);
+    background: var(--color-error-50, #fee2e2);
+    color: var(--color-error-600, #dc2626);
   }
 `;
 

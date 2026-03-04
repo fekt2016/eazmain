@@ -1,16 +1,17 @@
 import React, { useState, useMemo } from "react";
 import styled from "styled-components";
 import { useForm, Controller } from "react-hook-form";
-import { 
-  FaCreditCard, 
-  FaMobileAlt, 
-  FaUniversity, 
-  FaPlus, 
-  FaCheck, 
+import {
+  FaCreditCard,
+  FaMobileAlt,
+  FaUniversity,
+  FaPlus,
+  FaCheck,
   FaTimes,
   FaTrash,
   FaLock,
-  FaShieldAlt
+  FaShieldAlt,
+  FaSpinner,
 } from "react-icons/fa";
 
 import {
@@ -21,15 +22,17 @@ import {
 } from '../../shared/hooks/usePaymentMethod';
 import { devicesMax } from '../../shared/styles/breakpoint';
 import logger from '../../shared/utils/logger';
+import { useModal } from '../../shared/hooks/useModal';
 
 export default function PaymentMethodPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [activeTab, setActiveTab] = useState("mobile_money");
-  
-  const { mutateAsync: createPaymentMethod } = useCreatePaymentMethod();
+
+  const { mutateAsync: createPaymentMethod, isPending: isCreating } = useCreatePaymentMethod();
   const { data: paymentMethodData, isLoading, isError, refetch: refetchPaymentMethods } = useGetPaymentMethods();
   const { mutateAsync: deletePaymentMethod } = useDeletePaymentMethod();
   const { mutateAsync: setDefaultMethod } = useSetDefaultPaymentMethod();
+  const { showDanger } = useModal();
 
   // Form hooks
   const mobileForm = useForm({
@@ -84,33 +87,37 @@ export default function PaymentMethodPage() {
 
   // Handle delete payment method
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this payment method?")) {
-      try {
-        await deletePaymentMethod(id);
-      } catch (error) {
-        logger.error("Delete error:", error);
+    showDanger({
+      title: "Delete Payment Method?",
+      message: "Are you sure you want to delete this payment method?",
+      onConfirm: async () => {
+        try {
+          await deletePaymentMethod(id);
+        } catch (error) {
+          logger.error("Delete error:", error);
+        }
       }
-    }
+    });
   };
 
   const handleAddPaymentMethod = async (data, type) => {
     try {
       const methodData = type === "mobile"
         ? {
-            type: "mobile_money",
-            provider: data.provider,
-            mobileNumber: formatPhoneForAPI(data.phone),
-            mobileName: data.name,
-            isDefault: data.isDefault || paymentMethods.length === 0,
-          }
+          type: "mobile_money",
+          provider: data.provider,
+          mobileNumber: formatPhoneForAPI(data.phone),
+          mobileName: data.name,
+          isDefault: data.isDefault || paymentMethods.length === 0,
+        }
         : {
-            type: "bank_transfer",
-            bankName: data.bankName,
-            accountNumber: data.accountNumber,
-            accountName: data.accountName,
-            branch: data.branch,
-            isDefault: data.isDefault || paymentMethods.length === 0,
-          };
+          type: "bank_transfer",
+          bankName: data.bankName,
+          accountNumber: data.accountNumber,
+          accountName: data.accountName,
+          branch: data.branch,
+          isDefault: data.isDefault || paymentMethods.length === 0,
+        };
 
       await createPaymentMethod(methodData);
       mobileForm.reset();
@@ -191,7 +198,7 @@ export default function PaymentMethodPage() {
             <Title>Payment Methods</Title>
             <Subtitle>Manage your mobile money and bank transfer options</Subtitle>
           </TitleSection>
-          
+
           <StatsCard>
             <StatItem>
               <StatValue>{defaultMethodsCount}</StatValue>
@@ -351,9 +358,12 @@ export default function PaymentMethodPage() {
                   </CheckboxLabel>
                 </CheckboxGroup>
 
-                <SubmitButton type="submit">
-                  <FaCheck />
-                  Save Mobile Money
+                <SubmitButton type="submit" disabled={isCreating}>
+                  {isCreating ? (
+                    <><FaSpinner style={{ animation: 'spin 1s linear infinite' }} /> Saving...</>
+                  ) : (
+                    <><FaCheck /> Save Mobile Money</>
+                  )}
                 </SubmitButton>
               </Form>
             ) : (
@@ -367,7 +377,7 @@ export default function PaymentMethodPage() {
                     {bankForm.formState.errors.root.message}
                   </ErrorMessage>
                 )}
-                
+
                 <FormGroup>
                   <Label>Bank Name</Label>
                   <Controller
@@ -463,9 +473,12 @@ export default function PaymentMethodPage() {
                   </CheckboxLabel>
                 </CheckboxGroup>
 
-                <SubmitButton type="submit">
-                  <FaCheck />
-                  Save Bank Account
+                <SubmitButton type="submit" disabled={isCreating}>
+                  {isCreating ? (
+                    <><FaSpinner style={{ animation: 'spin 1s linear infinite' }} /> Saving...</>
+                  ) : (
+                    <><FaCheck /> Save Bank Account</>
+                  )}
                 </SubmitButton>
               </Form>
             )}
@@ -489,7 +502,7 @@ export default function PaymentMethodPage() {
                       <MethodNumber>
                         {method.type === "mobile_money"
                           ? method.mobileNumber?.replace("+233", "0") || ""
-                          : method.accountNumber 
+                          : method.accountNumber
                             ? `••••${method.accountNumber.slice(-4)}`
                             : "••••"}
                       </MethodNumber>
@@ -538,7 +551,7 @@ export default function PaymentMethodPage() {
               <FaShieldAlt />
             </SecurityIcon>
             <SecurityText>
-              Your payment details are securely stored and encrypted. 
+              Your payment details are securely stored and encrypted.
               We never share your financial information with third parties.
             </SecurityText>
           </SecurityContent>

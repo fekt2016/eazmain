@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { 
-  FaBell, 
-  FaShoppingCart, 
-  FaTruck, 
-  FaMoneyBillWave, 
-  FaHeadset, 
+import {
+  FaBell,
+  FaShoppingCart,
+  FaTruck,
+  FaMoneyBillWave,
+  FaHeadset,
   FaBox,
   FaCheckCircle,
   FaExclamationCircle,
@@ -17,15 +17,17 @@ import {
 import { useNotifications, useMarkAsRead, useDeleteNotification } from '../hooks/notifications/useNotifications';
 import { PATHS } from '../../routes/routePaths';
 import useAuth from '../hooks/useAuth';
+import { useModal } from '../../shared/hooks/useModal';
 
 const NotificationDropdown = ({ unreadCount }) => {
   // CRITICAL FIX: All hooks must be called before any conditional returns
   // This prevents "Rendered more hooks than during the previous render" error
-  
+
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
-  
+  const { showDanger } = useModal();
+
   // CRITICAL FIX: Check auth state before fetching notifications
   // Only fetch notifications if user is authenticated and auth is ready
   const { isAuthenticated, isLoading: isAuthLoading, userData } = useAuth();
@@ -35,7 +37,7 @@ const NotificationDropdown = ({ unreadCount }) => {
   // Fetch notifications - backend should NOT filter, we filter on frontend
   // CRITICAL FIX: Only fetch when auth is ready to prevent 401 errors
   // STEP 1: Fetch recent notifications (limit 20 to ensure we get unread)
-  const { data: notificationsData, error: notificationsError } = useNotifications({ 
+  const { data: notificationsData, error: notificationsError } = useNotifications({
     limit: 20, // Increased to ensure we get unread notifications
     sort: '-createdAt', // Most recent first
   });
@@ -132,7 +134,7 @@ const NotificationDropdown = ({ unreadCount }) => {
     // Still show the bell icon, but disable dropdown functionality
     return (
       <DropdownContainer ref={dropdownRef}>
-        <IconButton onClick={() => {}} title="Notifications" disabled>
+        <IconButton onClick={() => { }} title="Notifications" disabled>
           <FaBell />
           {unreadCount > 0 && (
             <NotificationBadge>{unreadCount > 99 ? '99+' : unreadCount}</NotificationBadge>
@@ -307,34 +309,36 @@ const NotificationDropdown = ({ unreadCount }) => {
               dropdownNotifications.map((notification) => {
                 const isUnread = !(notification.isRead ?? notification.read);
                 return (
-                <NotificationItem
-                  key={notification._id}
-                  unread={isUnread}
-                  onClick={() => handleNotificationClick(notification)}
-                >
-                  <IconWrapper color={getNotificationColor(notification.type)}>
-                    {getNotificationIcon(notification.type)}
-                  </IconWrapper>
-                  <NotificationContent>
-                    <NotificationTitle>{notification.title}</NotificationTitle>
-                    <NotificationMessage>{notification.message}</NotificationMessage>
-                    <NotificationTime>{formatTime(notification.createdAt)}</NotificationTime>
-                  </NotificationContent>
-                  <NotificationActions>
-                    {isUnread && <UnreadDot />}
-                    <DeleteButton
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (window.confirm('Delete this notification?')) {
-                          deleteNotification.mutate(notification._id);
-                        }
-                      }}
-                      title="Delete notification"
-                    >
-                      <FaTrash />
-                    </DeleteButton>
-                  </NotificationActions>
-                </NotificationItem>
+                  <NotificationItem
+                    key={notification._id}
+                    unread={isUnread}
+                    onClick={() => handleNotificationClick(notification)}
+                  >
+                    <IconWrapper color={getNotificationColor(notification.type)}>
+                      {getNotificationIcon(notification.type)}
+                    </IconWrapper>
+                    <NotificationContent>
+                      <NotificationTitle>{notification.title}</NotificationTitle>
+                      <NotificationMessage>{notification.message}</NotificationMessage>
+                      <NotificationTime>{formatTime(notification.createdAt)}</NotificationTime>
+                    </NotificationContent>
+                    <NotificationActions>
+                      {isUnread && <UnreadDot />}
+                      <DeleteButton
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          showDanger({
+                            title: 'Delete Notification?',
+                            message: 'This notification will be permanently deleted.',
+                            onConfirm: () => deleteNotification.mutate(notification._id)
+                          });
+                        }}
+                        title="Delete notification"
+                      >
+                        <FaTrash />
+                      </DeleteButton>
+                    </NotificationActions>
+                  </NotificationItem>
                 );
               })
             )}

@@ -1,8 +1,17 @@
+import { useState } from "react";
 import styled from "styled-components";
 import { FaCheckCircle } from "react-icons/fa";
 import { getAvatarUrl } from "../../../shared/utils/avatarUtils";
 
+const getInitials = (name) => {
+  if (!name || typeof name !== 'string') return '?';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return (name[0] || '?').toUpperCase();
+};
+
 const ProfileHeader = ({ userInfo }) => {
+  const [avatarError, setAvatarError] = useState(false);
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
@@ -14,18 +23,21 @@ const ProfileHeader = ({ userInfo }) => {
   };
 
   const isVerified = userInfo?.emailVerified || userInfo?.phoneVerified;
+  const photoUrl = userInfo?.photo ? getAvatarUrl(userInfo.photo) : null;
+  const showInitials = !photoUrl || avatarError;
 
   return (
     <HeaderContainer>
       <AvatarWrapper>
-        <Avatar
-          src={getAvatarUrl(userInfo?.photo)}
-          alt={userInfo?.name || "User"}
-          onError={(e) => {
-            // Fallback to default if image fails to load
-            e.target.src = "/img/users/default.jpg";
-          }}
-        />
+        {showInitials ? (
+          <AvatarInitials>{getInitials(userInfo?.name)}</AvatarInitials>
+        ) : (
+          <Avatar
+            src={photoUrl}
+            alt={userInfo?.name || "User"}
+            onError={() => setAvatarError(true)}
+          />
+        )}
         {isVerified && (
           <VerifiedBadge>
             <FaCheckCircle />
@@ -72,6 +84,20 @@ const Avatar = styled.img`
   height: 80px;
   border-radius: 50%;
   object-fit: cover;
+  border: 3px solid var(--color-border);
+`;
+
+const AvatarInitials = styled.div`
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #9CA3AF;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  font-weight: 600;
   border: 3px solid var(--color-border);
 `;
 

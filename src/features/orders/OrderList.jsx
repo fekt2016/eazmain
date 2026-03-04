@@ -21,7 +21,8 @@ import {
 import { useNavigate, Link } from "react-router-dom";
 import { PATHS } from "../../routes/routePaths";
 import logger from "../../shared/utils/logger";
-import AlertModal from "../../shared/components/AlertModal";
+import { useModal } from "../../shared/hooks/useModal";
+import { LoadingState, ErrorState } from "../../components/loading";
 
 const OrdersPage = () => {
   const navigate = useNavigate();
@@ -31,13 +32,9 @@ const OrdersPage = () => {
     key: "date",
     direction: "desc",
   });
-  const { data: ordersData } = useGetUserOrders();
+  const { data: ordersData, isLoading, error, isError } = useGetUserOrders();
   const { mutate: deleteOrder } = useDeleteOrder();
-
-  const [alertMessage, setAlertMessage] = useState("");
-  const [alertTitle, setAlertTitle] = useState("");
-  const [alertVariant, setAlertVariant] = useState("info");
-  const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const { showDanger, showAlert } = useModal();
 
   const orders = getOrderStructure(ordersData);
 
@@ -49,7 +46,7 @@ const OrdersPage = () => {
         const dateB = new Date(b.createdAt);
         return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
       }
-      
+
       if (a[sortConfig.key] < b[sortConfig.key]) {
         return sortConfig.direction === "asc" ? -1 : 1;
       }
@@ -88,43 +85,45 @@ const OrdersPage = () => {
   const handleView = (orderId) => navigate(`/orders/${orderId}`);
   const handleEdit = (orderId) => logger.debug("Edit order:", orderId);
   const handleDelete = (orderId) => {
-    if (window.confirm("Are you sure you want to delete this order?")) {
-      setAlertMessage("");
-      setIsAlertOpen(false);
-      deleteOrder(orderId, {
-        onSuccess: (response) => {
-          const message =
-            response?.data?.message ||
-            response?.message ||
-            "Order updated successfully.";
-          setAlertTitle("Order updated");
-          setAlertVariant("success");
-          setAlertMessage(message);
-          setIsAlertOpen(true);
-        },
-        onError: (error) => {
-          const backendMessage =
-            error?.response?.data?.message ||
-            error?.message ||
-            "Failed to update order.";
+    showDanger({
+      title: "Delete Order?",
+      message: "Are you sure you want to delete this order?",
+      onConfirm: () => {
+        deleteOrder(orderId, {
+          onSuccess: (response) => {
+            const message =
+              response?.data?.message ||
+              response?.message ||
+              "Order updated successfully.";
+            showAlert({
+              title: "Order updated",
+              message: message,
+              variant: "success"
+            });
+          },
+          onError: (error) => {
+            const backendMessage =
+              error?.response?.data?.message ||
+              error?.message ||
+              "Failed to update order.";
 
-          // Provide a clearer explanation for paid / processing orders
-          if (backendMessage === "This order can no longer be cancelled.") {
-            setAlertTitle("Order cannot be cancelled");
-            setAlertVariant("error");
-            setAlertMessage(
-              "This order has already been paid or is being processed and can no longer be cancelled."
-            );
-          } else {
-            setAlertTitle("Order update failed");
-            setAlertVariant("error");
-            setAlertMessage(backendMessage);
-          }
-
-          setIsAlertOpen(true);
-        },
-      });
-    }
+            if (backendMessage === "This order can no longer be cancelled.") {
+              showAlert({
+                title: "Order cannot be cancelled",
+                message: "This order has already been paid or is being processed and can no longer be cancelled.",
+                variant: "error"
+              });
+            } else {
+              showAlert({
+                title: "Order update failed",
+                message: backendMessage,
+                variant: "error"
+              });
+            }
+          },
+        });
+      }
+    });
   };
 
   const formatOrderNumber = (orderNumber) => {
@@ -138,6 +137,47 @@ const OrdersPage = () => {
       day: 'numeric'
     });
   };
+
+  if (isLoading) {
+    return (
+      <OrdersPageContainer>
+        <PageHeader>
+          <HeaderContent>
+            <HeaderIcon>
+              <FaShoppingBag />
+            </HeaderIcon>
+            <HeaderText>
+              <PageTitle>Order Management</PageTitle>
+              <PageSubtitle>View and manage all customer orders</PageSubtitle>
+            </HeaderText>
+          </HeaderContent>
+        </PageHeader>
+        <LoadingState message="Loading your orders..." />
+      </OrdersPageContainer>
+    );
+  }
+
+  if (isError || error) {
+    return (
+      <OrdersPageContainer>
+        <PageHeader>
+          <HeaderContent>
+            <HeaderIcon>
+              <FaShoppingBag />
+            </HeaderIcon>
+            <HeaderText>
+              <PageTitle>Order Management</PageTitle>
+              <PageSubtitle>View and manage all customer orders</PageSubtitle>
+            </HeaderText>
+          </HeaderContent>
+        </PageHeader>
+        <ErrorState
+          message="Failed to load orders."
+          details={error?.message || "An unexpected error occurred while fetching your orders."}
+        />
+      </OrdersPageContainer>
+    );
+  }
 
   return (
     <OrdersPageContainer>
@@ -188,15 +228,6 @@ const OrdersPage = () => {
         </FilterWrapper>
       </ControlsSection>
 
-      {/* Delete / cancel feedback modal */}
-      <AlertModal
-        isOpen={isAlertOpen}
-        onClose={() => setIsAlertOpen(false)}
-        title={alertTitle}
-        message={alertMessage}
-        variant={alertVariant}
-      />
-
       {/* Orders Content */}
       <ContentSection>
         {filteredOrders.length === 0 ? (
@@ -206,7 +237,7 @@ const OrdersPage = () => {
             </EmptyIcon>
             <EmptyTitle>No orders found</EmptyTitle>
             <EmptyMessage>
-              {searchTerm || filter !== "all" 
+              {searchTerm || filter !== "all"
                 ? "Try adjusting your search or filter criteria"
                 : "No orders have been placed yet"
               }
@@ -219,8 +250,8 @@ const OrdersPage = () => {
               <OrdersTable>
                 <TableHead>
                   <TableRow>
-                    <TableHeader 
-                      $sortable 
+                    <TableHeader
+                      $sortable
                       onClick={() => requestSort("orderNumber")}
                     >
                       <HeaderContent>
@@ -228,8 +259,8 @@ const OrdersPage = () => {
                         <SortIcon>{getSortIcon("orderNumber")}</SortIcon>
                       </HeaderContent>
                     </TableHeader>
-                    <TableHeader 
-                      $sortable 
+                    <TableHeader
+                      $sortable
                       onClick={() => requestSort("date")}
                     >
                       <HeaderContent>
@@ -239,8 +270,8 @@ const OrdersPage = () => {
                     </TableHeader>
                     <TableHeader>Items</TableHeader>
                     <TableHeader>Tracking Number</TableHeader>
-                    <TableHeader 
-                      $sortable 
+                    <TableHeader
+                      $sortable
                       onClick={() => requestSort("totalPrice")}
                     >
                       <HeaderContent>
@@ -267,7 +298,7 @@ const OrdersPage = () => {
                       </TableCell>
                       <TableCell>
                         {order.trackingNumber ? (
-                          <TrackingLink 
+                          <TrackingLink
                             onClick={() => navigate(`/tracking/${order.trackingNumber}`)}
                             title={order.orderType === 'preorder_international' ? 'Track International Shipment' : 'Track Order'}
                           >
@@ -306,21 +337,21 @@ const OrdersPage = () => {
                       </TableCell>
                       <TableCell>
                         <ActionButtons>
-                          <ActionButton 
+                          <ActionButton
                             $variant="view"
                             onClick={() => handleView(order.id)}
                             title="View Details"
                           >
                             <FaEye />
                           </ActionButton>
-                          <ActionButton 
+                          <ActionButton
                             $variant="edit"
                             onClick={() => handleEdit(order.id)}
                             title="Edit Order"
                           >
                             <FaEdit />
                           </ActionButton>
-                          <ActionButton 
+                          <ActionButton
                             $variant="delete"
                             onClick={() => handleDelete(order.id)}
                             title="Delete Order"
@@ -348,7 +379,7 @@ const OrdersPage = () => {
                       {getOrderDisplayStatus(order).displayLabel}
                     </StatusBadge>
                   </CardHeader>
-                  
+
                   <CardBody>
                     <OrderDetails>
                       <DetailItem>
@@ -359,7 +390,7 @@ const OrdersPage = () => {
                         <DetailLabel>Tracking Number</DetailLabel>
                         <DetailValue>
                           {order.trackingNumber ? (
-                            <TrackingLink 
+                            <TrackingLink
                               onClick={() => navigate(`/tracking/${order.trackingNumber}`)}
                               title={order.orderType === 'preorder_international' ? 'Track International Shipment' : 'Track Order'}
                             >
@@ -401,7 +432,7 @@ const OrdersPage = () => {
 
                   <CardActions>
                     <ActionButtons>
-                      <ActionButton 
+                      <ActionButton
                         $variant="view"
                         onClick={() => handleView(order.id)}
                         title="View Details"
@@ -409,7 +440,7 @@ const OrdersPage = () => {
                         <FaEye />
                         <span>View</span>
                       </ActionButton>
-                      <ActionButton 
+                      <ActionButton
                         $variant="edit"
                         onClick={() => handleEdit(order.id)}
                         title="Edit Order"
@@ -417,7 +448,7 @@ const OrdersPage = () => {
                         <FaEdit />
                         <span>Edit</span>
                       </ActionButton>
-                      <ActionButton 
+                      <ActionButton
                         $variant="delete"
                         onClick={() => handleDelete(order.id)}
                         title="Delete Order"
@@ -684,7 +715,7 @@ const StatusBadge = styled.span`
   text-transform: capitalize;
   
   background: ${props => {
-    switch(props.$status) {
+    switch (props.$status) {
       case 'delivered': return 'var(--color-green-100)';
       case 'shipped': return 'var(--color-blue-100)';
       case 'cancelled': return 'var(--color-red-100)';
@@ -693,7 +724,7 @@ const StatusBadge = styled.span`
   }};
   
   color: ${props => {
-    switch(props.$status) {
+    switch (props.$status) {
       case 'delivered': return 'var(--color-green-700)';
       case 'shipped': return 'var(--color-blue-700)';
       case 'cancelled': return 'var(--color-red-700)';
@@ -768,7 +799,7 @@ const ActionButton = styled.button`
   transition: var(--transition-base);
   
   background: ${props => {
-    switch(props.$variant) {
+    switch (props.$variant) {
       case 'view': return 'var(--color-blue-100)';
       case 'edit': return 'var(--color-yellow-100)';
       case 'delete': return 'var(--color-red-100)';
@@ -777,7 +808,7 @@ const ActionButton = styled.button`
   }};
   
   color: ${props => {
-    switch(props.$variant) {
+    switch (props.$variant) {
       case 'view': return 'var(--color-blue-700)';
       case 'edit': return 'var(--color-yellow-700)';
       case 'delete': return 'var(--color-red-700)';
@@ -790,13 +821,13 @@ const ActionButton = styled.button`
     box-shadow: var(--shadow-sm);
     
     background: ${props => {
-      switch(props.$variant) {
-        case 'view': return 'var(--color-blue-200)';
-        case 'edit': return 'var(--color-yellow-200)';
-        case 'delete': return 'var(--color-red-200)';
-        default: return 'var(--color-grey-200)';
-      }
-    }};
+    switch (props.$variant) {
+      case 'view': return 'var(--color-blue-200)';
+      case 'edit': return 'var(--color-yellow-200)';
+      case 'delete': return 'var(--color-red-200)';
+      default: return 'var(--color-grey-200)';
+    }
+  }};
   }
 
   @media (max-width: 768px) {

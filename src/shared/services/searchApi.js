@@ -2,16 +2,18 @@ import api from './api';
 import logger from '../utils/logger';
 
 const searchApi = {
-  searchProducts: async (searchTerm) => {
+  searchProducts: async (searchTerm, options = {}) => {
     const response = await api.get(
-      `/search/query/${encodeURIComponent(searchTerm)}`
+      `/search/query/${encodeURIComponent(searchTerm)}`,
+      options
     );
     return response;
   },
-  searchSuggestions: async (searchTerm) => {
+  searchSuggestions: async (searchTerm, options = {}) => {
     try {
       const response = await api.get(
-        `/search/suggestions/${encodeURIComponent(searchTerm)}`
+        `/search/suggestions/${encodeURIComponent(searchTerm)}`,
+        options
       );
       logger.log('[searchApi] searchSuggestions response:', response);
       logger.log('[searchApi] response.data:', response.data);
@@ -24,8 +26,8 @@ const searchApi = {
       throw error;
     }
   },
-  searchResults: async (query) => {
-    const response = await api.get(`/search/results`, { params: query });
+  searchResults: async (query, options = {}) => {
+    const response = await api.get(`/search/results`, { params: query, ...options });
     return response;
   },
 };

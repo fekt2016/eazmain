@@ -98,7 +98,20 @@ const CreditBalance = () => {
   };
 
   if (isLoading) {
-    return <LoadingState message="Loading credit balance..." />;
+    return (
+      <PageContainer>
+        <LoadingState message="Loading credit balance..." />
+      </PageContainer>
+    );
+  }
+
+  // Handle any potential error gracefully
+  if (!walletData && !isBalanceLoading) {
+    return (
+      <PageContainer>
+        <ErrorState title="Failed to Load Wallet" message="Please try again or contact support." />
+      </PageContainer>
+    );
   }
 
   return (
@@ -145,7 +158,7 @@ const CreditBalance = () => {
           <ApplyButton onClick={applyCoupon} disabled={isApplying}>
             {isApplying ? <ButtonSpinner size="sm" /> : "Apply Coupon"}
           </ApplyButton>
-          
+
           {couponError && (
             <ErrorState message={couponError?.message || "Failed to apply coupon"} />
           )}
@@ -241,7 +254,7 @@ const CreditBalance = () => {
             </tr>
           </thead>
           <tbody>
-            {transactions.length === 0 ? (
+            {!transactions || transactions.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} $align="center">
                   No transactions found
@@ -492,7 +505,7 @@ const TableHeader = styled.th`
 
   &:hover {
     background-color: ${(props) =>
-      props.$clickable ? "var(--color-grey-100)" : "transparent"};
+    props.$clickable ? "var(--color-grey-100)" : "transparent"};
   }
 
   svg {

@@ -104,7 +104,7 @@ jest.mock('@/shared/hooks/useProduct', () => ({
   })),
 }));
 
-jest.mock('@/shared/hooks/useReview', () => ({
+jest.mock('@/shared/hooks/useReviews', () => ({
   __esModule: true,
   useGetProductReviews: jest.fn(() => ({
     data: {
@@ -171,7 +171,7 @@ jest.mock('@/shared/hooks/useBrowserhistory', () => ({
 
 jest.mock('@/shared/hooks/useDynamicPageTitle', () => ({
   __esModule: true,
-  default: jest.fn(() => {}),
+  default: jest.fn(() => { }),
 }));
 
 jest.mock('@/shared/utils/sessionUtils', () => ({
@@ -274,7 +274,7 @@ describe('ProductDetail', () => {
     mockAddToCartFn.mockClear();
     mockToggleWishlistFn.mockClear();
     mockParams.id = 'product1';
-    
+
     // Reset mock to default product - use mockImplementation to ensure it's called correctly
     mockUseGetProductById.mockImplementation(() => ({
       data: {
@@ -302,14 +302,14 @@ describe('ProductDetail', () => {
       isLoading: false,
       error: null,
     }));
-    
+
     // Reset variant selection mock - for products without variants, return selectedVariant with stock
     // The component uses selectedVariant.stock for variantStock and isInStock calculations
     mockUseVariantSelectionByName.mockReturnValue({
       selectedVariant: { stock: 10 }, // Include stock property to match default product stock
       handleVariantSelect: jest.fn(),
     });
-    
+
     // Reset attribute-based variant selection mock
     mockUseVariantSelection.mockReturnValue({
       selectedAttributes: {},
@@ -379,14 +379,14 @@ describe('ProductDetail', () => {
 
   test('adds product without variants to cart', async () => {
     const user = userEvent.setup();
-    
+
     // For products without variants, selectedVariant needs stock property
     // The component uses selectedVariant.stock for variantStock and isInStock calculations
     mockUseVariantSelectionByName.mockReturnValueOnce({
       selectedVariant: { stock: 10 }, // Include stock property to match product stock (10)
       handleVariantSelect: jest.fn(),
     });
-    
+
     renderWithProviders(<ProductDetail />);
 
     await waitFor(() => {
@@ -399,7 +399,7 @@ describe('ProductDetail', () => {
     // User must explicitly click "Add to Cart" button
     const addToCartButton = screen.getByRole('button', { name: /add to cart/i });
     expect(addToCartButton).not.toBeDisabled(); // Button should be enabled
-    
+
     await user.click(addToCartButton);
 
     // Assert behavior: addToCart was called (not implementation details)
@@ -417,10 +417,10 @@ describe('ProductDetail', () => {
 
   test('adds product with selected variant SKU to cart', async () => {
     const user = userEvent.setup();
-    
+
     // Set the product ID first
     mockParams.id = 'product2';
-    
+
     // CRITICAL: Reset the mock completely to clear mockImplementation from beforeEach
     // Then set up the mock with the variant product data
     mockUseGetProductById.mockReset();
@@ -530,14 +530,14 @@ describe('ProductDetail', () => {
 
   test('increments quantity when + button is clicked', async () => {
     const user = userEvent.setup();
-    
+
     // For products without variants, selectedVariant needs stock property to enable increment button
     // The component uses selectedVariant.stock for variantStock calculation
     mockUseVariantSelectionByName.mockReturnValueOnce({
       selectedVariant: { stock: 10 }, // Include stock property to match product stock
       handleVariantSelect: jest.fn(),
     });
-    
+
     renderWithProviders(<ProductDetail />);
 
     await waitFor(() => {
@@ -550,7 +550,7 @@ describe('ProductDetail', () => {
     const incrementButton = screen.getByRole('button', { name: /\+/i });
     // Button should be enabled when product has stock
     expect(incrementButton).not.toBeDisabled();
-    
+
     await user.click(incrementButton);
 
     // Assert behavior: button is still accessible after click (quantity increased)
@@ -574,7 +574,7 @@ describe('ProductDetail', () => {
     // First increment to 2, then decrement
     const incrementButton = screen.getByRole('button', { name: /\+/i });
     const decrementButton = screen.getByRole('button', { name: /−|-/i });
-    
+
     await user.click(incrementButton);
     await user.click(decrementButton);
 
@@ -706,7 +706,7 @@ describe('ProductDetail', () => {
 
   test('blocks add to cart for multi-variant product without variant selection', async () => {
     const user = userEvent.setup();
-    
+
     // Mock product with multiple variants
     mockUseGetProductById.mockReturnValueOnce({
       data: {
@@ -763,7 +763,7 @@ describe('ProductDetail', () => {
 
     // When no variant is selected, the button text is "Select Variant", not "Add to Cart"
     const selectVariantButton = screen.getByRole('button', { name: /select variant/i });
-    
+
     // Button should be disabled when no variant is selected (for multi-variant products)
     // This is the observable behavior we're testing
     expect(selectVariantButton).toBeDisabled();

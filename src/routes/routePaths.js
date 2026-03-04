@@ -51,6 +51,7 @@ export const PATHS = {
   // Buyer refund detail: tracks the latest refund for a given order
   REFUND_DETAIL: "/orders/:orderId/refund",
   TRACKING: "/tracking/:trackingNumber",
+  TRACKING_BASE: "/tracking",
 
   // Account
   PROFILE: "/profile",
@@ -110,6 +111,7 @@ export const PATHS = {
   DEALS: "/deals",
   NEW_ARRIVALS: "/new-arrivals",
   BEST_SELLERS: "/best-sellers",
+  TRENDING: "/trending",
 
   // Error Pages
   NOT_FOUND: "/404",
@@ -334,6 +336,12 @@ export const ROUTE_CONFIG = {
     keywords: "best sellers, top products, popular items, Saiisai",
   },
 
+  [PATHS.TRENDING]: {
+    title: "Trending Products - Saiisai",
+    description: "Discover the most popular products at Saiisai based on purchases and views.",
+    keywords: "trending, popular, most viewed, best sellers, Saiisai",
+  },
+
   [PATHS.NOT_FOUND]: {
     title: "Page Not Found - Saiisai",
     description: "The page you are looking for does not exist",
@@ -382,6 +390,7 @@ export const NAVIGATION_MENU = {
         { path: PATHS.CATEGORIES, label: "Categories" },
         { path: PATHS.OFFERS, label: "Offers" },
         { path: PATHS.BEST_SELLERS, label: "Best Sellers" },
+        { path: PATHS.TRENDING, label: "Trending" },
         { path: PATHS.NEW_ARRIVALS, label: "New Arrivals" },
       ],
     },

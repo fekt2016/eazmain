@@ -1,7 +1,7 @@
 import styled from "styled-components";
 import { useState, useEffect, useRef } from "react";
 import { FaStar, FaStarHalfAlt, FaImage, FaTimes } from "react-icons/fa";
-import { useCreateReview } from "../../shared/hooks/useReview";
+import { useCreateReview } from "../../shared/hooks/useReviews";
 import { toast } from "react-toastify";
 import api from "../../shared/services/api";
 import logger from "../../shared/utils/logger";
@@ -53,7 +53,7 @@ export default function CreateReviewForm({ productId, orderId, orderItemId, onSu
   const [review, setReview] = useState("");
   const [images, setImages] = useState([]);
   const [imageFiles, setImageFiles] = useState([]);
-   const [isUploading, setIsUploading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const createReviewMutation = useCreateReview();
   const imageUrlsRef = useRef([]);
@@ -185,8 +185,8 @@ export default function CreateReviewForm({ productId, orderId, orderItemId, onSu
       } catch (error) {
         setUploadError(
           error?.response?.data?.message ||
-            error?.message ||
-            "Failed to upload images. Please check your connection and try again."
+          error?.message ||
+          "Failed to upload images. Please check your connection and try again."
         );
         setIsUploading(false);
         return;
@@ -207,7 +207,7 @@ export default function CreateReviewForm({ productId, orderId, orderItemId, onSu
       };
 
       await createReviewMutation.mutateAsync(reviewData);
-      
+
       toast.success("Review submitted successfully! It will be reviewed before being published.");
       onSuccess?.();
     } catch (error) {
@@ -337,8 +337,8 @@ export default function CreateReviewForm({ productId, orderId, orderItemId, onSu
           {createReviewMutation.isPending || isUploading
             ? "Submitting..."
             : uploadError
-            ? "Retry upload & submit"
-            : "Submit Review"}
+              ? "Retry upload & submit"
+              : "Submit Review"}
         </SubmitButton>
       </FormActions>
     </FormContainer>

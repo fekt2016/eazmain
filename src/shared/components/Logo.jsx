@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
  * Can be used as a standalone logo or as a link to home
  */
 const Logo = ({
-  variant = "default", // "default" | "compact" | "icon"
+  variant = "default", // "default" | "compact" | "icon" | "footer"
   to = null, // If provided, wraps logo in Link
   className = "",
   ...props
@@ -18,7 +18,7 @@ const Logo = ({
         {/* Use shared PNG logo from public folder */}
         <img
           src="/saiisailogo.png"
-          alt="Saiisai logo"
+          alt="Saiisai – Ghana e-commerce and online shopping logo"
           style={{ width: "100%", height: "100%", objectFit: "contain" }}
         />
       </LogoIcon>
@@ -61,23 +61,26 @@ const LogoLink = styled(Link)`
 `;
 
 const LogoIcon = styled.div`
-  /* Make the logo more prominent in the buyer app header */
   width: ${(props) => {
-    if (props.$variant === "compact") return "32px";
+    if (props.$variant === "compact" || props.$variant === "footer") return "32px";
     if (props.$variant === "icon") return "40px";
     return "36px";
   }};
   height: ${(props) => {
-    if (props.$variant === "compact") return "32px";
+    if (props.$variant === "compact" || props.$variant === "footer") return "32px";
     if (props.$variant === "icon") return "40px";
     return "36px";
   }};
-  color: #ffc400;
+  min-height: 32px;
+  color: #D4882A;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
 
+  img {
+    object-fit: contain;
+  }
   svg {
     width: 100%;
     height: 100%;
@@ -97,7 +100,7 @@ const LogoTextPrimary = styled.span`
     return "1rem";
   }};
   font-weight: 700;
-  color: #1e293b;
+  color: ${(props) => (props.$variant === "footer" ? "#ffffff" : "#1e293b")};
   letter-spacing: -0.5px;
 `;
 
@@ -107,7 +110,7 @@ const LogoTextSecondary = styled.span`
     return "1rem";
   }};
   font-weight: 700;
-  color: #ffc400;
+  color: ${(props) => (props.$variant === "footer" ? "#D4882A" : "#ffc400")};
   letter-spacing: -0.5px;
 `;
 

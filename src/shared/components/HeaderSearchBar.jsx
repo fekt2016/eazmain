@@ -18,14 +18,18 @@ export default function HeaderSearchBar({
   navigate,
   handleSuggestionSelect,
   type,
+  searchRef,
 }) {
-  const searchRef = useRef(null);
-
   return (
     <SearchContainer ref={searchRef} type={type}>
       <SearchBar>
         <SearchInput
           type="text"
+          role="combobox"
+          aria-expanded={showSearchSuggestions}
+          aria-autocomplete="list"
+          aria-controls="search-suggestions"
+          aria-activedescendant={showSearchSuggestions && activeSuggestion >= 0 ? `suggestion-${activeSuggestion}` : undefined}
           placeholder="Search for products..."
           value={searchTerm}
           onChange={(e) => {
@@ -48,7 +52,7 @@ export default function HeaderSearchBar({
         >
           {isSearchProductsLoading ? (
             <SpinnerIcon>
-              <FaSpinner />
+              <FaSpinner aria-hidden="true" />
             </SpinnerIcon>
           ) : (
             <FaSearch />
@@ -57,17 +61,23 @@ export default function HeaderSearchBar({
       </SearchBar>
 
       {showSearchSuggestions && searchSuggestions.length > 0 && (
-        <SearchSuggestions>
+        <SearchSuggestions id="search-suggestions" role="listbox" aria-label="Search suggestions">
           {searchSuggestions.map((suggestion, index) => {
             return (
               <SuggestionItem
                 key={`${suggestion.type}-${suggestion.text}-${index}`}
+                id={`suggestion-${index}`}
+                role="option"
+                aria-selected={index === activeSuggestion}
                 active={index === activeSuggestion}
-                onClick={() => handleSuggestionSelect(suggestion)}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  handleSuggestionSelect(suggestion);
+                }}
               >
                 {suggestion.image && (
                   <SuggestionImage>
-                    <img src={suggestion.image} alt={suggestion.text} />
+                    <img src={suggestion.image} alt={suggestion.text ? `${suggestion.text} – Saiisai Ghana` : 'Saiisai Ghana product'} />
                   </SuggestionImage>
                 )}
                 <SuggestionText>
@@ -79,6 +89,8 @@ export default function HeaderSearchBar({
                       {suggestion.type === 'brand' && 'Brand'}
                       {suggestion.type === 'tag' && 'Tag'}
                       {suggestion.type === 'trending' && '🔥 Trending'}
+                      {suggestion.type === 'seller' && '🏪 Store'}
+                      {suggestion.type === 'recent' && '⏱️ Recent'}
                     </SuggestionCategory>
                     {suggestion.price && (
                       <SuggestionPrice>₵{suggestion.price.toFixed(2)}</SuggestionPrice>
@@ -95,13 +107,13 @@ export default function HeaderSearchBar({
         searchTerm &&
         searchSuggestions.length === 0 &&
         !isSearchProductsLoading && (
-          <NoSuggestions>No products found for "{escapeForDisplay(searchTerm)}"</NoSuggestions>
+          <NoSuggestions aria-live="polite" role="status">No products found for "{escapeForDisplay(searchTerm)}"</NoSuggestions>
         )}
 
       {isSearchProductsLoading && (
-        <LoadingSuggestions>
+        <LoadingSuggestions aria-live="polite" role="status">
           <SpinnerIcon>
-            <FaSpinner />
+            <FaSpinner aria-hidden="true" />
           </SpinnerIcon>
           Searching products...
         </LoadingSuggestions>

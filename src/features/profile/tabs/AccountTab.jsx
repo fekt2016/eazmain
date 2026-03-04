@@ -25,14 +25,13 @@ const AccountTab = ({ userInfo }) => {
   const fileInputRef = useRef(null);
   const [formData, setFormData] = useState({
     name: userInfo.name || "",
-    email: userInfo.email || "",
     phone: userInfo.phone || "",
   });
   const [avatarPreview, setAvatarPreview] = useState(userInfo.photo);
   const [avatarFile, setAvatarFile] = useState(null);
   const [dirty, setDirty] = useState(false);
 
-  
+
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
@@ -213,10 +212,12 @@ const AccountTab = ({ userInfo }) => {
                 id="email"
                 name="email"
                 type="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
+                value={userInfo.email || ""}
+                readOnly
+                disabled
+                style={{ opacity: 0.7, cursor: "not-allowed" }}
               />
+              <EmailNote>To change your email address, please contact support.</EmailNote>
             </div>
           </FormRow>
           <FormRow>
@@ -252,6 +253,12 @@ const AccountTab = ({ userInfo }) => {
 };
 
 export default AccountTab;
+
+const EmailNote = styled.p`
+  font-size: 0.75rem;
+  color: var(--color-text-light, #6B7280);
+  margin-top: 4px;
+`;
 
 // Avatar Upload Styles
 const AvatarSection = styled.div`

@@ -1,5 +1,5 @@
 // src/components/CartPage.jsx
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState } from "react";
 import styled from "styled-components";
 import {
   useCartTotals,
@@ -37,18 +37,24 @@ const CartPage = () => {
   const { total: subTotal } = useCartTotals();
   const { promotionDiscountMap } = useAds();
 
-  const { 
-    updateCartItem, 
-    removeCartItem, 
-    addToCart, 
-    isUpdating, 
-    isRemoving, 
+  const {
+    updateCartItem,
+    removeCartItem,
+    addToCart,
+    isUpdating,
     isAdding,
     updateCartItemMutation,
     removeCartItemMutation,
     addToCartMutation,
   } = useCartActions();
+  // C-2: Only run auto-sync if authenticated
+  // To avoid breaking rules of hooks, we let the hook check isAuthenticated inside,
+  // OR we pass it. But useAutoSyncCart already checks isAuthenticated internally.
+  // We'll leave the call here as useAutoSyncCart() handles its own guard.
   useAutoSyncCart();
+
+  // Track which specific item is being removed (not a global flag)
+  const [removingItemId, setRemovingItemId] = useState(null);
   const { isAuthenticated } = useAuth();
   const products = getCartStructure(data);
 
@@ -80,13 +86,6 @@ const CartPage = () => {
   }, [trendingData, cartProductIds]);
 
   const navigate = useNavigate();
-  
-  // Redirect to homepage when cart becomes empty
-  useEffect(() => {
-    if (!isCartLoading && products.length === 0) {
-      navigate("/");
-    }
-  }, [products.length, isCartLoading, navigate]);
 
   const handleAddToCart = (product) => {
     addToCart({ product, quantity: 1 });
@@ -102,7 +101,10 @@ const CartPage = () => {
   };
 
   const handleRemoveItem = (itemId) => {
-    removeCartItem(itemId);
+    setRemovingItemId(itemId);
+    removeCartItem(itemId, {
+      onSettled: () => setRemovingItemId(null),
+    });
   };
 
   // Prefer backend-computed unitPrice (includes promo); fallback to product price
@@ -155,13 +157,13 @@ const CartPage = () => {
           </CartHeader>
 
           {isError ? (
-            <ErrorState 
-              title="Failed to load cart" 
+            <ErrorState
+              title="Failed to load cart"
               message="Error loading cart data. Please try again later."
             />
           ) : products.length === 0 ? (
-            <EmptyState 
-              title="Your cart is empty" 
+            <EmptyState
+              title="Your cart is empty"
               message="Browse our products and add items to your cart"
             />
           ) : (
@@ -172,17 +174,32 @@ const CartPage = () => {
                 if (!item.product) {
                   return null;
                 }
-                
+
                 return (
                   <CartItem key={item._id}>
                     <ItemImage
-                      src={item.product?.imageCover || '/placeholder-image.png'}
-                      alt={item.product?.name || 'Product'}
+                      src={
+                        item.variantImage ||
+                        (item.product?.images && item.product.images.length > 0 ? item.product.images[0] : null) ||
+                        item.product?.imageCover ||
+                        '/placeholder-image.png'
+                      }
+                      alt={item.variantName ? `${item.product?.name} - ${item.variantName}` : (item.product?.name || 'Product')}
                     />
                     <ItemDetails>
                       <div>
                         <div>
-                          <ItemName>{item.product?.name || 'Product Name Not Available'}</ItemName>
+                          <ItemName>
+                            {item.product?.name || 'Product Name Not Available'}
+                            {(item.variantName || item.variantAttributes?.length > 0) && (
+                              <span style={{ display: 'block', fontSize: '0.85em', color: 'var(--color-grey-500)', marginTop: '4px', fontWeight: 'normal' }}>
+                                {item.variantName ? `Variant: ${item.variantName}` :
+                                  (item.variantAttributes && item.variantAttributes.length > 0
+                                    ? item.variantAttributes.map(a => `${a.key}: ${a.value}`).join(' | ')
+                                    : `SKU: ${item.sku || 'N/A'}`)}
+                              </span>
+                            )}
+                          </ItemName>
                           {/* <ItemName>sku:{cart.variant.sku}</ItemName> */}
                           {item.product?.isPreOrder && (
                             <PreorderBadge>
@@ -208,61 +225,65 @@ const CartPage = () => {
                           )}
                         </ItemPrice>
                       </div>
-                    <ItemActions>
-                      <QuantityButton
-                        onClick={() =>
-                          handleQuantityChange(item._id, item.quantity - 1)
-                        }
-                        disabled={
-                          item.quantity <= 1 || isUpdating
-                        }
-                        aria-label="Decrease quantity"
-                      >
-                        −
-                      </QuantityButton>
-                      <QuantityInput
-                        type="number"
-                        min="1"
-                        value={item.quantity}
-                        onChange={(e) => {
-                          // SECURITY: Validate quantity input
-                          const inputValue = parseInt(e.target.value) || 1;
-                          const maxStock = item.product?.stock || 999;
-                          handleQuantityChange(item._id, inputValue, maxStock);
-                        }}
-                        disabled={isUpdating}
-                      />
-                      <QuantityButton
-                        onClick={() =>
-                          handleQuantityChange(item._id, item.quantity + 1)
-                        }
-                        disabled={isUpdating}
-                        aria-label="Increase quantity"
-                      >
-                        +
-                      </QuantityButton>
-                      <RemoveButton
-                        $size="sm"
-                        onClick={() => handleRemoveItem(item._id)}
-                        disabled={isRemoving}
-                      >
-                        {isRemoving ? <ButtonSpinner size="sm" /> : "Remove"}
-                      </RemoveButton>
-                    </ItemActions>
-                  </ItemDetails>
-                  <ItemPrice>
-                    {getItemOriginalUnitPrice(item) != null ? (
-                      <>
-                        <OriginalPrice>GH₵{(getItemOriginalUnitPrice(item) * item.quantity).toFixed(2)}</OriginalPrice>
-                        <PromoPrice>GH₵{(getItemUnitPrice(item) * item.quantity).toFixed(2)}</PromoPrice>
-                      </>
-                    ) : (
-                      <>GH₵{(getItemUnitPrice(item) * item.quantity).toFixed(2)}</>
-                    )}
-                  </ItemPrice>
-                </CartItem>
-              );
-            })
+                      <ItemActions>
+                        <QuantityButton
+                          onClick={() =>
+                            handleQuantityChange(item._id, item.quantity - 1)
+                          }
+                          disabled={
+                            item.quantity <= 1 || isUpdating
+                          }
+                          aria-label="Decrease quantity"
+                        >
+                          −
+                        </QuantityButton>
+                        <QuantityInput
+                          type="number"
+                          min="1"
+                          value={item.quantity}
+                          onChange={(e) => {
+                            // SECURITY: Validate quantity input
+                            const inputValue = parseInt(e.target.value) || 1;
+                            const maxStock = item.product?.stock || 999;
+                            handleQuantityChange(item._id, inputValue, maxStock);
+                          }}
+                          disabled={isUpdating}
+                        />
+                        <QuantityButton
+                          onClick={() =>
+                            handleQuantityChange(
+                              item._id,
+                              item.quantity + 1,
+                              item.product?.stock || 999
+                            )
+                          }
+                          disabled={isUpdating || item.quantity >= (item.product?.stock || 999)}
+                          aria-label="Increase quantity"
+                        >
+                          +
+                        </QuantityButton>
+                        <RemoveButton
+                          $size="sm"
+                          onClick={() => handleRemoveItem(item._id)}
+                          disabled={removingItemId === item._id}
+                        >
+                          {removingItemId === item._id ? <ButtonSpinner size="sm" /> : "Remove"}
+                        </RemoveButton>
+                      </ItemActions>
+                    </ItemDetails>
+                    <ItemPrice>
+                      {getItemOriginalUnitPrice(item) != null ? (
+                        <>
+                          <OriginalPrice>GH₵{(getItemOriginalUnitPrice(item) * item.quantity).toFixed(2)}</OriginalPrice>
+                          <PromoPrice>GH₵{(getItemUnitPrice(item) * item.quantity).toFixed(2)}</PromoPrice>
+                        </>
+                      ) : (
+                        <>GH₵{(getItemUnitPrice(item) * item.quantity).toFixed(2)}</>
+                      )}
+                    </ItemPrice>
+                  </CartItem>
+                );
+              })
           )}
           {/* <div>sku:{cart.variant.sku}</div> */}
         </CartItems>
@@ -271,7 +292,7 @@ const CartPage = () => {
           <SummaryTitle>Order Summary</SummaryTitle>
           <SummaryRow>
             <span>Subtotal</span>
-            <span>GH₵{subTotal.toFixed(2)}</span>
+            <span>GH₵{isError ? "0.00" : subTotal.toFixed(2)}</span>
           </SummaryRow>
           {/* <SummaryRow>
             <span>Shipping</span>
@@ -282,8 +303,8 @@ const CartPage = () => {
             <span>GH₵{tax.toFixed(2)}</span>
           </SummaryRow> */}
           <SummaryRow total>
-            <span>subTotal</span>
-            <span>GH₵{subTotal.toFixed(2)}</span>
+            <span>Total</span>
+            <span>GH₵{isError ? "0.00" : subTotal.toFixed(2)}</span>
           </SummaryRow>
 
           <CheckoutButton
@@ -291,8 +312,10 @@ const CartPage = () => {
             $size="lg"
             $fullWidth
             onClick={handleCheckout}
+            disabled={isError || products.length === 0}
+            style={{ opacity: isError || products.length === 0 ? 0.5 : 1, cursor: isError || products.length === 0 ? 'not-allowed' : 'pointer' }}
           >
-            Proceed to Checkout
+            {isError ? "Cart Unavailable" : "Proceed to Checkout"}
           </CheckoutButton>
         </CartSummary>
       </CartContainer>

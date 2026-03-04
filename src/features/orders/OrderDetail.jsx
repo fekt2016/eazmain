@@ -19,8 +19,9 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import { useGetUserOrderById, useRequestRefund, useGetRefundStatus, getOrderDisplayStatus } from '../../shared/hooks/useOrder';
-import { useGetMyReviews } from '../../shared/hooks/useReview';
+import { useGetMyReviews } from '../../shared/hooks/useReviews';
 import { usePaystackPayment } from '../../shared/hooks/usePaystackPayment';
+import { isValidPaystackUrl } from '../../shared/utils/sanitize';
 import { LoadingState, ErrorState, EmptyState } from '../../components/loading';
 import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 import { PATHS } from '../../routes/routePaths';
@@ -34,7 +35,7 @@ import Button from '../../shared/components/Button';
 const OrderDetail = () => {
   const { id: orderId } = useParams();
   const navigate = useNavigate();
-  
+
   // Guard against missing orderId
   if (!orderId) {
     return (
@@ -45,7 +46,7 @@ const OrderDetail = () => {
       />
     );
   }
-  
+
   const { data: orderData, isLoading, isError, refetch } = useGetUserOrderById(orderId);
   const order = useMemo(() => orderData?.order, [orderData]);
   const { data: myReviewsData } = useGetMyReviews({}, { enabled: !!order?._id });
@@ -223,13 +224,20 @@ const OrderDetail = () => {
         email,
       });
 
+      // SECURITY: Validate redirect URL before redirecting to prevent open redirects
+      if (!isValidPaystackUrl(redirectTo)) {
+        logger.error("[OrderDetail] Invalid redirect URL:", redirectTo);
+        setPayNowError('Invalid payment redirect URL. Please contact support.');
+        return;
+      }
+
       window.location.href = redirectTo;
     } catch (error) {
       console.error('[OrderDetail] Pay Now error:', error);
       setPayNowError(
         error?.response?.data?.message ||
-          error?.message ||
-          'Failed to initialize payment. Please try again.'
+        error?.message ||
+        'Failed to initialize payment. Please try again.'
       );
     } finally {
       setIsPayNowLoading(false);
@@ -267,7 +275,7 @@ const OrderDetail = () => {
   // Check if order is eligible for refund
   const isEligibleForRefund = useMemo(() => {
     if (!order) return false;
-    
+
     // Order must be paid (consider all paid indicators)
     const orderIsPaid =
       order.paymentStatus === 'paid' ||
@@ -277,36 +285,36 @@ const OrderDetail = () => {
     if (!orderIsPaid) {
       return false;
     }
-    
+
     // Order cannot already be refunded
     if (order.paymentStatus === 'refunded' || order.currentStatus === 'refunded') {
       return false;
     }
-    
+
     // Order cannot be cancelled
     if (order.currentStatus === 'cancelled' || order.status === 'cancelled') {
       return false;
     }
-    
+
     // Check if refund already requested and pending
     if (refundStatus?.requested && refundStatus?.status === 'pending') {
       return false;
     }
-    
+
     // Check if refund already approved
     if (refundStatus?.requested && refundStatus?.status === 'approved') {
       return false;
     }
-    
+
     // Check refund window (30 days from delivery or order date)
     const refundWindowDays = 30;
     const orderDate = order.deliveredAt ? new Date(order.deliveredAt) : new Date(order.createdAt);
     const daysSinceOrder = (Date.now() - orderDate.getTime()) / (1000 * 60 * 60 * 24);
-    
+
     if (daysSinceOrder > refundWindowDays) {
       return false;
     }
-    
+
     return true;
   }, [order, refundStatus]);
 
@@ -400,11 +408,11 @@ const OrderDetail = () => {
 
   const handleSubmitRefundRequest = async (e) => {
     e.preventDefault();
-    
+
     // ITEM-LEVEL REFUND
     if (refundMode === 'items') {
       const selectedItemsArray = Object.keys(selectedItems);
-      
+
       if (selectedItemsArray.length === 0) {
         alert('Please select at least one item to refund');
         return;
@@ -424,7 +432,7 @@ const OrderDetail = () => {
         selectedItemsArray.map(async (itemId) => {
           const itemData = selectedItems[itemId];
           const orderItem = order.orderItems.find(i => (i._id || i.id) === itemId);
-          
+
           let imageUrls = [];
           if (itemData.images && itemData.images.length > 0) {
             imageUrls = await convertImagesToBase64(itemData.images);
@@ -471,9 +479,9 @@ const OrderDetail = () => {
         alert('Please select a refund reason');
         return;
       }
-      
+
       const amount = parseFloat(refundAmount) || order?.totalPrice || 0;
-      
+
       requestRefund(
         {
           orderId,
@@ -507,11 +515,11 @@ const OrderDetail = () => {
 
   // Calculate grand total (tax is already included in subtotal for VAT-inclusive pricing)
   const subtotal = (order?.sellerOrder || []).reduce(
-    (total, sellerOrder) => total + (sellerOrder.subtotal || 0),
+    (total, sellerOrder) => total + (sellerOrder?.subtotal || 0),
     0
   );
   const totalSellerDiscount = (order?.sellerOrder || []).reduce(
-    (total, sellerOrder) => total + (sellerOrder.discountAmount || 0),
+    (total, sellerOrder) => total + (sellerOrder?.discountAmount || 0),
     0
   );
   const orderLevelDiscount = order?.discountAmount || 0;
@@ -519,15 +527,15 @@ const OrderDetail = () => {
   const totalDiscount = orderLevelDiscount > 0 ? orderLevelDiscount : totalSellerDiscount;
 
   const totalShipping =
-    order.shippingCost ||
+    order?.shippingCost ||
     (order?.sellerOrder || []).reduce(
-      (total, sellerOrder) => total + (sellerOrder.shippingCost || 0),
+      (total, sellerOrder) => total + (sellerOrder?.shippingCost || 0),
       0
     );
   // Get COVID levy from order (for tracking only, NOT added to customer total - will be deducted from seller at withdrawal)
-  const totalCovidLevy = order.totalCovidLevy || (order?.sellerOrder || []).reduce((total, sellerOrder) => total + (sellerOrder.totalCovidLevy || 0), 0);
+  const totalCovidLevy = order?.totalCovidLevy || (order?.sellerOrder || []).reduce((total, sellerOrder) => total + (sellerOrder?.totalCovidLevy || 0), 0);
   // Grand total: subtotal + shipping (COVID levy NOT included)
-  const grandTotal = order.totalPrice || (subtotal + totalShipping);
+  const grandTotal = order?.totalPrice || (subtotal + totalShipping);
 
   // Detect pre-order orders
   // Prefer explicit orderType when present, but fall back to
@@ -566,7 +574,7 @@ const OrderDetail = () => {
             <FaArrowLeft />
             <span>Back to Orders</span>
           </BackButton>
-          
+
           <OrderNumber>
             <FaShoppingBag />
             <span>Order #{order.orderNumber}</span>
@@ -586,7 +594,7 @@ const OrderDetail = () => {
             </MetaItem>
           )}
           <MetaItem>
-            <strong>Status:</strong> 
+            <strong>Status:</strong>
             <StatusBadge $status={order ? getOrderDisplayStatus(order).badgeStatus : 'pending'}>
               {order ? getOrderDisplayStatus(order).displayLabel : 'Pending'}
             </StatusBadge>
@@ -594,10 +602,10 @@ const OrderDetail = () => {
               order.paymentStatus === 'paid' ||
               order.isPaid === true ||
               !!order.paidAt) && (
-              <PaymentStatusBadge>
-                Payment Completed
-              </PaymentStatusBadge>
-            )}
+                <PaymentStatusBadge>
+                  Payment Completed
+                </PaymentStatusBadge>
+              )}
             {(isPreorderLocal || isPreorderInternational) && (
               <PreorderBadge>
                 {isPreorderInternational ? 'International Pre-Order' : 'Pre-Order'}
@@ -764,18 +772,18 @@ const OrderDetail = () => {
                     )}
                   </>
                 )}
-                
+
                 {/* Delivery Information */}
                 <InfoItem>
                   <InfoLabel>Delivery Method</InfoLabel>
                   <InfoValue>
-                    {order.deliveryMethod === 'pickup_center' 
+                    {order.deliveryMethod === 'pickup_center'
                       ? 'Pickup from Saiisai Center'
                       : order.deliveryMethod === 'dispatch'
-                      ? 'Saiisai Dispatch Rider'
-                      : order.deliveryMethod === 'seller_delivery'
-                      ? "Seller's Own Delivery"
-                      : 'Standard Delivery'}
+                        ? 'Saiisai Dispatch Rider'
+                        : order.deliveryMethod === 'seller_delivery'
+                          ? "Seller's Own Delivery"
+                          : 'Standard Delivery'}
                   </InfoValue>
                 </InfoItem>
                 {order.shippingType && (
@@ -785,16 +793,16 @@ const OrderDetail = () => {
                       {isPreorderInternational
                         ? 'International Shipping'
                         : order.shippingType === 'same_day'
-                        ? 'Express Shipping (Same Day)'
-                        : order.shippingType === 'express'
-                        ? 'Express Delivery (1-2 Days)'
-                        : order.shippingType === 'standard'
-                        ? 'Standard Delivery (2-3 Days)'
-                        : order.deliverySpeed === 'same_day'
-                        ? 'Express Shipping (Same Day)'
-                        : order.deliverySpeed === 'next_day'
-                        ? 'Next Day Delivery'
-                        : 'Standard Delivery'}
+                          ? 'Express Shipping (Same Day)'
+                          : order.shippingType === 'express'
+                            ? 'Express Delivery (1-2 Days)'
+                            : order.shippingType === 'standard'
+                              ? 'Standard Delivery (2-3 Days)'
+                              : order.deliverySpeed === 'same_day'
+                                ? 'Express Shipping (Same Day)'
+                                : order.deliverySpeed === 'next_day'
+                                  ? 'Next Day Delivery'
+                                  : 'Standard Delivery'}
                     </InfoValue>
                   </InfoItem>
                 )}
@@ -875,8 +883,8 @@ const OrderDetail = () => {
                           <BreakdownReason>
                             ({breakdown.reason === 'sameCity' ? 'Same City'
                               : breakdown.reason === 'crossCity' ? 'Cross City'
-                              : breakdown.reason === 'heavyItem' ? 'Heavy Item'
-                              : breakdown.reason})
+                                : breakdown.reason === 'heavyItem' ? 'Heavy Item'
+                                  : breakdown.reason})
                           </BreakdownReason>
                         )}
                       </BreakdownValue>
@@ -945,22 +953,22 @@ const OrderDetail = () => {
           {/* Seller Orders - Mobile Card Layout */}
           <SellerOrdersGrid>
             {(order?.sellerOrder || []).map((sellerOrder) => (
-              <SellerCard key={sellerOrder._id}>
+              <SellerCard key={sellerOrder?._id}>
                 <SellerHeader>
                   <SellerAvatar>
                     <FaUser />
                   </SellerAvatar>
                   <SellerInfo>
                     <SellerName>
-                      {sellerOrder.seller?.shopName || sellerOrder.seller?.name || "Seller"}
+                      {sellerOrder?.seller?.shopName || sellerOrder?.seller?.name || "Seller"}
                     </SellerName>
-                    {sellerOrder.seller?.shopName && sellerOrder.seller?.name && (
-                      <SellerEmail>{sellerOrder.seller.name}</SellerEmail>
+                    {sellerOrder?.seller?.shopName && sellerOrder?.seller?.name && (
+                      <SellerEmail>{sellerOrder?.seller?.name}</SellerEmail>
                     )}
-                    {(!sellerOrder.seller?.shopName || !sellerOrder.seller?.name) && sellerOrder.seller?.email && (
-                      <SellerEmail>{sellerOrder.seller.email}</SellerEmail>
+                    {(!sellerOrder?.seller?.shopName || !sellerOrder?.seller?.name) && sellerOrder?.seller?.email && (
+                      <SellerEmail>{sellerOrder?.seller?.email}</SellerEmail>
                     )}
-                    {!sellerOrder.seller?.shopName && !sellerOrder.seller?.name && !sellerOrder.seller?.email && (
+                    {!sellerOrder?.seller?.shopName && !sellerOrder?.seller?.name && !sellerOrder?.seller?.email && (
                       <SellerEmail>N/A</SellerEmail>
                     )}
                   </SellerInfo>
@@ -970,26 +978,26 @@ const OrderDetail = () => {
                 <OrderItemsList>
                   {(order?.orderItems || []).map((item, index) => {
                     // Check if order is completed or delivered (not just shipped)
-                    const isCompleted = order.status === 'completed' || 
-                                       order.status === 'delivered' ||
-                                       order.orderStatus === 'completed' ||
-                                       order.orderStatus === 'delievered' ||
-                                       order.FulfillmentStatus === 'completed' ||
-                                       order.FulfillmentStatus === 'delievered';
-                    
+                    const isCompleted = order.status === 'completed' ||
+                      order.status === 'delivered' ||
+                      order.orderStatus === 'completed' ||
+                      order.orderStatus === 'delievered' ||
+                      order.FulfillmentStatus === 'completed' ||
+                      order.FulfillmentStatus === 'delievered';
+
                     // Use a unique key: prefer item's own _id, fallback to product._id-index combination
                     const uniqueKey = item._id || item.id || `${item.product?._id || item.product?.id || 'item'}-${index}`;
-                    
+
                     return (
                       <OrderItemCard key={uniqueKey}>
-                        <ItemImage src={item.product.imageCover} alt={item.product.name} />
+                        <ItemImage src={item?.product?.imageCover} alt={item?.product?.name} />
                         <ItemDetails>
-                          <ItemName>{item.product.name}</ItemName>
+                          <ItemName>{item?.product?.name}</ItemName>
                           <ItemMeta>
-                            <ItemPrice>GH₵{item.price.toFixed(2)}</ItemPrice>
-                            <ItemQuantity>Qty: {item.quantity}</ItemQuantity>
+                            <ItemPrice>GH₵{item?.price?.toFixed(2) || '0.00'}</ItemPrice>
+                            <ItemQuantity>Qty: {item?.quantity || 1}</ItemQuantity>
                           </ItemMeta>
-                          {isCompleted && !hasReviewedItem(item) && (
+                          {isCompleted && item?.product && !hasReviewedItem(item) && (
                             <ReviewButton
                               onClick={() => {
                                 setSelectedProductForReview({
@@ -1006,7 +1014,7 @@ const OrderDetail = () => {
                             </ReviewButton>
                           )}
                         </ItemDetails>
-                        <ItemTotal>GH₵{(item.price * item.quantity).toFixed(2)}</ItemTotal>
+                        <ItemTotal>GH₵{((item?.price || 0) * (item?.quantity || 1)).toFixed(2)}</ItemTotal>
                       </OrderItemCard>
                     );
                   })}
@@ -1016,12 +1024,12 @@ const OrderDetail = () => {
                 <OrderSummary>
                   <SummaryRow>
                     <span>Items Subtotal:</span>
-                    <span>GH₵{(sellerOrder.subtotal ?? 0).toFixed(2)}</span>
+                    <span>GH₵{(sellerOrder?.subtotal ?? 0).toFixed(2)}</span>
                   </SummaryRow>
-                  {sellerOrder.discountAmount > 0 && (
+                  {(sellerOrder?.discountAmount ?? 0) > 0 && (
                     <SummaryRow>
                       <span>Discount:</span>
-                      <span>- GH₵{(sellerOrder.discountAmount ?? 0).toFixed(2)}</span>
+                      <span>- GH₵{(sellerOrder?.discountAmount ?? 0).toFixed(2)}</span>
                     </SummaryRow>
                   )}
                   <SummaryRow>
@@ -1030,12 +1038,12 @@ const OrderDetail = () => {
                         ? 'International Shipping Cost:'
                         : 'Shipping Cost:'}
                     </span>
-                    <span>GH₵{(sellerOrder.shippingCost ?? 0).toFixed(2)}</span>
+                    <span>GH₵{(sellerOrder?.shippingCost ?? 0).toFixed(2)}</span>
                   </SummaryRow>
                   <SummaryDivider />
                   <SummaryRow $total={true}>
                     <span>Seller Total:</span>
-                    <span>GH₵{(sellerOrder.total ?? 0).toFixed(2)}</span>
+                    <span>GH₵{(sellerOrder?.total ?? 0).toFixed(2)}</span>
                   </SummaryRow>
                 </OrderSummary>
               </SellerCard>
@@ -1080,8 +1088,8 @@ const OrderDetail = () => {
         </DangerButton>
         <ActionGroup>
           {isEligibleForRefund && (
-            <Button 
-              variant="secondary" 
+            <Button
+              variant="secondary"
               onClick={handleRequestRefund}
               leftIcon={<FaUndo />}
             >
@@ -1094,10 +1102,10 @@ const OrderDetail = () => {
               style={{ textDecoration: 'none' }}
             >
               <RefundStatusBadge $status={refundStatus.status} $clickable>
-                Refund {refundStatus.status === 'pending' ? 'Pending' : 
-                        refundStatus.status === 'approved' ? 'Approved' :
-                        refundStatus.status === 'rejected' ? 'Rejected' :
-                        refundStatus.status === 'processing' ? 'Processing' :
+                Refund {refundStatus.status === 'pending' ? 'Pending' :
+                  refundStatus.status === 'approved' ? 'Approved' :
+                    refundStatus.status === 'rejected' ? 'Rejected' :
+                      refundStatus.status === 'processing' ? 'Processing' :
                         refundStatus.status === 'completed' ? 'Completed' : 'Requested'}
                 {' →'}
               </RefundStatusBadge>
@@ -1214,11 +1222,11 @@ const OrderDetail = () => {
                           const availableQty = maxQty - alreadyRefundedQty;
                           // Check if item can be refunded (not already fully refunded and not in pending/approved state)
                           const refundStatus = item.refundStatus || 'none';
-                          const canRefund = availableQty > 0 && 
+                          const canRefund = availableQty > 0 &&
                             (refundStatus === 'none' || refundStatus === 'rejected') &&
-                            refundStatus !== 'requested' && 
-                            refundStatus !== 'seller_review' && 
-                            refundStatus !== 'admin_review' && 
+                            refundStatus !== 'requested' &&
+                            refundStatus !== 'seller_review' &&
+                            refundStatus !== 'admin_review' &&
                             refundStatus !== 'approved';
 
                           return (
@@ -1429,10 +1437,10 @@ const OrderDetail = () => {
                   >
                     Cancel
                   </CancelButton>
-                  <SubmitButton 
-                    type="submit" 
+                  <SubmitButton
+                    type="submit"
                     disabled={
-                      isRefundPending || 
+                      isRefundPending ||
                       (refundMode === 'items' && Object.keys(selectedItems).length === 0) ||
                       (refundMode === 'whole' && !refundReason)
                     }
@@ -1625,7 +1633,7 @@ const StatusBadge = styled.span`
   text-transform: capitalize;
   
   background: ${props => {
-    switch(props.$status) {
+    switch (props.$status) {
       case 'paid': return 'var(--color-green-100)';
       case 'delivered': return 'var(--color-green-100)';
       case 'shipped': return 'var(--color-blue-100)';
@@ -1635,7 +1643,7 @@ const StatusBadge = styled.span`
   }};
   
   color: ${props => {
-    switch(props.$status) {
+    switch (props.$status) {
       case 'paid': return 'var(--color-green-700)';
       case 'delivered': return 'var(--color-green-700)';
       case 'shipped': return 'var(--color-blue-700)';

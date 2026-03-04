@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import {
   ContentCard,
   CardTitle,
@@ -12,6 +12,7 @@ import { FaPlus, FaTrash, FaEdit } from "react-icons/fa";
 import styled from "styled-components";
 
 const AddressTab = () => {
+  const navigate = useNavigate();
   const { data, isLoading, error } = useQuery({
     queryKey: ["addresses"],
     queryFn: () => addressApi.getUserAddresses(),
@@ -31,7 +32,7 @@ const AddressTab = () => {
             Manage your delivery addresses for faster checkout.
           </CardDescription>
         </div>
-        <Button variant="primary">
+        <Button variant="primary" onClick={() => navigate("/checkout")}>
           <FaPlus /> Add New Address
         </Button>
       </CardHeader>
@@ -39,7 +40,7 @@ const AddressTab = () => {
       {addresses.length === 0 ? (
         <EmptyState>
           <p>No addresses saved yet.</p>
-          <Button variant="primary">
+          <Button variant="primary" onClick={() => navigate("/checkout")}>
             <FaPlus /> Add Your First Address
           </Button>
         </EmptyState>
@@ -56,10 +57,10 @@ const AddressTab = () => {
                 {address.isDefault && <DefaultBadge>Default</DefaultBadge>}
               </AddressContent>
               <AddressActions>
-                <ActionButton>
+                <ActionButton aria-label="Edit address" onClick={() => navigate("/checkout")}>
                   <FaEdit />
                 </ActionButton>
-                <ActionButton variant="danger">
+                <ActionButton variant="danger" aria-label="Delete address" onClick={() => navigate("/checkout")}>
                   <FaTrash />
                 </ActionButton>
               </AddressActions>
@@ -165,7 +166,7 @@ const ActionButton = styled.button`
 
   &:hover {
     background: ${(props) =>
-      props.variant === "danger" ? "#DC2626" : "var(--color-border)"};
+    props.variant === "danger" ? "#DC2626" : "var(--color-border)"};
   }
 `;
 

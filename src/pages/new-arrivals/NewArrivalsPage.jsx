@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 import { useGetNewArrivals } from '../../shared/hooks/useNewArrivals';
-import Container from '../../components/ui/Container';
 import { SkeletonGrid, EmptyState } from '../../components/loading';
 import NewArrivalsHero from '../../shared/components/newArrivals/NewArrivalsHero';
 import NewArrivalsToolbar from '../../shared/components/newArrivals/NewArrivalsToolbar';
@@ -10,6 +9,7 @@ import NewArrivalsGrid from '../../shared/components/newArrivals/NewArrivalsGrid
 import Pagination from '../../shared/components/newArrivals/Pagination';
 import {
   NewArrivalsPageContainer,
+  ContentContainer,
 } from './newArrivals.styles';
 
 const NewArrivalsPage = () => {
@@ -74,12 +74,12 @@ const NewArrivalsPage = () => {
   if (error) {
     return (
       <NewArrivalsPageContainer>
-        <Container fluid>
+        <ContentContainer>
           <EmptyState>
             <h3>Error Loading New Arrivals</h3>
             <p>Something went wrong. Please try again later.</p>
           </EmptyState>
-        </Container>
+        </ContentContainer>
       </NewArrivalsPageContainer>
     );
   }
@@ -88,7 +88,7 @@ const NewArrivalsPage = () => {
     <NewArrivalsPageContainer>
       <NewArrivalsHero totalProducts={totalProducts} />
 
-      <Container fluid>
+      <ContentContainer>
         <NewArrivalsToolbar
           sortOption={sortOption}
           selectedCategory={selectedCategory}
@@ -115,7 +115,7 @@ const NewArrivalsPage = () => {
             )}
           </>
         )}
-      </Container>
+      </ContentContainer>
     </NewArrivalsPageContainer>
   );
 };

@@ -1,15 +1,16 @@
 import { useMemo, useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import styled from "styled-components";
 import { FaFilter, FaChevronDown, FaTimes, FaSortAmountDown, FaAward, FaCheck, FaShieldAlt, FaTruck } from "react-icons/fa";
 import useProduct from "../../shared/hooks/useProduct";
 import { useEazShop } from "../../shared/hooks/useEazShop";
 import ProductCard from "../../shared/components/ProductCard";
 import Container from "../../shared/components/Container";
-import { SkeletonGrid, SkeletonCard, EmptyState } from "../../components/loading";
+import { ShimmerProductGrid, EmptyState } from "../../components/loading";
 import { devicesMax } from "../../shared/styles/breakpoint";
 import useDynamicPageTitle from "../../shared/hooks/useDynamicPageTitle";
 import { fadeInUp } from "../../shared/styles/animations";
+import { PATHS } from "../../routes/routePaths";
 
 const ProductsPage = () => {
   useDynamicPageTitle({
@@ -152,14 +153,14 @@ const ProductsPage = () => {
 
   const toggleFilters = () => setShowFilters(!showFilters);
 
-  if (isProductsLoading && isEazShopLoading) {
+  if (isProductsLoading || isEazShopLoading) {
     return (
       <PageContainer>
         <Container>
           <PageHeader>
             <PageTitle>All Products</PageTitle>
           </PageHeader>
-          <SkeletonGrid count={8} />
+          <ShimmerProductGrid />
         </Container>
       </PageContainer>
     );
@@ -290,14 +291,15 @@ const ProductsPage = () => {
 
         {/* Products Grid */}
         {displayProducts.length === 0 ? (
-          <EmptyState>
-            <h3>No Products Found</h3>
-            <p>
-              {showEazShopOnly
-                ? "No Saiisai products available at the moment."
-                : "No products available at the moment."}
-            </p>
-          </EmptyState>
+          <EmptyState
+            title="No products found"
+            message="Try browsing another category"
+            action={
+              <BrowseButton to={PATHS.CATEGORIES}>
+                Browse Categories
+              </BrowseButton>
+            }
+          />
         ) : (
           <ProductsGrid>
             {displayProducts.map((product) => (
@@ -355,6 +357,19 @@ const ProductCount = styled.p`
   font-size: 1.4rem;
   color: #64748b;
   margin: 0;
+`;
+
+const BrowseButton = styled(Link)`
+  display: inline-block;
+  margin-top: 16px;
+  padding: 12px 24px;
+  background: var(--primary, #D4882A);
+  color: white;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s;
+  &:hover { background: #B8711F; color: white; }
 `;
 
 const FilterButton = styled.button`

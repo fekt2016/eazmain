@@ -1,18 +1,37 @@
-import { useState } from "react";
 import {
   ContentCard,
   CardTitle,
   CardDescription,
   Button,
 } from "../components/TabPanelContainer";
-import { ButtonSpinner, LoadingState, ErrorState } from "../../../components/loading";
-import { useGetPaymentMethods } from "../../../shared/hooks/usePaymentMethod";
+import { LoadingState, ErrorState } from "../../../components/loading";
+import { useGetPaymentMethods, useDeletePaymentMethod } from "../../../shared/hooks/usePaymentMethod";
 import { FaPlus, FaTrash, FaCreditCard } from "react-icons/fa";
 import styled from "styled-components";
+import { useNavigate } from "react-router-dom";
+import { useModal } from "../../../shared/hooks/useModal";
+import logger from "../../../shared/utils/logger";
 
 const PaymentTab = () => {
+  const navigate = useNavigate();
+  const { showDanger } = useModal();
   const { data, isLoading, error } = useGetPaymentMethods();
+  const { mutateAsync: deletePaymentMethod } = useDeletePaymentMethod();
   const paymentMethods = data?.data?.paymentMethods || data?.paymentMethods || [];
+
+  const handleDelete = (id) => {
+    showDanger({
+      title: "Delete Payment Method?",
+      message: "Are you sure you want to remove this payment method?",
+      onConfirm: async () => {
+        try {
+          await deletePaymentMethod(id);
+        } catch (error) {
+          logger.error("Delete payment method error:", error);
+        }
+      },
+    });
+  };
 
   if (isLoading) return <LoadingState message="Loading payment methods..." />;
   if (error) return <ErrorState message="Failed to load payment methods" />;
@@ -26,7 +45,7 @@ const PaymentTab = () => {
             Manage your saved payment methods for faster checkout.
           </CardDescription>
         </div>
-        <Button variant="primary">
+        <Button variant="primary" onClick={() => navigate("/profile/payment-methods")}>
           <FaPlus /> Add Payment Method
         </Button>
       </CardHeader>
@@ -35,7 +54,7 @@ const PaymentTab = () => {
         <EmptyState>
           <FaCreditCard size={48} style={{ color: "var(--color-text-light)", marginBottom: "var(--space-md)" }} />
           <p>No payment methods saved yet.</p>
-          <Button variant="primary">
+          <Button variant="primary" onClick={() => navigate("/profile/payment-methods")}>
             <FaPlus /> Add Your First Payment Method
           </Button>
         </EmptyState>
@@ -48,15 +67,15 @@ const PaymentTab = () => {
                   <FaCreditCard />
                 </PaymentIcon>
                 <PaymentInfo>
-                  <PaymentType>{method.type || "Card"}</PaymentType>
+                  <PaymentType>{method.type === "mobile_money" ? "Mobile Money" : method.type === "bank_transfer" ? "Bank Transfer" : method.type || "Card"}</PaymentType>
                   <PaymentDetails>
-                    {method.last4 ? `**** **** **** ${method.last4}` : "No details"}
+                    {method.mobileNumber || (method.last4 ? `**** **** **** ${method.last4}` : method.accountNumber || "No details")}
                   </PaymentDetails>
                   {method.isDefault && <DefaultBadge>Default</DefaultBadge>}
                 </PaymentInfo>
               </PaymentContent>
               <PaymentActions>
-                <ActionButton variant="danger">
+                <ActionButton variant="danger" aria-label="Delete payment method" onClick={() => handleDelete(method._id)}>
                   <FaTrash />
                 </ActionButton>
               </PaymentActions>
@@ -181,7 +200,7 @@ const ActionButton = styled.button`
 
   &:hover {
     background: ${(props) =>
-      props.variant === "danger" ? "#DC2626" : "var(--color-border)"};
+    props.variant === "danger" ? "#DC2626" : "var(--color-border)"};
   }
 `;
 

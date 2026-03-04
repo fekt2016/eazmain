@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import styled from "styled-components";
 import { keyframes } from "styled-components";
-import { createGlobalStyle } from "styled-components";
 import useAuth from "../../shared/hooks/useAuth";
-import { LoadingState } from "../../components/loading";
+import { ShimmerAddressCards } from "../../components/loading";
 import ErrorDisplay from "../../shared/components/ErrorDisplay";
+import useDynamicPageTitle from "../../shared/hooks/useDynamicPageTitle";
 
 // Components
 import ProfileHeader from "./components/ProfileHeader";
@@ -17,6 +17,10 @@ import AccountTab from "./tabs/AccountTab";
 import SecurityTab from "./tabs/SecurityTab";
 import TwoFactorTab from "./tabs/TwoFactorTab";
 import DevicesTab from "./tabs/DevicesTab";
+import OrdersTab from "./tabs/OrdersTab";
+import AddressTab from "./tabs/AddressTab";
+import NotificationTab from "./tabs/NotificationTab";
+import PaymentTab from "./tabs/PaymentTab";
 
 const fadeIn = keyframes`
   from {
@@ -40,28 +44,10 @@ const slideInLeft = keyframes`
   }
 `;
 
-// Global styles for profile page
-const GlobalProfileStyles = createGlobalStyle`
-  :root {
-    --color-primary: var(--color-primary-500);
-    --color-primary-hover: var(--color-primary-600);
-    --color-accent: #00C896;
-    --color-text-dark: #1A1A1A;
-    --color-text-light: #6B7280;
-    --color-bg-light: #F7F9FC;
-    --color-bg-card: #FFFFFF;
-    --color-border: #E5E7EB;
-    --color-danger: #EF4444;
-    --color-success: #22C55E;
-    --space-xs: 4px;
-    --space-sm: 8px;
-    --space-md: 16px;
-    --space-lg: 24px;
-    --space-xl: 32px;
-  }
-`;
 
 const ProfilePage = () => {
+  useDynamicPageTitle({ title: "My Account | Saiisai", defaultTitle: "My Account | Saiisai" });
+
   const {
     profileData,
     isProfileLoading,
@@ -71,26 +57,26 @@ const ProfilePage = () => {
 
   const [activeTab, setActiveTab] = useState("account");
 
-  // Show loading state
+  // Show loading state (shimmer skeleton)
   if (isProfileLoading) {
     return (
       <PageContainer>
-        <LoadingState message="Loading profile..." />
+        <ShimmerAddressCards />
       </PageContainer>
     );
   }
-  
+
   // Show error state if profile failed to load and user is authenticated
   if (profileErrorFromHook && userData) {
     return (
       <PageContainer>
-      <ErrorDisplay
+        <ErrorDisplay
           message={
             profileErrorFromHook?.message ||
             "Failed to load profile data. Please try refreshing the page."
           }
-        onRetry={() => window.location.reload()}
-      />
+          onRetry={() => window.location.reload()}
+        />
       </PageContainer>
     );
   }
@@ -108,33 +94,48 @@ const ProfilePage = () => {
 
   return (
     <>
-      <GlobalProfileStyles />
-    <PageContainer>
+      <PageContainer>
         <ProfileHeader userInfo={userInfo} />
 
-      <ContentWrapper>
-        <SidebarTabs activeTab={activeTab} onTabChange={setActiveTab} />
-        <MobileTabBar activeTab={activeTab} onTabChange={setActiveTab} />
+        <ContentWrapper>
+          <SidebarTabs activeTab={activeTab} onTabChange={setActiveTab} />
+          <MobileTabBar activeTab={activeTab} onTabChange={setActiveTab} />
 
-        <MainContent>
-          <TabPanelContainer active={activeTab === "account"}>
-            <AccountTab userInfo={userInfo} />
-          </TabPanelContainer>
+          <MainContent>
+            <TabPanelContainer active={activeTab === "account"}>
+              <AccountTab userInfo={userInfo} />
+            </TabPanelContainer>
 
-          <TabPanelContainer active={activeTab === "security"}>
-            <SecurityTab userInfo={userInfo} connectedAccounts={profileData.connectedAccounts} />
-          </TabPanelContainer>
+            <TabPanelContainer active={activeTab === "security"}>
+              <SecurityTab userInfo={userInfo} connectedAccounts={profileData.connectedAccounts} />
+            </TabPanelContainer>
 
-          <TabPanelContainer active={activeTab === "twofactor"}>
-            <TwoFactorTab />
-          </TabPanelContainer>
+            <TabPanelContainer active={activeTab === "twofactor"}>
+              <TwoFactorTab />
+            </TabPanelContainer>
 
-          <TabPanelContainer active={activeTab === "devices"}>
-            <DevicesTab />
-          </TabPanelContainer>
-        </MainContent>
-      </ContentWrapper>
-    </PageContainer>
+            <TabPanelContainer active={activeTab === "devices"}>
+              <DevicesTab />
+            </TabPanelContainer>
+
+            <TabPanelContainer active={activeTab === "orders"}>
+              <OrdersTab />
+            </TabPanelContainer>
+
+            <TabPanelContainer active={activeTab === "address"}>
+              <AddressTab userInfo={userInfo} />
+            </TabPanelContainer>
+
+            <TabPanelContainer active={activeTab === "notifications"}>
+              <NotificationTab />
+            </TabPanelContainer>
+
+            <TabPanelContainer active={activeTab === "payment"}>
+              <PaymentTab />
+            </TabPanelContainer>
+          </MainContent>
+        </ContentWrapper>
+      </PageContainer>
     </>
   );
 };

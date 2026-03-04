@@ -21,6 +21,28 @@ const useProduct = () => {
     retry: 2,
   });
 
+  // Get trending products based on purchases and views
+  const useGetTrendingProducts = (params = {}) => {
+    return useQuery({
+      queryKey: ["trendingProducts", params],
+      queryFn: async () => {
+        try {
+          const queryParams = {
+            limit: params.limit || 24,
+            page: params.page || 1,
+            sort: params.sort || '-totalSold,-totalViews',
+            ...params
+          };
+          return await productService.getAllProducts(queryParams);
+        } catch (error) {
+          logger.error("Failed to fetch trending products:", error);
+          throw new Error("Failed to load trending products");
+        }
+      },
+      staleTime: 1000 * 60 * 5,
+    });
+  };
+
   // Get single product by ID
   const useGetProductById = (id) =>
     useQuery({
@@ -186,7 +208,7 @@ const useProduct = () => {
     });
 
     return useQuery({
-      queryKey: ["products", params],
+      queryKey: ["products", "category", categoryId, params],
       queryFn: async () => {
         if (!categoryId) return null;
         try {
@@ -206,6 +228,7 @@ const useProduct = () => {
 
   return {
     getProducts,
+    useGetTrendingProducts,
     useGetProductById,
     useGetProductsByCategory,
     useGetAllProductBySeller,

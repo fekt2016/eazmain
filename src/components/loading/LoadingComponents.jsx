@@ -6,7 +6,7 @@ import styled from "styled-components";
 
 import { FaExclamationTriangle, FaInfoCircle, FaCar } from "react-icons/fa";
 
-import{spin, pulse, float, fadeIn} from '../../shared/styles/animations';
+import { spin, pulse, float, fadeIn, shimmer } from '../../shared/styles/animations';
 
 // Base Spinner Styles
 
@@ -540,7 +540,7 @@ export const Skeleton = styled.div`
 
   background-size: 200% 100%;
 
-  animation: ${pulse} 2s infinite;
+  animation: ${shimmer} 1.5s ease-in-out infinite;
 
   border-radius: var(--radius-md);
 
@@ -956,6 +956,58 @@ const SkeletonCardContent = styled.div`
 
 `;
 
+// Shimmer skeleton: product grid (4 cards)
+export const ShimmerProductGrid = () => (
+  <ShimmerProductGridWrapper>
+    {[1, 2, 3, 4].map((i) => (
+      <SkeletonCard key={i} />
+    ))}
+  </ShimmerProductGridWrapper>
+);
+const ShimmerProductGridWrapper = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-lg);
+  width: 100%;
+`;
+
+// Shimmer skeleton: 2 address cards
+export const ShimmerAddressCards = () => (
+  <ShimmerAddressWrapper>
+    {[1, 2].map((i) => (
+      <ShimmerAddressCard key={i}>
+        <Skeleton height="24px" width="60%" />
+        <Skeleton height="16px" width="90%" />
+        <Skeleton height="16px" width="70%" />
+        <Skeleton height="40px" width="120px" style={{ marginTop: '8px' }} />
+      </ShimmerAddressCard>
+    ))}
+  </ShimmerAddressWrapper>
+);
+const ShimmerAddressWrapper = styled.div` display: flex; flex-direction: column; gap: var(--space-lg); width: 100%; `;
+const ShimmerAddressCard = styled.div`
+  background: var(--white);
+  border-radius: 10px;
+  padding: var(--space-lg);
+  border: 1px solid var(--gray-200);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+// Shimmer skeleton: 3 coupon rows
+export const ShimmerCouponRows = () => (
+  <ShimmerCouponWrapper>
+    {[1, 2, 3].map((i) => (
+      <ShimmerCouponRow key={i}>
+        <Skeleton height="48px" width="100%" />
+      </ShimmerCouponRow>
+    ))}
+  </ShimmerCouponWrapper>
+);
+const ShimmerCouponWrapper = styled.div` display: flex; flex-direction: column; gap: var(--space-md); width: 100%; `;
+const ShimmerCouponRow = styled.div` width: 100%; border-radius: 8px; overflow: hidden; `;
+
 // Progress Bar Component
 
 export const ProgressBar = ({
@@ -1091,6 +1143,12 @@ export const LoadingComponents = {
   SkeletonGrid,
 
   SkeletonCard,
+
+  ShimmerProductGrid,
+
+  ShimmerAddressCards,
+
+  ShimmerCouponRows,
 
   ProgressBar,
 

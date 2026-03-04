@@ -2,17 +2,28 @@ import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 import { useGetBestSellers } from '../../shared/hooks/useBestSellers';
-import logger from '../../shared/utils/logger';
 import BestSellersHero from '../../shared/components/bestSellers/BestSellersHero';
 import BestSellersToolbar from '../../shared/components/bestSellers/BestSellersToolbar';
 import BestSellersGrid from '../../shared/components/bestSellers/BestSellersGrid';
 import Pagination from '../../shared/components/bestSellers/Pagination';
 import SellerProductsSection from '../../shared/components/bestSellers/SellerProductsSection';
 import { SkeletonGrid, EmptyState } from '../../components/loading';
-import {
-  BestSellersPageContainer,
-  ContentContainer,
-} from '../bestSellers/bestSellers.styles';
+import styled from 'styled-components';
+
+const BestSellersPageContainer = styled.div`
+  min-height: 100vh;
+  width: 100%;
+  background: var(--color-white-0);
+  padding-bottom: 4rem;
+`;
+
+const ContentContainer = styled.div`
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0 1rem;
+`;
+
 
 const BestSellersPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();

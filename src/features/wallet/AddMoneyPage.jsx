@@ -6,6 +6,7 @@ import { useInitiateTopup } from '../../shared/hooks/useWallet';
 import useAuth from '../../shared/hooks/useAuth';
 import { LoadingState, ErrorState } from '../../components/loading';
 import { toast } from 'react-toastify';
+import { isValidPaystackUrl } from '../../shared/utils/sanitize';
 import { devicesMax } from '../../shared/styles/breakpoint';
 
 const AddMoneyPage = () => {
@@ -47,8 +48,8 @@ const AddMoneyPage = () => {
       return;
     }
 
-    if (finalAmount > 100000) {
-      toast.error('Maximum top-up amount is GH₵100,000.00');
+    if (finalAmount > 10000) {
+      toast.error('Maximum top-up amount is GH₵10,000.00');
       return;
     }
 
@@ -59,10 +60,25 @@ const AddMoneyPage = () => {
         email: user?.email,
       },
       {
-        onSuccess: (data) => {
-          // Redirect to Paystack authorization URL
-          if (data?.data?.authorizationUrl) {
-            window.location.href = data.data.authorizationUrl;
+        onSuccess: (response) => {
+          // W-2: ensure success payload and extract authorization URL
+          // API returns response.data but React Query might unwrap or wrap it differently based on setup
+          const data = response?.data || response;
+
+          if (data?.status === 'error' || data?.error) {
+            toast.error(data?.message || data?.error || 'Failed to initialize payment. Please try again.');
+            return;
+          }
+
+          const authorizationUrl = data?.authorizationUrl || data?.data?.authorizationUrl;
+          if (authorizationUrl) {
+            // SECURITY: Validate redirect URL before redirecting to prevent open redirects
+            if (!isValidPaystackUrl(authorizationUrl)) {
+              logger.error("[AddMoneyPage] Invalid redirect URL:", authorizationUrl);
+              toast.error('Invalid payment redirect URL. Please contact support.');
+              return;
+            }
+            window.location.href = authorizationUrl;
           } else {
             toast.error('Failed to initialize payment. Please try again.');
           }
@@ -124,7 +140,7 @@ const AddMoneyPage = () => {
                 onChange={handleCustomAmountChange}
                 onFocus={() => setAmount('')}
               />
-              <AmountHint>Minimum: GH₵1.00 | Maximum: GH₵100,000.00</AmountHint>
+              <AmountHint>Minimum: GH₵1.00 | Maximum: GH₵10,000.00</AmountHint>
             </AmountSection>
 
             <SelectedAmountDisplay>

@@ -17,7 +17,7 @@ import {
 } from "react-icons/fa";
 import { useParams, useNavigate } from "react-router-dom";
 import { PATHS } from "../../routes/routePaths";
-import { useGetProductReviews, useGetMyReviews } from '../../shared/hooks/useReview';
+import { useGetProductReviews, useGetMyReviews } from '../../shared/hooks/useReviews';
 import useAuth from '../../shared/hooks/useAuth';
 import { LoadingState, ErrorState } from '../../components/loading';
 import { devicesMax } from '../../shared/styles/breakpoint';
@@ -59,7 +59,7 @@ export default function CustomerReviewPage() {
     if (!userReviews.length) return null;
     const totalRatings = userReviews.reduce((sum, review) => sum + review.rating, 0);
     const averageRating = (totalRatings / userReviews.length).toFixed(1);
-    
+
     const ratingDistribution = Array(5).fill(0);
     userReviews.forEach(review => {
       ratingDistribution[5 - review.rating]++;
@@ -102,7 +102,7 @@ export default function CustomerReviewPage() {
     const review = new Date(reviewDate);
     const diffTime = Math.abs(now - review);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays <= 7) return { type: 'new', text: 'New Review' };
     if (diffDays <= 30) return { type: 'recent', text: 'Recent' };
     return { type: 'old', text: 'Older Review' };
@@ -118,7 +118,7 @@ export default function CustomerReviewPage() {
             <Title>My Reviews</Title>
             <Subtitle>Your feedback and ratings for purchased products</Subtitle>
           </TitleSection>
-          
+
           {reviewStats && (
             <StatsGrid>
               <StatCard>
@@ -166,7 +166,7 @@ export default function CustomerReviewPage() {
                 const productImage = review.product?.imageCover || review.product?.image || '/placeholder-product.png';
                 const productName = review.product?.name || 'Product';
                 const reviewText = review.review || review.comment || '';
-                
+
                 return (
                   <ReviewCard key={review._id}>
                     <CardHeader>
@@ -201,7 +201,7 @@ export default function CustomerReviewPage() {
                         {renderStars(review.rating, "medium")}
                         <RatingValue>{review.rating}/5</RatingValue>
                       </ReviewRating>
-                      
+
                       <ReviewTitle>{review.title || "Review"}</ReviewTitle>
                       <ReviewContentText>
                         <QuoteIcon>
@@ -238,7 +238,7 @@ export default function CustomerReviewPage() {
               <EmptyMessage>
                 You haven't reviewed any products from your orders
               </EmptyMessage>
-              
+
               <HelpSection ref={helpSectionRef}>
                 <HelpTitle>How to review products:</HelpTitle>
                 <StepsGrid>

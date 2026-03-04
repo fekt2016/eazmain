@@ -5,10 +5,12 @@ import { FaBell, FaCheck, FaCheckDouble, FaTrash, FaShoppingCart, FaTruck, FaMon
 import { useNotifications, useUnreadCount, useMarkAsRead, useMarkAllAsRead, useDeleteNotification, useDeleteMultipleNotifications, useDeleteAllNotifications } from '../../shared/hooks/notifications/useNotifications';
 import { PATHS } from '../../routes/routePaths';
 import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
+import { useModal } from '../../shared/hooks/useModal';
 
 const BuyerNotificationsPage = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { showDanger } = useModal();
 
   useDynamicPageTitle({
     title: 'Notifications - Saiisai',
@@ -104,33 +106,39 @@ const BuyerNotificationsPage = () => {
   const handleDeleteSelected = () => {
     if (selectedIds.length === 0) return;
 
-    if (window.confirm(`Delete ${selectedIds.length} selected notification(s)?`)) {
-      deleteMultiple.mutate(selectedIds, {
-        onSuccess: () => {
-          setSelectedIds([]);
-          if (selectedIds.length === notifications.length && page > 1) {
-            // If all notifications on this page were deleted, go to previous page
-            handlePageChange(page - 1);
-          }
-        },
-      });
-    }
+    showDanger({
+      title: 'Delete Selected?',
+      message: `Delete ${selectedIds.length} selected notification(s)?`,
+      onConfirm: () => {
+        deleteMultiple.mutate(selectedIds, {
+          onSuccess: () => {
+            setSelectedIds([]);
+            if (selectedIds.length === notifications.length && page > 1) {
+              handlePageChange(page - 1);
+            }
+          },
+        });
+      }
+    });
   };
 
   // Handle delete all
   const handleDeleteAll = () => {
-    if (window.confirm(`Delete all ${total} notifications? This action cannot be undone.`)) {
-      deleteAll.mutate(undefined, {
-        onSuccess: () => {
-          setSelectedIds([]);
-          setSelectMode(false);
-          // Reset to page 1
-          if (page > 1) {
-            handlePageChange(1);
-          }
-        },
-      });
-    }
+    showDanger({
+      title: 'Delete All?',
+      message: `Delete all ${total} notifications? This action cannot be undone.`,
+      onConfirm: () => {
+        deleteAll.mutate(undefined, {
+          onSuccess: () => {
+            setSelectedIds([]);
+            setSelectMode(false);
+            if (page > 1) {
+              handlePageChange(1);
+            }
+          },
+        });
+      }
+    });
   };
 
   const getNotificationIcon = (type) => {
@@ -436,9 +444,11 @@ const BuyerNotificationsPage = () => {
                   <ActionButton
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (window.confirm('Delete this notification?')) {
-                        deleteNotification.mutate(notification._id);
-                      }
+                      showDanger({
+                        title: 'Delete Notification?',
+                        message: 'This notification will be permanently deleted.',
+                        onConfirm: () => deleteNotification.mutate(notification._id)
+                      });
                     }}
                     title="Delete"
                     $danger

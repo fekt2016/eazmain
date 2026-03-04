@@ -18,6 +18,7 @@ import {
 import { highlightSearchTerm } from '../utils/searchUtils.jsx';
 import logger from '../utils/logger';
 import { toast } from 'react-toastify';
+import ProductImageContainer from './ProductImageContainer';
 
 // Helper function to get grid image for cards (homepage, grids, carousels)
 // Prefer product.imageCover when available, then fall back to first product.images entry
@@ -87,7 +88,7 @@ export default function ProductCard({
     useToggleWishlist(product._id || productId);
 
   const { mutate: removeWishlist, isPending: isRemovingFromWishlist } = useRemoveFromWishlist();
-  const { addToCart } = useCartActions();
+  const { addToCart, isAdding: isAddingToCart } = useCartActions();
 
   // Debounce ref to prevent rapid clicks
   const debounceTimerRef = useRef(null);
@@ -134,6 +135,7 @@ export default function ProductCard({
         product,
         quantity: 1,
         variantSku: sku, // Pass default SKU - ProductCard auto-selects default variant
+        variantId: product.variants?.find(v => v.sku === sku)?._id || product.variants?.find(v => v.sku === sku)?.id || null, // Pass explicit variantId for backend
       },
       {
         onError: (error) => {
@@ -211,20 +213,15 @@ export default function ProductCard({
   return (
     <CardContainer $layout={layout}>
       <ProductLink to={`/product/${product._id}`}>
-        {/* Image Section */}
+        {/* Image Section: fixed 1:1 aspect ratio, object-fit cover, no stretch */}
         <ImageContainer $layout={layout}>
-          <ProductImage
-            src={getGridImage(product)}
-            alt={product.name}
-            $layout={layout}
-            onError={(e) => {
-              // Prevent infinite loop and use local fallback
-              if (e.target.dataset.fallbackAttempted !== 'true') {
-                e.target.dataset.fallbackAttempted = 'true';
-                e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600"%3E%3Crect width="600" height="600" fill="%23f0f0f0"/%3E%3Ctext x="50%25" y="50%25" font-family="Arial" font-size="24" fill="%23999" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E';
-              }
-            }}
-          />
+          <div data-product-image-wrap>
+            <ProductImageContainer
+              src={getGridImage(product)}
+              alt={product.name ? `${product.name} – Saiisai Ghana e-commerce` : 'Product – Saiisai Ghana online shopping'}
+              fallbackSrc="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Crect width='600' height='600' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='24' fill='%23999' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E"
+            />
+          </div>
 
           {/* Overlay Actions */}
           <ImageOverlay className="image-overlay">
@@ -411,10 +408,20 @@ export default function ProductCard({
               e.preventDefault();
               handleAddToCart(product);
             }}
-            disabled={totalStock === 0}
+            disabled={totalStock === 0 || isAddingToCart}
+            aria-busy={isAddingToCart}
           >
-            <FaShoppingCart />
-            Add to Cart
+            {isAddingToCart ? (
+              <>
+                <ButtonSpinner size="sm" aria-hidden />
+                <span> Adding…</span>
+              </>
+            ) : (
+              <>
+                <FaShoppingCart />
+                <span> Add to Cart</span>
+              </>
+            )}
           </AddToCartButton>
         )}
 
@@ -487,33 +494,33 @@ const ProductLink = styled(Link)`
 
 const ImageContainer = styled.div`
   position: relative;
-  height: ${({ $layout }) => ($layout === "horizontal" ? "100%" : "auto")};
-  aspect-ratio: ${({ $layout }) => ($layout === "horizontal" ? "auto" : "1 / 1")};
   width: ${({ $layout }) => ($layout === "horizontal" ? "140px" : "100%")};
-  background: linear-gradient(135deg, var(--color-grey-50) 0%, var(--color-grey-100) 100%);
+  height: ${({ $layout }) => ($layout === "horizontal" ? "100%" : "auto")};
+  flex-shrink: 0;
   overflow: hidden;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
-  padding: ${({ $layout }) => ($layout === "horizontal" ? "1rem" : "1.2rem")};
+
+  /* Fixed 1:1 image area: inner ProductImageContainer defines aspect-ratio */
+  ${({ $layout }) => $layout !== "horizontal" && `
+    [data-product-image-wrap] {
+      width: 100%;
+    }
+  `}
+
+  /* Subtle zoom on card hover (web only) */
+  ${CardContainer}:hover & [data-product-image-wrap] img {
+    transform: scale(1.05);
+  }
 
   ${({ $layout }) => $layout === "horizontal" && css`
-    flex-shrink: 0;
+    [data-product-image-wrap] {
+      width: 140px;
+      flex-shrink: 0;
+    }
     border-right: 1px solid var(--color-grey-100);
   `}
-`;
-
-const ProductImage = styled.img`
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  background-color: transparent;
-  border-radius: var(--border-radius-md);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
-  ${CardContainer}:hover & {
-    transform: scale(1.08);
-  }
 `;
 
 const ImageOverlay = styled.div`

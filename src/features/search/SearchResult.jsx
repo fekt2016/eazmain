@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import styled, { css } from "styled-components";
 import { FaFilter, FaChevronDown, FaChevronUp, FaTimes, FaSortAmountDown, FaSearch, FaChevronLeft, FaChevronRight } from "react-icons/fa";
-import { useSearchResults } from '../../shared/hooks/useSearch';
+import { useSearchResults, useSearchSuggestions } from '../../shared/hooks/useSearch';
 import ProductCard from '../../shared/components/ProductCard';
 import { LoadingState, SkeletonGrid, ErrorState } from '../../components/loading';
 import { spin, fadeIn } from '../../shared/styles/animations';
@@ -10,11 +10,13 @@ import Container from '../../shared/components/Container';
 import { devicesMax } from '../../shared/styles/breakpoint';
 import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 import { parseSearchParams, buildSearchUrl, highlightSearchTerm, escapeForDisplay } from '../../shared/utils/searchUtils.jsx';
+import useCategory from '../../shared/hooks/useCategory';
 
 export default function SearchResultsPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  
+  const { categories: categoryList = [], isLoading: isCategoriesLoading } = useCategory();
+
   // Parse URL params using utility
   const urlParams = useMemo(() => {
     const searchParams = new URLSearchParams(location.search);
@@ -87,11 +89,11 @@ export default function SearchResultsPage() {
   // Backend now provides all pagination logic including visiblePages
   // Backend response structure: { success: true, data: products[], totalProducts, currentPage, totalPages, pagination }
   // React Query returns: { data: response.data, ... } where response.data is the backend response
-  const { products, totalProducts, currentPage, totalPages, pagination } = useMemo(() => {
+  const { products, sellers, totalProducts, currentPage, totalPages, pagination } = useMemo(() => {
     // productData is the backend response: { success: true, data: products[], ... }
     // Handle both direct response and nested response structures
     const data = productData || {};
-    
+
     // Products can be at data.data (if nested) or data (if direct array) or data.data (if backend wraps it)
     let productsArray = [];
     if (Array.isArray(data.data)) {
@@ -101,9 +103,10 @@ export default function SearchResultsPage() {
     } else if (data.data?.data && Array.isArray(data.data.data)) {
       productsArray = data.data.data;
     }
-    
+
     return {
       products: productsArray,
+      sellers: data.sellers || [],
       totalProducts: data.totalProducts || data.results || 0,
       currentPage: data.currentPage || data.pagination?.page || 1,
       totalPages: data.totalPages || data.pagination?.totalPages || 1,
@@ -114,20 +117,35 @@ export default function SearchResultsPage() {
   // Derive explicit state flags from raw data for test-safe rendering
   // CRITICAL: These must be computed from the extracted values, not from productData directly
   const productsArray = Array.isArray(products) ? products : [];
+  const sellersArray = Array.isArray(sellers) ? sellers : [];
   const totalPagesValue = typeof totalPages === 'number' ? totalPages : 0;
-  
+
   // Explicit boolean flags - no implicit truthiness
   const hasProducts = productsArray.length > 0;
+  const hasSellers = sellersArray.length > 0;
   const hasPagination = totalPagesValue > 1;
-  
+
   // UI state flags - mutually exclusive and explicit
   const showError = !isLoading && !!error;
-  const showEmptyState = !isLoading && !hasProducts && !error;
+  const showEmptyState = !isLoading && !hasProducts && !hasSellers && !error;
   const showProductsGrid = !isLoading && hasProducts && !error;
+  const showSellersList = !isLoading && hasSellers && !error;
   const showPagination = !isLoading && hasPagination && !error;
 
   const searchQuery = urlParams.q || "";
   const searchQuerySafe = escapeForDisplay(searchQuery);
+
+  // Fetch suggestions for "Did you mean" functionality on zero results
+  const { data: suggestionsData } = useSearchSuggestions(searchQuery, {
+    // Only fetch if empty state is showing and we have a valid query
+    // This utilizes tanstack query's lazy execution
+  });
+
+  const didYouMeanSuggestions = useMemo(() => {
+    if (!showEmptyState || searchQuery.length < 2) return [];
+    const data = suggestionsData?.data || suggestionsData || [];
+    return data.filter(s => s.text && s.text.toLowerCase() !== searchQuery.toLowerCase());
+  }, [suggestionsData, showEmptyState, searchQuery]);
 
   useDynamicPageTitle({
     title: "Search",
@@ -178,7 +196,7 @@ export default function SearchResultsPage() {
   // Watch urlParams.page (from URL) to catch page changes immediately when URL changes
   // This ensures scrolling happens as soon as the URL changes, before API data updates
   const pageFromUrl = urlParams.page || 1;
-  
+
   useEffect(() => {
     // Scroll to top whenever the page in the URL changes
     // This includes initial mount (which is fine - ensures user starts at top)
@@ -234,16 +252,23 @@ export default function SearchResultsPage() {
               <FilterSection>
                 <FilterTitle>Categories</FilterTitle>
                 <CheckboxGroup>
-                  {["Electronics", "Fashion", "Home & Kitchen", "Beauty", "Sports"].map((cat) => (
-                    <CheckboxLabel key={cat}>
-                      <input
-                        type="checkbox"
-                        checked={filters.category.includes(cat)}
-                        onChange={() => handleCategoryChange(cat)}
-                      />
-                      <span>{cat}</span>
-                    </CheckboxLabel>
-                  ))}
+                  {isCategoriesLoading ? (
+                    <span style={{ fontSize: '0.85rem', color: 'var(--color-grey-500)' }}>Loading categories...</span>
+                  ) : categoryList.length > 0 ? (
+                    categoryList.map((cat) => {
+                      const catName = cat.name || cat;
+                      return (
+                        <CheckboxLabel key={cat._id || catName}>
+                          <input
+                            type="checkbox"
+                            checked={filters.category.includes(catName)}
+                            onChange={() => handleCategoryChange(catName)}
+                          />
+                          <span>{catName}</span>
+                        </CheckboxLabel>
+                      );
+                    })
+                  ) : null}
                 </CheckboxGroup>
               </FilterSection>
 
@@ -350,13 +375,13 @@ export default function SearchResultsPage() {
 
               <SortContainer>
                 <FaSortAmountDown />
-              <SortSelect value={sortBy} onChange={(e) => handleSortChange(e.target.value)}>
-                <option value="relevance">Relevance</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-                <option value="rating">Customer Rating</option>
-                <option value="newest">Newest Arrivals</option>
-              </SortSelect>
+                <SortSelect value={sortBy} onChange={(e) => handleSortChange(e.target.value)}>
+                  <option value="relevance">Relevance</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
+                  <option value="rating">Customer Rating</option>
+                  <option value="newest">Newest Arrivals</option>
+                </SortSelect>
               </SortContainer>
             </ControlsHeader>
 
@@ -394,16 +419,54 @@ export default function SearchResultsPage() {
                   We couldn't find any products matching{" "}
                   <strong>"{searchQuerySafe}"</strong>.
                 </p>
-                <EmptySuggestions>
-                  <p>Try:</p>
-                  <ul>
-                    <li>Checking your spelling</li>
-                    <li>Using different keywords</li>
-                    <li>Removing some filters</li>
-                    <li>Browsing by category instead</li>
-                  </ul>
-                </EmptySuggestions>
+                {didYouMeanSuggestions.length > 0 ? (
+                  <EmptySuggestions>
+                    <p>Did you mean:</p>
+                    <DidYouMeanList>
+                      {didYouMeanSuggestions.slice(0, 3).map((suggestion, idx) => (
+                        <DidYouMeanItem
+                          key={idx}
+                          onClick={() => {
+                            navigate(`/search?q=${encodeURIComponent(suggestion.text)}`);
+                          }}
+                        >
+                          {suggestion.text}
+                        </DidYouMeanItem>
+                      ))}
+                    </DidYouMeanList>
+                  </EmptySuggestions>
+                ) : (
+                  <EmptySuggestions>
+                    <p>Try:</p>
+                    <ul>
+                      <li>Checking your spelling</li>
+                      <li>Using different keywords</li>
+                      <li>Removing some filters</li>
+                      <li>Browsing by category instead</li>
+                    </ul>
+                  </EmptySuggestions>
+                )}
               </EmptyState>
+            )}
+
+            {/* Sellers List */}
+            {showSellersList && hasSellers && (
+              <SellersSection data-testid="search-sellers-list">
+                <SellersTitle>Stores matching "{searchQuerySafe}"</SellersTitle>
+                <SellersGrid>
+                  {sellersArray.map(seller => (
+                    <SellerCard key={seller._id} onClick={() => navigate(`/sellers/${seller._id}`)}>
+                      <SellerAvatar>
+                        {seller.avatar ? <img src={seller.avatar} alt={seller.shopName} /> : <span>{seller.shopName.charAt(0)}</span>}
+                      </SellerAvatar>
+                      <SellerInfo>
+                        <h4>{seller.shopName}</h4>
+                        {seller.rating > 0 && <span>★ {seller.rating.toFixed(1)}</span>}
+                      </SellerInfo>
+                    </SellerCard>
+                  ))}
+                </SellersGrid>
+              </SellersSection>
             )}
 
             {/* Products Grid - Decoupled from pagination */}
@@ -419,7 +482,7 @@ export default function SearchResultsPage() {
                 ))}
               </ProductsGrid>
             )}
-            
+
             {/* Pagination - Decoupled from products rendering */}
             {/* CRITICAL: Only render when showPagination is true and totalPagesValue > 1 */}
             {showPagination && hasPagination && (
@@ -432,7 +495,7 @@ export default function SearchResultsPage() {
                 >
                   <FaChevronLeft /> Previous
                 </PaginationButton>
-                
+
                 <PageNumbers data-testid="pagination-numbers">
                   {visiblePages.map((page, index) => {
                     // Handle ellipsis (backend provides 'ellipsis-start' or 'ellipsis-end')
@@ -443,7 +506,7 @@ export default function SearchResultsPage() {
                         </Ellipsis>
                       );
                     }
-                    
+
                     // Handle page number (backend provides numeric page numbers)
                     const pageNum = typeof page === 'number' ? page : parseInt(page);
                     return (
@@ -460,7 +523,7 @@ export default function SearchResultsPage() {
                     );
                   })}
                 </PageNumbers>
-                
+
                 <PaginationButton
                   data-testid="pagination-next"
                   onClick={() => handlePageChange(currentPage + 1)}
@@ -687,6 +750,102 @@ const PriceInputGroup = styled.div`
   }
 `;
 
+const SellersSection = styled.div`
+  margin-bottom: 3rem;
+  padding: 2rem;
+  background: var(--color-white-0);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--color-grey-100);
+`;
+
+const SellersTitle = styled.h3`
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--color-text-dark);
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  
+  &::before {
+    content: '🏪';
+    font-size: 1.8rem;
+  }
+`;
+
+const SellersGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+`;
+
+const SellerCard = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.2rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-grey-200);
+  background: var(--color-white-0);
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--color-primary-500);
+    box-shadow: 0 4px 12px rgba(255, 60, 0, 0.08); /* Primary color shadow */
+    transform: translateY(-2px);
+  }
+`;
+
+const SellerAvatar = styled.div`
+  width: 5.6rem;
+  height: 5.6rem;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--color-primary-50);
+  color: var(--color-primary-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.4rem;
+  font-weight: 700;
+  border: 2px solid var(--color-primary-100);
+  flex-shrink: 0;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+`;
+
+const SellerInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+
+  h4 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-text-dark);
+    margin: 0;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  span {
+    font-size: 1.3rem;
+    color: #f59e0b; /* Star color */
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+  }
+`;
+
 const PriceInput = styled.input`
   width: 100%;
   padding: 0.8rem;
@@ -910,15 +1069,16 @@ const SkeletonLoader = styled.div`
 `;
 
 const EmptySuggestions = styled.div`
-  margin-top: 2rem;
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
   text-align: left;
-  max-width: 400px;
-  margin-left: auto;
-  margin-right: auto;
+  border: 1px solid var(--color-grey-100);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 
   p {
     font-weight: 600;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
     color: var(--color-text-dark);
   }
 
@@ -928,19 +1088,43 @@ const EmptySuggestions = styled.div`
     margin: 0;
 
     li {
-      padding: 0.5rem 0;
-      color: var(--color-text-light);
-      position: relative;
+      margin-bottom: 0.75rem;
       padding-left: 1.5rem;
+      position: relative;
+      color: var(--color-grey-600);
 
       &:before {
-        content: "•";
+        content: '•';
+        color: var(--color-primary-500);
         position: absolute;
         left: 0;
-        color: var(--color-primary);
         font-weight: bold;
       }
     }
+  }
+`;
+
+const DidYouMeanList = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+`;
+
+const DidYouMeanItem = styled.span`
+  background: var(--color-primary-50);
+  color: var(--color-primary-600);
+  padding: 0.8rem 1.5rem;
+  border-radius: 2rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid var(--color-primary-100);
+
+  &:hover {
+    background: var(--color-primary-500);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(var(--color-primary-500-rgb), 0.2);
   }
 `;
 

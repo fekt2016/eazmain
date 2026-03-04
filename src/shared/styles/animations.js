@@ -116,3 +116,9 @@ export const bounce = keyframes`
     opacity: 1;
   }
 `;
+
+// Shimmer animation for skeleton loaders
+export const shimmer = keyframes`
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+`;

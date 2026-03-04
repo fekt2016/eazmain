@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import { ButtonSpinner, ErrorState } from '../../components/loading';
 import logger from '../../shared/utils/logger';
+import { useModal } from '../../shared/hooks/useModal';
 
 const TwoFactorSetup = ({
   isEnabled,
@@ -11,6 +12,7 @@ const TwoFactorSetup = ({
 }) => {
   const [token, setToken] = useState("");
   const [setupData, setSetupData] = useState(null);
+  const { showDanger } = useModal();
 
   const handleEnable = () => {
     enableTwoFactor.mutate(undefined, {
@@ -35,17 +37,18 @@ const TwoFactorSetup = ({
   };
 
   const handleDisable = () => {
-    if (
-      window.confirm(
-        "Are you sure you want to disable two-factor authentication?"
-      )
-    ) {
-      disableTwoFactor.mutate(undefined, {
-        onError: (error) => {
-          logger.error("Failed to disable 2FA:", error);
-        },
-      });
-    }
+    showDanger({
+      title: "Disable 2FA?",
+      message: "Are you sure you want to disable two-factor authentication?",
+      confirmText: "Disable",
+      onConfirm: () => {
+        disableTwoFactor.mutate(undefined, {
+          onError: (error) => {
+            logger.error("Failed to disable 2FA:", error);
+          }
+        });
+      }
+    });
   };
 
   return (
@@ -59,7 +62,7 @@ const TwoFactorSetup = ({
           >
             {disableTwoFactor.isPending ? <ButtonSpinner size="sm" /> : "Disable 2FA"}
           </DisableButton>
-          
+
           {disableTwoFactor.error && (
             <ErrorState message={disableTwoFactor.error?.message || "Failed to disable 2FA"} />
           )}
@@ -89,7 +92,7 @@ const TwoFactorSetup = ({
             >
               {verifyTwoFactor.isPending ? <ButtonSpinner size="sm" /> : "Verify"}
             </VerifyButton>
-            
+
             {verifyTwoFactor.error && (
               <ErrorState message={verifyTwoFactor.error?.message || "Verification failed"} />
             )}
@@ -104,7 +107,7 @@ const TwoFactorSetup = ({
           >
             {enableTwoFactor.isPending ? <ButtonSpinner size="sm" /> : "Enable 2FA"}
           </EnableButton>
-          
+
           {enableTwoFactor.error && (
             <ErrorState message={enableTwoFactor.error?.message || "Failed to enable 2FA"} />
           )}

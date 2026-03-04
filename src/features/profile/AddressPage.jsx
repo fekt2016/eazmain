@@ -30,12 +30,14 @@ import {
   useSetDefaultAddress,
 } from '../../shared/hooks/useAddress';
 import Button from '../../shared/components/Button';
-import { LoadingState, ErrorState } from '../../components/loading';
+import { ErrorState, ShimmerAddressCards } from '../../components/loading';
+import locationApi from '../../shared/services/locationApi';
+import { useModal } from '../../shared/hooks/useModal';
 import logger from '../../shared/utils/logger';
 import { sanitizeText, sanitizeAddress, sanitizePhone } from '../../shared/utils/sanitize';
-import { ACCRA_NEIGHBORHOODS, TEMA_NEIGHBORHOODS, getCityForNeighborhood } from '../../shared/config/neighborhoods';
+import NeighborhoodAutocomplete from '../../shared/components/NeighborhoodAutocomplete';
 
-const AddressManagementPage = () => {
+export default function AddressPage() {
   const navigate = useNavigate();
 
   // React Query hooks
@@ -59,7 +61,9 @@ const AddressManagementPage = () => {
 
   const [editingAddress, setEditingAddress] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const [digitalAddressError, setDigitalAddressError] = useState("");
+  const [isDigitalAddressLoading, setIsDigitalAddressLoading] = useState(false);
+  const [digitalAddressError, setDigitalAddressError] = useState(null);
+  const { showDanger } = useModal();
   const [isFetchingLocation, setIsFetchingLocation] = useState(false);
   const [locationError, setLocationError] = useState("");
 
@@ -77,7 +81,7 @@ const AddressManagementPage = () => {
     digitalAddress: "",
     isDefault: false,
   });
- 
+
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -89,12 +93,12 @@ const AddressManagementPage = () => {
 
     // Convert input values to lowercase (except special fields)
     let processedValue = value;
-    
+
     if (type !== "checkbox" && type !== "tel") {
       // Fields that should be uppercase (only digitalAddress)
       if (name === "digitalAddress") {
         processedValue = value.toUpperCase();
-      } 
+      }
       // Fields that should be lowercase
       else if (["fullName", "streetAddress", "area", "landmark", "city", "region", "country", "additionalInformation"].includes(name)) {
         processedValue = value.toLowerCase();
@@ -130,50 +134,92 @@ const AddressManagementPage = () => {
         try {
           const { latitude, longitude } = position.coords;
 
-          // Reverse geocode to get address details
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
-          );
+          // Call backend reverse geocoding endpoint (avoids CSP violations and uses Google Maps API)
+          const reverseGeocodeResponse = await locationApi.reverseGeocode(latitude, longitude);
+          const addressData = reverseGeocodeResponse?.data || reverseGeocodeResponse;
 
-          const data = await response.json();
+          if (!addressData) {
+            throw new Error("No address data received from server");
+          }
 
-          if (data.error) {
-            throw new Error(data.error);
+          let digitalAddress = "";
+          try {
+            const digitalAddressResponse = await locationApi.convertCoordinatesToDigitalAddress(latitude, longitude);
+            const digitalAddressData = digitalAddressResponse?.data || digitalAddressResponse;
+            digitalAddress = digitalAddressData?.digitalAddress || "";
+          } catch (digitalError) {
+            logger.warn("Failed to convert coordinates to GhanaPost GPS digital address:", digitalError);
+            const latSuffix = Math.floor((Math.abs(latitude) % 1) * 10000);
+            const lngPrefix = Math.abs(Math.floor(longitude));
+            digitalAddress = `GA-${String(lngPrefix).padStart(3, "0")}-${String(latSuffix).padStart(4, "0")}`;
           }
 
           // Extract address components
-          const address = data.address || {};
+          const extractedStreet = (addressData.street || addressData.streetAddress || "").trim();
+          const extractedTown = (addressData.town || addressData.neighborhood || addressData.area || "").trim();
+          const extractedCityRaw = addressData.city || "";
+          const extractedCityUppercase = extractedCityRaw ? extractedCityRaw.toUpperCase().trim() : "";
+          const extractedRegion = addressData.region
+            ? addressData.region.toLowerCase().trim()
+              .split(' ')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ')
+            : "";
 
           // Update form with location data
           setFormData((prev) => ({
             ...prev,
-            streetAddress: address.road || address.highway || "",
-            area: address.neighborhood || address.sublocality || address.sublocality_level_1 || "",
-            landmark: address.landmark || "",
-            city:
-              address.city ||
-              address.town ||
-              address.village ||
-              address.county ||
-              "",
-            region: address.state || address.region || "",
-            country: address.country || "Ghana",
-            digitalAddress: generateGhanaDigitalAddress(latitude, longitude),
+            streetAddress: prev.streetAddress || extractedStreet,
+            area: prev.area || extractedTown,
+            landmark: prev.landmark || "",
+            city: prev.city || extractedCityUppercase,
+            region: prev.region || extractedRegion,
+            country: addressData.country || "Ghana",
+            digitalAddress: prev.digitalAddress || digitalAddress,
           }));
         } catch (error) {
           logger.error("Reverse geocoding error:", error);
-          setLocationError(
-            "Failed to get address details. Please enter manually."
-          );
+
+          if (error.response?.status === 400 || error.response?.status === 404) {
+            setLocationError("Address not found for this location. Please enter manually.");
+          } else {
+            setLocationError("Failed to get address details. Please enter manually.");
+          }
         } finally {
           setIsFetchingLocation(false);
         }
       },
       (error) => {
-        logger.error("Geolocation error:", error);
-        setLocationError(
-          "Location access denied. Please enable location services."
-        );
+        // Downgrade from error to warn since this is a common, expected failure
+        logger.warn("Geolocation warning:", error.message || error);
+
+        let errorMessage = "Location access denied. Please enable location services.";
+        const errorMsgStr = error.message ? error.message.toLowerCase() : "";
+
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = "Location access denied. Please enable location services in your browser settings.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            if (errorMsgStr.includes("kclerrorlocationunknown")) {
+              errorMessage = "Safari cannot detect location (CoreLocation Error). Please enter address manually.";
+            } else {
+              errorMessage = "Location information is unavailable. Please enter your address manually.";
+            }
+            break;
+          case error.TIMEOUT:
+            errorMessage = "Location request timed out. Please try again.";
+            break;
+          default:
+            if (errorMsgStr.includes("kclerrorlocationunknown")) {
+              errorMessage = "Safari cannot detect location (CoreLocation Error). Please enter address manually.";
+            } else {
+              errorMessage = "Failed to get your location. Please enter address manually.";
+            }
+            break;
+        }
+
+        setLocationError(errorMessage);
         setIsFetchingLocation(false);
       },
       {
@@ -182,23 +228,6 @@ const AddressManagementPage = () => {
         maximumAge: 0,
       }
     );
-  };
-
-  // Generate Ghana digital address from coordinates (mock implementation)
-  const generateGhanaDigitalAddress = (lat, lng) => {
-    // In a real app, you would use an actual Ghana Post GPS API here
-    // This is a simplified mock implementation
-
-    // Convert latitude to letters (GA for Ghana)
-    const latSuffix = Math.floor((Math.abs(lat) % 1) * 10000);
-
-    // Convert longitude to numbers
-    const lngPrefix = Math.abs(Math.floor(lng));
-
-    // Format as GA-XXX-YYYY
-    return `GA-${String(lngPrefix).padStart(3, "0")}-${String(
-      latSuffix
-    ).padStart(4, "0")}`;
   };
 
   const handleSaveAddress = async (e) => {
@@ -265,7 +294,7 @@ const AddressManagementPage = () => {
     // Editing address
     // Use address.id or address._id (handle both formats)
     const addressId = address.id || address._id;
-    
+
     // Populate form with address data - preserve original casing for display
     // The form will convert to lowercase as user types, but we show original values initially
     setFormData({
@@ -282,20 +311,24 @@ const AddressManagementPage = () => {
       digitalAddress: address.digitalAddress || "",
       isDefault: address.isDefault || false,
     });
-    
+
     // Store the full address object with normalized id
     setEditingAddress({ ...address, id: addressId });
     setShowForm(true);
   };
 
   const handleDeleteAddress = (id) => {
-    if (window.confirm("Are you sure you want to delete this address?")) {
-      deleteAddress(id, {
-        onError: (error) => {
-          logger.error("Error deleting address:", error);
-        },
-      });
-    }
+    showDanger({
+      title: "Delete Address?",
+      message: "Are you sure you want to delete this address?",
+      onConfirm: () => {
+        deleteAddress(id, {
+          onError: (error) => {
+            logger.error("Error deleting address:", error);
+          },
+        });
+      }
+    });
   };
 
   const handleSetDefault = (id) => {
@@ -328,13 +361,17 @@ const AddressManagementPage = () => {
   };
 
   if (isLoading) {
-    return <LoadingState message="Loading your addresses..." />;
+    return (
+      <PageContainer style={{ padding: '24px 16px' }}>
+        <ShimmerAddressCards />
+      </PageContainer>
+    );
   }
 
   if (isError) {
     return (
-      <ErrorState 
-        title="Error loading addresses" 
+      <ErrorState
+        title="Error loading addresses"
         message="Please try again."
         action={<RetryButton onClick={() => refetch()}>Retry</RetryButton>}
       />
@@ -353,7 +390,7 @@ const AddressManagementPage = () => {
             <Title>Shipping Addresses</Title>
             <Subtitle>Manage your delivery locations and preferences</Subtitle>
           </TitleSection>
-          
+
           <StatsCard>
             <StatItem>
               <StatValue>{savedAddresses.length}</StatValue>
@@ -379,8 +416,8 @@ const AddressManagementPage = () => {
                 {editingAddress ? "Edit Address" : "Add New Address"}
               </FormTitle>
               <FormDescription>
-                {editingAddress 
-                  ? "Update your address details below" 
+                {editingAddress
+                  ? "Update your address details below"
                   : "Fill in your complete address for accurate delivery"
                 }
               </FormDescription>
@@ -441,35 +478,21 @@ const AddressManagementPage = () => {
                     <FaMapPin />
                     Neighborhood/Area *
                   </Label>
-                  <Select
-                    name="area"
+                  <NeighborhoodAutocomplete
                     value={formData.area}
-                    onChange={(e) => {
-                      const selectedName = e.target.value;
-                      const detectedCity = getCityForNeighborhood(selectedName);
-                      setFormData((prev) => ({
-                        ...prev,
-                        area: selectedName,
-                        ...(detectedCity && { city: detectedCity }),
-                      }));
+                    city={formData.city}
+                    onChange={(value) => {
+                      setFormData((prev) => ({ ...prev, area: value }));
                     }}
-                    required
+                    onCitySelect={(city) => {
+                      setFormData((prev) => ({ ...prev, city }));
+                    }}
+                    placeholder="Search for your neighborhood..."
                     disabled={isCreating || isUpdating}
-                  >
-                    <option value="">— Select your neighborhood —</option>
-                    <optgroup label="📍 Accra">
-                      {ACCRA_NEIGHBORHOODS.map((name) => (
-                        <option key={name} value={name}>{name}</option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="📍 Tema">
-                      {TEMA_NEIGHBORHOODS.map((name) => (
-                        <option key={name} value={name}>{name}</option>
-                      ))}
-                    </optgroup>
-                  </Select>
+                    required
+                  />
                   <HelpText>
-                    Select your neighborhood — city will be auto-filled
+                    Search your neighborhood — city will be auto-filled
                   </HelpText>
                 </FormGroup>
 
@@ -654,7 +677,7 @@ const AddressManagementPage = () => {
                       Default Address
                     </DefaultBadge>
                   )}
-                  
+
                   <AddressHeader>
                     <AddressInfo>
                       <AddressName>{address.fullName}</AddressName>
@@ -669,7 +692,7 @@ const AddressManagementPage = () => {
                       >
                         {address.isDefault ? <FaStar /> : <FaRegStar />}
                       </SetDefaultButton>
-                      <EditButton 
+                      <EditButton
                         onClick={() => handleEditAddress(address)}
                         title="Edit address"
                       >
@@ -740,8 +763,6 @@ const AddressManagementPage = () => {
     </PageContainer>
   );
 };
-
-export default AddressManagementPage;
 
 // Modern Styled Components
 const PageContainer = styled.div`
@@ -1225,20 +1246,20 @@ const AddressGrid = styled.div`
 
 const AddressCard = styled.div`
   background: var(--color-white-0);
-  border: 2px solid ${props => 
+  border: 2px solid ${props =>
     props.$isDefault ? 'var(--color-primary-200)' : 'var(--color-grey-200)'};
   border-radius: 20px;
   padding: 2.4rem;
   position: relative;
   transition: all 0.3s;
-  background: ${props => 
+  background: ${props =>
     props.$isDefault ? 'var(--color-primary-50)' : 'var(--color-white-0)'};
 
   &:hover {
     transform: translateY(-4px);
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
-    border-color: ${props => 
-      props.$isDefault ? 'var(--color-primary-300)' : 'var(--color-primary-200)'};
+    border-color: ${props =>
+    props.$isDefault ? 'var(--color-primary-300)' : 'var(--color-primary-200)'};
   }
 `;
 

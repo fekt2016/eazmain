@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRef, useCallback, useEffect } from "react";
 import { toast } from "react-toastify";
+import { showCartSuccessToast } from '../utils/toast';
 import cartApi from '../services/cartApi';
 import useAuth from './useAuth';
 import logger from '../utils/logger';
@@ -51,7 +52,12 @@ export const getCartStructure = (cartData) => {
   }
 
   if (!products) {
-    logger.warn("Unknown cart structure:", cartData);
+    const summary = cartData == null ? "null/undefined" : typeof cartData === "object" && !Array.isArray(cartData)
+      ? JSON.stringify({ keys: Object.keys(cartData).slice(0, 20), type: "object" })
+      : Array.isArray(cartData)
+        ? JSON.stringify({ length: cartData.length, type: "array" })
+        : String(typeof cartData);
+    logger.warn("Unknown cart structure:", summary);
     return [];
   }
 
@@ -61,29 +67,47 @@ export const getCartStructure = (cartData) => {
       if (!item.product) return null;
 
       const hasVariants = item.product?.variants && Array.isArray(item.product.variants) && item.product.variants.length > 0;
-      // CRITICAL: Use sku field (standardized), with backward compatibility for variantSku
-      let variantSku = item.sku || item.variantSku || null;
 
-      // Clean up invalid variant data
-      // Remove variant objects, stringified objects, and IDs
+      // CRITICAL: Extract SKU. Authenticated carts return a full `variant` object populated by backend,
+      // while guest carts might only have `sku` or `variantSku` from frontend.
+      let retrievedSku = item.sku || item.variantSku;
+      if (!retrievedSku && item.variant) {
+        if (typeof item.variant === 'object' && item.variant.sku) {
+          retrievedSku = item.variant.sku;
+        } else if (typeof item.variant === 'string') {
+          // The backend currently returns stringified JSON objects for variant when there's a Mongoose bug
+          try {
+            const parsed = JSON.parse(item.variant);
+            if (parsed && typeof parsed === 'object' && parsed.sku) {
+              retrievedSku = parsed.sku;
+            }
+          } catch (e) {
+            // Regex fallback
+            const match = item.variant.match(/sku:\s*['"]([^'"]+)['"]/);
+            if (match && match[1]) {
+              retrievedSku = match[1];
+            }
+          }
+        }
+      }
+
+      let variantSku = retrievedSku || null;
+
+      // Clean up invalid variant data (silent: backend/DB may have stored stringified variant from old clients)
       if (item.variant) {
-        // Check if variant is a stringified object (invalid)
-        if (typeof item.variant === 'string' && (item.variant.startsWith('{') || item.variant.startsWith('['))) {
-          logger.warn("Removing invalid stringified variant object from cart item:", {
-            productId: item.product?._id,
-            productName: item.product?.name,
-            variant: item.variant.substring(0, 50) + '...',
-          });
-          item.variant = undefined;
+        // P4+: Preserve variant image & display info BEFORE wiping the variant object
+        if (typeof item.variant === 'object' && item.variant !== null) {
+          if (!item.variantImage && item.variant.images && item.variant.images.length > 0) {
+            item.variantImage = item.variant.images[0];
+          }
+          if (!item.variantName && item.variant.name) {
+            item.variantName = item.variant.name;
+          }
+          if (!item.variantAttributes && item.variant.attributes) {
+            item.variantAttributes = item.variant.attributes;
+          }
         }
-        // Check if variant is an object (invalid)
-        else if (typeof item.variant === 'object' && item.variant !== null) {
-          logger.warn("Removing invalid variant object from cart item:", {
-            productId: item.product?._id,
-            productName: item.product?.name,
-          });
-          item.variant = undefined;
-        }
+        item.variant = undefined;
       }
 
       // Remove variantId (we only use variantSku)
@@ -128,7 +152,7 @@ export const getCartStructure = (cartData) => {
         variantSku = variantSku.trim().toUpperCase();
         item.sku = variantSku; // Standardized field name
         item.variantSku = variantSku; // Keep for backward compatibility
-        
+
         // Validate SKU exists in product variants
         if (hasVariants) {
           const skuExists = item.product.variants.some(
@@ -146,6 +170,13 @@ export const getCartStructure = (cartData) => {
       }
 
       // Clean up: remove variant and variantId fields (we only use sku)
+      // Preserve variantImage/variantName/variantAttributes if already set above
+      if (item.variant && !item.variantImage) {
+        // Last chance: extract image before deleting
+        if (typeof item.variant === 'object' && item.variant?.images?.length > 0) {
+          item.variantImage = item.variant.images[0];
+        }
+      }
       delete item.variant;
       delete item.variantId;
 
@@ -204,7 +235,7 @@ export const useGetCart = () => {
       if (!isAuthenticated) {
         // Normalize guest cart data - getCartStructure will clean invalid items
         const normalized = getCartStructure(data);
-        
+
         // Always save normalized data to ensure clean cart
         const guestCart = getGuestCart();
         guestCart.cart.products = normalized;
@@ -266,11 +297,11 @@ export const useCartActions = () => {
     },
   };
   const addToCartMutation = useMutation({
-    mutationFn: async ({ product, quantity, variantSku }) => {
-      logger.log("cart mutation", product, quantity, variantSku);
+    mutationFn: async ({ product, quantity, variantSku, variantId }) => {
+      logger.log("cart mutation", product, quantity, variantSku, variantId);
       // Support both id and _id for product identifier
       const productId = product?.id || product?._id;
-      
+
       if (!productId) {
         logger.error("Product ID not found:", product);
         throw new Error("Product ID is required");
@@ -289,11 +320,11 @@ export const useCartActions = () => {
           status: v.status,
         })) || [],
       });
-      
+
       // CRITICAL: Determine variant count
       const hasVariants = product?.variants && Array.isArray(product.variants) && product.variants.length > 0;
       const variantCount = hasVariants ? product.variants.length : 0;
-      
+
       // STEP 1: Attempt default SKU resolution for multi-variant products
       let finalSku = variantSku;
       if (variantCount > 1 && (!finalSku || typeof finalSku !== 'string' || !finalSku.trim())) {
@@ -308,7 +339,7 @@ export const useCartActions = () => {
           });
         }
       }
-      
+
       // STEP 2: HARD GUARD - Block multi-variant products without SKU
       if (variantCount > 1 && (!finalSku || typeof finalSku !== 'string' || !finalSku.trim())) {
         // DEV ASSERTION
@@ -321,14 +352,14 @@ export const useCartActions = () => {
             resolvedSku: finalSku,
           });
         }
-        
+
         logger.error('[useCart] ❌ SKU_REQUIRED: Multi-variant product missing SKU', {
           productId,
           productName: product?.name,
           variantCount,
           originalVariantSku: variantSku,
         });
-        
+
         // Return structured error (never throw, never silently continue)
         const error = new Error("Please select a variant before adding to cart");
         error.code = 'SKU_REQUIRED';
@@ -337,20 +368,20 @@ export const useCartActions = () => {
         error.variantCount = variantCount;
         throw error;
       }
-      
+
       // STEP 3: Normalize and validate SKU
       if (finalSku) {
         finalSku = finalSku.trim().toUpperCase();
-        
+
         // Validate SKU exists in product variants
         if (hasVariants) {
           const skuExists = product.variants.some(
             (v) => v.sku && v.sku.trim().toUpperCase() === finalSku
           );
           if (!skuExists) {
-            logger.error('[useCart] ❌ Invalid SKU for product:', { 
-              productId, 
-              productName: product?.name, 
+            logger.error('[useCart] ❌ Invalid SKU for product:', {
+              productId,
+              productName: product?.name,
               sku: finalSku,
               availableSkus: product.variants.map(v => v.sku).filter(Boolean),
             });
@@ -372,7 +403,7 @@ export const useCartActions = () => {
           }
         }
       }
-      
+
       // Use finalSku for the rest of the function
       variantSku = finalSku;
 
@@ -388,29 +419,46 @@ export const useCartActions = () => {
           error.requiredRole = 'user';
           throw error;
         }
-        
+
         // Backend still expects variantId for now, but we'll send SKU via variantSku field
-        // Extract variantId for backward compatibility with backend API
-        let variantId = null;
-        if (variantSku && Array.isArray(product?.variants)) {
+        // Use explicitly passed variantId if available, else fallback to extracting from variantSku
+        let resolvedVariantId = variantId;
+        if (!resolvedVariantId && variantSku && Array.isArray(product?.variants)) {
           const found = product.variants.find((v) => v.sku && v.sku.toUpperCase() === variantSku);
           if (found?._id) {
-            variantId = found._id.toString ? found._id.toString() : String(found._id);
+            resolvedVariantId = found._id.toString ? found._id.toString() : String(found._id);
           }
         }
-        
-        logger.log('[addToCart] Calling API with:', { productId, quantity, variantId, variantSku });
-        const response = await cartApi.addToCart(productId, quantity, variantId);
-        logger.log('[addToCart] API response:', response);
-        logger.log('[addToCart] API response.data:', response.data);
-        
-        return response.data;
+
+        const payload = {
+          productId: productId != null ? String(productId) : null,
+          quantity: Number.isInteger(quantity) ? quantity : Math.max(1, Math.floor(Number(quantity))),
+          variantId: resolvedVariantId || undefined,
+        };
+        console.log('[CART_DEBUG] Calling API (authenticated):', payload);
+        logger.log('[addToCart] Calling API with:', { ...payload, variantSku });
+        const response = await cartApi.addToCart(payload.productId, payload.quantity, payload.variantId);
+        const body = response?.data;
+        console.log('[CART_DEBUG] API response:', {
+          hasResponse: !!response,
+          status: response?.status,
+          bodyKeys: body ? Object.keys(body) : [],
+          hasDataCart: !!(body?.data?.cart),
+          productCount: body?.data?.cart?.products?.length ?? body?.data?.cart?.products?.length,
+        });
+        logger.log('[addToCart] API response.data:', body);
+        if (!body) {
+          console.error('[CART_DEBUG] No response body - cannot update cart. Full response:', response);
+          throw new Error('Add to cart failed: no data returned');
+        }
+        return body;
       }
-      
+
+      console.log('[CART_DEBUG] Using guest cart path (not authenticated). isAuthenticated=', isAuthenticated);
       // Guest cart - store ONLY sku string, never variant objects or IDs
       const guestCart = getGuestCart();
       const products = guestCart?.cart?.products || [];
-      
+
       // CRITICAL: Merge ONLY when productId + sku match (SKU-scoped quantity)
       const existingItem = products?.find(
         (item) => {
@@ -419,7 +467,7 @@ export const useCartActions = () => {
           return itemProductId === productId && itemSku === variantSku;
         }
       );
-      
+
       if (existingItem) {
         // Merge: Add quantity to existing SKU
         existingItem.quantity += quantity;
@@ -446,13 +494,31 @@ export const useCartActions = () => {
           quantity,
           variantCount: variantCount, // Store variant count for validation
         };
-        
+
+        // Look up the selected variant to preserve its image for the cart display
+        const selectedVariant = variantSku && product?.variants
+          ? product.variants.find(v => v.sku && v.sku.toUpperCase() === variantSku.toUpperCase())
+          : null;
+
         // Only add SKU if it exists (multi-variant products MUST have SKU)
         if (variantSku) {
           normalizedItem.sku = variantSku; // Standardized field name
           normalizedItem.variantSku = variantSku; // Keep for backward compatibility
+          // Preserve variant display data so CartPage can show the correct image
+          if (selectedVariant) {
+            if (selectedVariant.images && selectedVariant.images.length > 0) {
+              normalizedItem.variantImage = selectedVariant.images[0];
+            }
+            if (selectedVariant.name) normalizedItem.variantName = selectedVariant.name;
+            if (selectedVariant.attributes) normalizedItem.variantAttributes = selectedVariant.attributes;
+          }
         }
-        
+
+        // Keep variantId for backend synchronization
+        if (variantId) {
+          normalizedItem.variantId = variantId;
+        }
+
         products.push(normalizedItem);
       }
 
@@ -460,45 +526,44 @@ export const useCartActions = () => {
       return guestCart;
     },
     onSuccess: (apiResponse) => {
+      console.log('[CART_DEBUG] onSuccess raw apiResponse:', apiResponse);
       logger.log('[addToCart] Success response:', apiResponse);
-      
-      // apiResponse structure: { status: 'success', data: { cart: {...} } }
-      // We need to extract { data: { cart: {...} } } to match getCartStructure expectations
+
+      // apiResponse = mutation return value = response.data from API (body)
+      // Backend returns { status: 'success', data: { cart: { products, ... } } }
       let cartData;
-      
       if (apiResponse?.data?.cart) {
-        // Structure: { status: 'success', data: { cart: {...} } }
         cartData = { data: { cart: apiResponse.data.cart } };
       } else if (apiResponse?.cart) {
-        // Structure: { cart: {...} }
         cartData = { data: { cart: apiResponse.cart } };
       } else if (apiResponse?.data) {
-        // Structure: { data: {...} }
         cartData = apiResponse.data;
       } else {
-        // Fallback: use response as-is
         cartData = apiResponse;
       }
-      
-      logger.log('[addToCart] Setting cart data:', cartData);
-      logger.log('[addToCart] Cart products:', cartData?.data?.cart?.products || cartData?.cart?.products);
-      
-      // Update query data and invalidate to ensure UI refreshes
-      queryClient.setQueryData(queryKey, cartData);
-      queryClient.invalidateQueries(queryKey);
-      
-      // Show success notification
-      toast.success('Item added to cart successfully!', {
-        position: "top-right",
-        autoClose: 2000,
+
+      const products = cartData?.data?.cart?.products ?? cartData?.cart?.products ?? [];
+      const productCount = Array.isArray(products) ? products.length : 0;
+      console.log('[CART_DEBUG] addToCart success. cartData shape:', {
+        hasDataCart: !!(cartData?.data?.cart),
+        productCount,
+        productIds: Array.isArray(products) ? products.map((p) => p?.product?._id ?? p?.product?.id).filter(Boolean) : [],
       });
+      logger.log('[addToCart] Setting cart data:', cartData);
+
+      queryClient.setQueryData(queryKey, cartData);
+      const afterCache = queryClient.getQueryData(queryKey);
+      console.log('[CART_DEBUG] After setQueryData - cache product count:', afterCache?.data?.cart?.products?.length ?? afterCache?.cart?.products?.length);
+
+      queryClient.invalidateQueries({ queryKey });
+      showCartSuccessToast('Item added to cart successfully!');
     },
     onError: (error) => {
       logger.error('Add to cart error:', error);
-      
+
       // Provide user-friendly error messages based on error type
       let errorMessage = 'Failed to add item to cart';
-      
+
       if (error.code === 'INVALID_ROLE') {
         errorMessage = error.message || `You cannot add items to cart with a ${error.userRole} account. Please log in with a buyer account.`;
       } else if (error.code === 'FORBIDDEN' || error.status === 403) {
@@ -514,13 +579,13 @@ export const useCartActions = () => {
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       // Show error notification
       toast.error(errorMessage, {
         position: "top-right",
         autoClose: 4000, // Increased timeout for longer error messages
       });
-      
+
       // Call parent error handler
       if (mutationOptions.onError) {
         mutationOptions.onError(error);
@@ -531,7 +596,7 @@ export const useCartActions = () => {
   const updateCartItemMutation = useMutation({
     mutationFn: async (data) => {
       const { itemId: productId, quantity } = data;
-      
+
       // SECURITY: Validate quantity on frontend (backend must also validate)
       const validatedQuantity = Math.max(1, Math.min(quantity || 1, 999)); // Max 999 per item
       if (validatedQuantity !== quantity) {
@@ -599,12 +664,12 @@ export const useCartActions = () => {
           return { data: response.data };
         }
         // Fallback: return empty cart structure
-        return { 
-          data: { 
-            cart: { 
-              products: [] 
-            } 
-          } 
+        return {
+          data: {
+            cart: {
+              products: []
+            }
+          }
         };
       }
       const emptyCart = { data: { cart: { products: [] } } };
@@ -614,8 +679,8 @@ export const useCartActions = () => {
     onSuccess: (data) => {
       logger.log("cart successfully!!! cleared:", data);
       // Normalize the data structure to match what getCartStructure expects
-      const normalizedData = data?.data?.cart 
-        ? data 
+      const normalizedData = data?.data?.cart
+        ? data
         : { data: { cart: { products: [] } } };
       queryClient.setQueryData(queryKey, normalizedData);
       // Invalidate queries to ensure UI refreshes
@@ -646,8 +711,8 @@ export const useCartActions = () => {
       const results = await Promise.allSettled(
         products.map((item) => {
           // Extract variantId from variantSku for backend API (backward compatibility)
-          let variantId = null;
-          if (item.variantSku && Array.isArray(item.product?.variants)) {
+          let variantId = item.variantId || null;
+          if (!variantId && item.variantSku && Array.isArray(item.product?.variants)) {
             const found = item.product.variants.find(
               (v) => v.sku && v.sku.toUpperCase() === item.variantSku.toUpperCase()
             );
@@ -656,7 +721,7 @@ export const useCartActions = () => {
             }
           }
           // Backward compatibility: If variantSku missing, try to extract from variant
-          else if (item.variant) {
+          else if (!variantId && item.variant) {
             if (typeof item.variant === 'string') {
               variantId = item.variant;
             } else if (typeof item.variant === 'object' && item.variant !== null) {
@@ -698,10 +763,29 @@ export const useCartActions = () => {
   });
   // Wrapper function for addToCart that provides better error handling
   const addToCartWrapper = useCallback((params, options) => {
+    const currentCart = queryClient.getQueryData(queryKey);
+    const currentProducts = currentCart?.data?.cart?.products ?? currentCart?.cart?.products ?? [];
+    console.log('[CART_DEBUG] addToCart clicked.', {
+      why: 'User clicked Add to cart - tracing why product may not appear',
+      currentCartProductCount: Array.isArray(currentProducts) ? currentProducts.length : 0,
+      currentCartShape: currentCart ? Object.keys(currentCart) : 'no cache',
+      isAuthenticated,
+      userRole: userData?.role,
+      paramsProductId: params?.product?.id ?? params?.product?._id,
+      paramsQuantity: params?.quantity,
+      paramsVariantSku: params?.variantSku,
+      queryKey,
+    });
     logger.log('[useCartActions] addToCart called with:', params);
     return addToCartMutation.mutate(params, {
       ...options,
       onError: (error) => {
+        console.log('[CART_DEBUG] addToCart failed:', {
+          message: error?.message,
+          code: error?.code,
+          status: error?.response?.status,
+          data: error?.response?.data,
+        });
         logger.error('[useCartActions] addToCart error:', error);
         logger.error('[useCartActions] Error details:', {
           message: error.message,
@@ -713,7 +797,7 @@ export const useCartActions = () => {
         }
       },
     });
-  }, [addToCartMutation]);
+  }, [addToCartMutation, queryClient, queryKey, isAuthenticated, userData?.role]);
 
   return {
     addToCart: addToCartWrapper,
@@ -736,7 +820,7 @@ export const useAutoSyncCart = () => {
   const { isAuthenticated } = useAuth();
   const { syncCart } = useCartActions();
   const queryClient = useQueryClient();
-  
+
   // FIX: Use ref to prevent infinite loops from nested syncCart calls
   const syncAttemptedRef = useRef(false);
 

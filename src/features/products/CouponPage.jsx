@@ -4,8 +4,7 @@ import { spin } from "../../shared/styles/animations";
 import { devicesMax } from '../../shared/styles/breakpoint';
 import { FaCopy, FaCheck, FaGift, FaClock, FaShoppingBag, FaTag, FaInfoCircle, FaFire, FaGlobe } from "react-icons/fa";
 import { useGetMyCoupons } from "../../shared/hooks/useCoupon";
-import { LoadingSpinner } from "../../shared/components/LoadingSpinner";
-import { ErrorState } from "../../components/loading";
+import { ErrorState, ShimmerCouponRows, Skeleton } from "../../components/loading";
 import { useNavigate } from "react-router-dom";
 import { PATHS } from "../../routes/routePaths";
 
@@ -73,10 +72,17 @@ const CouponsPage = () => {
 
   if (loading) {
     return (
-      <LoadingContainer>
-        <LoadingSpinner />
-        <LoadingText>Loading your coupons...</LoadingText>
-      </LoadingContainer>
+      <PageContainer>
+        <HeaderSection>
+          <HeaderContent>
+            <TitleSection>
+              <Skeleton height="32px" width="200px" style={{ marginBottom: 8 }} />
+              <Skeleton height="18px" width="280px" />
+            </TitleSection>
+          </HeaderContent>
+        </HeaderSection>
+        <ShimmerCouponRows />
+      </PageContainer>
     );
   }
 

@@ -378,7 +378,7 @@ const BrowserHistoryPage = () => {
 
                       <CardContent>
                         <ItemImage>
-                          <img src={item.image} alt={item.name} />
+                          <img src={item.image} alt={item.name ? `${item.name} – Saiisai Ghana` : 'Product – Saiisai Ghana'} />
                         </ItemImage>
                         
                         <ItemInfo>

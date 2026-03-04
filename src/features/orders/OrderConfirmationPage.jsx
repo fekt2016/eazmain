@@ -1,4 +1,5 @@
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import logger from "../../shared/utils/logger";
 import styled from "styled-components";
 import {
   FaCheckCircle,
@@ -17,6 +18,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import useDynamicPageTitle from "../../shared/hooks/useDynamicPageTitle";
 import seoConfig from "../../shared/config/seoConfig";
 import { useOrderConfirmation } from "../../shared/hooks/useOrderConfirmation";
+import { isValidPaystackUrl } from "../../shared/utils/sanitize";
 import { usePaystackPayment } from "../../shared/hooks/usePaystackPayment";
 
 /**
@@ -244,9 +246,16 @@ const OrderConfirmationPage = () => {
         email,
       });
 
+      // SECURITY: Validate redirect URL before redirecting to prevent open redirects
+      if (!isValidPaystackUrl(redirectTo)) {
+        logger.error("[OrderConfirmationPage] Invalid redirect URL:", redirectTo);
+        setPayNowError('Invalid payment redirect URL. Please contact support.');
+        return;
+      }
+
       window.location.href = redirectTo;
     } catch (error) {
-      console.error("[OrderConfirmationPage] Pay Now error:", error);
+      logger.error("[OrderConfirmationPage] Pay Now error:", error);
       setPayNowError(
         error?.response?.data?.message ||
         error?.message ||
@@ -429,7 +438,8 @@ const OrderConfirmationPage = () => {
 
   const isBankTransfer =
     order?.paymentMethod === "bank_transfer" ||
-    order?.paymentMethod === "Bank Transfer";
+    order?.paymentMethod === "Bank Transfer" ||
+    order?.paymentMethod === "bank";
 
   const paymentMethodLabel = order?.paymentMethod
     ? order.paymentMethod
@@ -618,7 +628,16 @@ const OrderConfirmationPage = () => {
                 <p>Shipping address information is being loaded...</p>
               )}
               <p>
-                <strong>Delivery Method:</strong> Standard Shipping
+                <strong>Delivery Method:</strong>{" "}
+                {order?.deliveryMethod === "dispatch"
+                  ? "Dispatch Rider"
+                  : order?.deliveryMethod === "pickup"
+                    ? "Pickup"
+                    : order?.deliveryMethod === "home_delivery"
+                      ? "Home Delivery"
+                      : order?.shippingType
+                        ? order.shippingType.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())
+                        : "Standard Shipping"}
               </p>
               <p>
                 <strong>Estimated Delivery:</strong>{" "}
@@ -648,22 +667,13 @@ const OrderConfirmationPage = () => {
 
               {isBankTransfer && (
                 <PaymentNotice>
-                  <p>Please complete your bank transfer to:</p>
-                  <p>
-                    <strong>Bank:</strong> CBG Bank
-                  </p>
-                  <p>
-                    <strong>Branch:</strong> Nima Branch
-                  </p>
-                  <p>
-                    <strong>Account:</strong> EasyworldPc
-                  </p>
-                  <p>
-                    <strong>Account #:</strong> 2297931640001
-                  </p>
+                  <p>Please complete your bank transfer using the details sent to your email.</p>
                   <p>
                     <strong>Reference:</strong>{" "}
                     {order?.orderNumber || order?.orderId || "N/A"}
+                  </p>
+                  <p style={{ marginTop: '8px', fontSize: '0.85rem', color: 'var(--color-grey-500)' }}>
+                    Check your inbox for full bank transfer instructions.
                   </p>
                 </PaymentNotice>
               )}
@@ -674,6 +684,9 @@ const OrderConfirmationPage = () => {
                     Please prepare cash payment of GH₵
                     {(order?.totalAmount || 0).toFixed(2)} for the delivery
                     agent.
+                  </p>
+                  <p style={{ marginTop: '10px', color: 'var(--color-primary-600)', fontSize: '0.9rem' }}>
+                    <strong>* Good News:</strong> You can easily update your payment method directly with the rider when they arrive at your location.
                   </p>
                 </PaymentNotice>
               )}

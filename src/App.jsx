@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import GlobalStyles from "./shared/styles/GlobalStyles";
+import { ModalProvider } from "./components/modal";
 
 import MainRoutes from "./routes/MainRoutes";
 import GlobalLoading from "./shared/components/GlobalLoading";
@@ -72,29 +73,39 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <GlobalStyles />
-        <GlobalLoading />
-        <BrowserRouter basename="">
-          <ScrollToTop />
-          <MainRoutes />
-        </BrowserRouter>
-        {import.meta.env.DEV && (
-          <Suspense fallback={null}>
-            <ReactQueryDevtools initialIsOpen={false} />
-          </Suspense>
-        )}
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-        />
+        <ModalProvider>
+          <GlobalStyles />
+          <GlobalLoading />
+          <BrowserRouter basename="">
+            <ScrollToTop />
+            <MainRoutes />
+          </BrowserRouter>
+          {import.meta.env.DEV && (
+            <Suspense fallback={null}>
+              <ReactQueryDevtools initialIsOpen={false} />
+            </Suspense>
+          )}
+          <ToastContainer
+            position="bottom-center"
+            autoClose={2000}
+            hideProgressBar
+            newestOnTop
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="light"
+            limit={1}
+            toastStyle={{
+              borderRadius: '9999px',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+              fontSize: '13px',
+              padding: '8px 16px',
+              maxWidth: '320px',
+            }}
+          />
+        </ModalProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

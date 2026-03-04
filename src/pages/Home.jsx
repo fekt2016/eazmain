@@ -23,9 +23,9 @@ const HomePageWrapper = styled.div`
 
 const HomePage = () => {
   useDynamicPageTitle({
-    title: "Saiisai - Shop the Best Products Online",
-    description: "Discover amazing deals and products on Saiisai. Fast delivery across Ghana.",
-    defaultTitle: "Saiisai",
+    title: "Saiisai - Online Shopping in Ghana | Buy & Sell E-commerce Ghana",
+    description: "saiisai.com is Ghana's online shopping platform. Buy and sell products easily. The best e-commerce website in Ghana.",
+    defaultTitle: "Saiisai - Online Shopping in Ghana | E-commerce Ghana",
   });
 
   // Fetch data

@@ -36,6 +36,7 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const [activeSuggestion, setActiveSuggestion] = useState(0);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [recentSearches, setRecentSearches] = useState([]);
   const [isScrolled, setIsScrolled] = useState(false);
   const dropdownRef = useRef(null);
   const categoriesDropdownRef = useRef(null);
@@ -54,14 +55,42 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
       staleTime: 2 * 60 * 1000, // 2 minutes
     });
 
-  // Handle scroll effect
+  // Handle scroll effect and load recent searches
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
     };
     window.addEventListener("scroll", handleScroll);
+
+    // Load recent searches on mount
+    try {
+      const stored = localStorage.getItem('saiisai_recent_searches');
+      if (stored) {
+        setRecentSearches(JSON.parse(stored));
+      }
+    } catch (err) {
+      console.error('Failed to load recent searches', err);
+    }
+
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const saveRecentSearch = (term) => {
+    if (!term || term.trim().length === 0) return;
+    try {
+      const current = [...recentSearches];
+      const termLower = term.trim().toLowerCase();
+      // Remove if exists
+      const filtered = current.filter(item => item.text.toLowerCase() !== termLower);
+      // Add to front
+      const newSearch = { type: 'recent', text: term.trim() };
+      const updated = [newSearch, ...filtered].slice(0, 5); // Keep last 5
+      setRecentSearches(updated);
+      localStorage.setItem('saiisai_recent_searches', JSON.stringify(updated));
+    } catch (err) {
+      console.error('Failed to save recent search', err);
+    }
+  };
 
   // Get parent categories with subcategories
   const parentCategories = useMemo(() => {
@@ -129,12 +158,14 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
     };
   }, [wishlistData]);
 
-  // Generate search suggestions from improved API response
+  // Generate search suggestions combining API results and recent searches
   const searchSuggestions = useMemo(() => {
-    if (!debouncedSearchTerm || debouncedSearchTerm.length < 2) return [];
+    if (!debouncedSearchTerm || debouncedSearchTerm.length < 2) {
+      return recentSearches; // Show recent searches when empty or too short
+    }
     // New API returns: { success: true, data: [...] }
     return searchSuggestionsData?.data || searchSuggestionsData || [];
-  }, [debouncedSearchTerm, searchSuggestionsData]);
+  }, [debouncedSearchTerm, searchSuggestionsData, recentSearches]);
 
   // Handle keyboard navigation for search
   const handleSearchKeyDown = (e) => {
@@ -150,12 +181,14 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
       );
     } else if (e.key === "Enter") {
       e.preventDefault();
-      if (searchSuggestions.length > 0 && showSearchSuggestions) {
+      if (searchSuggestions.length > 0 && showSearchSuggestions && activeSuggestion >= 0) {
         handleSuggestionSelect(searchSuggestions[activeSuggestion]);
-      } else {
+      } else if (searchTerm.trim()) {
+        saveRecentSearch(searchTerm);
         // Navigate to search results page
         navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
         setShowSearchSuggestions(false);
+        if (searchRef.current) searchRef.current.querySelector('input').blur();
       }
     } else if (e.key === "Escape") {
       setShowSearchSuggestions(false);
@@ -166,6 +199,7 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
   const handleSuggestionSelect = (suggestion) => {
     setSearchTerm(suggestion.text);
     setShowSearchSuggestions(false);
+    saveRecentSearch(suggestion.text);
 
     switch (suggestion.type) {
       case "product":
@@ -191,6 +225,10 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
         navigate(
           `${PATHS.SEARCH}?type=tag&q=${encodeURIComponent(suggestion.text)}`
         );
+        break;
+      case "seller":
+      case "store":
+        navigate(suggestion.url || `/sellers/${suggestion.id || suggestion._id}`);
         break;
       default:
         // fallback: general search
@@ -454,36 +492,42 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
                         </ActionText>
                       </AccountButton>
                       {showDropdown && (
-                        <DropdownMenu>
-                          <DropdownSection>
-                            <DropdownItem as={Link} to="/profile">
-                              <FaUser />
-                              My Profile
-                            </DropdownItem>
-                            <DropdownItem as={Link} to="/orders">
-                              My Orders
-                            </DropdownItem>
-                            <DropdownItem as={Link} to="/reviews">
-                              My Reviews
-                            </DropdownItem>
-                          </DropdownSection>
-                          <DropdownSection>
-                            <DropdownItem as={Link} to="/addresses">
-                              My Addresses
-                            </DropdownItem>
-                            <DropdownItem as={Link} to="/credit-balance">
-                              Balance
-                            </DropdownItem>
-                            <DropdownItem as={Link} to="/coupons">
-                              Coupons
-                            </DropdownItem>
-                          </DropdownSection>
-                          <DropdownSection>
-                            <DropdownItem onClick={logoutHandler}>
-                              Logout
-                            </DropdownItem>
-                          </DropdownSection>
-                        </DropdownMenu>
+                        <>
+                          <DropdownBackdrop
+                            aria-hidden="true"
+                            onClick={() => setShowDropdown(false)}
+                          />
+                          <DropdownMenu>
+                            <DropdownSection>
+                              <DropdownItem as={Link} to="/profile">
+                                <FaUser />
+                                My Profile
+                              </DropdownItem>
+                              <DropdownItem as={Link} to="/orders">
+                                My Orders
+                              </DropdownItem>
+                              <DropdownItem as={Link} to="/reviews">
+                                My Reviews
+                              </DropdownItem>
+                            </DropdownSection>
+                            <DropdownSection>
+                              <DropdownItem as={Link} to="/addresses">
+                                My Addresses
+                              </DropdownItem>
+                              <DropdownItem as={Link} to="/credit-balance">
+                                Balance
+                              </DropdownItem>
+                              <DropdownItem as={Link} to="/coupons">
+                                Coupons
+                              </DropdownItem>
+                            </DropdownSection>
+                            <DropdownSection>
+                              <DropdownItem onClick={logoutHandler}>
+                                Logout
+                              </DropdownItem>
+                            </DropdownSection>
+                          </DropdownMenu>
+                        </>
                       )}
                     </AccountDropdown>
                   ) : (
@@ -569,15 +613,6 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
             {/* Navigation Links */}
             <MobileMenuItemLink to={PATHS.HOME} onClick={() => setIsMobileMenuOpen(false)}>
               <span>Home</span>
-            </MobileMenuItemLink>
-            <MobileMenuItemLink to={PATHS.CATEGORIES} onClick={() => setIsMobileMenuOpen(false)}>
-              <span>Categories</span>
-            </MobileMenuItemLink>
-            <MobileMenuItemLink to={PATHS.OFFERS} onClick={() => setIsMobileMenuOpen(false)}>
-              <span>Offers</span>
-            </MobileMenuItemLink>
-            <MobileMenuItemLink to={PATHS.BEST_SELLERS} onClick={() => setIsMobileMenuOpen(false)}>
-              <span>Best Sellers</span>
             </MobileMenuItemLink>
             <MobileMenuItemLink to={PATHS.SUPPORT} onClick={() => setIsMobileMenuOpen(false)}>
               <FaHeadset />
@@ -1197,18 +1232,25 @@ const AccountButton = styled.button`
   }
 `;
 
+const DropdownBackdrop = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 999;
+`;
+
 const DropdownMenu = styled.div`
   position: absolute;
   top: 100%;
   right: 0;
   background: var(--color-white-0);
   border: 1px solid var(--color-grey-200);
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   min-width: 25rem;
   z-index: 1000;
   padding: 1rem 0;
-  margin-top: 1rem;
+  margin-top: 8px;
   animation: ${slideDown} 0.3s ease;
 `;
 

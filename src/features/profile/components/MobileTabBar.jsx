@@ -4,10 +4,18 @@ import {
   FaLock,
   FaMobileAlt,
   FaShieldAlt,
+  FaShoppingBag,
+  FaMapMarkerAlt,
+  FaBell,
+  FaCreditCard,
 } from "react-icons/fa";
 
 const tabs = [
   { id: "account", label: "Account", icon: FaUser },
+  { id: "orders", label: "Orders", icon: FaShoppingBag },
+  { id: "address", label: "Address", icon: FaMapMarkerAlt },
+  { id: "payment", label: "Payment", icon: FaCreditCard },
+  { id: "notifications", label: "Alerts", icon: FaBell },
   { id: "security", label: "Security", icon: FaLock },
   { id: "twofactor", label: "2FA", icon: FaShieldAlt },
   { id: "devices", label: "Devices", icon: FaMobileAlt },
@@ -87,7 +95,7 @@ const MobileTabItem = styled.button`
 
   &:hover {
     background: ${(props) =>
-      props.active ? "var(--color-primary-hover)" : "var(--color-bg-light)"};
+    props.active ? "var(--color-primary-hover)" : "var(--color-bg-light)"};
   }
 
   svg {

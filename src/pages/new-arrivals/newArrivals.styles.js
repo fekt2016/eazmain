@@ -8,12 +8,13 @@ export const NewArrivalsPageContainer = styled.div`
 `;
 
 export const ContentContainer = styled.div`
-  max-width: 140rem;
-  margin: 0 auto;
-  padding: 0 var(--spacing-lg);
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
 
   @media ${devicesMax.md} {
-    padding: 0 var(--spacing-md);
+    padding: 0;
   }
 `;
 

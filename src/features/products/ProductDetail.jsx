@@ -25,7 +25,7 @@ import {
   FaShippingFast,
 } from "react-icons/fa";
 import useProduct from '../../shared/hooks/useProduct.js';
-import { useGetProductReviews } from '../../shared/hooks/useReview.js';
+import { useGetProductReviews } from '../../shared/hooks/useReviews.js';
 import SimilarProducts from '../../shared/components/SimilarProduct.jsx';
 import useCategory from '../../shared/hooks/useCategory.js';
 import {
@@ -42,6 +42,7 @@ import { getOrCreateSessionId } from '../../shared/utils/sessionUtils.js';
 import { useAddHistoryItem } from '../../shared/hooks/useBrowserhistory.js';
 import { useToggleWishlist } from '../../shared/hooks/useWishlist.js';
 import { LoadingState, ErrorState, EmptyState, ButtonSpinner } from '../../components/loading';
+import { toast } from 'react-toastify';
 import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 import {
   getProductDisplayPrice,
@@ -71,6 +72,7 @@ const ProductDetailPage = () => {
   const [imageZoomPosition, setImageZoomPosition] = useState({ x: 0, y: 0 });
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const imageRef = useRef(null);
   const addHistoryItem = useAddHistoryItem();
@@ -78,7 +80,7 @@ const ProductDetailPage = () => {
   const { useGetProductById } = useProduct();
   const { data: productData, isLoading, error } = useGetProductById(id);
   const { data: reviewsData, isLoading: reviewsLoading, error: reviewsError } = useGetProductReviews(id);
-  
+
   // Debug logging
   logger.log("reviewsData", reviewsData);
   logger.log("reviewsLoading", reviewsLoading);
@@ -101,7 +103,7 @@ const ProductDetailPage = () => {
   const { useCategoryById } = useCategory();
   const categoryId = product?.subCategory?._id || product?.subCategory || product?.parentCategory?._id || product?.parentCategory;
   const { data: categoryData } = useCategoryById(categoryId);
-  
+
   // Get category attributes
   const categoryAttributes = useMemo(() => {
     if (!categoryData) return [];
@@ -155,7 +157,7 @@ const ProductDetailPage = () => {
       hasRecordedView.current = true;
       const sessionId = getOrCreateSessionId();
       recordProductView.mutate({ productId: id, sessionId });
-      
+
       // Track activity for recommendations
       if (productId) {
         trackActivity.mutate({
@@ -182,9 +184,9 @@ const ProductDetailPage = () => {
   const hasAttributeBasedVariants = useMemo(() => {
     if (!variants.length) return false;
     // Check if any variant has attributes array with multiple attributes
-    return variants.some(v => 
-      v.attributes && 
-      Array.isArray(v.attributes) && 
+    return variants.some(v =>
+      v.attributes &&
+      Array.isArray(v.attributes) &&
       v.attributes.length > 0 &&
       v.attributes.some(attr => attr.key && attr.value)
     );
@@ -196,7 +198,7 @@ const ProductDetailPage = () => {
 
   // Use attribute-based selection for products with attributes (Color + Size, etc.)
   const attributeVariantSelection = useVariantSelection(variants, product);
-  const { 
+  const {
     selectedAttributes,
     selectedVariant: attributeSelectedVariant,
     selectAttribute,
@@ -214,16 +216,16 @@ const ProductDetailPage = () => {
 
   // Use attribute-based variant if enabled, otherwise fall back to name-based
   const selectedVariant = useAttributeBasedVariants ? attributeSelectedVariant : nameSelectedVariant;
-  
+
   // CRITICAL: Maintain selectedSku state separately (SKU is the unit of commerce)
   const [selectedSku, setSelectedSku] = useState(null);
-  
+
   // CRITICAL: Auto-select default SKU on product load (SKU is the unit of commerce)
   useEffect(() => {
     if (product?.variants?.length && !selectedVariant) {
       // Find active variant first, otherwise use first variant
       const defaultVariant = (product?.variants || []).find(v => v.status === "active") || (product?.variants || [])[0];
-      
+
       if (defaultVariant?.sku) {
         handleVariantSelect(defaultVariant);
         setSelectedSku(defaultVariant.sku.trim().toUpperCase());
@@ -231,7 +233,7 @@ const ProductDetailPage = () => {
       }
     }
   }, [product, selectedVariant, handleVariantSelect]);
-  
+
   // CRITICAL: Sync selectedSku when selectedVariant changes
   useEffect(() => {
     if (selectedVariant?.sku) {
@@ -240,7 +242,7 @@ const ProductDetailPage = () => {
       setSelectedSku(null);
     }
   }, [selectedVariant]);
-  
+
   // Handle variant image selection (from color gallery)
   const handleVariantImageSelect = useCallback((variant) => {
     handleVariantSelect(variant);
@@ -265,36 +267,41 @@ const ProductDetailPage = () => {
     setQuantity((prev) => Math.max(1, prev - 1));
   }, []);
 
+  const handleShare = useCallback(async () => {
+    const url = window.location.href;
+    const title = product?.name || 'Check out this product on Saiisai';
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, url });
+      } catch {
+        // User cancelled or browser denied — silently ignore
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        // Use a light, non-blocking alert via a temporary state flag
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2000);
+      } catch {
+        logger.warn('[Share] Clipboard write failed');
+      }
+    }
+  }, [product?.name]);
+
   const handleAddToCart = async () => {
     setIsAddingToCart(true);
     try {
-      // CRITICAL: HARD LOG before addToCart to debug SKU issues
-      logger.log("[ADD_TO_CART_CLICK]", {
-        productId: product?._id,
-        productName: product?.name,
-        selectedSku,
-        selectedVariant: selectedVariant ? {
-          _id: selectedVariant._id,
-          sku: selectedVariant.sku,
-          status: selectedVariant.status,
-        } : null,
-        variants: product?.variants?.map(v => ({
-          id: v._id,
-          sku: v.sku,
-          status: v.status,
-        })) || [],
-        quantity,
-        hasVariants: variants.length > 0,
-      });
-      
+
+
       // CRITICAL: Block invalid multi-variant adds - SKU is required
       if (variants.length > 1 && !selectedSku) {
         throw new Error("Please select a variant before adding to cart");
       }
-      
+
       // CRITICAL: Use selectedSku directly - no extraction needed
       const variantSku = selectedSku || (selectedVariant?.sku ? selectedVariant.sku.trim().toUpperCase() : null);
-      
+      const variantId = selectedVariant?._id || (selectedVariant?.id || null);
+
       if (!variantSku && variants.length > 0) {
         logger.error("[ADD_TO_CART] SKU missing for variant product:", {
           productId: product?._id,
@@ -305,17 +312,18 @@ const ProductDetailPage = () => {
         });
         throw new Error("Variant SKU is required. Please select a variant.");
       }
-      
+
       await addToCart({
         product,
         quantity,
         variantSku: variantSku, // Pass SKU directly - ONLY variantSku is accepted
+        variantId: variantId, // Also pass the variantId for the backend API
       });
       setTimeout(() => setIsAddingToCart(false), 1000);
     } catch (error) {
       setIsAddingToCart(false);
       logger.error("Add to cart error:", error);
-      
+
       // Handle SKU_REQUIRED error specifically
       if (error?.code === 'SKU_REQUIRED' || error?.message?.includes('variant')) {
         toast.error("Please select a variant before adding to cart", {
@@ -372,7 +380,7 @@ const ProductDetailPage = () => {
         hasDataData: !!reviewsData.data?.data,
         dataDataKeys: reviewsData.data?.data ? Object.keys(reviewsData.data.data) : [],
       });
-      
+
       // Check if it's the wrapped response: reviewsData.data.data.reviews
       if (reviewsData.data?.data?.reviews && Array.isArray(reviewsData.data.data.reviews)) {
         logger.log("Found reviews in reviewsData.data.data.reviews:", reviewsData.data.data.reviews.length);
@@ -399,7 +407,7 @@ const ProductDetailPage = () => {
   const hasDiscount = hasProductDiscount(product, selectedVariant);
   const discountPercentage = getProductDiscountPercentage(product, selectedVariant);
   const displaySku = getProductSku(product, selectedVariant);
-  
+
   // Get stock - use selected variant if available, otherwise calculate from all active variants
   const variantStock = useMemo(() => {
     if (!product) return 0;
@@ -421,7 +429,7 @@ const ProductDetailPage = () => {
     // Fallback to product stock
     return getProductStock(product, selectedVariant);
   }, [selectedVariant, variants, product]);
-  
+
   // Check if in stock - must have stock > 0 and variant must be active (if variant exists)
   const isInStock = useMemo(() => {
     if (!product) return false;
@@ -442,7 +450,7 @@ const ProductDetailPage = () => {
     // Fallback to product stock check
     return isProductInStock(product, selectedVariant);
   }, [selectedVariant, variants, product]);
-  
+
   // Product-level images (fallback when variant has no images)
   const productImages = useMemo(() => {
     if (!product) return [];
@@ -473,7 +481,7 @@ const ProductDetailPage = () => {
   // Component to render variant attributes as a table
   const VariantAttributesTable = ({ variant, isInLabel = false }) => {
     const attributes = getVariantAttributes(variant);
-    
+
     if (!attributes || attributes.length === 0) {
       return variant?.name || null;
     }
@@ -517,22 +525,16 @@ const ProductDetailPage = () => {
 
   return (
     <ModernPageContainer>
-      {/* Breadcrumb */}
+      {/* Breadcrumb: Category > Product Name only */}
       <ModernBreadcrumb>
-        <BreadcrumbItem onClick={() => navigate(-1)}>
-          <FaChevronLeft /> Back
-        </BreadcrumbItem>
-        <BreadcrumbSeparator>/</BreadcrumbSeparator>
-        <BreadcrumbItem to="/">Home</BreadcrumbItem>
         {product.parentCategory && (
           <>
-            <BreadcrumbSeparator>/</BreadcrumbSeparator>
             <BreadcrumbItem to={`/category/${product.parentCategory.slug}`}>
               {product.parentCategory.name}
             </BreadcrumbItem>
+            <BreadcrumbSeparator>/</BreadcrumbSeparator>
           </>
         )}
-        <BreadcrumbSeparator>/</BreadcrumbSeparator>
         <BreadcrumbActive>{product.name}</BreadcrumbActive>
       </ModernBreadcrumb>
 
@@ -549,7 +551,7 @@ const ProductDetailPage = () => {
           >
             <ModernMainImage
               src={galleryImages[selectedImage] || galleryImages[0]}
-              alt={product.name}
+              alt={product.name ? `${product.name} – Saiisai Ghana e-commerce` : 'Product – Saiisai Ghana online shopping'}
               $zoomX={imageZoomPosition.x}
               $zoomY={imageZoomPosition.y}
               $isZoomed={isImageZoomed}
@@ -610,7 +612,7 @@ const ProductDetailPage = () => {
                     $active={index === selectedImage}
                     onClick={() => setSelectedImage(index)}
                   >
-                    <img src={img} alt={`${product.name} ${index + 1}`} />
+                    <img src={img} alt={`${product.name} image ${index + 1} – Saiisai Ghana`} />
                     {index === selectedImage && <ThumbnailOverlay />}
                   </ModernThumbnail>
                 ))}
@@ -643,7 +645,7 @@ const ProductDetailPage = () => {
                   </ShowMoreButton>
                 </DescriptionSection>
 
-                {/* Specifications */}
+                {/* Specifications - only show fields that have data */}
                 {product.specifications && (
                   <SpecificationsGrid>
                     {product.specifications.weight?.value && (
@@ -654,19 +656,20 @@ const ProductDetailPage = () => {
                         </SpecValue>
                       </SpecItem>
                     )}
-                    {product.specifications.dimensions && (
-                      <SpecItem>
-                        <SpecLabel>Dimensions</SpecLabel>
-                        <SpecValue>
-                          {product.specifications.dimensions.length} × {product.specifications.dimensions.width} × {product.specifications.dimensions.height} {product.specifications.dimensions.unit}
-                        </SpecValue>
-                      </SpecItem>
-                    )}
+                    {product.specifications.dimensions &&
+                      [product.specifications.dimensions.length, product.specifications.dimensions.width, product.specifications.dimensions.height].every(Boolean) && (
+                        <SpecItem>
+                          <SpecLabel>Dimensions</SpecLabel>
+                          <SpecValue>
+                            {product.specifications.dimensions.length} × {product.specifications.dimensions.width} × {product.specifications.dimensions.height} {product.specifications.dimensions.unit || 'cm'}
+                          </SpecValue>
+                        </SpecItem>
+                      )}
                     {product.specifications.material && product.specifications.material.length > 0 && (
                       <SpecItem>
                         <SpecLabel>Material</SpecLabel>
                         <SpecValue>
-                          {product.specifications.material.map(m => m.value).join(', ')}
+                          {product.specifications.material.map(m => m.value).filter(Boolean).join(', ')}
                         </SpecValue>
                       </SpecItem>
                     )}
@@ -715,10 +718,10 @@ const ProductDetailPage = () => {
                         const reviewDate = review.reviewDate || review.createdAt || review.updatedAt;
                         const formattedDate = reviewDate
                           ? new Date(reviewDate).toLocaleDateString("en-US", {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            })
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })
                           : "";
                         const reviewText = review.review || review.comment || review.body || review.content || "—";
                         const hasImages = review.images && Array.isArray(review.images) && review.images.length > 0;
@@ -751,7 +754,7 @@ const ProductDetailPage = () => {
                             {hasImages && (
                               <ReviewImages>
                                 {review.images.map((img, idx) => (
-                                  <ReviewImage key={idx} src={img} alt={`Review ${idx + 1}`} />
+                                  <ReviewImage key={idx} src={img} alt={`Review image ${idx + 1} – Saiisai Ghana`} />
                                 ))}
                               </ReviewImages>
                             )}
@@ -838,8 +841,8 @@ const ProductDetailPage = () => {
 
           {/* Pricing Section */}
           <PricingCard>
-            <VariantPriceDisplay 
-              product={product} 
+            <VariantPriceDisplay
+              product={product}
               selectedVariant={selectedVariant}
               variantSelectionHook={variantSelection}
             />
@@ -905,7 +908,7 @@ const ProductDetailPage = () => {
                           setSelectedImage(0);
                         }}
                       >
-                        <VariantImage src={image} alt={variant.name || variant.sku || 'Variant'} />
+                        <VariantImage src={image} alt={(variant.name || variant.sku || 'Variant') + ' – Saiisai Ghana'} />
                         {isSelected && !isOutOfStock && <VariantImageSelectedBadge>Selected</VariantImageSelectedBadge>}
                         {isOutOfStock && <VariantImageSelectedBadge $outOfStock>Out of Stock</VariantImageSelectedBadge>}
                       </VariantImageItem>
@@ -957,8 +960,8 @@ const ProductDetailPage = () => {
               <PrimaryActionButton
                 onClick={handleAddToCart}
                 disabled={
-                  !isInStock || 
-                  !selectedVariant || 
+                  !isInStock ||
+                  !selectedVariant ||
                   isAddingToCart ||
                   (useAttributeBasedVariants && allAttributesSelected && !selectedVariant) // Disable if all selected but no match
                 }
@@ -972,12 +975,12 @@ const ProductDetailPage = () => {
                 ) : (
                   <>
                     <FaShoppingCart />
-                    {!selectedVariant 
-                      ? (useAttributeBasedVariants && allAttributesSelected 
-                          ? "Not Available" 
-                          : "Select Variant")
-                      : isInStock 
-                        ? "Add to Cart" 
+                    {!selectedVariant
+                      ? (useAttributeBasedVariants && allAttributesSelected
+                        ? "Not Available"
+                        : "Select Variant")
+                      : isInStock
+                        ? "Add to Cart"
                         : "Out of Stock"}
                   </>
                 )}
@@ -996,9 +999,9 @@ const ProductDetailPage = () => {
                 {isAddingToWishlist ? "Adding..." : isRemovingFromWishlist ? "Removing..." : isInWishlist ? "In Wishlist" : "Wishlist"}
               </SecondaryActionButton>
 
-              <TertiaryActionButton>
+              <TertiaryActionButton onClick={handleShare}>
                 <FaShare />
-                Share
+                {copiedLink ? 'Link Copied!' : 'Share'}
               </TertiaryActionButton>
             </ActionButtonsGrid>
           </ActionsCard>
@@ -1043,7 +1046,7 @@ const ProductDetailPage = () => {
               ? "Saiisai Official Store ✓"
               : (typeof product.seller === 'object' && (product.seller?.shopName || product.seller?.name)) || "Seller";
             const sellerPagePath = sellerIdStr ? `${PATHS.SELLERS}/${sellerIdStr}` : null;
-            
+
             // Debug logging
             console.log('[ProductDetail] Seller section:', {
               hasSeller: !!product.seller,
@@ -1071,7 +1074,7 @@ const ProductDetailPage = () => {
                   <SellerAvatar>
                     <img
                       src={(typeof product.seller === 'object' && product.seller?.avatar) || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"}
-                      alt={typeof product.seller === 'object' ? (product.seller?.name || product.seller?.shopName || "Seller") : "Seller"}
+                      alt={typeof product.seller === 'object' ? `${product.seller?.name || product.seller?.shopName || "Seller"} – Saiisai Ghana seller` : "Seller – Saiisai Ghana"}
                     />
                   </SellerAvatar>
                   <SellerDetails>
@@ -1134,40 +1137,41 @@ const ProductDetailPage = () => {
       {showImageModal && (
         <ImageModal onClick={() => setShowImageModal(false)}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
-            <ModalImage src={galleryImages[selectedImage] || galleryImages[0]} alt={product.name} />
+            <ModalImage src={galleryImages[selectedImage] || galleryImages[0]} alt={product.name ? `${product.name} – Saiisai Ghana` : 'Product – Saiisai Ghana'} />
             <CloseModal onClick={() => setShowImageModal(false)}>
               ×
             </CloseModal>
           </ModalContent>
         </ImageModal>
       )}
-      {/* Sticky Mobile Add to Cart */}
+      {/* Sticky Mobile Add to Cart: price left (bold), 8px gap, full-width Add to Cart right */}
       <StickyMobileBar>
         <StickyPrice>
-          <span className="label">Total:</span>
-          <span className="price">GH₵{(displayPrice * quantity).toFixed(2)}</span>
+          <span className="price">GHC {(displayPrice * quantity).toFixed(2)}</span>
         </StickyPrice>
         <StickyActions>
-          <StickyQtyButton onClick={decrementQuantity} disabled={quantity <= 1}>−</StickyQtyButton>
-          <StickyQty>{quantity}</StickyQty>
-          <StickyQtyButton onClick={incrementQuantity} disabled={quantity >= variantStock}>+</StickyQtyButton>
+          <StickyQtyGroup>
+            <StickyQtyButton onClick={decrementQuantity} disabled={quantity <= 1}>−</StickyQtyButton>
+            <StickyQty>{quantity}</StickyQty>
+            <StickyQtyButton onClick={incrementQuantity} disabled={quantity >= variantStock}>+</StickyQtyButton>
+          </StickyQtyGroup>
           <StickyAddButton
             onClick={handleAddToCart}
             disabled={
-              !isInStock || 
-              !selectedVariant || 
+              !isInStock ||
+              !selectedVariant ||
               isAddingToCart ||
               (useAttributeBasedVariants && allAttributesSelected && !selectedVariant)
             }
           >
             {isAddingToCart ? (
               <ButtonSpinner size="sm" />
-            ) : !selectedVariant 
-              ? (useAttributeBasedVariants && allAttributesSelected 
-                  ? "Not Available" 
-                  : "Select Variant")
-              : isInStock 
-                ? "Add to Cart" 
+            ) : !selectedVariant
+              ? (useAttributeBasedVariants && allAttributesSelected
+                ? "Not Available"
+                : "Select Variant")
+              : isInStock
+                ? "Add to Cart"
                 : "Out of Stock"}
           </StickyAddButton>
         </StickyActions>
@@ -1244,13 +1248,8 @@ const BreadcrumbSeparator = styled.span`
 `;
 
 const BreadcrumbActive = styled.span`
-  color: var(--color-grey-800);
-  font-weight: 600;
-  padding: 0.5rem 1rem;
-  background: var(--color-primary-500);
-  color: white;
-  border-radius: 0.8rem;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  color: var(--color-grey-900);
+  font-weight: 700;
 `;
 
 const ModernProductGrid = styled.div`
@@ -1273,12 +1272,12 @@ const ModernProductGrid = styled.div`
 const ImageSection = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 8px;
   animation: ${fadeIn} 0.6s ease-out;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  overflow-x: hidden; /* Prevent horizontal overflow */
+  overflow-x: hidden;
 `;
 
 const MainImageWrapper = styled.div`
@@ -2145,25 +2144,25 @@ const StickyMobileBar = styled.div`
 `;
 
 const StickyPrice = styled.div`
-  display: flex;
-  flex-direction: column;
-
-  .label {
-    font-size: 1.2rem;
-    color: var(--color-grey-600);
-  }
-
   .price {
     font-size: 1.8rem;
     font-weight: 700;
-    color: var(--color-primary-600);
+    color: var(--color-grey-900);
   }
 `;
 
 const StickyActions = styled.div`
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+`;
+const StickyQtyGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
 `;
 
 const StickyQtyButton = styled.button`
@@ -2192,20 +2191,24 @@ const StickyQty = styled.span`
 `;
 
 const StickyAddButton = styled.button`
-  background: var(--color-primary-500);
+  background: #D4882A;
   color: white;
   border: none;
-  padding: 1.2rem 2.4rem;
-  border-radius: 1rem;
+  padding: 12px 24px;
+  border-radius: 8px;
   font-weight: 600;
   font-size: 1.4rem;
   flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
 
+  &:active:not(:disabled) {
+    background: #B8711F;
+  }
   &:disabled {
     background: var(--color-grey-400);
     box-shadow: none;
@@ -3181,8 +3184,8 @@ const AttributesTable = styled.table`
 
 const AttributeRow = styled.tr`
   &:not(:last-child) {
-    border-bottom: 1px solid ${(props) => 
-      props.$isInLabel ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'};
+    border-bottom: 1px solid ${(props) =>
+    props.$isInLabel ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'};
   }
 `;
 

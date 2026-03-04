@@ -24,12 +24,16 @@ const GlobalStyles = createGlobalStyle`
   --color-instagram: #FFDC80;
 
 
-   /* Primary (Amber) – Final Scale */
+   /* Brand gold (Saiisai) */
+  --color-gold: #D4882A;
+  --color-gold-hover: #B8711F;
+  --color-navy: #1A1F2E;
+  /* Primary (Amber) – Final Scale – aligned to brand gold */
   --primary-50: #fffbeb;
   --primary-100: #fef3c7;
-  --primary-500: #f59e0b;
-  --primary-600: #d97706; /* Main brand */
-  --primary-700: #b45309; /* Accessible on white */
+  --primary-500: #D4882A;
+  --primary-600: #D4882A; /* Main brand */
+  --primary-700: #B8711F; /* Accessible on white / press */
 
   /* Backwards compatibility for components still referencing the old scale temporarily */
   --color-primary-50: var(--primary-50);
@@ -210,8 +214,8 @@ const GlobalStyles = createGlobalStyle`
   --color-primary-on-light: var(--primary-700);
 
   /* Semantic assignments */
-  --color-button-primary: var(--primary-600);
-  --color-button-primary-hover: var(--primary-700);
+  --color-button-primary: #D4882A;
+  --color-button-primary-hover: #B8711F;
   --color-link: var(--primary-600);
   --color-link-hover: var(--primary-700);
   --color-focus-ring: var(--primary-500);
@@ -231,10 +235,17 @@ const GlobalStyles = createGlobalStyle`
   /* Additional shadows */
   --shadow-gold: 0 4px 20px rgba(255, 196, 0, 0.3);
 
-  /* Primary Font System */
-  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --font-display: 'Playfair Display', Georgia, serif;
+  /* Primary Font System – Inter / DM Sans */
+  --font-primary: 'Inter', 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-display: 'Inter', 'DM Sans', sans-serif;
   --font-mono: 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
+  /* Typography scale: H1 24px bold, H2 20px semibold, Body 15px, Labels 12px medium */
+  /* Border radius: cards 10px, buttons 8px, inputs 6px */
+  --radius-card: 10px;
+  --radius-button: 8px;
+  --radius-input: 6px;
+  /* Shadows: only on modals, dropdowns – 0 4px 16px rgba(0,0,0,0.08) */
+  --shadow-float: 0 4px 16px rgba(0, 0, 0, 0.08);
 
   /* Font aliases for backwards compatibility */
   --font-body: var(--font-primary);

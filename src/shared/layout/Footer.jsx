@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 // Using react-icons/fa for all icons (no Simple Icons)
 import { FaFacebook, FaTwitter, FaInstagram, FaTiktok, FaCreditCard, FaBox, FaWallet, FaMoneyBillWave } from "react-icons/fa";
 import { useNewsletter } from '../hooks/useNewsletter';
@@ -30,23 +30,25 @@ export default function Footer() {
   return (
     <FooterContainer>
       <FooterContent>
-        {/* Top Section */}
+        {/* Top Section: logo + tagline block (max 80px), then 24px before link columns */}
         <FooterTop>
           <BrandSection>
-            <LogoWrapper>
-              <Logo to={PATHS.HOME} variant="default" />
-            </LogoWrapper>
-            <BrandTagline>Redefining Shopping Experience</BrandTagline>
+            <LogoBlock>
+              <LogoWrapper>
+                <Logo to={PATHS.HOME} variant="footer" />
+              </LogoWrapper>
+              <BrandTagline>Ghana's online shopping and e-commerce platform</BrandTagline>
+            </LogoBlock>
             <BrandDescription>
-              Your premier destination for curated products, exceptional service,
-              and seamless shopping. Discover quality, style, and convenience all in one place.
+              Saiisai is Ghana's e-commerce website for online shopping – buy and sell with trusted sellers.
+              Your premier destination for curated products, fast delivery across Ghana, and secure payments.
             </BrandDescription>
           </BrandSection>
         </FooterTop>
 
-        {/* Middle Section - Links */}
+        {/* Middle Section - Links: 4 columns desktop, 2 columns mobile */}
         <FooterMiddle>
-          <LinkGrid>
+          <LinkGridFourCol>
             <LinkColumn>
               <ColumnTitle>Shop</ColumnTitle>
               <LinkList>
@@ -54,7 +56,6 @@ export default function Footer() {
                 <LinkItem to="/best-sellers">Best Sellers</LinkItem>
                 <LinkItem to="/deals">Today's Deals</LinkItem>
                 <LinkItem to="/trending">Trending</LinkItem>
-                <LinkItem to="/electronics">Electronics</LinkItem>
                 <LinkItem to="/fashion">Fashion</LinkItem>
               </LinkList>
             </LinkColumn>
@@ -79,8 +80,6 @@ export default function Footer() {
                 <LinkItem to={PATHS.PARTNER}>Partner With Us</LinkItem>
                 <LinkItem to="/careers">Careers</LinkItem>
                 <LinkItem to="/press">Press</LinkItem>
-                <LinkItem to="/sustainability">Sustainability</LinkItem>
-                <LinkItem to="/affiliates">Affiliate Program</LinkItem>
                 <LinkItem to="/blog">Blog</LinkItem>
               </LinkList>
             </LinkColumn>
@@ -114,32 +113,34 @@ export default function Footer() {
                 </SocialLink>
               </SocialLinks>
             </LinkColumn>
-          </LinkGrid>
+          </LinkGridFourCol>
         </FooterMiddle>
 
-        {/* Payment Methods Section */}
+        {/* Payment Methods Section - centered, right-to-left infinite marquee */}
         <PaymentMethodsSection>
           <PaymentSectionTitle>We Accept</PaymentSectionTitle>
-          <PaymentMethodsGrid>
-            <PaymentMethod>
-              <PaymentMethodIcon>
-                <FaBox />
-              </PaymentMethodIcon>
-              <PaymentMethodLabel>Payment on Delivery</PaymentMethodLabel>
-            </PaymentMethod>
-            <PaymentMethod>
-              <PaymentMethodIcon>
-                <FaCreditCard />
-              </PaymentMethodIcon>
-              <PaymentMethodLabel>Paystack (Momo & Card)</PaymentMethodLabel>
-            </PaymentMethod>
-            <PaymentMethod>
-              <PaymentMethodIcon>
-                <FaWallet />
-              </PaymentMethodIcon>
-              <PaymentMethodLabel>App Wallet</PaymentMethodLabel>
-            </PaymentMethod>
-          </PaymentMethodsGrid>
+          <PaymentMethodsWrap>
+            <PaymentMethodsTrack>
+              <PaymentMethod>
+                <PaymentMethodIcon>
+                  <FaBox />
+                </PaymentMethodIcon>
+                <PaymentMethodLabel>Payment on Delivery</PaymentMethodLabel>
+              </PaymentMethod>
+              <PaymentMethod>
+                <PaymentMethodIcon>
+                  <FaCreditCard />
+                </PaymentMethodIcon>
+                <PaymentMethodLabel>Paystack (Momo & Card)</PaymentMethodLabel>
+              </PaymentMethod>
+              <PaymentMethod>
+                <PaymentMethodIcon>
+                  <FaWallet />
+                </PaymentMethodIcon>
+                <PaymentMethodLabel>App Wallet</PaymentMethodLabel>
+              </PaymentMethod>
+            </PaymentMethodsTrack>
+          </PaymentMethodsWrap>
         </PaymentMethodsSection>
 
         {/* Security & Certifications Section */}
@@ -174,100 +175,86 @@ export default function Footer() {
   );
 }
 
-// Modern styled components with gradient and glassmorphism effects
 const FooterContainer = styled.footer`
-  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+  background: #1A1F2E;
   color: #ffffff;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   position: relative;
-  overflow: hidden;
+  padding: 20px 24px 12px;
+  width: 100%;
 
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255, 196, 0, 0.5), transparent);
+  @media (max-width: 768px) {
+    padding: 20px 24px 12px;
   }
 `;
 
 const FooterContent = styled.div`
   max-width: 140rem;
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 0;
   position: relative;
   z-index: 1;
-
-  @media (max-width: 768px) {
-    padding: 0 1.5rem;
-  }
 `;
 
 const FooterTop = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6rem;
-  padding: 6rem 0 4rem;
+  padding: 0 0 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+`;
 
-  @media (max-width: 968px) {
-    gap: 4rem;
-  }
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 3rem;
-    padding: 4rem 0 3rem;
-  }
+const LogoBlock = styled.div`
+  max-height: 48px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
 `;
 
 const BrandSection = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 0;
 `;
 
 const LogoWrapper = styled.div`
-  margin-bottom: 0.5rem;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
   
-  /* Ensure logo is visible on dark background */
   a {
     text-decoration: none;
+    display: inline-flex;
+    align-items: center;
   }
-  
-  /* Override logo text colors for dark footer - No longer used with new Logo component */
-  /*
-  div > div > span:first-of-type {
-    color: #ffffff !important;
+  img, svg {
+    min-height: 32px;
+    height: 32px;
+    width: auto;
+    object-fit: contain;
   }
-  
-  div > div > span:last-of-type {
-    color: #ffc400 !important;
-  }
-  
-  svg {
-    color: #ffc400 !important;
-  }
-  */
 `;
 
 const BrandTagline = styled.span`
-  font-size: 1.5rem;
-  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.6);
   font-weight: 500;
-  letter-spacing: 0.5px;
-  margin-top: 0.5rem;
+  letter-spacing: 0.02em;
+  margin-top: 4px;
 `;
 
 const BrandDescription = styled.p`
   color: rgba(255, 255, 255, 0.6);
-  line-height: 1.8;
-  font-size: 1.2rem;
+  line-height: 1.5;
+  font-size: 0.875rem;
   margin: 0;
   max-width: 450px;
   font-weight: 400;
+  display: none;
+
+  @media (min-width: 769px) {
+    display: block;
+    margin-top: 0.5rem;
+  }
 `;
 
 const NewsletterSection = styled.div`
@@ -366,251 +353,284 @@ const SubscribeButton = styled(PrimaryButton)`
 `;
 
 const FooterMiddle = styled.div`
-  padding: 5rem 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-
-  @media (max-width: 768px) {
-    padding: 3rem 0;
-  }
 `;
 
-const LinkGrid = styled.div`
+const LinkGridFourCol = styled.div`
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4rem;
+  margin-bottom: 0;
 
-  @media (max-width: 968px) {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 3rem;
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(4, 1fr);
+    column-gap: 32px;
+    row-gap: 0;
+    padding: 16px 0;
   }
 
-  @media (max-width: 480px) {
-    grid-template-columns: 1fr;
-    gap: 2.5rem;
+  @media (min-width: 768px) and (max-width: 1023px) {
+    grid-template-columns: repeat(4, 1fr);
+    column-gap: 16px;
+    row-gap: 0;
+    padding: 16px 0;
+  }
+
+  @media (min-width: 480px) and (max-width: 767px) {
+    grid-template-columns: repeat(2, 1fr);
+    column-gap: 24px;
+    row-gap: 16px;
+    padding: 16px 0;
+  }
+
+  @media (max-width: 479px) {
+    grid-template-columns: repeat(2, 1fr);
+    column-gap: 16px;
+    row-gap: 12px;
+    padding: 12px 0;
   }
 `;
 
 const LinkColumn = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 0;
 `;
 
 const ColumnTitle = styled.h3`
-  font-size: 2rem;
-  font-weight: 700;
-  color: #ffffff;
-  margin: 0;
-  position: relative;
-  padding-bottom: 1rem;
+  font-size: 14px;
+  font-weight: 600;
+  color: #FFFFFF;
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 3rem;
-    height: 2px;
-    background: linear-gradient(90deg, #ffc400, transparent);
-    border-radius: 2px;
+  @media (max-width: 767px) {
+    font-size: 13px;
+    margin-bottom: 6px;
   }
 `;
 
 const LinkList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0;
 `;
 
 const LinkItem = styled(Link)`
-  color: rgba(255, 255, 255, 0.7);
+  color: #9CA3AF;
   text-decoration: none;
-  font-size: 1.3rem;
-  transition: all 0.3s ease;
-  padding: 0.5rem 0;
-  position: relative;
+  font-size: 14px;
   font-weight: 400;
-
-  &::before {
-    content: '';
-    position: absolute;
-    left: -1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 0;
-    height: 2px;
-    background: #ffc400;
-    transition: width 0.3s ease;
-    border-radius: 2px;
-  }
+  line-height: 28px;
+  margin: 0;
+  padding: 0;
+  transition: color 0.2s ease;
 
   &:hover {
-    color: #ffc400;
-    padding-left: 1rem;
-    
-    &::before {
-      width: 0.5rem;
-    }
+    color: #FFFFFF;
+  }
+
+  @media (max-width: 767px) {
+    font-size: 13px;
+    line-height: 26px;
+    padding: 9px 0;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+`;
+
+const socialFadeIn = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 `;
 
 const SocialLinks = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0;
+
+  a {
+    animation: ${socialFadeIn} 0.4s ease-out backwards;
+  }
+  a:nth-child(1) { animation-delay: 0.05s; }
+  a:nth-child(2) { animation-delay: 0.1s; }
+  a:nth-child(3) { animation-delay: 0.15s; }
+  a:nth-child(4) { animation-delay: 0.2s; }
 `;
 
 const SocialLink = styled.a`
   display: flex;
   align-items: center;
-  gap: 1.2rem;
-  color: rgba(255, 255, 255, 0.7);
+  gap: 0.5rem;
+  color: #9CA3AF;
   text-decoration: none;
-  font-size: 1.3rem;
-  transition: all 0.3s ease;
-  padding: 0.8rem 1rem;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 14px;
   font-weight: 400;
+  line-height: 28px;
+  margin: 0;
+  padding: 0;
+  transition: color 0.2s ease, transform 0.25s ease;
 
   &:hover {
-    color: #ffffff;
-    background: rgba(255, 196, 0, 0.1);
-    border-color: rgba(255, 196, 0, 0.3);
+    color: #FFFFFF;
     transform: translateX(4px);
+  }
+
+  &:hover span:first-of-type {
+    transform: scale(1.2);
   }
 
   span {
     flex: 1;
   }
-`;
 
-const SocialIcon = styled.span`
-  font-size: 1.4rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.4rem;
-  height: 2.4rem;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
-  transition: all 0.3s ease;
-
-  ${SocialLink}:hover & {
-    background: rgba(255, 196, 0, 0.2);
-    transform: scale(1.1);
+  @media (max-width: 767px) {
+    font-size: 13px;
+    line-height: 26px;
+    padding: 9px 0;
+    min-height: 44px;
   }
 `;
 
+const SocialIcon = styled.span`
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  color: inherit;
+  transition: transform 0.25s ease;
+  flex-shrink: 0;
+`;
+
 const FooterBottom = styled.div`
-  padding: 3rem 0;
+  padding: 10px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   position: relative;
+
+  @media (max-width: 767px) {
+    padding: 8px 0;
+  }
 `;
 
 const BottomContent = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 2rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
 
-  @media (max-width: 768px) {
+  @media (max-width: 767px) {
     flex-direction: column;
     text-align: center;
-    gap: 2rem;
+    gap: 4px;
+  }
+
+  @media (min-width: 768px) {
+    gap: 0.5rem;
   }
 `;
 
 const Copyright = styled.span`
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.875rem;
   font-weight: 400;
+
+  @media (max-width: 767px) {
+    font-size: 0.8125rem;
+  }
 `;
 
 const LegalLinks = styled.div`
   display: flex;
-  gap: 2rem;
+  gap: 0.5rem;
   align-items: center;
   flex-wrap: wrap;
 
-  @media (max-width: 480px) {
-    flex-direction: column;
-    gap: 1rem;
+  @media (max-width: 767px) {
+    gap: 4px;
+    justify-content: center;
   }
 `;
 
 const LegalLink = styled(Link)`
-  // color: rgba(255, 255, 255, 0.6);
+  color: #9CA3AF;
   text-decoration: none;
-  // font-size: 1.2rem;
-  transition: all 0.3s ease;
+  font-size: 0.875rem;
+  transition: color 0.2s ease;
   font-weight: 400;
-  position: relative;
-  padding: 0.5rem 0;
-
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 0;
-    height: 1px;
-    background: #ffc400;
-    transition: width 0.3s ease;
-  }
 
   &:hover {
-    color: #ffc400;
-    
-    &::after {
-      width: 100%;
-    }
+    color: #FFFFFF;
+  }
+
+  @media (max-width: 767px) {
+    font-size: 0.8125rem;
+  }
+`;
+
+const scrollRightToLeft = keyframes`
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
   }
 `;
 
 const PaymentMethodsSection = styled.div`
-  padding: 2rem 0;
+  padding: 16px 0;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.02);
 
-  @media (max-width: 768px) {
-    padding: 1.5rem 0;
+  @media (max-width: 767px) {
+    padding: 12px 0;
   }
 `;
 
 const PaymentSectionTitle = styled.h2`
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 2rem;
+  font-size: 14px;
   font-weight: 600;
-  margin: 0 0 1.2rem 0;
+  color: #FFFFFF;
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   text-align: center;
-  letter-spacing: 0.5px;
 
-  @media (max-width: 768px) {
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
+  @media (max-width: 767px) {
+    margin-bottom: 6px;
   }
 `;
 
-const PaymentMethodsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
+const PaymentMethodsWrap = styled.div`
+  display: flex;
+  justify-content: center;
   align-items: center;
-  justify-items: center;
-  max-width: 800px;
-  margin: 0 auto;
+  overflow: hidden;
+  width: 100%;
+  max-width: 100%;
+`;
 
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-    max-width: 100%;
-  }
+const PaymentMethodsTrack = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1.5rem;
+  width: max-content;
+  animation: ${scrollRightToLeft} 30s linear infinite;
+  padding: 0 1rem;
 
-  @media (min-width: 769px) and (max-width: 968px) {
+  @media (max-width: 767px) {
     gap: 1rem;
+    padding: 0 0.5rem;
   }
 `;
 
@@ -618,27 +638,25 @@ const PaymentMethod = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.6rem;
-  padding: 1.2rem 0.8rem;
+  gap: 0.3rem;
+  padding: 0.6rem 0.75rem;
   background: rgba(255, 255, 255, 0.03);
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   transition: all 0.3s ease;
-  min-width: 140px;
-  max-width: 180px;
-  width: 100%;
+  flex-shrink: 0;
+  min-width: 100px;
+  max-width: 140px;
 
   &:hover {
     background: rgba(255, 196, 0, 0.08);
     border-color: rgba(255, 196, 0, 0.25);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 196, 0, 0.15);
   }
 
-  @media (max-width: 768px) {
-    min-width: 100%;
-    max-width: 100%;
-    padding: 0.9rem;
+  @media (max-width: 767px) {
+    padding: 0.5rem 0.6rem;
+    min-width: 80px;
+    max-width: 120px;
   }
 `;
 
@@ -646,79 +664,77 @@ const PaymentMethodIcon = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 3.2rem;
-  height: 3.2rem;
+  width: 2rem;
+  height: 2rem;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 50%;
   color: rgba(255, 255, 255, 0.8);
   transition: all 0.3s ease;
 
   svg {
-    font-size: 1.7rem;
+    font-size: 1rem;
   }
 
   ${PaymentMethod}:hover & {
     background: rgba(255, 196, 0, 0.15);
     color: #ffc400;
-    transform: scale(1.1);
   }
 
-  @media (max-width: 768px) {
-    width: 3rem;
-    height: 3rem;
-    
+  @media (max-width: 767px) {
+    width: 1.6rem;
+    height: 1.6rem;
+
     svg {
-      font-size: 1.7rem;
+      font-size: 0.85rem;
     }
   }
 `;
 
 const PaymentMethodLabel = styled.span`
   color: rgba(255, 255, 255, 0.75);
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   font-weight: 500;
   text-align: center;
-  line-height: 1.4;
+  line-height: 1.3;
   transition: color 0.3s ease;
 
   ${PaymentMethod}:hover & {
     color: rgba(255, 255, 255, 0.95);
   }
 
-  @media (max-width: 768px) {
-    font-size: 1.3rem;
+  @media (max-width: 767px) {
+    font-size: 0.8rem;
   }
 `;
 
 const SecuritySection = styled.div`
-  padding: 2rem 0;
+  padding: 16px 0;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.02);
 
-  @media (max-width: 768px) {
-    padding: 1.5rem 0;
+  @media (max-width: 767px) {
+    padding: 12px 0;
   }
 `;
 
 const SecuritySectionTitle = styled.h4`
-  color: rgba(255, 255, 255, 0.95);
-  font-size: 1.7rem;
+  font-size: 14px;
   font-weight: 600;
-  margin: 0 0 1.2rem 0;
+  color: #FFFFFF;
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   text-align: center;
-  letter-spacing: 0.5px;
 
-  @media (max-width: 768px) {
-    font-size: 1.7rem;
-    margin-bottom: 1rem;
+  @media (max-width: 767px) {
+    margin-bottom: 6px;
   }
 `;
 
 const SecurityBadgesGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1.2rem;
+  gap: 0.6rem;
   align-items: center;
   justify-items: center;
   max-width: 1000px;
@@ -726,12 +742,14 @@ const SecurityBadgesGrid = styled.div`
 
   @media (max-width: 968px) {
     grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
+  }
+
+  @media (max-width: 767px) {
+    gap: 0.4rem;
   }
 
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
-    gap: 1rem;
     max-width: 100%;
   }
 `;

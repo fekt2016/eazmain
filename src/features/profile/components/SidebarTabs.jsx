@@ -4,10 +4,18 @@ import {
   FaLock,
   FaMobileAlt,
   FaShieldAlt,
+  FaShoppingBag,
+  FaMapMarkerAlt,
+  FaBell,
+  FaCreditCard,
 } from "react-icons/fa";
 
 const tabs = [
   { id: "account", label: "Account Info", icon: FaUser },
+  { id: "orders", label: "Orders", icon: FaShoppingBag },
+  { id: "address", label: "Address Book", icon: FaMapMarkerAlt },
+  { id: "payment", label: "Payment Methods", icon: FaCreditCard },
+  { id: "notifications", label: "Notifications", icon: FaBell },
   { id: "security", label: "Security", icon: FaLock },
   { id: "twofactor", label: "Two-Factor Auth", icon: FaShieldAlt },
   { id: "devices", label: "Devices", icon: FaMobileAlt },
@@ -78,9 +86,9 @@ const TabItem = styled.button`
   padding: var(--space-md);
   border: none;
   background: ${(props) =>
-    props.active ? "var(--color-primary)" : "transparent"};
+    props.active ? "var(--color-primary-600)" : "transparent"};
   color: ${(props) =>
-    props.active ? "white" : "var(--color-text-dark)"};
+    props.active ? "white" : "#9CA3AF"};
   border-radius: 8px;
   cursor: pointer;
   font-family: "Inter", sans-serif;
@@ -91,12 +99,15 @@ const TabItem = styled.button`
 
   &:hover {
     background: ${(props) =>
-      props.active ? "var(--color-primary-hover)" : "var(--color-bg-light)"};
+    props.active ? "var(--color-primary-700)" : "var(--color-bg-light)"};
+    color: ${(props) => (props.active ? "white" : "#6B7280")};
   }
 
   svg {
-    font-size: 18px;
+    width: 20px;
+    height: 20px;
     flex-shrink: 0;
+    opacity: ${(props) => (props.active ? 1 : 0.8)};
   }
 `;
 

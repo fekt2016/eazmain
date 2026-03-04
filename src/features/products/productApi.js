@@ -99,12 +99,8 @@ export const productService = {
 
   searchProducts: async (query) => {
     try {
-      const response = await fetch(
-        `/api/products/search?q=${encodeURIComponent(query)}`
-      );
-      if (!response.ok)
-        throw new Error(`HTTP error! status: ${response.status}`);
-      return await response.json();
+      const response = await api.get(`/product/search?q=${encodeURIComponent(query)}`);
+      return response.data;
     } catch (err) {
       logger.error("Error searching products:", err);
       throw err;

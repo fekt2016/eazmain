@@ -11,9 +11,9 @@ export const useSearchSuggestions = (searchTerm, options = {}) => {
 
   return useQuery({
     queryKey: ["searchSuggestions", searchTerm],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       if (!searchTerm || searchTerm.length < 2) return { success: true, data: [] };
-      const response = await searchApi.searchSuggestions(searchTerm);
+      const response = await searchApi.searchSuggestions(searchTerm, { signal });
       // response is already response.data from searchApi, which should be { success: true, data: [...] }
       return response;
     },
@@ -30,9 +30,9 @@ export const useSearchSuggestions = (searchTerm, options = {}) => {
 export const useSearchProducts = (searchTerm) => {
   return useQuery({
     queryKey: ["searchProducts", searchTerm],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       if (!searchTerm || searchTerm.length < 2) return [];
-      const response = await searchApi.searchProducts(searchTerm);
+      const response = await searchApi.searchProducts(searchTerm, { signal });
       return response;
     },
     enabled: !!searchTerm && searchTerm.length >= 2,
@@ -47,8 +47,8 @@ export const useSearchProducts = (searchTerm) => {
 export const useSearchResults = (queryParams) => {
   return useQuery({
     queryKey: ["searchResults", queryParams],
-    queryFn: async () => {
-      const response = await searchApi.searchResults(queryParams);
+    queryFn: async ({ signal }) => {
+      const response = await searchApi.searchResults(queryParams, { signal });
       return response;
     },
     enabled: !!queryParams && (!!queryParams.q || !!queryParams.type || !!queryParams.category),

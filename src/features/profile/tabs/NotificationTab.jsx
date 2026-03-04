@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "react-toastify";
 import {
   ContentCard,
   CardTitle,
@@ -10,14 +11,20 @@ import {
 import { ButtonSpinner } from "../../../components/loading";
 import styled from "styled-components";
 
+const STORAGE_KEY = "user_notification_prefs";
+
 const NotificationTab = () => {
+  const savedPrefs = (() => {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch { return null; }
+  })();
+
   const [settings, setSettings] = useState({
-    emailNotifications: true,
-    smsNotifications: false,
-    orderUpdates: true,
-    promotions: true,
-    securityAlerts: true,
-    newsletter: false,
+    emailNotifications: savedPrefs?.emailNotifications ?? true,
+    smsNotifications: savedPrefs?.smsNotifications ?? false,
+    orderUpdates: savedPrefs?.orderUpdates ?? true,
+    promotions: savedPrefs?.promotions ?? true,
+    securityAlerts: savedPrefs?.securityAlerts ?? true,
+    newsletter: savedPrefs?.newsletter ?? false,
   });
   const [isSaving, setIsSaving] = useState(false);
 
@@ -27,11 +34,15 @@ const NotificationTab = () => {
 
   const handleSave = async () => {
     setIsSaving(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Persist preferences locally — connect to backend once endpoint is available
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+      toast.success("Notification preferences saved!", { position: "top-right", autoClose: 3000 });
+    } catch {
+      toast.error("Failed to save preferences. Please try again.", { position: "top-right", autoClose: 4000 });
+    } finally {
       setIsSaving(false);
-      alert("Notification settings saved!");
-    }, 1000);
+    }
   };
 
   return (

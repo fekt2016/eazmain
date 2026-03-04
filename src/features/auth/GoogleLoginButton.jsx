@@ -4,6 +4,7 @@ import api from "../../shared/services/api";
 import { PATHS } from "../../routes/routePaths";
 import logger from "../../shared/utils/logger";
 import styled from "styled-components";
+import { useModal } from "../../shared/hooks/useModal";
 
 /**
  * Google OAuth login/signup button. Renders a visible "Google" button.
@@ -11,6 +12,7 @@ import styled from "styled-components";
  */
 export default function GoogleLoginButton({ appType = "buyer", onComplete, className }) {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const { showInfo } = useModal();
 
   const handleLoginSuccess = async (credentialResponse) => {
     try {
@@ -55,7 +57,10 @@ export default function GoogleLoginButton({ appType = "buyer", onComplete, class
       <GoogleButtonPlaceholder
         className={className}
         type="button"
-        onClick={() => window.alert("Google sign-in is not configured. Add VITE_GOOGLE_CLIENT_ID to your .env file.")}
+        onClick={() => showInfo({
+          title: "Configuration Required",
+          message: "Google sign-in is not configured. Add VITE_GOOGLE_CLIENT_ID to your .env file."
+        })}
         title="Google sign-in not configured"
       >
         <FcGoogle size={18} />
@@ -79,17 +84,19 @@ export default function GoogleLoginButton({ appType = "buyer", onComplete, class
 }
 
 const GoogleButtonWrap = styled.div`
-  flex: 1;
-  min-width: 120px;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 8px;
+  overflow: hidden;
 
   & > div {
     width: 100% !important;
   }
   iframe {
-    min-width: 120px;
+    width: 100% !important;
+    border-radius: 8px;
   }
 `;
 

@@ -40,7 +40,7 @@ const OrdersTab = () => {
                 <OrderDate>
                   {new Date(order.createdAt).toLocaleDateString()}
                 </OrderDate>
-                <OrderTotal>${order.totalAmount?.toFixed(2) || "0.00"}</OrderTotal>
+                <OrderTotal>GH₵{order.totalAmount?.toFixed(2) || "0.00"}</OrderTotal>
               </OrderInfo>
               <OrderStatus status={getOrderDisplayStatus(order).badgeStatus}>
                 {getOrderDisplayStatus(order).displayLabel}

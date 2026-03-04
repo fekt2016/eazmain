@@ -11,6 +11,7 @@ import { devicesMax } from '../../shared/styles/breakpoint';
 import logger from '../../shared/utils/logger';
 import { sanitizeEmail, sanitizePhone, sanitizeText } from '../../shared/utils/sanitize';
 import GoogleLoginButton from "./GoogleLoginButton";
+import Logo from "../../shared/components/Logo";
 
 // Animations
 const fadeIn = keyframes`
@@ -109,13 +110,13 @@ export default function LoginPage() {
         { email: trimmedEmail, password: state.password },
         {
           onSuccess: (response) => {
-            logger.debug("[Login] onSuccess called", { 
+            logger.debug("[Login] onSuccess called", {
               hasResponse: !!response,
               hasData: !!response?.data,
               status: response?.data?.status,
               is2FA: response?.data?.requires2FA || response?.data?.status === '2fa_required'
             });
-            
+
             // Extract data from axios response
             // response is the full axios response: { data: {...}, status: 200, ... }
             const responseData = response?.data || response;
@@ -144,14 +145,7 @@ export default function LoginPage() {
               }
 
               logger.debug("[Login] Login successful");
-              console.log('👤 [Login] User logged in:', {
-                id: user.id || user._id,
-                email: user.email,
-                name: user.name || user.firstName,
-                role: user.role,
-                fullUser: user,
-              });
-              
+
               merge();
               syncCart();
 
@@ -161,7 +155,6 @@ export default function LoginPage() {
               }
 
               const finalRedirect = redirectTo || '/';
-              console.log('🚀 [Login] Navigating to:', finalRedirect);
               navigate(finalRedirect);
 
               // Remember-me: store or clear saved email
@@ -185,7 +178,7 @@ export default function LoginPage() {
               response: err.response?.data,
               status: err.response?.status,
             });
-            
+
             // Extract error message from response
             const errorResponse = err.response?.data || {};
             let errorMessage =
@@ -247,7 +240,7 @@ export default function LoginPage() {
             const responseData = response?.data || response;
             // Backend returns: { status: 'success', token, user: {...} }
             const user = responseData?.user;
-            
+
             if (!user || (!user.id && !user._id)) {
               console.error("❌ [2FA Login] 2FA verified but no user data received:", response);
               console.error("❌ [2FA Login] Response data structure:", responseData);
@@ -258,14 +251,7 @@ export default function LoginPage() {
               }));
               return;
             }
-            
-            console.log('👤 [2FA Login] User logged in via 2FA:', {
-              id: user.id || user._id,
-              email: user.email,
-              name: user.name || user.firstName,
-              role: user.role,
-              fullUser: user,
-            });
+
             merge();
             syncCart();
 
@@ -302,7 +288,9 @@ export default function LoginPage() {
       <ImageSection>
         <Overlay />
         <ImageContent>
-          <BrandLogo to="/">Saiisai</BrandLogo>
+          <BrandLogo to="/">
+            <Logo variant="default" />
+          </BrandLogo>
           <HeroText>
             <h1>Welcome Back</h1>
             <p>Discover a world of premium products and exclusive deals.</p>
@@ -312,6 +300,9 @@ export default function LoginPage() {
 
       <FormSection>
         <FormContainer>
+          <FormLogoWrapper>
+            <Logo to="/" variant="default" />
+          </FormLogoWrapper>
           <Header>
             <h2>{step === "2fa" ? "Two-Factor Authentication" : "Sign In"}</h2>
             <p>
@@ -419,12 +410,12 @@ export default function LoginPage() {
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, '');
                           if (value.length > 1) return;
-                          
+
                           const newCodeArray = [...codeArray];
                           newCodeArray[index] = value;
                           const newCode = newCodeArray.join('');
                           setTwoFactorCode(newCode);
-                          
+
                           if (value && index < 5) {
                             const nextInput = document.getElementById(`2fa-${index + 1}`);
                             if (nextInput) nextInput.focus();
@@ -468,9 +459,9 @@ export default function LoginPage() {
             </Button>
 
             {step === "2fa" && (
-              <Button 
-                type="button" 
-                variant="ghost" 
+              <Button
+                type="button"
+                variant="ghost"
                 onClick={() => {
                   setStep("credentials");
                   setTwoFactorCode("");
@@ -548,11 +539,19 @@ const ImageContent = styled.div`
 `;
 
 const BrandLogo = styled(Link)`
-  font-size: 28px;
-  font-weight: 800;
-  color: white;
+  display: inline-flex;
   text-decoration: none;
-  letter-spacing: 1px;
+  /* Logo on dark overlay: make it visible */
+  filter: brightness(0) invert(1);
+`;
+
+const FormLogoWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+  @media (min-width: 769px) {
+    display: none;
+  }
 `;
 
 const HeroText = styled.div`
@@ -688,27 +687,39 @@ const PasswordToggleButton = styled.button`
 const Input = styled.input`
   width: 100%;
   padding: 14px ${(props) => (props.$hasPasswordToggle ? "48px" : "16px")} 14px 48px;
-  border: 2px solid #eee;
-  border-radius: 12px;
-  font-size: 16px;
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+  font-size: 15px;
   transition: all 0.3s;
-  background: #f8f9fa;
+  background: #FFFFFF;
   
   &:focus {
     outline: none;
-    border-color: #667eea;
-    background: white;
-    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    border-color: #D4882A;
+    box-shadow: 0 0 0 2px rgba(212, 136, 42, 0.2);
   }
   
   &::placeholder {
-    color: #aaa;
+    color: #9CA3AF;
+  }
+  
+  /* Force white background – no yellow/lime autofill (Chrome & Safari) */
+  &:-webkit-autofill,
+  &:-webkit-autofill:hover,
+  &:-webkit-autofill:focus,
+  &:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px #FFFFFF inset !important;
+    box-shadow: 0 0 0 30px #FFFFFF inset !important;
+    -webkit-text-fill-color: inherit !important;
+    transition: background-color 5000s ease-in-out 0s;
   }
 `;
 
 const FieldError = styled.span`
-  color: #ef4444;
+  display: block;
+  color: #EF4444;
   font-size: 12px;
+  margin-top: 4px;
 `;
 
 const ToggleLink = styled.button`
@@ -749,13 +760,14 @@ const LoginMetaRow = styled.div`
 const RememberMeLabel = styled.label`
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
   font-size: 0.9rem;
   color: #4a5568;
 
   input {
-    width: 14px;
-    height: 14px;
+    width: 18px;
+    height: 18px;
+    accent-color: #D4882A;
   }
 `;
 
@@ -780,8 +792,9 @@ const DividerText = styled.span`
 
 const SocialButtons = styled.div`
   display: flex;
+  flex-direction: column;
   gap: 12px;
-  flex-wrap: wrap;
+  width: 100%;
 `;
 
 const SocialButton = styled.button`

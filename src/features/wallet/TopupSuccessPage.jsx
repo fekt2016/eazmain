@@ -21,7 +21,7 @@ const TopupSuccessPage = () => {
   const [redirecting, setRedirecting] = useState(false);
   const { userData, isLoading: authLoading, refetchAuth } = useAuth();
   const [authCheckComplete, setAuthCheckComplete] = useState(false);
-  
+
   // Use refs to prevent infinite loops - refs don't trigger re-renders
   const hasAttemptedAuthRefetchRef = useRef(false);
   const authCheckTimerRef = useRef(null);
@@ -40,47 +40,36 @@ const TopupSuccessPage = () => {
   }, []); // Empty deps - only run once on mount
 
   // Handle auth redirect - must be called unconditionally
-  // Add a longer delay to allow auth state to restore after Paystack redirect
-  // FIX: Remove navigate from deps (it's stable), use refs for timers
+  // Wait until authLoading is false, then we know if we have a user or not
   useEffect(() => {
-    // Clear any existing timers
-    if (authCheckTimerRef.current) {
-      clearTimeout(authCheckTimerRef.current);
-    }
-    if (redirectTimerRef.current) {
-      clearTimeout(redirectTimerRef.current);
-    }
-
-    // Give auth state more time to restore after external redirect
-    authCheckTimerRef.current = setTimeout(() => {
-      setAuthCheckComplete(true);
-      // Only redirect to login if we're absolutely certain there's no auth
-      // Check multiple times with increasing delays
-      if (!authLoading && !userData) {
-        // Double-check after another delay
+    // If not loading and no user, we might be unauthenticated. Let's give it a slight tick to settle.
+    if (!authLoading) {
+      if (!userData) {
+        // Double check after a small tick (100ms) to ensure state hasn't just briefly flipped
         redirectTimerRef.current = setTimeout(() => {
-          if (!userData) {
+          if (!authLoading && !userData) {
+            setAuthCheckComplete(true);
             navigate('/login', { replace: true });
           }
-        }, 1000);
+        }, 100);
+      } else {
+        // User exists
+        setAuthCheckComplete(true);
       }
-    }, 2000); // 2 second delay to allow auth restoration
+    }
 
     return () => {
-      if (authCheckTimerRef.current) {
-        clearTimeout(authCheckTimerRef.current);
-      }
       if (redirectTimerRef.current) {
         clearTimeout(redirectTimerRef.current);
       }
     };
-  }, [authLoading, userData]); // Removed navigate - it's stable from useNavigate
+  }, [authLoading, userData, navigate]);
 
   // Payment verification - must be called unconditionally
   // Allow verification to proceed even if auth is still loading (backend verifies via cookies)
   // FIX: Use refs to prevent duplicate verification attempts, remove unstable function refs from deps
   const verificationAttemptedRef = useRef(false);
-  
+
   useEffect(() => {
     // Don't block verification if auth is still loading - backend will verify via cookies
     // Only block if we're certain there's no user after auth check completes
@@ -97,15 +86,19 @@ const TopupSuccessPage = () => {
       verificationAttemptedRef.current = true;
       // Verify the payment
       verifyTopup(reference, {
-        onSuccess: (data) => {
+        onSuccess: async (data) => {
           setVerified(true);
-          refetchBalance();
           toast.success('Wallet top-up successful!');
-          // Auto-redirect to credit balance page after 2 seconds
           setRedirecting(true);
-          setTimeout(() => {
-            navigate(PATHS.CREDIT, { replace: true });
-          }, 2000);
+
+          try {
+            // Wait for balance refetch to complete so that wallet page has fresh data
+            await refetchBalance();
+          } catch (e) {
+            logger.error('Failed to refetch balance:', e);
+          }
+
+          navigate(PATHS.CREDIT, { replace: true });
         },
         onError: (error) => {
           logger.error('[TopupSuccess] Verification error:', error);

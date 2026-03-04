@@ -46,7 +46,6 @@ const DealsPage = () => {
 
   const products = data?.products || [];
   const totalPages = data?.totalPages || 1;
-  const totalProducts = data?.total || 0;
 
   // Handle sort change
   const handleSortChange = (newSort) => {

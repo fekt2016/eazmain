@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import { PATHS } from "./routePaths";
 import PromotionalProductsPage from "../pages/offers/PromotionalProductsPage";
@@ -21,25 +21,7 @@ const TopupSuccessPage = lazy(() => import("../features/wallet/TopupSuccessPage"
 // If lazy loading is needed, use the commented version below
 import AddressPage from "../features/profile/AddressPage";
 
-// Alternative: Lazy load with error handling (uncomment if needed)
-// const AddressPage = lazy(async () => {
-//   try {
-//     const module = await import("../features/profile/AddressPage");
-//     return module;
-//   } catch (error) {
-//     console.error('[MainRoutes] Failed to dynamically import AddressPage:', error);
-//     // Return a fallback component that shows an error message
-//     return {
-//       default: () => (
-//         <div style={{ padding: '2rem', textAlign: 'center' }}>
-//           <h2>Failed to load Address Page</h2>
-//           <p>Please refresh the page or contact support if the issue persists.</p>
-//           <button onClick={() => window.location.reload()}>Refresh Page</button>
-//         </div>
-//       )
-//     };
-//   }
-// });
+
 const SignupPage = lazy(() => import("../features/auth/SignupPage"));
 const LoginPage = lazy(() => import("../features/auth/loginPage"));
 // Import ProtectedRoute directly (not lazy) since it's a wrapper component used frequently
@@ -87,6 +69,7 @@ const ForgotPasswordPage = lazy(() => import("../features/auth/ForgotPasswordPag
 const ResetPasswordPage = lazy(() => import("../features/auth/ResetPasswordPage"));
 const VerifyAccountPage = lazy(() => import("../features/auth/VerifyAccountPage"));
 const BestSellersPage = lazy(() => import("../pages/best-sellers/BestSellersPage"));
+const TrendingPage = lazy(() => import("../pages/trending/TrendingPage"));
 const DealsPage = lazy(() => import("../pages/deals/DealsPage"));
 const NotFoundPage = lazy(() => import("../pages/NotFoundPage"));
 
@@ -95,446 +78,398 @@ const MainRoutes = () => {
     <Routes>
       <Route
         path="/order-confirmation"
-        element={<OrderConfirmationPage />}
-      />
-    <Route
-      path={PATHS.LOGIN}
-      element={
-        <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-          <LoginPage />
-        </Suspense>
-      }
-    />
-    <Route
-      path={PATHS.REGISTER}
-      element={
-        <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-          <SignupPage />
-        </Suspense>
-      }
-    />
-    {/* Alias route for /register to match the link in login page */}
-    <Route
-      path="/register"
-      element={
-        <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-          <SignupPage />
-        </Suspense>
-      }
-    />
-    <Route
-      path={PATHS.VERIFY_ACCOUNT}
-      element={
-        <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-          <VerifyAccountPage />
-        </Suspense>
-      }
-    />
-    <Route
-      path={PATHS.FORGOT}
-      element={
-        <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-          <ForgotPasswordPage />
-        </Suspense>
-      }
-    />
-    <Route element={<MainLayout />}>
-      <Route
-        path="/wallet/topup-success"
         element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <TopupSuccessPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.HOME}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <HomePage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.PRODUCTS}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <ProductsPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.SEARCH}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <SearchResult />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.ABOUT}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <AboutPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.CONTACT}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <ContactPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.BLOG}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <BlogPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.SITEMAP}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <SitemapPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.REFUND_POLICY}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <ReturnRefundPolicyPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.PRIVACY}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <PrivacyPolicyPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.TERMS}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <TermsPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.DATA_DELETION}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <DataDeletionPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.VAT_TAX_POLICY}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <VatTaxPolicyPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.PRODUCT_CARE}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <ProductCarePage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.PARTNER}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <PartnerPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.CAREERS}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <CareersPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.SHIPPING_POLICY}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <ShippingInfoPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.NEW_ARRIVALS}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <NewArrivalsPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.HELP}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <HelpCenterTabsPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.DEALS}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <DealsPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.PARTNERS}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <Partners />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.PRESS}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <Press />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.PRODUCTREVIEWS}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <ReviewPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.PRODUCTREVIEWS_SINGULAR}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <ReviewPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.PRODUCT}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <ProductDetail />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.PRODUCT_PLURAL}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <ProductDetail />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.PROMO_PRODUCT}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <PromotionalProductsPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.EDITPRODUCT}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <ProductDetail />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.WISHLIST}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <WishListPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.CATEGORIES}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <CategoriesListPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.CATEGORY}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <CategoryPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.CATEGORY_SINGULAR}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <CategoryPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.CART}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <CartPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path="/reset-password"
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <ResetPasswordPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.SUPPORT}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <CustomerSupportPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.SUPPORT_TICKETS}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <TicketsListPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.SUPPORT_TICKET_DETAIL}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <TicketDetailPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.SELLERS}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <SellersListPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.SELLER}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <SellerPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.SELLER_SINGULAR}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <SellerPage />
-          </Suspense>
-        }
-      />
-      <Route
-        path={PATHS.BEST_SELLERS}
-        element={
-          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-            <BestSellersPage />
-          </Suspense>
-        }
-      />
-      //Protected routes
-      <Route
-        path={PATHS.CHECKOUT}
-        element={
-          <ProtectedRoute allowedStatuses={["active", "verified"]}>
-            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-              <CheckoutPage />
-            </Suspense>
+          <ProtectedRoute>
+            <OrderConfirmationPage />
           </ProtectedRoute>
         }
       />
-      <Route element={<Dashboard />}>
+      <Route
+        path={PATHS.LOGIN}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <LoginPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.REGISTER}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <SignupPage />
+          </Suspense>
+        }
+      />
+      {/* Alias route for /register to match the link in login page */}
+      <Route
+        path="/register"
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <SignupPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.VERIFY_ACCOUNT}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <VerifyAccountPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path={PATHS.FORGOT}
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <ForgotPasswordPage />
+          </Suspense>
+        }
+      />
+      <Route element={<MainLayout />}>
         <Route
-          path={PATHS.ORDERS}
+          path="/wallet/topup-success"
           element={
-            <ProtectedRoute allowedStatuses={["active", "verified"]}>
+            <ProtectedRoute>
               <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-                <OrderList />
+                <TopupSuccessPage />
               </Suspense>
             </ProtectedRoute>
           }
         />
         <Route
-          path={PATHS.PROFILE}
+          path={PATHS.HOME}
           element={
-            <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-                <ProfilePage />
-              </Suspense>
-            </ProtectedRoute>
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <HomePage />
+            </Suspense>
           }
         />
         <Route
-          path={PATHS.ADDRESS}
+          path={PATHS.PRODUCTS}
           element={
-            <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <AddressPage />
-            </ProtectedRoute>
-          }
-        />
-        {/* Short alias routes for backward compatibility */}
-        <Route
-          path={PATHS.ADDRESSES_SHORT}
-          element={
-            <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <AddressPage />
-            </ProtectedRoute>
-          }
-        />
-        {/* Refund detail route MUST come before order detail route to prevent route matching conflicts */}
-        <Route
-          path={PATHS.REFUND_DETAIL}
-          element={
-            <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-                <RefundDetailPage />
-              </Suspense>
-            </ProtectedRoute>
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <ProductsPage />
+            </Suspense>
           }
         />
         <Route
-          path={PATHS.ORDER_DETAILS}
+          path={PATHS.SEARCH}
           element={
-            <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-                <OrderDetail />
-              </Suspense>
-            </ProtectedRoute>
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <SearchResult />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.ABOUT}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <AboutPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.CONTACT}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <ContactPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.BLOG}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <BlogPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.SITEMAP}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <SitemapPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.REFUND_POLICY}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <ReturnRefundPolicyPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.PRIVACY}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <PrivacyPolicyPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.TERMS}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <TermsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.DATA_DELETION}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <DataDeletionPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.VAT_TAX_POLICY}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <VatTaxPolicyPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.PRODUCT_CARE}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <ProductCarePage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.PARTNER}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <PartnerPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.CAREERS}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <CareersPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.SHIPPING_POLICY}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <ShippingInfoPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.NEW_ARRIVALS}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <NewArrivalsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.HELP}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <HelpCenterTabsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.DEALS}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <DealsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.PARTNERS}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <Partners />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.PRESS}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <Press />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.PRODUCTREVIEWS}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <ReviewPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.PRODUCTREVIEWS_SINGULAR}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <ReviewPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.PRODUCT}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <ProductDetail />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.PRODUCT_PLURAL}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <ProductDetail />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.PROMO_PRODUCT}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <PromotionalProductsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.EDITPRODUCT}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <ProductDetail />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.WISHLIST}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <WishListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.CATEGORIES}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <CategoriesListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.CATEGORY}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <CategoryPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.CATEGORY_SINGULAR}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <CategoryPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.CART}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <CartPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <ResetPasswordPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.SUPPORT}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <CustomerSupportPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.SUPPORT_TICKETS}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <TicketsListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.SUPPORT_TICKET_DETAIL}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <TicketDetailPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.SELLERS}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <SellersListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.SELLER}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <SellerPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.SELLER_SINGULAR}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <SellerPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.BEST_SELLERS}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <BestSellersPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.TRENDING}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <TrendingPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.TRACKING_BASE}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <TrackingPage />
+            </Suspense>
           }
         />
         <Route
@@ -545,158 +480,229 @@ const MainRoutes = () => {
             </Suspense>
           }
         />
+
+        {/* Protected routes */}
         <Route
-          path={PATHS.REVIEW}
+          path={PATHS.CHECKOUT}
           element={
             <ProtectedRoute allowedStatuses={["active", "verified"]}>
               <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-                <ReviewPage />
+                <CheckoutPage />
               </Suspense>
             </ProtectedRoute>
           }
         />
-        <Route
-          path={PATHS.CREDIT}
-          element={
-            <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-                <Creditbalance />
-              </Suspense>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={PATHS.CREDIT_SHORT}
-          element={
-            <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-                <Creditbalance />
-              </Suspense>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={PATHS.WALLET_ADD_MONEY}
-          element={
-            <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-                <AddMoneyPage />
-              </Suspense>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={PATHS.FOLLOWED}
-          element={
-            <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-                <FollowPage />
-              </Suspense>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={PATHS.FOLLOWED_SHORT}
-          element={
-            <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-                <FollowPage />
-              </Suspense>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={PATHS.COUPON}
-          element={
-            <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-                <CouponPage />
-              </Suspense>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={PATHS.COUPON_SHORT}
-          element={
-            <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-                <CouponPage />
-              </Suspense>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={PATHS.BROWSER}
-          element={
-            <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-                <BrowserhistoryPage />
-              </Suspense>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={PATHS.BROWSER_SHORT}
-          element={
-            <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-                <BrowserhistoryPage />
-              </Suspense>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={PATHS.PERMISSION}
-          element={
-            <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-                <PermissionPage />
-              </Suspense>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={PATHS.PERMISSION_SHORT}
-          element={
-            <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-                <PermissionPage />
-              </Suspense>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={PATHS.PAYMENT}
-          element={
-            <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-                <PaymentMethodPage />
-              </Suspense>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={PATHS.PAYMENT_SHORT}
-          element={
-            <ProtectedRoute allowedStatuses={["active", "verified"]}>
-              <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-                <PaymentMethodPage />
-              </Suspense>
-            </ProtectedRoute>
-          }
-        />
+        <Route element={<Dashboard />}>
+          <Route
+            path={PATHS.ORDERS}
+            element={
+              <ProtectedRoute allowedStatuses={["active", "verified"]}>
+                <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                  <OrderList />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={PATHS.PROFILE}
+            element={
+              <ProtectedRoute allowedStatuses={["active", "verified"]}>
+                <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                  <ProfilePage />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={PATHS.ADDRESS}
+            element={
+              <ProtectedRoute allowedStatuses={["active", "verified"]}>
+                <AddressPage />
+              </ProtectedRoute>
+            }
+          />
+          {/* Short alias routes for backward compatibility */}
+          <Route
+            path={PATHS.ADDRESSES_SHORT}
+            element={
+              <ProtectedRoute allowedStatuses={["active", "verified"]}>
+                <AddressPage />
+              </ProtectedRoute>
+            }
+          />
+          {/* Refund detail route MUST come before order detail route to prevent route matching conflicts */}
+          <Route
+            path={PATHS.REFUND_DETAIL}
+            element={
+              <ProtectedRoute allowedStatuses={["active", "verified"]}>
+                <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                  <RefundDetailPage />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={PATHS.ORDER_DETAILS}
+            element={
+              <ProtectedRoute allowedStatuses={["active", "verified"]}>
+                <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                  <OrderDetail />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={PATHS.REVIEW}
+            element={
+              <ProtectedRoute allowedStatuses={["active", "verified"]}>
+                <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                  <ReviewPage />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={PATHS.CREDIT}
+            element={
+              <ProtectedRoute allowedStatuses={["active", "verified"]}>
+                <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                  <Creditbalance />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={PATHS.CREDIT_SHORT}
+            element={
+              <ProtectedRoute allowedStatuses={["active", "verified"]}>
+                <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                  <Creditbalance />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={PATHS.WALLET_ADD_MONEY}
+            element={
+              <ProtectedRoute allowedStatuses={["active", "verified"]}>
+                <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                  <AddMoneyPage />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={PATHS.FOLLOWED}
+            element={
+              <ProtectedRoute allowedStatuses={["active", "verified"]}>
+                <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                  <FollowPage />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={PATHS.FOLLOWED_SHORT}
+            element={
+              <ProtectedRoute allowedStatuses={["active", "verified"]}>
+                <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                  <FollowPage />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={PATHS.COUPON}
+            element={
+              <ProtectedRoute allowedStatuses={["active", "verified"]}>
+                <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                  <CouponPage />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={PATHS.COUPON_SHORT}
+            element={
+              <ProtectedRoute allowedStatuses={["active", "verified"]}>
+                <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                  <CouponPage />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={PATHS.BROWSER}
+            element={
+              <ProtectedRoute allowedStatuses={["active", "verified"]}>
+                <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                  <BrowserhistoryPage />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={PATHS.BROWSER_SHORT}
+            element={
+              <ProtectedRoute allowedStatuses={["active", "verified"]}>
+                <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                  <BrowserhistoryPage />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={PATHS.PERMISSION}
+            element={
+              <ProtectedRoute allowedStatuses={["active", "verified"]}>
+                <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                  <PermissionPage />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={PATHS.PERMISSION_SHORT}
+            element={
+              <ProtectedRoute allowedStatuses={["active", "verified"]}>
+                <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                  <PermissionPage />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={PATHS.PAYMENT}
+            element={
+              <ProtectedRoute allowedStatuses={["active", "verified"]}>
+                <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                  <PaymentMethodPage />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={PATHS.PAYMENT_SHORT}
+            element={
+              <ProtectedRoute allowedStatuses={["active", "verified"]}>
+                <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+                  <PaymentMethodPage />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+        </Route>
       </Route>
-    </Route>
-    {/* 404 Not Found Page */}
-    <Route
-      path="*"
-      element={
-        <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
-          <NotFoundPage />
-        </Suspense>
-      }
-    />
-  </Routes>
+      {/* 404 Not Found Page */}
+      <Route
+        path="*"
+        element={
+          <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+            <NotFoundPage />
+          </Suspense>
+        }
+      />
+    </Routes>
   );
 };
 

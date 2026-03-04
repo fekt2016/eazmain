@@ -20,6 +20,7 @@ import { useShippingCalculator } from '../../shared/hooks/useShippingCalculator'
 import { detectZone } from '../../shared/utils/zoneDetection';
 import { WAREHOUSE_LOCATION } from '../../shared/config/warehouseConfig';
 import { ButtonSpinner } from '../../components/loading';
+import { isValidPaystackUrl } from '../../shared/utils/sanitize';
 import { PrimaryButton, SecondaryButton } from '../../shared/components/ui/Buttons';
 import logger from '../../shared/utils/logger';
 
@@ -78,10 +79,10 @@ const EditOrderModal = ({ isOpen, onClose, order, onSuccess }) => {
           fullName: order.shippingAddress.fullName || '',
           contactPhone: order.shippingAddress.contactPhone || '',
           landmark: order.shippingAddress.landmark || '',
-          coordinates: order.shippingAddress.coordinates || 
-                      (order.shippingAddress.latitude && order.shippingAddress.longitude 
-                        ? { lat: order.shippingAddress.latitude, lng: order.shippingAddress.longitude }
-                        : null),
+          coordinates: order.shippingAddress.coordinates ||
+            (order.shippingAddress.latitude && order.shippingAddress.longitude
+              ? { lat: order.shippingAddress.latitude, lng: order.shippingAddress.longitude }
+              : null),
         });
       }
     }
@@ -92,7 +93,7 @@ const EditOrderModal = ({ isOpen, onClose, order, onSuccess }) => {
     if (!formData.city || !formData.region) return;
 
     const weight = weightOverride || order?.weight || 0.5;
-    
+
     // Use distance-based calculation if coordinates are available
     // IMPORTANT: Origin is always the fixed warehouse - backend handles this automatically
     // Only pass destination coordinates or address string
@@ -106,7 +107,7 @@ const EditOrderModal = ({ isOpen, onClose, order, onSuccess }) => {
         'Ghana'
       ].filter(Boolean);
       const destinationAddress = addressParts.join(', ');
-      
+
       calculateNewShipping(
         {
           weight,
@@ -124,7 +125,7 @@ const EditOrderModal = ({ isOpen, onClose, order, onSuccess }) => {
             const zone = response?.zone;
             const distanceKm = response?.distanceKm;
             const breakdown = response?.breakdown;
-            
+
             if (fee !== undefined && fee !== null) {
               setRecalculatedFee(fee);
               setRecalculatedEstimate(estimate);
@@ -163,7 +164,7 @@ const EditOrderModal = ({ isOpen, onClose, order, onSuccess }) => {
       // Fallback to zone-based calculation if no coordinates
       const detectedZone = detectZone(formData.region, formData.city);
       setZone(detectedZone);
-      
+
       calculateNewShipping(
         {
           weight,
@@ -174,7 +175,7 @@ const EditOrderModal = ({ isOpen, onClose, order, onSuccess }) => {
           onSuccess: (response) => {
             const fee = response?.shippingFee;
             const estimate = response?.estimatedDays || '';
-            
+
             if (fee !== undefined && fee !== null) {
               setRecalculatedFee(fee);
               setRecalculatedEstimate(estimate);
@@ -242,14 +243,14 @@ const EditOrderModal = ({ isOpen, onClose, order, onSuccess }) => {
   // Handle zone change when city or region changes
   const handleCityOrRegionChange = (field, value) => {
     handleInputChange(field, value);
-    
+
     // Update zone based on city/region
     if (field === 'city' || field === 'region') {
       const newCity = field === 'city' ? value : formData.city;
       const newRegion = field === 'region' ? value : formData.region;
       const newZone = determineZone(newCity, newRegion);
       setZone(newZone);
-      
+
       // Recalculate shipping if order weight exists
       if (order?.weight) {
         calculateShipping(
@@ -353,7 +354,12 @@ const EditOrderModal = ({ isOpen, onClose, order, onSuccess }) => {
   const handlePayAdditional = () => {
     payDifference(order._id, {
       onSuccess: (data) => {
-        // Redirect to payment URL
+        // SECURITY: Validate redirect URL before redirecting to prevent open redirects
+        if (!isValidPaystackUrl(data.data.authorizationUrl)) {
+          logger.error("[EditOrderModal] Invalid redirect URL:", data.data.authorizationUrl);
+          alert('Invalid payment redirect URL. Please contact support.');
+          return;
+        }
         window.location.href = data.data.authorizationUrl;
       },
       onError: (error) => {
@@ -397,7 +403,7 @@ const EditOrderModal = ({ isOpen, onClose, order, onSuccess }) => {
               {/* SECTION 1: Address Information Form */}
               <FormSection>
                 <FormTitle>Address Information</FormTitle>
-                
+
                 <FormGroup>
                   <FormLabel>Full Name *</FormLabel>
                   <FormInput
@@ -873,9 +879,9 @@ const ShippingTypeCard = styled.div`
 
   &:hover {
     border-color: ${(props) =>
-      props.$selected ? 'var(--color-primary-500)' : 'var(--color-primary-300)'};
+    props.$selected ? 'var(--color-primary-500)' : 'var(--color-primary-300)'};
     background: ${(props) =>
-      props.$selected ? 'var(--color-primary-50)' : 'var(--color-grey-50)'};
+    props.$selected ? 'var(--color-primary-50)' : 'var(--color-grey-50)'};
   }
 `;
 
