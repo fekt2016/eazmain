@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useVariantSelectionByName } from '../../../shared/hooks/products/useVariantSelectionByName';
 
 /**
@@ -6,11 +6,15 @@ import { useVariantSelectionByName } from '../../../shared/hooks/products/useVar
  * Priority: selectedVariant.images[0] > product.images[0]
  */
 const getMainImage = (selectedVariant, fallbackImages = []) => {
-  // If variant is selected, use variant.images[0]
+  // If variant is selected, use variant.images[0] or variant.image
   if (selectedVariant) {
     // Check for variant.images[0]
     if (selectedVariant.images && selectedVariant.images.length > 0) {
       return selectedVariant.images[0];
+    }
+    // Check for variant.image (singular)
+    if (selectedVariant.image) {
+      return selectedVariant.image;
     }
   }
   // Fallback to product.images[0]
@@ -24,37 +28,39 @@ const VariantMainImageSwitcher = ({
   selectedVariant,
   fallbackImages = [],
   onImageChange,
-  variantSelectionHook,
 }) => {
+  const prevVariantId = useRef(null);
+  const prevGalleryRef = useRef(null);
+
   useEffect(() => {
-    const mainImage = getMainImage(selectedVariant, fallbackImages);
-    
-    if (mainImage && onImageChange) {
-      // Find the index of the main image in the images array
-      // For variant images, we need to check if it's in the variant.images array
-      // For product images, we need to find it in fallbackImages
-      let imageIndex = 0;
-      
-      if (selectedVariant) {
-        // If variant has image, check variant.images array
-        if (selectedVariant.image) {
-          // Single image field - use index 0 if it's in variant.images, otherwise 0
-          imageIndex = 0;
-        } else if (selectedVariant.images && selectedVariant.images.length > 0) {
-          // Find index in variant.images array
-          imageIndex = selectedVariant.images.findIndex(img => img === mainImage);
+    const currentVariantId = selectedVariant?._id || selectedVariant?.id || null;
+    const isNewVariant = currentVariantId !== prevVariantId.current;
+    const isNewGallery = fallbackImages !== prevGalleryRef.current;
+
+    if (isNewVariant || isNewGallery) {
+      const mainImage = getMainImage(selectedVariant, fallbackImages);
+
+      if (mainImage && onImageChange) {
+        let imageIndex = 0;
+        if (selectedVariant) {
+          if (selectedVariant.image) {
+            imageIndex = 0;
+          } else if (selectedVariant.images && selectedVariant.images.length > 0) {
+            imageIndex = selectedVariant.images.findIndex(img => img === mainImage);
+            if (imageIndex === -1) imageIndex = 0;
+          }
+        } else {
+          imageIndex = fallbackImages.findIndex(img => img === mainImage);
           if (imageIndex === -1) imageIndex = 0;
         }
-      } else {
-        // Find index in fallback images
-        imageIndex = fallbackImages.findIndex(img => img === mainImage);
-        if (imageIndex === -1) imageIndex = 0;
+
+        onImageChange(imageIndex);
+      } else if (!selectedVariant && fallbackImages.length > 0 && onImageChange) {
+        onImageChange(0);
       }
-      
-      onImageChange(imageIndex);
-    } else if (!selectedVariant && fallbackImages.length > 0 && onImageChange) {
-      // No variant selected, use first fallback image
-      onImageChange(0);
+
+      prevVariantId.current = currentVariantId;
+      prevGalleryRef.current = fallbackImages;
     }
   }, [selectedVariant, fallbackImages, onImageChange]);
 

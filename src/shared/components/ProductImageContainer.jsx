@@ -1,5 +1,6 @@
 import { useState } from "react";
 import styled, { css, keyframes } from "styled-components";
+import { getOptimizedImageUrl, IMAGE_SLOTS } from "../utils/cloudinaryConfig";
 
 const imageFadeIn = keyframes`
   from { opacity: 0; }
@@ -15,36 +16,49 @@ const ImageWrapper = styled.div`
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
+  
+  /* Fallback for browsers without aspect-ratio support */
+  @supports not (aspect-ratio: 1/1) {
+    height: 0;
+    padding-bottom: 100%;
+  }
+
   overflow: hidden;
-  background-color: var(--color-grey-100, #f3f4f6);
+  background-color: var(--color-grey-100, #f8f9fa);
   border-radius: var(--border-radius-md, 0.75rem);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.5rem;
   box-sizing: border-box;
 `;
 
 const StyledImage = styled.img`
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) ${({ $loaded }) => ($loaded ? "scale(1)" : "scale(0.95)")};
+  width: auto !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
   object-position: center;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background-color: transparent !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
   ${({ $loaded }) =>
     $loaded
       ? css`
-          animation: ${imageFadeIn} 0.35s ease-out;
+          animation: ${imageFadeIn} 0.4s ease-out;
+          opacity: 1;
         `
       : css`
           opacity: 0;
         `}
 
-  .image-container-hover & {
-    transform: scale(1.05);
+  .image-container-hover:hover & {
+    transform: translate(-50%, -50%) scale(1.05);
   }
 `;
 

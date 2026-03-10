@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { FaStar, FaCrown, FaShoppingBag, FaMapMarkerAlt } from 'react-icons/fa';
 import { PATHS } from '../../../routes/routePaths';
+import { getOptimizedImageUrl, IMAGE_SLOTS } from '../../utils/cloudinaryConfig';
 
 const CardContainer = styled.div`
   position: relative;
@@ -197,9 +198,9 @@ const ViewShopButton = styled(Link)`
 
 const BestSellerSellerCard = ({ seller, rank }) => {
   const stars = Array.from({ length: 5 }, (_, i) => (
-    <FaStar 
-      key={i} 
-      fill={i < Math.round(seller.rating || seller.averageRating || 0) ? '#ffd700' : '#e4e5e9'} 
+    <FaStar
+      key={i}
+      fill={i < Math.round(seller.rating || seller.averageRating || 0) ? '#ffd700' : '#e4e5e9'}
     />
   ));
 
@@ -213,27 +214,28 @@ const BestSellerSellerCard = ({ seller, rank }) => {
       <RankingBadge rank={rank}>
         {rank <= 3 ? <CrownIcon /> : `#${rank}`}
       </RankingBadge>
-      
+
       <AvatarContainer>
-        <SellerAvatar 
-          src={seller.avatar || seller.logo || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23ffc400' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='40' font-weight='bold'%3E${(seller.shopName || seller.name || 'Shop').charAt(0).toUpperCase()}%3C/text%3E%3C/svg%3E`}
+        <SellerAvatar
+          src={getOptimizedImageUrl(seller.avatar || seller.logo, IMAGE_SLOTS.AVATAR, `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23ffc400' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='40' font-weight='bold'%3E${(seller.shopName || seller.name || 'Shop').charAt(0).toUpperCase()}%3C/text%3E%3C/svg%3E`)}
           alt={seller.shopName || seller.name || 'Seller'}
+          loading="lazy"
           onError={(e) => {
             e.target.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23ffc400' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='40' font-weight='bold'%3E${(seller.shopName || seller.name || 'Shop').charAt(0).toUpperCase()}%3C/text%3E%3C/svg%3E`;
           }}
         />
       </AvatarContainer>
-      
+
       <Content>
         <SellerName>{seller.shopName || seller.name || 'Seller'}</SellerName>
-        
+
         {seller.location && (
           <LocationContainer>
             <FaMapMarkerAlt />
             <span>{seller.location}</span>
           </LocationContainer>
         )}
-        
+
         <StatsContainer>
           <StatItem>
             <StatValue>{orderCount.toLocaleString()}</StatValue>
@@ -244,7 +246,7 @@ const BestSellerSellerCard = ({ seller, rank }) => {
             <StatLabel>Products</StatLabel>
           </StatItem>
         </StatsContainer>
-        
+
         <RatingContainer>
           <Stars>{stars}</Stars>
           <RatingText>
@@ -252,7 +254,7 @@ const BestSellerSellerCard = ({ seller, rank }) => {
           </RatingText>
         </RatingContainer>
       </Content>
-      
+
       <ViewShopButton to={`${PATHS.SELLERS}/${seller._id || seller.id}`}>
         <FaShoppingBag /> View Shop
       </ViewShopButton>

@@ -71,7 +71,7 @@ const TrendingPage = () => {
                     </EmptyState>
                 ) : (
                     <div style={{ padding: '2rem 0' }}>
-                        <Grid responsiveColumns>
+                        <Grid columns={4}>
                             {products.map((product, index) => (
                                 <Card key={product._id} clickable variant="elevated">
                                     <ProductCard product={product} rank={page === 1 ? index + 1 : undefined} />

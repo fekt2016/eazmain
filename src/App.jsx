@@ -1,6 +1,6 @@
-import { useEffect, useMemo, lazy, Suspense } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { BrowserRouter } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import GlobalStyles from "./shared/styles/GlobalStyles";
@@ -10,6 +10,7 @@ import MainRoutes from "./routes/MainRoutes";
 import GlobalLoading from "./shared/components/GlobalLoading";
 import ScrollToTop from "./shared/ScrollToTop";
 import ErrorBoundary from "./shared/components/ErrorBoundary";
+import queryClient from "@/api/queryClient";
 
 // ReactQueryDevtools only in development
 const ReactQueryDevtools = import.meta.env.DEV
@@ -17,21 +18,6 @@ const ReactQueryDevtools = import.meta.env.DEV
   : () => null;
 
 function App() {
-  // Use useMemo to prevent creating new QueryClient on every render
-  const queryClient = useMemo(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            refetchOnWindowFocus: false,
-            retry: 1,
-            gcTime: 1000 * 60 * 5, // 5 minutes garbage collection time
-          },
-        },
-      }),
-    []
-  );
-
   // Suppress known harmless CORS errors from Cloudflare Turnstile on Paystack checkout
   useEffect(() => {
     const originalError = window.console.error;

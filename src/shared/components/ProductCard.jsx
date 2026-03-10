@@ -1,6 +1,7 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, memo, useEffect } from "react";
 import styled, { css, keyframes } from "styled-components";
 import { fadeIn, pulse } from "../styles/animations";
+import { devicesMax } from "../styles/breakpoint";
 import { Link } from "react-router-dom";
 import { FaHeart, FaRegHeart, FaShoppingCart, FaTimes, FaEye, FaStar, FaFire } from "react-icons/fa";
 import { useCartActions } from '../hooks/useCart';
@@ -18,7 +19,8 @@ import {
 import { highlightSearchTerm } from '../utils/searchUtils.jsx';
 import logger from '../utils/logger';
 import { toast } from 'react-toastify';
-import ProductImageContainer from './ProductImageContainer';
+import OptimizedImage from './OptimizedImage';
+import { getOptimizedImageUrl, IMAGE_SLOTS } from "../utils/cloudinaryConfig";
 
 // Helper function to get grid image for cards (homepage, grids, carousels)
 // Prefer product.imageCover when available, then fall back to first product.images entry
@@ -66,7 +68,7 @@ const resolveDefaultSku = (product) => {
   return null;
 };
 
-export default function ProductCard({
+const ProductCard = memo(({
   product,
   showWishlistButton = true,
   showAddToCart = false,
@@ -75,7 +77,7 @@ export default function ProductCard({
   showQuickView = false,
   showBadges = true,
   highlightTerm = null, // Search term to highlight in product name
-}) {
+}) => {
   // Early return if product is not available
   if (!product) {
     return null;
@@ -93,6 +95,15 @@ export default function ProductCard({
   // Debounce ref to prevent rapid clicks
   const debounceTimerRef = useRef(null);
   const isProcessingRef = useRef(false);
+
+  // Cleanup wishlist timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleAddToCart = useCallback((product) => {
     // CRITICAL: Resolve default SKU for ProductCard quick-add
@@ -216,10 +227,12 @@ export default function ProductCard({
         {/* Image Section: fixed 1:1 aspect ratio, object-fit cover, no stretch */}
         <ImageContainer $layout={layout}>
           <div data-product-image-wrap>
-            <ProductImageContainer
-              src={getGridImage(product)}
+            <OptimizedImage
+              src={product.imageCover || (product.images && product.images[0])}
+              slot={IMAGE_SLOTS.PRODUCT_CARD}
+              aspectRatio="1/1"
               alt={product.name ? `${product.name} – Saiisai Ghana e-commerce` : 'Product – Saiisai Ghana online shopping'}
-              fallbackSrc="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Crect width='600' height='600' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='24' fill='%23999' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E"
+              hoverZoom={true}
             />
           </div>
 
@@ -251,13 +264,14 @@ export default function ProductCard({
               $active={isInWishlist}
               aria-label={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
               title={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+              style={{ width: '2.4rem', height: '2.4rem', top: '0.6rem', right: '0.6rem' }}
             >
               {isAdding || isRemoving || isWishlistLoading ? (
-                <ButtonSpinner size="sm" />
+                <ButtonSpinner size="xs" />
               ) : isInWishlist ? (
-                <FaHeart style={{ color: 'var(--color-red-600)' }} />
+                <FaHeart style={{ color: 'var(--color-red-600)', fontSize: '1.2rem' }} />
               ) : (
-                <FaRegHeart style={{ color: 'var(--color-grey-600)' }} />
+                <FaRegHeart style={{ color: 'var(--color-grey-600)', fontSize: '1.2rem' }} />
               )}
             </WishlistIconButton>
           )}
@@ -452,7 +466,9 @@ export default function ProductCard({
       </ActionSection>
     </CardContainer>
   );
-}
+});
+
+export default ProductCard;
 
 // Using fadeIn and pulse from unified animations
 
@@ -468,11 +484,14 @@ const CardContainer = styled.div`
   display: flex;
   flex-direction: ${({ $layout }) => ($layout === "horizontal" ? "row" : "column")};
   height: 100%;
+  width: 100%;
+  max-width: 320px; /* Prevent oversized cards */
+  margin: 0 auto;
   animation: ${fadeIn} 0.5s ease-out;
 
   &:hover {
-    transform: translateY(-4px); /* Reduced from -8px */
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1); /* Reduced shadow */
+    transform: translateY(-4px); 
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08); 
     
     .image-overlay {
       opacity: 1;
@@ -499,7 +518,7 @@ const ImageContainer = styled.div`
   flex-shrink: 0;
   overflow: hidden;
   display: flex;
-  align-items: stretch;
+  align-items: flex-start;
   justify-content: center;
 
   /* Fixed 1:1 image area: inner ProductImageContainer defines aspect-ratio */
@@ -714,11 +733,11 @@ const OfficialStoreIcon = styled.span`
 `;
 
 const ProductInfo = styled.div`
-  padding: ${({ $layout }) => ($layout === "horizontal" ? "1.2rem" : "1rem")}; /* Reduced from 1.2rem */
+  padding: ${({ $layout }) => ($layout === "horizontal" ? "1rem" : "0.75rem")}; 
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem; /* Reduced from 0.5rem */
+  gap: 0.25rem; 
 `;
 
 const ProductCategory = styled.span`
@@ -737,7 +756,7 @@ const ProductBrand = styled.span`
 `;
 
 const ProductShopName = styled.span`
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   color: var(--color-grey-600);
   font-weight: 500;
   margin-bottom: 0.1rem;
@@ -745,10 +764,10 @@ const ProductShopName = styled.span`
 `;
 
 const ProductShortDescription = styled.p`
-  font-size: 1rem; /* Reduced from 1.2rem */
+  font-size: 0.9rem; 
   color: var(--color-grey-600);
-  line-height: 1.4;
-  margin: 0.1rem 0; /* Reduced from 0.2rem */
+  line-height: 1.3;
+  margin: 0.1rem 0; 
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -756,10 +775,10 @@ const ProductShortDescription = styled.p`
 `;
 
 const ProductName = styled.h3`
-  font-size: 1.3rem; /* Reduced from 1.5rem */
-  font-weight: 700;
+  font-size: 1.2rem; 
+  font-weight: 600;
   color: var(--color-grey-900);
-  line-height: 1.3;
+  line-height: 1.4;
   margin: 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -803,8 +822,8 @@ const PriceSection = styled.div`
 `;
 
 const CurrentPrice = styled.span`
-  font-size: 1.5rem; /* Reduced from 1.8rem */
-  font-weight: 800;
+  font-size: 1.35rem; 
+  font-weight: 700;
   color: var(--color-primary-500);
 `;
 
@@ -843,8 +862,8 @@ const SoldCountText = styled.span`
 `;
 
 const StatusDot = styled.div`
-  width: 0.8rem;
-  height: 0.8rem;
+  width: 0.6rem;
+  height: 0.6rem;
   border-radius: 50%;
   background: ${({ $inStock }) => ($inStock ? "var(--color-green-500)" : "var(--color-red-500)")};
   animation: ${pulse} 2s infinite;
@@ -874,6 +893,24 @@ const AddToCartButton = styled.button`
   font-weight: var(--font-bold);
   letter-spacing: 0.3px;
   transition: all 0.2s ease;
+  font-size: 1.1rem; /* Base font size */
+
+  @media ${devicesMax.xs} {
+    gap: 0.4rem;
+    font-size: 0.95rem;
+    padding: 0.6rem 0.4rem !important;
+
+    span {
+      display: inline;
+    }
+    
+    /* If still too long, hide 'to Cart' */
+    span::after {
+      @media (max-width: 360px) {
+        content: '';
+      }
+    }
+  }
 
   &:disabled {
     opacity: 0.6;

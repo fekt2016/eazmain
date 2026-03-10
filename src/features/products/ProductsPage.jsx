@@ -320,10 +320,12 @@ export default ProductsPage;
 
 // Styled Components
 const PageContainer = styled.div`
+width: 100%;
   padding: 3rem 0 5rem;
   background-color: #f8fafc;
   min-height: 100vh;
   animation: ${fadeInUp} 0.6s ease-out;
+
 `;
 
 const PageHeader = styled.div`
@@ -493,24 +495,25 @@ const EazShopSubtitle = styled.p`
 
 const EazShopGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* 4 cards per row */
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
   position: relative;
   z-index: 1;
   margin-bottom: 2rem;
 
-  @media (max-width: 1200px) {
-    grid-template-columns: repeat(3, 1fr); /* 3 cards on medium screens */
-  }
-  
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(2, 1fr); /* 2 cards on tablets */
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
   }
 
-  @media ${devicesMax.sm} {
-    grid-template-columns: repeat(2, 1fr); /* 2 cards on mobile */
+  @media ${devicesMax.md} {
+    grid-template-columns: repeat(2, 1fr);
     gap: 0.75rem;
+  }
+
+  @media ${devicesMax.xs} {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
   }
 `;
 
@@ -700,16 +703,28 @@ const SortSelect = styled.select`
 
 const ProductsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 2.5rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
 
-  @media ${devicesMax.md} {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 2rem;
-  }
-  @media ${devicesMax.sm} {
-    grid-template-columns: 1fr;
+  @media (min-width: 1600px) {
+    grid-template-columns: repeat(5, 1fr);
     gap: 1.5rem;
   }
-`;
 
+  @media (min-width: 1920px) {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+  @media ${devicesMax.md} {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+  @media ${devicesMax.xs} {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+`;

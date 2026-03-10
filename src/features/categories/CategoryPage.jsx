@@ -12,6 +12,8 @@ import Container from '../../shared/components/Container';
 import { devicesMax } from '../../shared/styles/breakpoint';
 import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 import { fadeIn, slideUp } from '../../shared/styles/animations';
+import { getOptimizedImageUrl, IMAGE_SLOTS } from "../../shared/utils/cloudinaryConfig";
+import OptimizedImage from "../../shared/components/OptimizedImage";
 
 export default function CategoryPage() {
   const { id } = useParams();
@@ -157,12 +159,12 @@ export default function CategoryPage() {
           ) : (
             <HeroWrapper>
               <HeroBackground>
-                <HeroImage
-                  src={
-                    (category.image && (Array.isArray(category.image) ? (category.image[0]?.url || category.image[0]) : (category.image.url || category.image)))
-                    || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80"
-                  }
+                <OptimizedImage
+                  src={(category.image && (Array.isArray(category.image) ? (category.image[0]?.url || category.image[0]) : (category.image.url || category.image)))}
+                  slot={IMAGE_SLOTS.CATEGORY_HERO}
                   alt={category.name}
+                  fallback="https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80"
+                  objectFit="cover"
                 />
                 <HeroOverlay />
               </HeroBackground>
@@ -207,7 +209,13 @@ export default function CategoryPage() {
                   onClick={clearSubcategory}
                 >
                   <TabImageWrapper $isActive={!selectedSubcategory}>
-                    <img src="https://images.unsplash.com/photo-1557683316-973673baf926?w=100&h=100&fit=crop" alt="All categories – Saiisai Ghana online shopping" />
+                    <OptimizedImage
+                      src="https://images.unsplash.com/photo-1557683316-973673baf926"
+                      slot={IMAGE_SLOTS.CATEGORY_ICON}
+                      aspectRatio="1/1"
+                      alt="All categories – Saiisai Ghana online shopping"
+                      objectFit="cover"
+                    />
                   </TabImageWrapper>
                   <TabLabel>All Items</TabLabel>
                 </SubcategoryTab>
@@ -219,13 +227,13 @@ export default function CategoryPage() {
                     onClick={() => selectSubcategory(sub._id)}
                   >
                     <TabImageWrapper $isActive={selectedSubcategory === sub._id}>
-                      <img
-                        src={(sub.image && (Array.isArray(sub.image) ? (sub.image[0]?.url || sub.image[0]) : (sub.image.url || sub.image))) || `https://source.unsplash.com/random/100x100?${sub.name}`}
+                      <OptimizedImage
+                        src={(sub.image && (Array.isArray(sub.image) ? (sub.image[0]?.url || sub.image[0]) : (sub.image.url || sub.image)))}
+                        slot={IMAGE_SLOTS.CATEGORY_ICON}
+                        aspectRatio="1/1"
                         alt={`${sub.name} category – Saiisai Ghana e-commerce`}
-                        onError={(e) => {
-                          const initial = sub.name.charAt(0).toUpperCase();
-                          e.target.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect fill='%23ffc400' width='100' height='100'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='36' font-weight='bold'%3E${initial}%3C/text%3E%3C/svg%3E`;
-                        }}
+                        objectFit="cover"
+                        fallback={`data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect fill='%23ffc400' width='100' height='100'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='36' font-weight='bold'%3E${sub.name.charAt(0).toUpperCase()}%3C/text%3E%3C/svg%3E`}
                       />
                     </TabImageWrapper>
                     <TabLabel>{sub.name}</TabLabel>
@@ -445,15 +453,10 @@ const HeroBackground = styled.div`
   z-index: 0;
 `;
 
-const HeroImage = styled.img`
+/* HeroImage styled component replaced by OptimizedImage */
+const HeroImage = styled.div`
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  transition: transform 0.7s ease-out;
-
-  ${HeroWrapper}:hover & {
-    transform: scale(1.05);
-  }
 `;
 
 const HeroOverlay = styled.div`
@@ -1036,19 +1039,32 @@ const SortSelect = styled.select`
 
 const ProductsGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
   margin-bottom: 4rem;
   animation: ${fadeIn} 0.5s ease-out;
 
-  @media (min-width: 768px) {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 2rem;
+  @media (min-width: 1600px) {
+    grid-template-columns: repeat(5, 1fr);
   }
 
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 3rem;
+  @media (min-width: 1920px) {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+
+  @media ${devicesMax.md} {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  @media ${devicesMax.xs} {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
   }
 `;
 

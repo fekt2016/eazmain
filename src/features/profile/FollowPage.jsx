@@ -4,12 +4,12 @@ import { devicesMax } from '../../shared/styles/breakpoint';
 import { Link } from "react-router-dom";
 import { useGetFollowedSellerByUser } from '../../shared/hooks/useFollow';
 import useProduct from '../../shared/hooks/useProduct';
-import { 
-  FaStore, 
-  FaUsers, 
-  FaBox, 
-  FaStar, 
-  FaRocket, 
+import {
+  FaStore,
+  FaUsers,
+  FaBox,
+  FaStar,
+  FaRocket,
   FaShoppingBag,
   FaHeart,
   FaRegHeart,
@@ -27,29 +27,29 @@ const FollowPage = () => {
     if (!productsData) {
       return [];
     }
-    
+
     // If productsData is already an array
     if (Array.isArray(productsData)) {
       return productsData;
     }
-    
+
     // Try different possible paths
     if (productsData.results && Array.isArray(productsData.results)) {
       return productsData.results;
     }
-    
+
     if (productsData.data?.products && Array.isArray(productsData.data.products)) {
       return productsData.data.products;
     }
-    
+
     if (productsData.data?.results && Array.isArray(productsData.data.results)) {
       return productsData.data.results;
     }
-    
+
     if (productsData.products && Array.isArray(productsData.products)) {
       return productsData.products;
     }
-    
+
     // Default to empty array if nothing matches
     return [];
   }, [productsData]);
@@ -73,7 +73,7 @@ const FollowPage = () => {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     const groupedByseller = {};
-    
+
     // Ensure followedSellers is an array
     const validFollowedSellers = Array.isArray(followedSellers) ? followedSellers : [];
     validFollowedSellers.forEach((follow) => {
@@ -115,7 +115,7 @@ const FollowPage = () => {
             <Title>Followed Shops</Title>
             <Subtitle>Discover new arrivals from your favorite sellers</Subtitle>
           </TitleSection>
-          
+
           <StatsGrid>
             <StatCard>
               <StatIcon $color="primary">
@@ -159,7 +159,7 @@ const FollowPage = () => {
             <SellersGrid>
               {followedSellers.map((follow) => {
                 if (!follow.seller) return null;
-                
+
                 const seller = follow.seller;
                 const followerCount = Array.isArray(seller.followers)
                   ? seller.followers.length
@@ -388,7 +388,7 @@ const StatIcon = styled.div`
   background: ${props => {
     switch (props.$color) {
       case 'green': return 'linear-gradient(135deg, var(--color-green-500) 0%, var(--color-green-600) 100%)';
-      case 'primary': 
+      case 'primary':
       default: return 'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%)';
     }
   }};
@@ -748,7 +748,8 @@ const ProductImageContainer = styled.div`
 const ProductImage = styled.div`
   height: 100%;
   background-image: ${(props) => `url(${props.$imageUrl})`};
-  background-size: cover;
+  background-size: contain;
+  background-repeat: no-repeat;
   background-position: center;
   transition: transform 0.3s ease;
 

@@ -4,6 +4,7 @@ import { spin } from "../styles/animations";
 import { FaSearch, FaSpinner } from "react-icons/fa";
 import { PrimaryButton } from './ui/Buttons';
 import { escapeForDisplay } from '../utils/searchUtils.jsx';
+import { getOptimizedImageUrl, IMAGE_SLOTS } from "../utils/cloudinaryConfig";
 
 export default function HeaderSearchBar({
   searchTerm,
@@ -77,7 +78,7 @@ export default function HeaderSearchBar({
               >
                 {suggestion.image && (
                   <SuggestionImage>
-                    <img src={suggestion.image} alt={suggestion.text ? `${suggestion.text} – Saiisai Ghana` : 'Saiisai Ghana product'} />
+                    <img src={getOptimizedImageUrl(suggestion.image, IMAGE_SLOTS.TABLE_THUMB)} alt={suggestion.text ? `${suggestion.text} – Saiisai Ghana` : 'Saiisai Ghana product'} />
                   </SuggestionImage>
                 )}
                 <SuggestionText>

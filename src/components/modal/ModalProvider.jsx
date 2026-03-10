@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { ModalContext } from './modalContext';
 import { ModalRoot } from './ModalRoot';
 
@@ -11,6 +11,8 @@ export const ModalProvider = ({ children, theme }) => {
     const close = useCallback((id) => {
         setModals((prev) => prev.filter((modal) => modal.id !== id));
     }, []);
+
+    const timeoutRef = useRef({});
 
     const openModal = useCallback((type, options) => {
         const id = generateId();
@@ -51,13 +53,22 @@ export const ModalProvider = ({ children, theme }) => {
 
         // Optional auto-close functionality
         if (options.timeout && typeof options.timeout === 'number') {
-            setTimeout(() => {
+            timeoutRef.current[id] = setTimeout(() => {
                 close(id);
+                delete timeoutRef.current[id];
             }, options.timeout);
         }
 
         return id;
     }, [close]);
+
+    // Cleanup all timeouts on unmount
+    useEffect(() => {
+        const timeouts = timeoutRef.current;
+        return () => {
+            Object.values(timeouts).forEach(clearTimeout);
+        };
+    }, []);
 
     const contextValue = useMemo(() => ({
         modals,

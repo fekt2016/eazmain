@@ -1,16 +1,17 @@
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 import styled, { css } from "styled-components";
 import { FaExclamationTriangle } from "react-icons/fa";
 import { pulse } from "../../../shared/styles/animations";
 import { isColorValue } from "../../../shared/utils/productHelpers";
 
-const VariantSelector = ({
+const VariantSelector = memo(({
   variants = [],
   selectedAttributes = {},
   onAttributeChange,
   variantSelectionHook, // Hook that provides computeAvailableOptions
   categoryAttributes = [], // Category attributes to show all available attributes
 }) => {
+  // ... existing implementation remains exactly the same ...
   // Get all unique attributes from variants
   const variantAttributeKeys = useMemo(() => {
     const keys = new Set();
@@ -48,20 +49,20 @@ const VariantSelector = ({
         const isColor = attribute.toLowerCase().includes("color");
 
         // Use hook's computeAvailableOptions if available
-        const options = getAvailableOptions 
+        const options = getAvailableOptions
           ? getAvailableOptions(attribute)
           : null;
 
         // Fallback: Get all unique values for this attribute
-        const values = options 
+        const values = options
           ? options.map(opt => opt.value)
           : [
-              ...new Set(
-                variants
-                  .map((v) => v.attributes.find((a) => a.key === attribute)?.value)
-                  .filter(Boolean)
-              ),
-            ];
+            ...new Set(
+              variants
+                .map((v) => v.attributes.find((a) => a.key === attribute)?.value)
+                .filter(Boolean)
+            ),
+          ];
 
         return (
           <VariantGroup key={attribute}>
@@ -72,7 +73,7 @@ const VariantSelector = ({
             <VariantOptionsList>
               {values.map((value) => {
                 const showAsColor = isColor && isColorValue(value);
-                
+
                 // Use hook's availability data if available
                 const optionData = options?.find(opt => opt.value === value);
                 const availabilityStatus = optionData?.availabilityStatus || 'unavailable';
@@ -80,12 +81,12 @@ const VariantSelector = ({
                 const isDisabled = optionData?.isDisabled ?? false;
                 const isSelected = selectedAttributes[attribute] === value;
                 const isLowStock = variantStock > 0 && variantStock <= 5 && availabilityStatus === 'available';
-                
+
                 // Determine visual states
                 const isOutOfStock = availabilityStatus === 'outOfStock';
                 const isUnavailable = availabilityStatus === 'unavailable';
                 const isAvailable = availabilityStatus === 'available';
-                
+
                 const radioId = `${attribute}-${value}`;
 
                 return (
@@ -146,7 +147,7 @@ const VariantSelector = ({
       })}
     </VariantsCard>
   );
-};
+});
 
 export default VariantSelector;
 
@@ -206,12 +207,12 @@ const VariantOptionItem = styled.div`
   width: 100px;
   border: 2px solid
     ${(props) => {
-      if (props.$selected) return "var(--color-primary-500)";
-      if (props.$disabled) return "var(--color-grey-300)";
-      if (props.$status === 'available') return "var(--color-green-300)";
-      if (props.$status === 'outOfStock') return "var(--color-red-300)";
-      return "var(--color-grey-200)";
-    }};
+    if (props.$selected) return "var(--color-primary-500)";
+    if (props.$disabled) return "var(--color-grey-300)";
+    if (props.$status === 'available') return "var(--color-green-300)";
+    if (props.$status === 'outOfStock') return "var(--color-red-300)";
+    return "var(--color-grey-200)";
+  }};
   background: ${(props) => {
     if (props.$selected) return "var(--color-primary-50)";
     if (props.$disabled) return "var(--color-grey-50)";
@@ -227,11 +228,11 @@ const VariantOptionItem = styled.div`
 
   &:hover:not([disabled]) {
     border-color: ${(props) => {
-      if (props.$selected) return "var(--color-primary-600)";
-      if (props.$status === 'available') return "var(--color-green-500)";
-      if (props.$status === 'outOfStock') return "var(--color-red-500)";
-      return "var(--color-primary-400)";
-    }};
+    if (props.$selected) return "var(--color-primary-600)";
+    if (props.$status === 'available') return "var(--color-green-500)";
+    if (props.$status === 'outOfStock') return "var(--color-red-500)";
+    return "var(--color-primary-400)";
+  }};
     transform: translateX(2px);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   }
@@ -281,10 +282,10 @@ const RadioButton = styled.div`
   border-radius: 50%;
   border: 1.5px solid
     ${(props) => {
-      if (props.$checked) return "var(--color-primary-500)";
-      if (props.$disabled) return "var(--color-grey-400)";
-      return "var(--color-grey-300)";
-    }};
+    if (props.$checked) return "var(--color-primary-500)";
+    if (props.$disabled) return "var(--color-grey-400)";
+    return "var(--color-grey-300)";
+  }};
   background: ${(props) =>
     props.$checked ? "var(--color-primary-500)" : "white"};
   display: flex;
@@ -335,7 +336,7 @@ const ColorSwatch = styled.div`
   border-radius: 50%;
   border: 1.5px solid
     ${(props) =>
-      props.$selected ? "var(--color-primary-500)" : "var(--color-grey-300)"};
+    props.$selected ? "var(--color-primary-500)" : "var(--color-grey-300)"};
   box-shadow: ${(props) =>
     props.$selected
       ? "0 0 0 1px var(--color-primary-100), 0 1px 3px rgba(0, 0, 0, 0.1)"

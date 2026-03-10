@@ -8,6 +8,7 @@ import { devicesMax } from '../../shared/styles/breakpoint';
 import { PATHS } from "../../routes/routePaths";
 import { LoadingState } from '../../components/loading';
 import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
+import { getOptimizedImageUrl, IMAGE_SLOTS } from "../../shared/utils/cloudinaryConfig";
 
 export default function CategoriesListPage() {
   useDynamicPageTitle({
@@ -81,8 +82,9 @@ export default function CategoriesListPage() {
                 <CategoryCard key={category._id || category.id} to={`${PATHS.CATEGORIES}/${category._id || category.id}`}>
                   <CategoryImageContainer>
                     <CategoryImage
-                      src={category.image || "/api/placeholder/400/300"}
+                      src={getOptimizedImageUrl(category.image, IMAGE_SLOTS.CATEGORY_ICON, "/api/placeholder/400/300")}
                       alt={category.name}
+                      loading="lazy"
                       onError={(e) => {
                         e.target.src = "/api/placeholder/400/300";
                       }}

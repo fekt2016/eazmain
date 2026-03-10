@@ -22,6 +22,7 @@ import {
 } from "react-icons/fa";
 import useAuth from '../hooks/useAuth';
 import { getAvatarUrl } from '../utils/avatarUtils';
+import { getOptimizedImageUrl, IMAGE_SLOTS } from '../utils/cloudinaryConfig';
 import { useWalletBalance } from '../hooks/useWallet';
 import { useGetUserOrders, getOrderStructure } from '../hooks/useOrder';
 import { useMemo, useState } from 'react';
@@ -82,7 +83,7 @@ const SideBar = ({ $isOpen, onClose }) => {
       <UserSectionTop>
         <SidebarUserAvatar>
           {showAvatarPhoto ? (
-            <img src={getAvatarUrl(user.photo)} alt={user?.name || 'User'} onError={() => setAvatarError(true)} />
+            <img src={getOptimizedImageUrl(user.photo, IMAGE_SLOTS.AVATAR)} alt={user?.name || 'User'} onError={() => setAvatarError(true)} />
           ) : null}
           <SidebarInitials $show={!showAvatarPhoto}>{getInitials(user?.name || user?.email)}</SidebarInitials>
         </SidebarUserAvatar>

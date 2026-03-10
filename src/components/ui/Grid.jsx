@@ -11,7 +11,7 @@ const Grid = styled.div`
       return css`
         grid-template-columns: repeat(${columns}, 1fr);
 
-        @media (max-width: 1400px) {
+        @media (max-width: 900px) {
           grid-template-columns: repeat(3, 1fr);
         }
 
@@ -19,8 +19,9 @@ const Grid = styled.div`
           grid-template-columns: repeat(2, 1fr);
         }
 
-        @media ${devicesMax.sm} {
-          grid-template-columns: 1fr;
+        @media ${devicesMax.xs} {
+          grid-template-columns: repeat(2, 1fr);
+          gap: var(--space-xs);
         }
       `;
     }
@@ -28,25 +29,27 @@ const Grid = styled.div`
   }}
 
   ${({ responsiveColumns }) => responsiveColumns && css`
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 
-    @media ${devicesMax.lg} {
+    @media (max-width: 900px) {
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     }
 
     @media ${devicesMax.md} {
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-sm);
     }
 
-    @media ${devicesMax.sm} {
-      grid-template-columns: 1fr;
+    @media ${devicesMax.xs} {
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-xs);
     }
   `}
 
   ${({ gap }) => gap && css`
-    gap: ${gap === 'sm' ? 'var(--space-sm)' : 
-          gap === 'lg' ? 'var(--space-lg)' : 
-          gap === 'xl' ? 'var(--space-xl)' : 
+    gap: ${gap === 'sm' ? 'var(--space-sm)' :
+      gap === 'lg' ? 'var(--space-lg)' :
+        gap === 'xl' ? 'var(--space-xl)' :
           'var(--space-md)'};
   `}
 

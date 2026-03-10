@@ -4,6 +4,7 @@ import { FaTag } from "react-icons/fa";
 import Container from "../../shared/components/Container";
 import { PATHS } from "../../routes/routePaths";
 import DealsCountdown from "../../components/deals/DealsCountdown";
+import { getOptimizedImageUrl, IMAGE_SLOTS } from "../../shared/utils/cloudinaryConfig";
 import {
   getProductDisplayPrice,
   getProductOriginalPrice,
@@ -169,7 +170,7 @@ export default function DealOfTheDaySection({ dealProduct, endOfDay }) {
     <DealBanner
       style={
         coverImage
-          ? { backgroundImage: `url(${coverImage})` }
+          ? { backgroundImage: `url(${getOptimizedImageUrl(coverImage, IMAGE_SLOTS.HOME_HERO)})` }
           : undefined
       }
     >

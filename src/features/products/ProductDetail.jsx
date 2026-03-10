@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback, memo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { PATHS } from "../../routes/routePaths";
 import styled, { css } from "styled-components";
@@ -12,17 +12,16 @@ import {
   FaChevronRight,
   FaChevronDown,
   FaStar,
-  FaTruck,
-  FaShieldAlt,
-  FaUndo,
-  FaEye,
-  FaExpand,
   FaClock,
   FaAward,
   FaBoxOpen,
   FaStore,
   FaMapMarkerAlt,
   FaShippingFast,
+  FaTruck,
+  FaShieldAlt,
+  FaUndo,
+  FaEye,
 } from "react-icons/fa";
 import useProduct from '../../shared/hooks/useProduct.js';
 import { useGetProductReviews } from '../../shared/hooks/useReviews.js';
@@ -54,28 +53,28 @@ import {
   getProductStock,
   isProductInStock,
 } from '../../shared/utils/productHelpers';
-import { getGalleryImagesForVariant } from '../../shared/utils/productVariantLogic';
+import { getGalleryImagesForSelection } from '../../shared/utils/productVariantLogic';
+import OptimizedImage from "../../shared/components/OptimizedImage";
+import { getOptimizedImageUrl, IMAGE_SLOTS } from "../../shared/utils/cloudinaryConfig";
 
 import VariantColorImageGallery from '../../components/product/variantNameSelector/VariantColorImageGallery';
-import VariantMainImageSwitcher from '../../components/product/variantNameSelector/VariantMainImageSwitcher';
 import VariantRadioSelector from '../../components/product/variantNameSelector/VariantRadioSelector';
 import VariantPriceDisplay from './components/variantSelector/VariantPriceDisplay';
 import { useVariantSelectionByName } from '../../shared/hooks/products/useVariantSelectionByName';
 import { useVariantSelection } from '../../shared/hooks/products/useVariantSelection';
+import ProductImageGallery from './components/ProductImageGallery';
+import ProductVideo from './components/ProductVideo';
 
 const ProductDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [quantity, setQuantity] = useState(1);
-  const [selectedImage, setSelectedImage] = useState(0);
-  const [isImageZoomed, setIsImageZoomed] = useState(false);
-  const [imageZoomPosition, setImageZoomPosition] = useState({ x: 0, y: 0 });
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [showImageModal, setShowImageModal] = useState(false);
-  const imageRef = useRef(null);
   const addHistoryItem = useAddHistoryItem();
+  const cartTimeoutRef = useRef(null);
+  const shareTimeoutRef = useRef(null);
 
   const { useGetProductById } = useProduct();
   const { data: productData, isLoading, error } = useGetProductById(id);
@@ -204,15 +203,17 @@ const ProductDetailPage = () => {
     selectAttribute,
     selectVariant: selectVariantByObject,
     allAttributesSelected,
-    missingAttributes,
-    getVariantSummary,
     attributeKeys,
     computeAvailableOptions,
   } = attributeVariantSelection;
 
   // Use the variant selection by name hook for simple variants (manages its own state and auto-initializes)
   const variantSelection = useVariantSelectionByName(variants, product);
-  const { selectedVariant: nameSelectedVariant, handleVariantSelect } = variantSelection;
+  const { selectedVariant: nameSelectedVariant, handleVariantSelect: baseHandleVariantSelect } = variantSelection;
+
+  const handleVariantSelect = useCallback((variant) => {
+    baseHandleVariantSelect(variant);
+  }, [baseHandleVariantSelect]);
 
   // Use attribute-based variant if enabled, otherwise fall back to name-based
   const selectedVariant = useAttributeBasedVariants ? attributeSelectedVariant : nameSelectedVariant;
@@ -243,15 +244,6 @@ const ProductDetailPage = () => {
     }
   }, [selectedVariant]);
 
-  // Handle variant image selection (from color gallery)
-  const handleVariantImageSelect = useCallback((variant) => {
-    handleVariantSelect(variant);
-    // CRITICAL: Set SKU when variant is selected
-    if (variant?.sku) {
-      setSelectedSku(variant.sku.trim().toUpperCase());
-    }
-  }, [handleVariantSelect]);
-
   // Update quantity if it exceeds selected variant stock
   useEffect(() => {
     if (selectedVariant && quantity > selectedVariant.stock) {
@@ -281,7 +273,8 @@ const ProductDetailPage = () => {
         await navigator.clipboard.writeText(url);
         // Use a light, non-blocking alert via a temporary state flag
         setCopiedLink(true);
-        setTimeout(() => setCopiedLink(false), 2000);
+        if (shareTimeoutRef.current) clearTimeout(shareTimeoutRef.current);
+        shareTimeoutRef.current = setTimeout(() => setCopiedLink(false), 2000);
       } catch {
         logger.warn('[Share] Clipboard write failed');
       }
@@ -319,7 +312,8 @@ const ProductDetailPage = () => {
         variantSku: variantSku, // Pass SKU directly - ONLY variantSku is accepted
         variantId: variantId, // Also pass the variantId for the backend API
       });
-      setTimeout(() => setIsAddingToCart(false), 1000);
+      if (cartTimeoutRef.current) clearTimeout(cartTimeoutRef.current);
+      cartTimeoutRef.current = setTimeout(() => setIsAddingToCart(false), 1000);
     } catch (error) {
       setIsAddingToCart(false);
       logger.error("Add to cart error:", error);
@@ -355,13 +349,14 @@ const ProductDetailPage = () => {
     }
   }, [useAttributeBasedVariants, attributeSelectedVariant]);
 
-  const handleImageZoom = (e) => {
-    if (!imageRef.current) return;
-    const rect = imageRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setImageZoomPosition({ x, y });
-  };
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (cartTimeoutRef.current) clearTimeout(cartTimeoutRef.current);
+      if (shareTimeoutRef.current) clearTimeout(shareTimeoutRef.current);
+    };
+  }, []);
+
 
   // Use utility functions for product calculations
 
@@ -403,9 +398,6 @@ const ProductDetailPage = () => {
 
   // Use utility functions for product calculations (must be before early returns)
   const displayPrice = getProductDisplayPrice(product, selectedVariant);
-  const originalPrice = getProductOriginalPrice(product);
-  const hasDiscount = hasProductDiscount(product, selectedVariant);
-  const discountPercentage = getProductDiscountPercentage(product, selectedVariant);
   const displaySku = getProductSku(product, selectedVariant);
 
   // Get stock - use selected variant if available, otherwise calculate from all active variants
@@ -458,17 +450,12 @@ const ProductDetailPage = () => {
   }, [product]);
 
   // Gallery images: prefer selected variant images, fall back to product images
+  // Also supports partial matches (e.g. show Red images when Red is clicked but Size not yet)
   const galleryImages = useMemo(
-    () => getGalleryImagesForVariant(selectedVariant, productImages),
-    [selectedVariant, productImages],
+    () => getGalleryImagesForSelection(selectedVariant, selectedAttributes, variants, productImages),
+    [selectedVariant, selectedAttributes, variants, productImages],
   );
 
-  // Clamp selectedImage when gallery length changes (e.g. switch product)
-  useEffect(() => {
-    if (galleryImages.length > 0 && selectedImage >= galleryImages.length) {
-      setSelectedImage(0);
-    }
-  }, [galleryImages.length, selectedImage]);
 
   // Helper function to get variant attributes for display
   const getVariantAttributes = useCallback((variant) => {
@@ -488,7 +475,6 @@ const ProductDetailPage = () => {
 
     return (
       <AttributesTableContainer $isInLabel={isInLabel}>
-        {!isInLabel && <AttributesTableHeading>Product Detail</AttributesTableHeading>}
         <AttributesTable $isInLabel={isInLabel}>
           <tbody>
             {attributes.map((attr, index) => (
@@ -542,265 +528,13 @@ const ProductDetailPage = () => {
       <ModernProductGrid>
         {/* Image Gallery */}
         <ImageSection>
-          <MainImageWrapper
-            ref={imageRef}
-            onMouseMove={handleImageZoom}
-            onMouseEnter={() => setIsImageZoomed(true)}
-            onMouseLeave={() => setIsImageZoomed(false)}
-            $isZoomed={isImageZoomed}
-          >
-            <ModernMainImage
-              src={galleryImages[selectedImage] || galleryImages[0]}
-              alt={product.name ? `${product.name} – Saiisai Ghana e-commerce` : 'Product – Saiisai Ghana online shopping'}
-              $zoomX={imageZoomPosition.x}
-              $zoomY={imageZoomPosition.y}
-              $isZoomed={isImageZoomed}
-            />
-
-            {/* Image Badges */}
-            <ImageBadges>
-              {hasDiscount && (
-                <DiscountRibbon>
-                  -{discountPercentage}% OFF
-                </DiscountRibbon>
-              )}
-              {!isInStock && (
-                <StockBadge $inStock={false}>
-                  Out of Stock
-                </StockBadge>
-              )}
-              {product.totalSold > 100 && (
-                <PopularBadge>
-                  <FaAward /> Popular
-                </PopularBadge>
-              )}
-            </ImageBadges>
-
-            {/* Image Actions */}
-            <ImageActions>
-              <ImageActionButton onClick={() => setShowImageModal(true)}>
-                <FaExpand />
-              </ImageActionButton>
-              <ImageActionButton
-                onClick={toggleWishlist}
-                disabled={isAddingToWishlist || isRemovingFromWishlist}
-                title={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
-              >
-                {isAddingToWishlist || isRemovingFromWishlist ? (
-                  <ButtonSpinner size="sm" />
-                ) : (
-                  <FaHeart color={isInWishlist ? "#ff6b6b" : "#fff"} />
-                )}
-              </ImageActionButton>
-            </ImageActions>
-          </MainImageWrapper>
-
-          {/* Thumbnail Gallery — driven by selected variant images or product images */}
-          {galleryImages.length > 1 && (
-            <ThumbnailGallery>
-              <ThumbnailScrollButton
-                onClick={() => setSelectedImage(Math.max(0, selectedImage - 1))}
-                disabled={selectedImage === 0}
-              >
-                <FaChevronLeft />
-              </ThumbnailScrollButton>
-
-              <ThumbnailList>
-                {galleryImages.map((img, index) => (
-                  <ModernThumbnail
-                    key={index}
-                    $active={index === selectedImage}
-                    onClick={() => setSelectedImage(index)}
-                  >
-                    <img src={img} alt={`${product.name} image ${index + 1} – Saiisai Ghana`} />
-                    {index === selectedImage && <ThumbnailOverlay />}
-                  </ModernThumbnail>
-                ))}
-              </ThumbnailList>
-
-              <ThumbnailScrollButton
-                onClick={() => setSelectedImage(Math.min(galleryImages.length - 1, selectedImage + 1))}
-                disabled={selectedImage === galleryImages.length - 1}
-              >
-                <FaChevronRight />
-              </ThumbnailScrollButton>
-            </ThumbnailGallery>
-          )}
+          <ProductImageGallery
+            key={galleryImages[0] || 'default'}
+            images={galleryImages}
+            productName={product.name}
+          />
+          <ProductVideo src={product.video} productName={product.name} />
           {/* Product Details & Reviews below image preview */}
-          <DetailsTabs>
-            <TabSection>
-              <TabHeader>
-                <TabTitle>Product Details</TabTitle>
-              </TabHeader>
-              <TabContent>
-                <DescriptionSection $expanded={showFullDescription}>
-                  <DescriptionText>
-                    {product.description || "No description available."}
-                  </DescriptionText>
-                  <ShowMoreButton onClick={() => setShowFullDescription(!showFullDescription)}>
-                    {showFullDescription ? "Show Less" : "Show More"}
-                    <ChevronIcon $rotated={showFullDescription}>
-                      <FaChevronDown />
-                    </ChevronIcon>
-                  </ShowMoreButton>
-                </DescriptionSection>
-
-                {/* Specifications - only show fields that have data */}
-                {product.specifications && (
-                  <SpecificationsGrid>
-                    {product.specifications.weight?.value && (
-                      <SpecItem>
-                        <SpecLabel>Weight</SpecLabel>
-                        <SpecValue>
-                          {product.specifications.weight.value} {product.specifications.weight.unit}
-                        </SpecValue>
-                      </SpecItem>
-                    )}
-                    {product.specifications.dimensions &&
-                      [product.specifications.dimensions.length, product.specifications.dimensions.width, product.specifications.dimensions.height].every(Boolean) && (
-                        <SpecItem>
-                          <SpecLabel>Dimensions</SpecLabel>
-                          <SpecValue>
-                            {product.specifications.dimensions.length} × {product.specifications.dimensions.width} × {product.specifications.dimensions.height} {product.specifications.dimensions.unit || 'cm'}
-                          </SpecValue>
-                        </SpecItem>
-                      )}
-                    {product.specifications.material && product.specifications.material.length > 0 && (
-                      <SpecItem>
-                        <SpecLabel>Material</SpecLabel>
-                        <SpecValue>
-                          {product.specifications.material.map(m => m.value).filter(Boolean).join(', ')}
-                        </SpecValue>
-                      </SpecItem>
-                    )}
-                  </SpecificationsGrid>
-                )}
-              </TabContent>
-            </TabSection>
-
-            {/* Reviews Section */}
-            <TabSection>
-              <TabHeader>
-                <TabTitle>Customer Reviews ({reviewCount})</TabTitle>
-              </TabHeader>
-
-              <TabContent>
-                {reviewCount > 0 ? (
-                  <ModernReviewsSection>
-                    <ReviewsSummary>
-                      <OverallRating>
-                        <RatingNumber>{averageRating.toFixed(1)}</RatingNumber>
-                        <RatingStars>
-                          <StarRating rating={averageRating} />
-                        </RatingStars>
-                        <RatingText>out of 5</RatingText>
-                      </OverallRating>
-
-                      <RatingBars>
-                        {[5, 4, 3, 2, 1].map((stars) => {
-                          const count = reviews.filter((r) => r.rating === stars).length;
-                          const percentage = reviewCount > 0 ? (count / reviewCount) * 100 : 0;
-                          return (
-                            <RatingBar key={stars}>
-                              <StarCount>{stars} stars</StarCount>
-                              <BarTrack>
-                                <BarProgress $percentage={percentage} />
-                              </BarTrack>
-                              <BarPercentage>{percentage.toFixed(0)}%</BarPercentage>
-                            </RatingBar>
-                          );
-                        })}
-                      </RatingBars>
-                    </ReviewsSummary>
-
-                    <ReviewGrid>
-                      {reviews.slice(0, 3).map((review) => {
-                        const reviewDate = review.reviewDate || review.createdAt || review.updatedAt;
-                        const formattedDate = reviewDate
-                          ? new Date(reviewDate).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })
-                          : "";
-                        const reviewText = review.review || review.comment || review.body || review.content || "—";
-                        const hasImages = review.images && Array.isArray(review.images) && review.images.length > 0;
-                        const sellerReply = review.sellerReply?.reply;
-                        const sellerRepliedAt = review.sellerReply?.repliedAt;
-                        const sellerName = review.sellerReply?.repliedBy?.shopName || review.sellerReply?.repliedBy?.name || "Seller";
-                        return (
-                          <ReviewCard key={review._id}>
-                            <ReviewHeader>
-                              <ReviewerInfo>
-                                <ReviewerAvatar>
-                                  {review.user?.name?.charAt(0) || "A"}
-                                </ReviewerAvatar>
-                                <div>
-                                  <ReviewerName>{review.user?.name || "Anonymous"}</ReviewerName>
-                                  <ReviewMeta>
-                                    <ReviewDate>Reviewed on {formattedDate}</ReviewDate>
-                                    {review.verifiedPurchase && (
-                                      <VerifiedBadge title="Verified purchase">Verified purchase</VerifiedBadge>
-                                    )}
-                                  </ReviewMeta>
-                                </div>
-                              </ReviewerInfo>
-                              <ReviewRating>
-                                <StarRating rating={review.rating} size="14px" />
-                              </ReviewRating>
-                            </ReviewHeader>
-                            <ReviewTitle>{review.title || "Review"}</ReviewTitle>
-                            <ReviewComment>{reviewText}</ReviewComment>
-                            {hasImages && (
-                              <ReviewImages>
-                                {review.images.map((img, idx) => (
-                                  <ReviewImage key={idx} src={img} alt={`Review image ${idx + 1} – Saiisai Ghana`} />
-                                ))}
-                              </ReviewImages>
-                            )}
-                            {sellerReply && (
-                              <SellerReplyBlock>
-                                <SellerReplyLabel>{sellerName} replied</SellerReplyLabel>
-                                <SellerReplyText>{sellerReply}</SellerReplyText>
-                                {sellerRepliedAt && (
-                                  <SellerReplyDate>
-                                    {new Date(sellerRepliedAt).toLocaleDateString("en-US", {
-                                      year: "numeric",
-                                      month: "short",
-                                      day: "numeric",
-                                    })}
-                                  </SellerReplyDate>
-                                )}
-                              </SellerReplyBlock>
-                            )}
-                            {(review.helpfulVotes > 0 || review.nothelpfulVotes > 0) && (
-                              <HelpfulCount>
-                                {review.helpfulVotes > 0 && (
-                                  <span>{review.helpfulVotes} {review.helpfulVotes === 1 ? "person" : "people"} found this helpful</span>
-                                )}
-                              </HelpfulCount>
-                            )}
-                          </ReviewCard>
-                        );
-                      })}
-                    </ReviewGrid>
-
-                    {reviewCount > 2 && (
-                      <ViewAllReviews to={`/product/${id}/reviews`}>
-                        View all {reviewCount} reviews
-                      </ViewAllReviews>
-                    )}
-                  </ModernReviewsSection>
-                ) : (
-                  <NoReviewsState>
-                    <NoReviewsIcon>💬</NoReviewsIcon>
-                    <h3>No reviews yet</h3>
-                    <p>Be the first to share your thoughts!</p>
-                  </NoReviewsState>
-                )}
-              </TabContent>
-            </TabSection>
-          </DetailsTabs>
         </ImageSection>
 
         {/* Product Info */}
@@ -839,104 +573,148 @@ const ProductDetailPage = () => {
             )}
           </ModernProductHeader>
 
-          {/* Pricing Section */}
-          <PricingCard>
+          {/* Variant & Pricing Section */}
+          <VariantSectionCard>
             <VariantPriceDisplay
               product={product}
               selectedVariant={selectedVariant}
               variantSelectionHook={variantSelection}
             />
 
-            <StockRow>
-              <StockAlert $inStock={isInStock}>
-                <StatusIndicator $inStock={isInStock} />
-                {isInStock ? (
-                  <span><strong>In Stock</strong> - Order now!</span>
-                ) : variants.length > 0 && variants.every((v) => (v.stock || 0) === 0) ? (
-                  <span>All variants are currently out of stock</span>
-                ) : selectedVariant ? (
-                  <span>This variant is out of stock</span>
-                ) : variants.length > 0 ? (
-                  <span>Please select a variant</span>
-                ) : (
-                  <span>Currently out of stock</span>
+
+            {variants.length > 0 && (
+              <>
+                <VariantSectionTitle>Choose your option</VariantSectionTitle>
+                <VariantSectionSubtitle>
+                  {variants.length === 1
+                    ? '1 option available'
+                    : `${variants.length} options available`}
+                </VariantSectionSubtitle>
+
+                {/* Variant image grid at top — image with details below */}
+                <VariantImagesGrid>
+                  {variants.map((variant) => {
+                    // Use variant image if available, otherwise fallback to product image or placeholder
+                    const image = variant.images?.[0] || variant.image || '';
+                    const isSelected = selectedVariant?._id === variant._id;
+                    const isOutOfStock = variant.status === 'inactive' || (variant.stock || 0) === 0;
+
+                    return (
+                      <VariantImageColumn key={variant._id || variant.sku}>
+                        <VariantImageItem
+                          $selected={isSelected}
+                          $disabled={isOutOfStock}
+                          onClick={() => {
+                            if (isOutOfStock) return;
+                            if (useAttributeBasedVariants && variant?.attributes?.length && selectVariantByObject) {
+                              selectVariantByObject(variant);
+                            } else if (useAttributeBasedVariants && variant?.attributes?.length && selectAttribute) {
+                              variant.attributes.forEach((attr) => {
+                                if (attr.key && attr.value) selectAttribute(attr.key, attr.value);
+                              });
+                            } else {
+                              handleVariantSelectCallback(variant);
+                            }
+                          }}
+                        >
+                          <OptimizedImage
+                            src={image}
+                            slot={IMAGE_SLOTS.PRODUCT_THUMB}
+                            alt={variant.name || variant.sku || 'Variant'}
+                          />
+                          {isSelected && !isOutOfStock && <VariantImageSelectedBadge>Selected</VariantImageSelectedBadge>}
+                          {isOutOfStock && <VariantImageSelectedBadge $outOfStock>Out of Stock</VariantImageSelectedBadge>}
+                        </VariantImageItem>
+                      </VariantImageColumn>
+                    );
+                  })}
+                </VariantImagesGrid>
+
+                {/* Radio-based variant options: attribute-based or name-based */}
+                {variants.length >= 1 && (
+                  <VariantRadioSelector
+                    attributeKeys={useAttributeBasedVariants ? attributeKeys : []}
+                    computeAvailableOptions={computeAvailableOptions}
+                    selectAttribute={(key, val) => {
+                      selectAttribute(key, val);
+                    }}
+                    variants={!useAttributeBasedVariants ? variants : []}
+                    selectedVariant={!useAttributeBasedVariants ? selectedVariant : undefined}
+                    onSelectVariant={!useAttributeBasedVariants ? handleVariantSelect : undefined}
+                  />
                 )}
-              </StockAlert>
-              {product.isPreOrder && (
-                <PreOrderBadge>
-                  Pre-Order
-                  {product.preOrderNote && <PreOrderNote>{product.preOrderNote}</PreOrderNote>}
-                </PreOrderBadge>
-              )}
-            </StockRow>
-          </PricingCard>
+              </>
+            )}
 
-          {/* Variant Section — variant images at top, then radio selection, then status */}
-          {variants.length > 0 && (
-            <VariantSectionCard>
-              <VariantSectionTitle>Choose your option</VariantSectionTitle>
-              <VariantSectionSubtitle>
-                {variants.length === 1
-                  ? '1 option available'
-                  : `${variants.length} options available`}
-              </VariantSectionSubtitle>
+            {/* Inline Product Metadata - Part 1: Brand & Weight */}
+            {(product.brand ||
+              selectedVariant?.weight?.value ||
+              product.specifications?.weight?.value ||
+              product.shipping?.weight?.value) && (
+                <ProductMetaInline>
+                  {product.brand && (
+                    <MetaItem>
+                      <MetaLabel>Brand:</MetaLabel>
+                      <MetaValue>{product.brand}</MetaValue>
+                    </MetaItem>
+                  )}
 
-              {/* Variant image grid at top — image with details below */}
-              <VariantImagesGrid>
-                {variants.map((variant) => {
-                  // Use variant image if available, otherwise fallback to product image or placeholder
-                  const image = variant.images?.[0] || product?.imageCover || '/placeholder-image.png';
-                  const isSelected = selectedVariant?._id === variant._id;
-                  const isOutOfStock = variant.status === 'inactive' || (variant.stock || 0) === 0;
-
-                  return (
-                    <VariantImageColumn key={variant._id || variant.sku}>
-                      <VariantImageItem
-                        $selected={isSelected}
-                        $disabled={isOutOfStock}
-                        onClick={() => {
-                          if (isOutOfStock) return;
-                          if (useAttributeBasedVariants && variant?.attributes?.length && selectVariantByObject) {
-                            selectVariantByObject(variant);
-                          } else if (useAttributeBasedVariants && variant?.attributes?.length && selectAttribute) {
-                            variant.attributes.forEach((attr) => {
-                              if (attr.key && attr.value) selectAttribute(attr.key, attr.value);
-                            });
-                          } else {
-                            handleVariantSelectCallback(variant);
-                          }
-                          setSelectedImage(0);
-                        }}
-                      >
-                        <VariantImage src={image} alt={(variant.name || variant.sku || 'Variant') + ' – Saiisai Ghana'} />
-                        {isSelected && !isOutOfStock && <VariantImageSelectedBadge>Selected</VariantImageSelectedBadge>}
-                        {isOutOfStock && <VariantImageSelectedBadge $outOfStock>Out of Stock</VariantImageSelectedBadge>}
-                      </VariantImageItem>
-                    </VariantImageColumn>
-                  );
-                })}
-              </VariantImagesGrid>
-
-              {/* Radio-based variant options: attribute-based or name-based */}
-              {variants.length >= 1 && (
-                <VariantRadioSelector
-                  attributeKeys={useAttributeBasedVariants ? attributeKeys : []}
-                  computeAvailableOptions={computeAvailableOptions}
-                  selectAttribute={selectAttribute}
-                  variants={!useAttributeBasedVariants ? variants : []}
-                  selectedVariant={!useAttributeBasedVariants ? selectedVariant : undefined}
-                  onSelectVariant={!useAttributeBasedVariants ? handleVariantSelect : undefined}
-                />
+                  {(selectedVariant?.weight?.value || product.specifications?.weight?.value || product.shipping?.weight?.value) && (
+                    <MetaItem>
+                      <MetaLabel>Weight:</MetaLabel>
+                      <MetaValue>
+                        {selectedVariant?.weight?.value || product.specifications?.weight?.value || product.shipping?.weight?.value}
+                        {selectedVariant?.weight?.unit || product.specifications?.weight?.unit || product.shipping?.weight?.unit || 'g'}
+                      </MetaValue>
+                    </MetaItem>
+                  )}
+                </ProductMetaInline>
               )}
 
-              <VariantMainImageSwitcher
-                selectedVariant={selectedVariant}
-                fallbackImages={galleryImages}
-                onImageChange={setSelectedImage}
-                variantSelectionHook={variantSelection}
-              />
-            </VariantSectionCard>
-          )}
+            {/* Consolidated Product Details (Description) - Moved below Weight */}
+            <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--color-grey-100)', paddingTop: '1.5rem' }}>
+              <TabTitle style={{ fontSize: '1.8rem', marginBottom: '1rem' }}>About the Item</TabTitle>
+              <DescriptionSection $expanded={showFullDescription}>
+                <DescriptionText>
+                  {product.description || "No description available."}
+                </DescriptionText>
+                <ShowMoreButton onClick={() => setShowFullDescription(!showFullDescription)}>
+                  {showFullDescription ? "Show Less" : "Show More"}
+                  <ChevronIcon $rotated={showFullDescription}>
+                    <FaChevronDown />
+                  </ChevronIcon>
+                </ShowMoreButton>
+              </DescriptionSection>
+            </div>
+
+            {/* Inline Product Metadata - Part 2: Dim & Mfr - Moved below Specs */}
+            {(selectedVariant?.dimensions ||
+              product.specifications?.dimensions ||
+              product.shipping?.dimensions ||
+              product.manufacturer) && (
+                <ProductMetaInline style={{ marginTop: '1.5rem' }}>
+                  {(() => {
+                    const dim = selectedVariant?.dimensions || product.specifications?.dimensions || product.shipping?.dimensions;
+                    if (!dim || (!dim.length && !dim.width && !dim.height)) return null;
+                    return (
+                      <MetaItem>
+                        <MetaLabel>Dim:</MetaLabel>
+                        <MetaValue>
+                          {dim.length || 0}x{dim.width || 0}x{dim.height || 0} {dim.unit || 'cm'}
+                        </MetaValue>
+                      </MetaItem>
+                    );
+                  })()}
+
+                  {(product.manufacturer?.name || (typeof product.manufacturer === 'string' && product.manufacturer)) && (
+                    <MetaItem>
+                      <MetaLabel>Mfr:</MetaLabel>
+                      <MetaValue>{product.manufacturer.name || product.manufacturer}</MetaValue>
+                    </MetaItem>
+                  )}
+                </ProductMetaInline>
+              )}
+          </VariantSectionCard>
 
           {/* Actions Section */}
           <ActionsCard>
@@ -1046,18 +824,6 @@ const ProductDetailPage = () => {
               ? "Saiisai Official Store ✓"
               : (typeof product.seller === 'object' && (product.seller?.shopName || product.seller?.name)) || "Seller";
             const sellerPagePath = sellerIdStr ? `${PATHS.SELLERS}/${sellerIdStr}` : null;
-
-            // Debug logging
-            console.log('[ProductDetail] Seller section:', {
-              hasSeller: !!product.seller,
-              sellerType: typeof product.seller,
-              sellerId: product.seller?._id,
-              sellerIdStr,
-              sellerPagePath,
-              displayName,
-              isEazShop: product.isEazShopProduct,
-              sellerRole: product.seller?.role,
-            });
             return (
               <SellerCard>
                 <SellerHeader>
@@ -1072,9 +838,11 @@ const ProductDetailPage = () => {
                 </SellerHeader>
                 <SellerInfo>
                   <SellerAvatar>
-                    <img
-                      src={(typeof product.seller === 'object' && product.seller?.avatar) || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"}
+                    <OptimizedImage
+                      src={typeof product.seller === 'object' && product.seller?.avatar}
+                      slot={IMAGE_SLOTS.AVATAR}
                       alt={typeof product.seller === 'object' ? `${product.seller?.name || product.seller?.shopName || "Seller"} – Saiisai Ghana seller` : "Seller – Saiisai Ghana"}
+                      bg="transparent"
                     />
                   </SellerAvatar>
                   <SellerDetails>
@@ -1113,6 +881,60 @@ const ProductDetailPage = () => {
         </InfoSection>
       </ModernProductGrid>
 
+      {/* Expanded Reviews Section at Bottom */}
+      <InfoSection style={{ maxWidth: '1400px', margin: '0 auto 4rem auto' }}>
+        <ModernProductHeader>
+          <TabTitle style={{ fontSize: '2.4rem', marginBottom: '2.5rem' }}>Customer Reviews ({reviewCount})</TabTitle>
+          {reviewCount > 0 ? (
+            <ModernReviewsSection>
+              <ReviewsSummary>
+                <OverallRating>
+                  <RatingNumber>{averageRating.toFixed(1)}</RatingNumber>
+                  <RatingStars>
+                    <StarRating rating={averageRating} />
+                  </RatingStars>
+                  <RatingText>out of 5</RatingText>
+                </OverallRating>
+
+                <RatingBars>
+                  {[5, 4, 3, 2, 1].map((stars) => {
+                    const count = reviews.filter((r) => r.rating === stars).length;
+                    const percentage = reviewCount > 0 ? (count / reviewCount) * 100 : 0;
+                    return (
+                      <RatingBar key={stars}>
+                        <StarCount>{stars} stars</StarCount>
+                        <BarTrack>
+                          <BarProgress $percentage={percentage} />
+                        </BarTrack>
+                        <BarPercentage>{percentage.toFixed(0)}%</BarPercentage>
+                      </RatingBar>
+                    );
+                  })}
+                </RatingBars>
+              </ReviewsSummary>
+
+              <ReviewGrid>
+                {reviews.slice(0, 3).map((review) => (
+                  <ReviewItem key={review._id} review={review} />
+                ))}
+              </ReviewGrid>
+
+              {reviewCount > 2 && (
+                <ViewAllReviews to={`/product/${id}/reviews`}>
+                  View all {reviewCount} reviews
+                </ViewAllReviews>
+              )}
+            </ModernReviewsSection>
+          ) : (
+            <NoReviewsState>
+              <NoReviewsIcon>💬</NoReviewsIcon>
+              <h3>No reviews yet</h3>
+              <p>Be the first to share your thoughts!</p>
+            </NoReviewsState>
+          )}
+        </ModernProductHeader>
+      </InfoSection>
+
       {/* Similar Products */}
       {product.category && (
         <SimilarSection>
@@ -1133,17 +955,6 @@ const ProductDetailPage = () => {
         </>
       )}
 
-      {/* Image Modal */}
-      {showImageModal && (
-        <ImageModal onClick={() => setShowImageModal(false)}>
-          <ModalContent onClick={(e) => e.stopPropagation()}>
-            <ModalImage src={galleryImages[selectedImage] || galleryImages[0]} alt={product.name ? `${product.name} – Saiisai Ghana` : 'Product – Saiisai Ghana'} />
-            <CloseModal onClick={() => setShowImageModal(false)}>
-              ×
-            </CloseModal>
-          </ModalContent>
-        </ImageModal>
-      )}
       {/* Sticky Mobile Add to Cart: price left (bold), 8px gap, full-width Add to Cart right */}
       <StickyMobileBar>
         <StickyPrice>
@@ -1205,22 +1016,20 @@ const ModernPageContainer = styled.div`
 const ModernBreadcrumb = styled.nav`
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem;
   margin-bottom: 2rem;
-  font-size: 1.4rem;
-  color: var(--color-grey-600);
+  padding: 1rem 0;
   flex-wrap: wrap;
 
   @media (max-width: 640px) {
-    font-size: 1.2rem;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
+    display: none;
   }
 `;
 
 const BreadcrumbItem = styled(Link)`
-  color: var(--color-grey-600);
-  text-decoration: none;
+  color: var(--color-grey-500);
+  font-size: 1.4rem;
+  font-weight: 500;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
@@ -1230,325 +1039,52 @@ const BreadcrumbItem = styled(Link)`
   background: white;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 
-  @media (max-width: 640px) {
-    padding: 0.4rem 0.8rem;
-    font-size: 1.1rem;
-    gap: 0.3rem;
+  &:hover {
+    color: var(--color-primary-600);
   }
 
-  &:hover {
-    color: var(--color-primary-500);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  @media (max-width: 1024px) {
+    font-size: 1.3rem;
   }
 `;
 
 const BreadcrumbSeparator = styled.span`
   color: var(--color-grey-400);
+  margin: 0 0.5rem;
+  font-size: 1.2rem;
 `;
 
 const BreadcrumbActive = styled.span`
   color: var(--color-grey-900);
-  font-weight: 700;
+  font-weight: 600;
+  font-size: 1.4rem;
+
+  @media (max-width: 1024px) {
+    font-size: 1.3rem;
+  }
 `;
 
 const ModernProductGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 3rem;
-  margin-bottom: 3rem;
+  gap: 4rem;
+  margin-bottom: 4rem;
 
   @media (max-width: 1024px) {
-    gap: 2rem;
+    gap: 3rem;
   }
 
-  @media (max-width: 640px) {
+  @media (max-width: 768px) {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+    gap: 2rem;
   }
 `;
 
 const ImageSection = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  animation: ${fadeIn} 0.6s ease-out;
+  gap: 2rem;
   width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  overflow-x: hidden;
-`;
-
-const MainImageWrapper = styled.div`
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1;
-  background: white;
-  border-radius: 2rem;
-  overflow: hidden;
-  cursor: ${(props) => (props.$isZoomed ? "zoom-out" : "zoom-in")};
-  transition: all 0.3s ease;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-
-  @media (max-width: 1024px) {
-    border-radius: 1.5rem;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-  }
-
-  @media (max-width: 640px) {
-    border-radius: 1.2rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    cursor: default; /* Disable zoom on mobile */
-  }
-
-  &:hover {
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
-    
-    @media (max-width: 640px) {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    }
-  }
-`;
-
-const ModernMainImage = styled.img`
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  transition: transform 0.2s ease-out;
-  transform: ${(props) =>
-    props.$isZoomed
-      ? `scale(2.5) translate(${-props.$zoomX + 50}%, ${-props.$zoomY + 50}%)`
-      : "scale(1)"};
-  transform-origin: center center;
-  will-change: transform;
-`;
-
-const ImageBadges = styled.div`
-  position: absolute;
-  top: 1.5rem;
-  left: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  z-index: 2;
-
-  @media (max-width: 640px) {
-    top: 1rem;
-    left: 1rem;
-    gap: 0.5rem;
-  }
-`;
-
-const DiscountRibbon = styled.div`
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border-radius: 2rem;
-  font-weight: 700;
-  font-size: 1.4rem;
-  box-shadow: 0 8px 20px rgba(255, 107, 107, 0.4);
-  animation: ${float} 3s ease-in-out infinite;
-
-  @media (max-width: 640px) {
-    padding: 0.5rem 1rem;
-    font-size: 1.1rem;
-    border-radius: 1.5rem;
-  }
-`;
-
-const StockBadge = styled.div`
-  background: ${(props) =>
-    props.$inStock
-      ? "linear-gradient(135deg, #48bb78 0%, #38a169 100%)"
-      : "linear-gradient(135deg, #718096 0%, #4a5568 100%)"};
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border-radius: 2rem;
-  font-weight: 600;
-  font-size: 1.4rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-
-  @media (max-width: 640px) {
-    padding: 0.5rem 1rem;
-    font-size: 1.1rem;
-    border-radius: 1.5rem;
-  }
-`;
-
-const PopularBadge = styled.div`
-  background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border-radius: 2rem;
-  font-weight: 600;
-  font-size: 1.4rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  box-shadow: 0 4px 12px rgba(237, 137, 54, 0.4);
-
-  @media (max-width: 640px) {
-    padding: 0.5rem 1rem;
-    font-size: 1.1rem;
-    border-radius: 1.5rem;
-  }
-`;
-
-const ImageActions = styled.div`
-  position: absolute;
-  top: 1.5rem;
-  right: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  z-index: 2;
-
-  @media (max-width: 640px) {
-    top: 1rem;
-    right: 1rem;
-    gap: 0.5rem;
-  }
-`;
-
-const ImageActionButton = styled.button`
-  width: 4rem;
-  height: 4rem;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  color: var(--color-grey-700);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  min-width: 44px; /* Touch-friendly */
-  min-height: 44px; /* Touch-friendly */
-
-  @media (max-width: 640px) {
-    width: 3.6rem;
-    height: 3.6rem;
-    min-width: 44px;
-    min-height: 44px;
-  }
-
-  &:hover {
-    background: white;
-    transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-  }
-`;
-
-const ThumbnailGallery = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-
-  @media (max-width: 640px) {
-    gap: 0.5rem;
-  }
-`;
-
-const ThumbnailScrollButton = styled.button`
-  width: 4rem;
-  height: 4rem;
-  border-radius: 50%;
-  border: 2px solid var(--color-grey-200);
-  background: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  color: var(--color-grey-700);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  min-width: 44px; /* Touch-friendly */
-  min-height: 44px; /* Touch-friendly */
-  flex-shrink: 0;
-
-  @media (max-width: 640px) {
-    width: 3.6rem;
-    height: 3.6rem;
-    min-width: 44px;
-    min-height: 44px;
-  }
-
-  &:hover:not(:disabled) {
-    background: var(--color-primary-500);
-    color: white;
-    border-color: var(--color-primary-500);
-    transform: translateY(-2px);
-  }
-
-  &:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-  }
-`;
-
-const ThumbnailList = styled.div`
-  display: flex;
-  gap: 1rem;
-  overflow-x: auto;
-  flex: 1;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-`;
-
-const ModernThumbnail = styled.div`
-  position: relative;
-  min-width: 8rem;
-  height: 8rem;
-  border-radius: 1.2rem;
-  overflow: hidden;
-  cursor: pointer;
-  border: 3px solid
-    ${(props) => (props.$active ? "var(--color-primary-500)" : "transparent")};
-  transition: all 0.3s ease;
-  background: white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  flex-shrink: 0;
-
-  @media (max-width: 1024px) {
-    min-width: 7rem;
-    height: 7rem;
-  }
-
-  @media (max-width: 640px) {
-    min-width: 6rem;
-    height: 6rem;
-    border-radius: 1rem;
-    border-width: 2px;
-  }
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  &:hover {
-    border-color: var(--color-primary-400);
-    transform: scale(1.05);
-  }
-`;
-
-const ThumbnailOverlay = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(99, 102, 241, 0.1);
-  border: 2px solid var(--color-primary-500);
 `;
 
 const InfoSection = styled.div`
@@ -1559,8 +1095,8 @@ const InfoSection = styled.div`
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  overflow-x: hidden; /* Prevent horizontal overflow */
-  overflow-y: visible; /* Allow vertical content */
+  overflow-x: hidden;
+  overflow-y: visible;
 `;
 
 const ModernProductHeader = styled.div`
@@ -1610,11 +1146,8 @@ const ModernProductTitle = styled.h1`
   background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  hyphens: auto;
   width: 100%;
-  max-width: 100%;
+  overflow-wrap: break-word;
 
   @media (max-width: 1024px) {
     font-size: 2.8rem;
@@ -1641,7 +1174,6 @@ const ProductMetaGrid = styled.div`
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
     gap: 1rem;
-    margin-bottom: 1rem;
   }
 `;
 
@@ -1653,13 +1185,10 @@ const RatingBadge = styled.div`
   background: var(--color-grey-50);
   border-radius: 2rem;
   font-size: 1.4rem;
-  flex-wrap: wrap;
 
   @media (max-width: 640px) {
     padding: 0.6rem 1.2rem;
     font-size: 1.2rem;
-    gap: 0.5rem;
-    border-radius: 1.5rem;
   }
 
   span:last-child {
@@ -1677,7 +1206,6 @@ const ProductCode = styled.span`
   @media (max-width: 640px) {
     padding: 0.6rem 1.2rem;
     font-size: 1.2rem;
-    border-radius: 1.5rem;
   }
 `;
 
@@ -1695,7 +1223,6 @@ const SoldCounter = styled.div`
   @media (max-width: 640px) {
     padding: 0.6rem 1.2rem;
     font-size: 1.2rem;
-    border-radius: 1.5rem;
   }
 `;
 
@@ -1704,15 +1231,14 @@ const ViewCountBadge = styled.div`
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  background: var(--color-grey-100, #f1f5f9);
-  color: var(--color-grey-600, #475569);
+  background: var(--color-grey-100);
+  color: var(--color-grey-600);
   border-radius: 2rem;
   font-size: 1.4rem;
 
   @media (max-width: 640px) {
     padding: 0.6rem 1.2rem;
     font-size: 1.2rem;
-    border-radius: 1.5rem;
   }
 `;
 
@@ -1723,13 +1249,8 @@ const ShortDescription = styled.p`
   margin: 0;
   font-style: italic;
 
-  @media (max-width: 1024px) {
-    font-size: 1.5rem;
-  }
-
   @media (max-width: 640px) {
     font-size: 1.4rem;
-    line-height: 1.5;
   }
 `;
 
@@ -1819,6 +1340,45 @@ const CurrentPrice = styled.div`
   @media (max-width: 640px) {
     font-size: 3rem;
   }
+`;
+
+const ProductMetaInline = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-grey-100);
+
+  @media (max-width: 640px) {
+    gap: 1rem;
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+  }
+`;
+
+const MetaItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.3rem;
+  color: var(--color-grey-600);
+
+  @media (max-width: 640px) {
+    font-size: 1.2rem;
+  }
+`;
+
+const MetaLabel = styled.span`
+  font-weight: 700;
+  color: var(--color-grey-800);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 1.1rem;
+`;
+
+const MetaValue = styled.span`
+  color: var(--color-grey-700);
 `;
 
 const OriginalPrice = styled.div`
@@ -2942,53 +2502,6 @@ const SectionTitle = styled.h2`
   }
 `;
 
-const ImageModal = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.9);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 2rem;
-`;
-
-const ModalContent = styled.div`
-  position: relative;
-  max-width: 90vw;
-  max-height: 90vh;
-`;
-
-const ModalImage = styled.img`
-  max-width: 100%;
-  max-height: 90vh;
-  object-fit: contain;
-  border-radius: 1rem;
-`;
-
-const CloseModal = styled.button`
-  position: absolute;
-  top: -4rem;
-  right: 0;
-  background: none;
-  border: none;
-  color: white;
-  font-size: 3rem;
-  cursor: pointer;
-  width: 4rem;
-  height: 4rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  &:hover {
-    color: var(--color-primary-300);
-  }
-`;
-
 const LoadingContainer = styled.div`
   display: flex;
   justify-content: center;
@@ -3205,5 +2718,81 @@ const AttributeValue = styled.td`
   word-break: break-word;
   vertical-align: top;
 `;
+
+const ReviewItem = memo(({ review }) => {
+  const reviewDate = review.reviewDate || review.createdAt || review.updatedAt;
+  const formattedDate = reviewDate
+    ? new Date(reviewDate).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
+    : "";
+  const reviewText = review.review || review.comment || review.body || review.content || "—";
+  const hasImages = review.images && Array.isArray(review.images) && review.images.length > 0;
+  const sellerReply = review.sellerReply?.reply;
+  const sellerRepliedAt = review.sellerReply?.repliedAt;
+  const sellerName = review.sellerReply?.repliedBy?.shopName || review.sellerReply?.repliedBy?.name || "Seller";
+
+  return (
+    <ReviewCard>
+      <ReviewHeader>
+        <ReviewerInfo>
+          <ReviewerAvatar>
+            {review.user?.name?.charAt(0) || "A"}
+          </ReviewerAvatar>
+          <div>
+            <ReviewerName>{review.user?.name || "Anonymous"}</ReviewerName>
+            <ReviewMeta>
+              <ReviewDate>Reviewed on {formattedDate}</ReviewDate>
+              {review.verifiedPurchase && (
+                <VerifiedBadge title="Verified purchase">Verified purchase</VerifiedBadge>
+              )}
+            </ReviewMeta>
+          </div>
+        </ReviewerInfo>
+        <ReviewRating>
+          <StarRating rating={review.rating} size="14px" />
+        </ReviewRating>
+      </ReviewHeader>
+      <ReviewTitle>{review.title || "Review"}</ReviewTitle>
+      <ReviewComment>{reviewText}</ReviewComment>
+      {hasImages && (
+        <ReviewImages>
+          {review.images.map((img, idx) => (
+            <OptimizedImage
+              key={idx}
+              src={img}
+              slot={IMAGE_SLOTS.TABLE_THUMB}
+              alt={`Review image ${idx + 1}`}
+            />
+          ))}
+        </ReviewImages>
+      )}
+      {sellerReply && (
+        <SellerReplyBlock>
+          <SellerReplyLabel>{sellerName} replied</SellerReplyLabel>
+          <SellerReplyText>{sellerReply}</SellerReplyText>
+          {sellerRepliedAt && (
+            <SellerReplyDate>
+              {new Date(sellerRepliedAt).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              })}
+            </SellerReplyDate>
+          )}
+        </SellerReplyBlock>
+      )}
+      {(review.helpfulVotes > 0 || review.nothelpfulVotes > 0) && (
+        <HelpfulCount>
+          {review.helpfulVotes > 0 && (
+            <span>{review.helpfulVotes} {review.helpfulVotes === 1 ? "person" : "people"} found this helpful</span>
+          )}
+        </HelpfulCount>
+      )}
+    </ReviewCard>
+  );
+});
 
 export default ProductDetailPage;

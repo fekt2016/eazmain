@@ -55,8 +55,7 @@ const CardContainer = styled.div`
 `;
 
 const FullWidthGrid = styled(Grid)`
-
-  grid-template-columns: 1fr;
+  /* Inherits responsive columns or specified columns from Grid component */
 `;
 
 const PromotionalProductsPage = () => {

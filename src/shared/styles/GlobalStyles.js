@@ -421,13 +421,35 @@ h6 {
   hyphens: auto;
 }
 
-img {
-  max-width: 100%;
-  height: auto;
+  img {
+    max-width: 100%;
+    display: block;
+    /* Removed height: auto to prevent object-fit stretching issues */
+    object-fit: inherit;
+    /* For dark mode */
+    filter: grayscale(var(--image-grayscale)) opacity(var(--image-opacity));
+  }
 
-  /* For dark mode */
-  filter: grayscale(var(--image-grayscale)) opacity(var(--image-opacity));
-}
+  /* Cloudinary Image Container Fixes */
+  .product-card-image-container img {
+    object-fit: contain;
+    width: 100%;
+    height: 100%;
+    background-color: #fff;
+  }
+
+  .product-detail-main-image-container img {
+    object-fit: contain;
+    width: 100%;
+    height: 100%;
+    background-color: #fff;
+  }
+
+  .avatar-container img {
+    object-fit: cover;
+    width: 100%;
+    height: 100%;
+  }
 
 
 

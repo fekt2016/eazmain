@@ -94,16 +94,52 @@ export function isOptionDisabled(variants, attributeKey, value, selectedAttribut
 /**
  * Images to show in the main gallery for the current selection.
  * Variant images drive selection: when a variant has images, gallery shows them.
+ * Also supports variant.image (singular).
  * @param {Object|null} selectedVariant
  * @param {Array} productImages - fallback from product (product.images or imageCover)
  * @returns {Array} - Array of image URLs
  */
 export function getGalleryImagesForVariant(selectedVariant, productImages) {
-  const fallback = Array.isArray(productImages) ? productImages : [];
-  if (selectedVariant?.images && selectedVariant.images.length > 0) {
-    return selectedVariant.images;
+  // Extract variant images (prefer images array, fall back to singular image)
+  let vImages = [];
+  if (selectedVariant?.images && Array.isArray(selectedVariant.images)) {
+    vImages = selectedVariant.images.filter(Boolean);
+  } else if (selectedVariant?.image) {
+    vImages = [selectedVariant.image];
   }
-  return fallback;
+
+  // Merge variant images with product images, ensuring variants are first
+  // This allows the gallery to show the variant-specific shots while still showing other product context
+  const merged = [...vImages, ...(Array.isArray(productImages) ? productImages : [])];
+  return Array.from(new Set(merged.filter(Boolean)));
+}
+
+/**
+ * Smarter gallery image derivation that supports partial attribute matching.
+ * If no full variant matches, it tries to find a variant that matches current partial selection.
+ * @param {Object|null} selectedVariant
+ * @param {Object} selectedAttributes
+ * @param {Array} variants
+ * @param {Array} productImages
+ * @returns {Array}
+ */
+export function getGalleryImagesForSelection(selectedVariant, selectedAttributes, variants, productImages) {
+  // 1. Full match exists
+  if (selectedVariant) {
+    return getGalleryImagesForVariant(selectedVariant, productImages);
+  }
+
+  // 2. Partial match (via attributes)
+  if (selectedAttributes && Object.keys(selectedAttributes).length > 0) {
+    const matching = getMatchingVariants(variants, selectedAttributes);
+    const firstWithImages = matching.find((v) => (v.images && v.images.length > 0) || v.image);
+    if (firstWithImages) {
+      return getGalleryImagesForVariant(firstWithImages, productImages);
+    }
+  }
+
+  // 3. Fallback to product images
+  return Array.isArray(productImages) ? productImages : [];
 }
 
 /**

@@ -1,9 +1,10 @@
+import { memo } from "react";
 import styled from "styled-components";
 import useSimilarProducts from '../hooks/useProduct';
 import { LoadingState, ErrorState } from '../../components/loading';
 import ProductCard from './ProductCard';
 
-const SimilarProducts = ({ categoryId, currentProductId, currentProduct }) => {
+const SimilarProducts = memo(({ categoryId, currentProductId, currentProduct }) => {
   const { data, isLoading, error } = useSimilarProducts(
     categoryId,
     currentProductId
@@ -40,7 +41,7 @@ const SimilarProducts = ({ categoryId, currentProductId, currentProduct }) => {
       </SimilarGrid>
     </SimilarSection>
   );
-};
+});
 
 const SimilarSection = styled.div`
   margin-top: 5rem;

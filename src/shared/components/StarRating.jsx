@@ -1,7 +1,8 @@
+import { memo } from "react";
 import { FaStar, FaStarHalfAlt } from "react-icons/fa";
 import styled from "styled-components";
 
-export default function StarRating({ rating }) {
+const StarRating = memo(function StarRating({ rating }) {
   // Clamp rating between 0 and 5
   const clampedRating = Math.min(Math.max(rating, 0), 5);
 
@@ -28,7 +29,9 @@ export default function StarRating({ rating }) {
       ))}
     </StarContainer>
   );
-}
+});
+
+export default StarRating;
 
 const StarContainer = styled.div`
   display: flex;

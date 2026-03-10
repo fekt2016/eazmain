@@ -25,6 +25,7 @@ import { PATHS } from '../../routes/routePaths';
 import HeaderSearchBar from '../components/HeaderSearchBar';
 import Logo from '../components/Logo';
 import { getAvatarUrl } from '../utils/avatarUtils';
+import { getOptimizedImageUrl, IMAGE_SLOTS } from "../utils/cloudinaryConfig";
 
 export default function Header({ onToggleSidebar, isSidebarOpen }) {
   const navigate = useNavigate();
@@ -368,8 +369,9 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
                                     onClick={() => setShowCategoriesDropdown(false)}
                                   >
                                     <CategoryImage
-                                      src={category.image}
+                                      src={getOptimizedImageUrl(category.image, IMAGE_SLOTS.CATEGORY_ICON)}
                                       alt={category.name}
+                                      loading="lazy"
                                       onError={(e) => {
                                         e.target.src = "/api/placeholder/30/30";
                                       }}
@@ -403,8 +405,9 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
                                     onClick={() => setShowCategoriesDropdown(false)}
                                   >
                                     <SubCategoryCircleImage
-                                      src={subCategory.image}
+                                      src={getOptimizedImageUrl(subCategory.image, IMAGE_SLOTS.CATEGORY_ICON)}
                                       alt={subCategory.name}
+                                      loading="lazy"
                                       onError={(e) => {
                                         e.target.src = "/api/placeholder/60/60";
                                       }}
@@ -462,8 +465,10 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
                         <UserAvatar>
                           {user?.photo ? (
                             <AvatarImage
-                              src={`${getAvatarUrl(user.photo)}?t=${Date.now()}`}
+                              src={getOptimizedImageUrl(user.photo, IMAGE_SLOTS.AVATAR)}
                               alt={user?.name || 'User'}
+                              loading="eager"
+                              fetchpriority="high"
                               key={`avatar-${user?.photo}-${user?._id || user?.id}-${Date.now()}`} // Force re-render when photo or user changes
                               onError={(e) => {
                                 // Fallback to initials if image fails to load

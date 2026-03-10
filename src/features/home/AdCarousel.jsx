@@ -5,6 +5,7 @@ import { Autoplay, Pagination } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/pagination";
 import { devicesMax } from "../../shared/styles/breakpoint";
+import { getOptimizedImageUrl, IMAGE_SLOTS } from "../../shared/utils/cloudinaryConfig";
 
 const CarouselSection = styled.section`
   margin: 2.5rem 0;
@@ -131,9 +132,10 @@ const AdCarousel = ({ ads, className }) => {
               >
                 {ad.imageUrl ? (
                   <SlideBackground
-                    src={ad.imageUrl}
+                    src={getOptimizedImageUrl(ad.imageUrl, IMAGE_SLOTS.HOME_HERO)}
                     alt={ad.title || "Advertisement"}
-                    loading="lazy"
+                    loading="eager"
+                    fetchpriority="high"
                   />
                 ) : null}
                 <SlideOverlay aria-hidden="true" />

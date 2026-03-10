@@ -30,6 +30,8 @@ import AdBanner from '../home/AdBanner';
 import AdPopup from '../home/AdPopup';
 import DealOfTheDaySection from '../home/DealOfTheDaySection';
 import { useDealOfTheDay } from '../../shared/hooks/useDealOfTheDay';
+import OptimizedImage from '../../shared/components/OptimizedImage';
+import { getOptimizedImageUrl, IMAGE_SLOTS } from '../../shared/utils/cloudinaryConfig';
 
 // Animations
 const fadeInUp = keyframes`
@@ -450,7 +452,15 @@ const HomePage = () => {
             return (
               <SwiperSlide key={slide.id}>
                 <SlideContent>
-                  <SlideImageBg style={{ backgroundImage: `url(${slide.image})` }} />
+                  <SlideImageBg>
+                    <OptimizedImage
+                      src={slide.image}
+                      slot={IMAGE_SLOTS.HOME_HERO}
+                      aspectRatio="21/9"
+                      alt={slide.title}
+                      objectFit="cover"
+                    />
+                  </SlideImageBg>
                   <SlideOverlay />
                   {slide.discountPercent > 0 ? (
                     <HeroDiscountBadge>-{slide.discountPercent}%</HeroDiscountBadge>
@@ -557,7 +567,15 @@ const HomePage = () => {
             <CategoryGrid>
               {categories.map((cat) => (
                 <CategoryCard key={cat.id} $size={cat.size} to={`${PATHS.CATEGORIES}/${cat.id}`}>
-                  <CategoryBg $image={cat.image} />
+                  <CategoryBg>
+                    <OptimizedImage
+                      src={cat.image}
+                      slot={IMAGE_SLOTS.CATEGORY_HERO}
+                      aspectRatio="16/9"
+                      alt={cat.name}
+                      objectFit="cover"
+                    />
+                  </CategoryBg>
                   <CategoryContent>
                     <h3>{cat.name}</h3>
                     <span>{cat.count}</span>
@@ -610,9 +628,11 @@ const HomePage = () => {
                     <SellerCard to={`${PATHS.SELLERS}/${seller.id || seller._id}`}>
                       <SellerCardHeader>
                         <SellerAvatarContainer>
-                          <SellerAvatar
-                            src={seller.avatar || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23ffc400' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='40' font-weight='bold'%3EShop%3C/text%3E%3C/svg%3E"}
-                            alt={seller.shopName || seller.name}
+                          <OptimizedImage
+                            src={seller.avatar}
+                            slot={IMAGE_SLOTS.AVATAR}
+                            aspectRatio="1/1"
+                            alt={seller.shopName || "Seller"}
                             onError={(e) => {
                               e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23ffc400' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='40' font-weight='bold'%3EShop%3C/text%3E%3C/svg%3E";
                             }}
@@ -658,8 +678,10 @@ const HomePage = () => {
                             <ProductPreview>
                               {productImages.map((image, index) => (
                                 <PreviewImageWrapper key={index}>
-                                  <PreviewImage
+                                  <OptimizedImage
                                     src={image}
+                                    slot={IMAGE_SLOTS.TABLE_THUMB}
+                                    aspectRatio="1/1"
                                     alt={`Product ${index + 1}`}
                                     onError={(e) => {
                                       e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect fill='%23e2e8f0' width='80' height='80'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2364748b' font-size='24'%3EP%3C/text%3E%3C/svg%3E";
@@ -948,8 +970,7 @@ const SlideImageBg = styled.div`
   left: 0;
   width: 100%;
   height: 100%;
-  background-size: cover;
-  background-position: center;
+  z-index: 1;
   transition: transform 8s ease;
   
   .swiper-slide-active & {
@@ -1257,10 +1278,7 @@ const CategoryBg = styled.div`
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url(${props => props.$image});
-  background-size: cover;
-  background-position: center;
-  transition: transform 0.5s ease;
+  transition: transform 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
 `;
 
 const CategoryContent = styled.div`
@@ -1290,21 +1308,33 @@ const CategoryContent = styled.div`
 
 const ProductGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* 4 cards per row */
-  gap: 1.5rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+  padding: 0 1rem;
+  margin-bottom: 3rem;
   
-  @media (max-width: 1200px) {
-    grid-template-columns: repeat(3, 1fr); /* 3 cards on medium screens */
+  @media (min-width: 1600px) {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 1920px) {
+    grid-template-columns: repeat(6, 1fr);
   }
   
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(2, 1fr); /* 2 cards on tablets */
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
   }
   
-  @media ${devicesMax.sm} {
-    grid-template-columns: repeat(2, 1fr); /* 2 cards on mobile */
+  @media ${devicesMax.md} {
+    grid-template-columns: repeat(2, 1fr);
     gap: 0.75rem;
+  }
+  
+  @media ${devicesMax.xs} {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
   }
 `;
 
@@ -1556,10 +1586,10 @@ const PreviewImageWrapper = styled.div`
   }
 `;
 
+/* PreviewImage styled component is effectively replaced by OptimizedImage */
 const PreviewImage = styled.img`
   width: 100%;
   height: 100%;
-  object-fit: cover;
 `;
 
 const MoreProductsIndicator = styled.div`

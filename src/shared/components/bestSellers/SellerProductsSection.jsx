@@ -9,6 +9,8 @@ import { productService } from '../../services/productApi';
 import { SkeletonGrid } from '../../../components/loading';
 import { PATHS } from '../../../routes/routePaths';
 import { devicesMax } from '../../styles/breakpoint';
+import { IMAGE_SLOTS } from '../../utils/cloudinaryConfig';
+import OptimizedImage from '../OptimizedImage';
 
 const Section = styled.section`
   margin: 4rem 0;
@@ -58,18 +60,31 @@ const ViewAllLink = styled(Link)`
 
 const ProductsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
   padding: 0 1rem;
 
-  @media ${devicesMax.md} {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  @media (min-width: 1600px) {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  @media (min-width: 1920px) {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
   }
 
-  @media ${devicesMax.sm} {
+  @media ${devicesMax.md} {
     grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
+  }
+
+  @media ${devicesMax.xs} {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
   }
 `;
 
@@ -95,12 +110,14 @@ const SellerInfo = styled.div`
   gap: 1rem;
 `;
 
-const SellerAvatar = styled.img`
+/* SellerAvatar styled component replaced by OptimizedImage wrap */
+const SellerAvatarWrap = styled.div`
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  object-fit: cover;
+  overflow: hidden;
   border: 2px solid var(--color-grey-200);
+  background: var(--color-grey-100);
 `;
 
 const SellerName = styled.h3`
@@ -177,10 +194,15 @@ const SellerProducts = ({ seller }) => {
       <SellerSection>
         <SellerHeader>
           <SellerInfo>
-            <SellerAvatar
-              src={seller.avatar || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Crect fill='%23ffc400' width='48' height='48'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='20' font-weight='bold'%3E${(seller.shopName || seller.name || 'S').charAt(0).toUpperCase()}%3C/text%3E%3C/svg%3E`}
-              alt={seller.shopName || seller.name}
-            />
+            <SellerAvatarWrap>
+              <OptimizedImage
+                src={seller.avatar}
+                slot={IMAGE_SLOTS.AVATAR}
+                aspectRatio="1/1"
+                alt={seller.shopName || seller.name}
+                fallback={`data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Crect fill='%23ffc400' width='48' height='48'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='20' font-weight='bold'%3E${(seller.shopName || seller.name || 'S').charAt(0).toUpperCase()}%3C/text%3E%3C/svg%3E`}
+              />
+            </SellerAvatarWrap>
             <SellerName>{seller.shopName || seller.name}</SellerName>
           </SellerInfo>
         </SellerHeader>
@@ -197,13 +219,15 @@ const SellerProducts = ({ seller }) => {
     <SellerSection>
       <SellerHeader>
         <SellerInfo>
-          <SellerAvatar
-            src={seller.avatar || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Crect fill='%23ffc400' width='48' height='48'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='20' font-weight='bold'%3E${(seller.shopName || seller.name || 'S').charAt(0).toUpperCase()}%3C/text%3E%3C/svg%3E`}
-            alt={seller.shopName || seller.name}
-            onError={(e) => {
-              e.target.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Crect fill='%23ffc400' width='48' height='48'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='20' font-weight='bold'%3E${(seller.shopName || seller.name || 'S').charAt(0).toUpperCase()}%3C/text%3E%3C/svg%3E`;
-            }}
-          />
+          <SellerAvatarWrap>
+            <OptimizedImage
+              src={seller.avatar}
+              slot={IMAGE_SLOTS.AVATAR}
+              aspectRatio="1/1"
+              alt={seller.shopName || seller.name}
+              fallback={`data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Crect fill='%23ffc400' width='48' height='48'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='20' font-weight='bold'%3E${(seller.shopName || seller.name || 'S').charAt(0).toUpperCase()}%3C/text%3E%3C/svg%3E`}
+            />
+          </SellerAvatarWrap>
           <SellerName>{seller.shopName || seller.name}</SellerName>
         </SellerInfo>
         <ViewShopLink to={`${PATHS.SELLERS}/${seller._id || seller.id}`}>

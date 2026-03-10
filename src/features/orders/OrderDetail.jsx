@@ -177,7 +177,7 @@ const OrderDetail = () => {
 
   const currentStage = getCurrentStage();
 
-  // Determine if order is eligible for retry payment
+  // Determine if order is eligible for retry payment (non-COD Paystack)
   const canRetryPayment = useMemo(() => {
     if (!order) return false;
     const paymentMethod = order.paymentMethod;
@@ -203,6 +203,24 @@ const OrderDetail = () => {
     const isNotCancelled =
       order.status !== 'cancelled' && order.orderStatus !== 'cancelled';
     return isPaystackPayment && isUnpaid && isNotCancelled;
+  }, [order]);
+
+  // Determine if COD order can pay via Paystack when dispatcher arrives
+  const canPayCOD = useMemo(() => {
+    if (!order) return false;
+    const paymentMethod = order.paymentMethod;
+    const isCashOnDelivery =
+      paymentMethod === 'payment_on_delivery' ||
+      paymentMethod === 'Cash on Delivery' ||
+      paymentMethod === 'cod';
+    const isPaid =
+      order.paymentStatus === 'completed' ||
+      order.paymentStatus === 'paid' ||
+      order.isPaid === true ||
+      !!order.paidAt;
+    const isNotCancelled =
+      order.status !== 'cancelled' && order.orderStatus !== 'cancelled';
+    return isCashOnDelivery && !isPaid && isNotCancelled;
   }, [order]);
 
   const [payNowError, setPayNowError] = useState('');
@@ -614,7 +632,7 @@ const OrderDetail = () => {
           </MetaItem>
         </HeaderMeta>
 
-        {/* Pay Now / Retry Payment */}
+        {/* Pay Now / Retry Payment (Paystack orders only) */}
         {canRetryPayment && (
           <PayNowBanner>
             <PayNowBannerText>
@@ -629,6 +647,37 @@ const OrderDetail = () => {
               {isPayNowLoading ? 'Redirecting to Paystack...' : 'Pay Now'}
             </PayNowBannerButton>
           </PayNowBanner>
+        )}
+
+        {/* COD Payment Banner — shown when dispatcher reaches buyer */}
+        {canPayCOD && (
+          <CODPayBanner>
+            <CODPayBannerIcon>🏍️</CODPayBannerIcon>
+            <CODPayBannerContent>
+              <CODPayBannerTitle>Pay on Delivery</CODPayBannerTitle>
+              <CODPayBannerText>
+                When the dispatcher reaches you, tap the button below to pay securely via Paystack.
+              </CODPayBannerText>
+              {payNowError && <PayNowBannerError>{payNowError}</PayNowBannerError>}
+            </CODPayBannerContent>
+            <CODPayButton
+              type="button"
+              onClick={handlePayNow}
+              disabled={isPayNowLoading}
+            >
+              {isPayNowLoading ? (
+                <>
+                  <CODPaySpinner />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CODPayIcon>💳</CODPayIcon>
+                  Pay GH₵{grandTotal?.toFixed(2)} Now
+                </>
+              )}
+            </CODPayButton>
+          </CODPayBanner>
         )}
       </HeaderSection>
 
@@ -907,7 +956,13 @@ const OrderDetail = () => {
               <InfoGrid>
                 <InfoItem>
                   <InfoLabel>Method</InfoLabel>
-                  <InfoValue>{order.paymentMethod}</InfoValue>
+                  <InfoValue>
+                    {order.paymentMethod === 'payment_on_delivery' || order.paymentMethod === 'cod'
+                      ? 'Payment on Delivery'
+                      : order.paymentMethod === 'credit_balance' || order.paymentMethod === 'wallet'
+                        ? 'Account Balance'
+                        : order.paymentMethod}
+                  </InfoValue>
                 </InfoItem>
                 <InfoItem>
                   <InfoLabel>Status</InfoLabel>
@@ -919,7 +974,7 @@ const OrderDetail = () => {
                         order.isPaid === true ||
                         !!order.paidAt;
                       const label =
-                        isPaid && order.paymentStatus === 'refunded'
+                        order.paymentStatus === 'refunded'
                           ? 'Refunded'
                           : isPaid
                             ? 'Paid'
@@ -939,6 +994,22 @@ const OrderDetail = () => {
                   </InfoItem>
                 )}
               </InfoGrid>
+
+              {/* Inline COD Pay button in the payment card */}
+              {canPayCOD && (
+                <CODPayCardSection>
+                  <CODPayCardText>
+                    💡 Ready to pay? Use the button below when the dispatcher arrives.
+                  </CODPayCardText>
+                  <CODPayInlineButton
+                    type="button"
+                    onClick={handlePayNow}
+                    disabled={isPayNowLoading}
+                  >
+                    {isPayNowLoading ? 'Processing...' : `Pay GH₵${grandTotal?.toFixed(2)} via Paystack`}
+                  </CODPayInlineButton>
+                </CODPayCardSection>
+              )}
             </CardBody>
           </Card>
         </LeftColumn>
@@ -952,24 +1023,24 @@ const OrderDetail = () => {
 
           {/* Seller Orders - Mobile Card Layout */}
           <SellerOrdersGrid>
-            {(order?.sellerOrder || []).map((sellerOrder) => (
+            {(order?.sellerOrder || []).map((sellerOrder, sIdx) => (
               <SellerCard key={sellerOrder?._id}>
                 <SellerHeader>
                   <SellerAvatar>
                     <FaUser />
                   </SellerAvatar>
                   <SellerInfo>
+                    {/* Shop Name (primary) */}
                     <SellerName>
-                      {sellerOrder?.seller?.shopName || sellerOrder?.seller?.name || "Seller"}
+                      {sellerOrder?.seller?.shopName || `Seller ${sIdx + 1}`}
                     </SellerName>
-                    {sellerOrder?.seller?.shopName && sellerOrder?.seller?.name && (
-                      <SellerEmail>{sellerOrder?.seller?.name}</SellerEmail>
+                    {/* Seller real name (secondary) */}
+                    {sellerOrder?.seller?.name && (
+                      <SellerSubLabel>👤 {sellerOrder.seller.name}</SellerSubLabel>
                     )}
-                    {(!sellerOrder?.seller?.shopName || !sellerOrder?.seller?.name) && sellerOrder?.seller?.email && (
-                      <SellerEmail>{sellerOrder?.seller?.email}</SellerEmail>
-                    )}
-                    {!sellerOrder?.seller?.shopName && !sellerOrder?.seller?.name && !sellerOrder?.seller?.email && (
-                      <SellerEmail>N/A</SellerEmail>
+                    {/* Email fallback */}
+                    {!sellerOrder?.seller?.name && sellerOrder?.seller?.email && (
+                      <SellerSubLabel>{sellerOrder.seller.email}</SellerSubLabel>
                     )}
                   </SellerInfo>
                 </SellerHeader>
@@ -1576,6 +1647,134 @@ const HeaderMeta = styled.div`
   }
 `;
 
+// ── COD (Pay on Delivery via Paystack) Banner ──────────────────────────────
+const CODPayBanner = styled.div`
+  margin-top: var(--spacing-md);
+  padding: 1.6rem 2rem;
+  border-radius: var(--border-radius-lg);
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+  border: 1px solid #2563eb;
+  display: flex;
+  align-items: center;
+  gap: 1.6rem;
+  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.25);
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.2rem;
+  }
+`;
+
+const CODPayBannerIcon = styled.div`
+  font-size: 3.2rem;
+  flex-shrink: 0;
+`;
+
+const CODPayBannerContent = styled.div`
+  flex: 1;
+`;
+
+const CODPayBannerTitle = styled.h3`
+  margin: 0 0 0.4rem;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #ffffff;
+`;
+
+const CODPayBannerText = styled.p`
+  margin: 0;
+  font-size: 1.3rem;
+  color: #93c5fd;
+  line-height: 1.5;
+`;
+
+const CODPayButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1.2rem 2.4rem;
+  background: #16a34a;
+  color: #ffffff;
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: 1.5rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s ease, transform 0.15s ease;
+  flex-shrink: 0;
+
+  &:hover:not(:disabled) {
+    background: #15803d;
+    transform: translateY(-1px);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: center;
+  }
+`;
+
+const CODPayIcon = styled.span`
+  font-size: 1.8rem;
+`;
+
+const CODPaySpinner = styled.span`
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 0.8s linear infinite;
+  @keyframes spin { to { transform: rotate(360deg); } }
+`;
+
+// Inline pay button inside Payment Info card
+const CODPayCardSection = styled.div`
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px dashed var(--color-grey-200);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+`;
+
+const CODPayCardText = styled.p`
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-grey-600);
+`;
+
+const CODPayInlineButton = styled.button`
+  display: block;
+  width: 100%;
+  padding: 1rem 1.6rem;
+  background: #16a34a;
+  color: #ffffff;
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: 1.4rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+  &:hover:not(:disabled) { background: #15803d; }
+  &:disabled { opacity: 0.65; cursor: not-allowed; }
+`;
+// ── End COD Styles ──────────────────────────────────────────────────────────
+
+
 const MetaItem = styled.div`
   display: flex;
   align-items: center;
@@ -1977,6 +2176,15 @@ const SellerName = styled.div`
 const SellerEmail = styled.div`
   color: var(--color-grey-500);
   font-size: var(--font-size-sm);
+`;
+
+const SellerSubLabel = styled.div`
+  color: var(--color-grey-500);
+  font-size: var(--font-size-sm);
+  margin-top: 0.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 `;
 
 const OrderItemsList = styled.div`

@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import styled from "styled-components";
+import { getOptimizedImageUrl, IMAGE_SLOTS } from "../../utils/cloudinaryConfig";
 
 const PersonalInfoSection = ({
   userInfo,
@@ -39,9 +40,10 @@ const PersonalInfoSection = ({
             {/* Make the avatar image a clickable label for the file input */}
             <AvatarLabel htmlFor="avatar-upload" onClick={handleAvatarClick}>
               <AvatarPreview
-                src={avatarPreview || userInfo?.photo}
+                src={avatarPreview || getOptimizedImageUrl(userInfo?.photo, IMAGE_SLOTS.AVATAR)}
                 alt="Profile preview"
                 hasImage={!!(avatarPreview || userInfo?.photo)}
+                loading="lazy"
               >
                 {!(avatarPreview || userInfo?.photo) && (
                   <DefaultAvatar>👤</DefaultAvatar>

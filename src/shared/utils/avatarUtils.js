@@ -1,3 +1,5 @@
+import { getOptimizedImageUrl, IMAGE_SLOTS } from './cloudinaryConfig';
+
 /**
  * Constructs the full URL for a user avatar/photo
  * Handles both full URLs (Cloudinary) and local filenames
@@ -9,14 +11,8 @@ export const getAvatarUrl = (photo) => {
   if (!photo) {
     return "/img/users/default.jpg";
   }
-  
-  // If it's already a full URL (starts with http/https), return as is
-  if (photo.startsWith("http://") || photo.startsWith("https://")) {
-    return photo;
-  }
-  
-  // If it's a filename, construct the path to the static file
-  return `/img/users/${photo}`;
+
+  return getOptimizedImageUrl(photo, IMAGE_SLOTS.AVATAR);
 };
 
 /**

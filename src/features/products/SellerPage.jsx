@@ -15,6 +15,8 @@ import { getProductTotalStock } from '../../shared/utils/productHelpers';
 import { useGetBestSellers } from '../../shared/hooks/useBestSellers';
 import { ErrorState } from '../../components/loading';
 import Container from '../../shared/components/Container';
+import ProductCard from '../../shared/components/ProductCard';
+import Grid from '../../components/ui/Grid';
 
 const PublicSellerProfile = () => {
   const { id: sellerId } = useParams();
@@ -292,42 +294,19 @@ const PublicSellerProfile = () => {
               <p>This shop hasn't listed any products for sale.</p>
             </EmptyState>
           ) : (
-            <ProductGrid>
+            <Grid
+              variant="products"
+              $mobileTwoColumns={true}
+              style={{ marginTop: '1rem' }}
+            >
               {products.map((product) => (
-                <ProductCard key={product?._id} to={`/product/${product?._id}`}>
-                  <ProductImageContainer>
-                    <ProductImage
-                      src={product?.imageCover}
-                      alt={product?.name}
-                      loading="lazy"
-                    />
-                    <ProductOverlay>
-                      <QuickAction>
-                        <FaHeart size={18} />
-                      </QuickAction>
-                      <QuickAction>
-                        <FaShoppingBag size={18} />
-                      </QuickAction>
-                    </ProductOverlay>
-                  </ProductImageContainer>
-
-                  <ProductInfo>
-                    <ProductCategory>{product?.category?.name || "Uncategorized"}</ProductCategory>
-                    <ProductName>{product?.name}</ProductName>
-                    <ProductPrice>${product?.defaultPrice?.toFixed(2) || "0.00"}</ProductPrice>
-
-                    <ProductFooter>
-                      <StarRating rating={product?.rating || 0} size={14} />
-                      {getProductTotalStock(product) > 0 ? (
-                        <StockBadge $inStock={true}>In Stock</StockBadge>
-                      ) : (
-                        <StockBadge $inStock={false}>Out of Stock</StockBadge>
-                      )}
-                    </ProductFooter>
-                  </ProductInfo>
-                </ProductCard>
+                <ProductCard
+                  key={product?._id || product?.id}
+                  product={product}
+                  showAddToCart={true}
+                />
               ))}
-            </ProductGrid>
+            </Grid>
           )}
         </MainContent>
       </MainLayout>
@@ -774,143 +753,6 @@ const FilterButton = styled.button`
   &:hover {
     border-color: #cbd5e1;
   }
-`;
-
-const ProductGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2rem;
-  width: 100%;
-
-  @media (max-width: 1024px) {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
-  }
-
-  @media (max-width: 640px) {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-`;
-
-const ProductCard = styled(Link)`
-  background: var(--bg-surface);
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-  text-decoration: none;
-  color: inherit;
-  display: flex;
-  flex-direction: column;
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  }
-`;
-
-const ProductImageContainer = styled.div`
-  position: relative;
-  width: 100%;
-  height: 200px;
-  overflow: hidden;
-`;
-
-const ProductImage = styled.img`
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s ease;
-  
-  ${ProductCard}:hover & {
-    transform: scale(1.05);
-  }
-`;
-
-const ProductOverlay = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  
-  ${ProductCard}:hover & {
-    opacity: 1;
-  }
-`;
-
-const QuickAction = styled.button`
-  width: 40px;
-  height: 40px;
-  background: white;
-  border: none;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  color: #374151;
-
-  &:hover {
-    background: var(--color-primary-500, #ffc400);
-    color: white;
-    transform: scale(1.1);
-  }
-`;
-
-const ProductInfo = styled.div`
-  padding: 1.25rem;
-`;
-
-const ProductCategory = styled.p`
-  font-size: 0.75rem;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 0.5rem;
-`;
-
-const ProductName = styled.h3`
-  font-size: 1rem;
-  font-weight: 600;
-  color: #1e293b;
-  margin-bottom: 0.5rem;
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-`;
-
-const ProductPrice = styled.div`
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 0.75rem;
-`;
-
-const ProductFooter = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-
-const StockBadge = styled.span`
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  background: ${props => props.$inStock ? '#dcfce7' : '#fef2f2'};
-  color: ${props => props.$inStock ? '#166534' : '#991b1b'};
 `;
 
 const EmptyState = styled.div`

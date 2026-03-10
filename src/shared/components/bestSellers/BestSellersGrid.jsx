@@ -9,7 +9,7 @@ const GridContainer = styled.div`
   gap: var(--space-lg);
   margin: var(--space-2xl) 0;
 
-  @media (max-width: 1400px) {
+  @media (max-width: 900px) {
     grid-template-columns: repeat(3, 1fr);
     gap: var(--space-md);
   }
@@ -20,8 +20,13 @@ const GridContainer = styled.div`
   }
 
   @media ${devicesMax.sm} {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: var(--space-sm);
+  }
+
+  @media ${devicesMax.xs} {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-xs);
   }
 `;
 
