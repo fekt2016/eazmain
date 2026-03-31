@@ -499,13 +499,9 @@ describe('ProductDetail', () => {
 
     renderWithProviders(<ProductDetail />);
 
-    // Use structural assertion instead of brittle text matching
     await waitFor(() => {
-      // Check for variant selector (structural assertion - more reliable)
-      // Component renders VariantNameSelector when variants.length > 0 and no attributes
-      const nameSelector = screen.queryByTestId('variant-name-selector');
-      const attributeSelector = screen.queryByTestId('variant-selector');
-      expect(nameSelector || attributeSelector).toBeInTheDocument();
+      // Variant selector renders "Choose your option" when product has variants
+      expect(screen.getByText(/choose your option/i)).toBeInTheDocument();
     }, { timeout: 3000 });
 
     // User must explicitly click "Add to Cart" button
@@ -606,8 +602,8 @@ describe('ProductDetail', () => {
       expect(screen.getAllByText(/test product/i).length).toBeGreaterThan(0);
     });
 
-    // Find wishlist button by title attribute
-    const wishlistButton = screen.getByTitle(/wishlist/i);
+    // Find wishlist button by role and name
+    const wishlistButton = screen.getByRole('button', { name: /wishlist/i });
     await user.click(wishlistButton);
 
     // Assert behavior: wishlist toggle was called
@@ -696,11 +692,8 @@ describe('ProductDetail', () => {
     await waitFor(() => {
       // Use flexible text matching
       expect(screen.getAllByText(/variant product/i).length).toBeGreaterThan(0);
-      // Variant selector should be rendered when product has variants
-      // Check for either variant-name-selector (name-based) or variant-selector (attribute-based)
-      const nameSelector = screen.queryByTestId('variant-name-selector');
-      const attributeSelector = screen.queryByTestId('variant-selector');
-      expect(nameSelector || attributeSelector).toBeInTheDocument();
+      // Variant selector renders "Choose your option" or "X options available"
+      expect(screen.getByText(/choose your option/i)).toBeInTheDocument();
     });
   });
 

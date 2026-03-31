@@ -82,11 +82,11 @@ export default function CategoriesListPage() {
                 <CategoryCard key={category._id || category.id} to={`${PATHS.CATEGORIES}/${category._id || category.id}`}>
                   <CategoryImageContainer>
                     <CategoryImage
-                      src={getOptimizedImageUrl(category.image, IMAGE_SLOTS.CATEGORY_ICON, "/api/placeholder/400/300")}
+                      src={getOptimizedImageUrl(category.image, IMAGE_SLOTS.CATEGORY_ICON, "/placeholder-product.svg")}
                       alt={category.name}
                       loading="lazy"
                       onError={(e) => {
-                        e.target.src = "/api/placeholder/400/300";
+                        e.target.src = "/placeholder-product.svg";
                       }}
                     />
                     <CategoryOverlay />
@@ -218,11 +218,6 @@ const CategoryImage = styled.img`
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.5s ease;
-
-  ${CategoryCard}:hover & {
-    transform: scale(1.1);
-  }
 `;
 
 const CategoryContent = styled.div`

@@ -102,8 +102,10 @@ export const PATHS = {
   DATA_DELETION: "/data-deletion",
   REFUND_POLICY: "/refund-policy",
   VAT_TAX_POLICY: "/vat-tax-policy",
+  COOKIE_POLICY: "/cookies",
   SHIPPING_POLICY: "/shipping-policy",
   PRODUCT_CARE: "/product-care",
+  SIZE_GUIDE: "/size-guide",
   CAREERS: "/careers",
 
   // Special
@@ -288,6 +290,12 @@ export const ROUTE_CONFIG = {
     keywords: "refund policy, returns, Saiisai",
   },
 
+  [PATHS.COOKIE_POLICY]: {
+    title: "Cookie Policy - Saiisai",
+    description: "Learn how Saiisai uses cookies and similar technologies.",
+    keywords: "cookie policy, cookies, privacy, Saiisai",
+  },
+
   [PATHS.VAT_TAX_POLICY]: {
     title: "VAT & Tax Policy - Saiisai",
     description: "How Saiisai handles VAT and tax for the Ghana marketplace. GRA compliance for buyers and sellers.",
@@ -298,6 +306,12 @@ export const ROUTE_CONFIG = {
     title: "Shipping Policy - Saiisai",
     description: "Learn about Saiisai's shipping and delivery policy",
     keywords: "shipping policy, delivery, Saiisai",
+  },
+
+  [PATHS.SIZE_GUIDE]: {
+    title: "Size Guide - Saiisai",
+    description: "Find your perfect fit. Clothing and shoe size charts.",
+    keywords: "size guide, clothing sizes, shoe sizes, fit guide, Saiisai",
   },
 
   [PATHS.PRODUCT_CARE]: {
@@ -410,6 +424,7 @@ export const NAVIGATION_MENU = {
         { path: PATHS.PRIVACY, label: "Privacy Policy" },
         { path: PATHS.REFUND_POLICY, label: "Refund Policy" },
         { path: PATHS.VAT_TAX_POLICY, label: "VAT & Tax Policy" },
+        { path: PATHS.COOKIE_POLICY, label: "Cookie Policy" },
       ],
     },
   ],

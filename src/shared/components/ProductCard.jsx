@@ -21,6 +21,7 @@ import logger from '../utils/logger';
 import { toast } from 'react-toastify';
 import OptimizedImage from './OptimizedImage';
 import { getOptimizedImageUrl, IMAGE_SLOTS } from "../utils/cloudinaryConfig";
+import { isEazShopProduct } from '../utils/isEazShopProduct';
 
 // Helper function to get grid image for cards (homepage, grids, carousels)
 // Prefer product.imageCover when available, then fall back to first product.images entry
@@ -296,7 +297,7 @@ const ProductCard = memo(({
                 <InactiveBadge>Inactive</InactiveBadge>
               )}
               {/* Official Store Product Badge */}
-              {(product.isEazShopProduct || product.seller?.role === 'official_store') && (
+              {isEazShopProduct(product) && (
                 <OfficialStoreBadge>
                   <OfficialStoreIcon>✓</OfficialStoreIcon>
                   Saiisai Official
@@ -527,11 +528,6 @@ const ImageContainer = styled.div`
       width: 100%;
     }
   `}
-
-  /* Subtle zoom on card hover (web only) */
-  ${CardContainer}:hover & [data-product-image-wrap] img {
-    transform: scale(1.05);
-  }
 
   ${({ $layout }) => $layout === "horizontal" && css`
     [data-product-image-wrap] {

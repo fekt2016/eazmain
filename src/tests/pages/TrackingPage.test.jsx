@@ -69,14 +69,15 @@ describe('TrackingPage', () => {
     });
   });
 
-  test('renders error state when tracking number is missing', async () => {
+  test('renders form when tracking number is missing', async () => {
     mockParams.trackingNumber = undefined;
 
     renderWithProviders(<TrackingPage />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('error-state')).toBeInTheDocument();
-      expect(screen.getByText('Tracking Number Missing')).toBeInTheDocument();
+      expect(screen.getByText(/track your order/i)).toBeInTheDocument();
+      expect(screen.getByText(/enter your tracking number below/i)).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/e.g. EAZ-/i)).toBeInTheDocument();
     });
   });
 

@@ -95,7 +95,7 @@ jest.mock('@/shared/components/SkeletonLoader', () => ({
 // Container is already mocked globally in setupTests.js
 // No need to mock it again here
 
-// Mock ErrorState component
+// Mock loading components (CategoryPage uses ErrorState and EmptyState)
 jest.mock('@/components/loading', () => ({
   __esModule: true,
   ErrorState: ({ title, message }) => (
@@ -104,6 +104,14 @@ jest.mock('@/components/loading', () => ({
       <p>{message}</p>
     </div>
   ),
+  EmptyState: ({ title, message, action }) => (
+    <div data-testid="empty-state">
+      <h3>{title}</h3>
+      <p>{message}</p>
+      {action && <div data-testid="empty-state-action">{action}</div>}
+    </div>
+  ),
+  ShimmerProductGrid: () => <div data-testid="shimmer-product-grid">Loading products...</div>,
 }));
 
 describe('CategoryPage', () => {
@@ -195,8 +203,8 @@ describe('CategoryPage', () => {
     await waitFor(() => {
       // Category name should be displayed
       expect(screen.getByText('Test Category')).toBeInTheDocument();
-      // Skeleton loaders should be rendered for products
-      expect(screen.getAllByTestId('skeleton-loader').length).toBeGreaterThan(0);
+      // ShimmerProductGrid should be rendered when products are loading
+      expect(screen.getByTestId('shimmer-product-grid')).toBeInTheDocument();
     });
   });
 
@@ -233,8 +241,8 @@ describe('CategoryPage', () => {
     renderWithProviders(<CategoryPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('No Products Found')).toBeInTheDocument();
-      expect(screen.getByText(/Try adjusting your filters or check back later/i)).toBeInTheDocument();
+      expect(screen.getByText(/No products found/i)).toBeInTheDocument();
+      expect(screen.getByText(/Try browsing another category/i)).toBeInTheDocument();
       expect(screen.getByText('Clear All Filters')).toBeInTheDocument();
     });
   });

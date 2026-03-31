@@ -1,5 +1,20 @@
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 import { devicesMax } from "../../styles/breakpoint";
+import { inputVariants } from "../../styles/variants";
+
+const variantStyles = Object.fromEntries(
+  Object.entries(inputVariants).map(([key, v]) => [
+    key,
+    css`
+      border-color: ${v.borderColor};
+      &:focus {
+        outline: none;
+        border-color: ${v.focusBorderColor};
+        box-shadow: ${v.focusShadow};
+      }
+    `,
+  ])
+);
 
 const Input = styled.input`
   font-size: var(--font-size-md);
@@ -11,12 +26,14 @@ const Input = styled.input`
   color: var(--color-grey-900);
   width: ${({ $fullWidth }) => ($fullWidth ? "100%" : "auto")};
   transition: var(--transition-base);
-  
+
   &:focus {
     outline: none;
     border-color: var(--color-primary-500);
-    box-shadow: 0 0 0 3px rgba(255, 196, 0, 0.1);
+    box-shadow: 0 0 0 3px rgba(212, 136, 42, 0.1);
   }
+
+  ${({ $variant }) => $variant && variantStyles[$variant]}
   
   &:disabled {
     background-color: var(--color-grey-200);

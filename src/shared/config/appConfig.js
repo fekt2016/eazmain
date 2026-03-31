@@ -19,10 +19,16 @@ const readEnv = (key, { required = false } = {}) => {
 };
 
 // API base URL (backend)
+// Dev fallback when env not set
+const envApiUrl = readEnv("VITE_API_BASE_URL") || readEnv("VITE_API_URL");
 export const API_BASE_URL =
-  readEnv("VITE_API_BASE_URL") ||
-  readEnv("VITE_API_URL") ||
-  null;
+  envApiUrl ||
+  (typeof import.meta !== "undefined" && import.meta.env?.DEV
+    ? (() => {
+        devWarnMissing("VITE_API_BASE_URL or VITE_API_URL");
+        return "http://localhost:4000/api/v1";
+      })()
+    : null);
 
 // Analytics / tracking IDs
 export const GA_MEASUREMENT_ID = readEnv("VITE_GA_MEASUREMENT_ID");

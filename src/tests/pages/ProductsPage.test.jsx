@@ -77,18 +77,17 @@ jest.mock('@/shared/components/ProductCard', () => ({
 // Container is already mocked globally in setupTests.js
 // No need to mock it again here
 
-// Mock loading components
+// Mock loading components (ProductsPage uses ShimmerProductGrid and EmptyState)
 jest.mock('@/components/loading', () => ({
   __esModule: true,
-  SkeletonGrid: ({ count }) => (
-    <div data-testid="skeleton-grid">
-      {Array.from({ length: count || 8 }).map((_, i) => (
-        <div key={i} data-testid="skeleton-card">Loading...</div>
-      ))}
+  ShimmerProductGrid: () => <div data-testid="shimmer-product-grid">Loading products...</div>,
+  EmptyState: ({ title, message, action }) => (
+    <div data-testid="empty-state">
+      <h3>{title}</h3>
+      <p>{message}</p>
+      {action && <div data-testid="empty-state-action">{action}</div>}
     </div>
   ),
-  SkeletonCard: () => <div data-testid="skeleton-card">Loading...</div>,
-  EmptyState: ({ children }) => <div data-testid="empty-state">{children}</div>,
 }));
 
 describe('ProductsPage', () => {
@@ -108,8 +107,7 @@ describe('ProductsPage', () => {
   });
 
   test('renders loading state when products are loading', async () => {
-    // Component checks: if (isProductsLoading && isEazShopLoading)
-    // So BOTH need to be true for loading state
+    // Component checks: if (isProductsLoading || isEazShopLoading)
     mockGetProducts.isLoading = true;
     mockUseGetEazShopProductsResult.isLoading = true;
     mockUseGetEazShopProducts.mockReturnValue(mockUseGetEazShopProductsResult);
@@ -117,7 +115,7 @@ describe('ProductsPage', () => {
     renderWithProviders(<ProductsPage />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('skeleton-grid')).toBeInTheDocument();
+      expect(screen.getByTestId('shimmer-product-grid')).toBeInTheDocument();
       expect(screen.getByText('All Products')).toBeInTheDocument();
     });
   });
@@ -133,7 +131,7 @@ describe('ProductsPage', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('empty-state')).toBeInTheDocument();
-      expect(screen.getByText('No Products Found')).toBeInTheDocument();
+      expect(screen.getByText(/No products found/i)).toBeInTheDocument();
     });
   });
 
@@ -144,6 +142,7 @@ describe('ProductsPage', () => {
         name: 'Test Product 1',
         price: 100,
         status: 'active',
+        moderationStatus: 'approved',
         imageCover: 'https://example.com/image1.jpg',
       },
       {
@@ -151,6 +150,7 @@ describe('ProductsPage', () => {
         name: 'Test Product 2',
         price: 150,
         status: 'active',
+        moderationStatus: 'approved',
         imageCover: 'https://example.com/image2.jpg',
       },
     ];
@@ -178,6 +178,7 @@ describe('ProductsPage', () => {
         name: 'Test Product 1',
         price: 100,
         status: 'active',
+        moderationStatus: 'approved',
         imageCover: 'https://example.com/image1.jpg',
       },
     ];
@@ -188,6 +189,7 @@ describe('ProductsPage', () => {
         name: 'EazShop Product',
         price: 200,
         status: 'active',
+        moderationStatus: 'approved',
         isEazShopProduct: true,
         imageCover: 'https://example.com/eazshop.jpg',
       },
@@ -223,6 +225,7 @@ describe('ProductsPage', () => {
         name: 'Test Product 1',
         price: 100,
         status: 'active',
+        moderationStatus: 'approved',
         imageCover: 'https://example.com/image1.jpg',
       },
     ];
@@ -257,6 +260,7 @@ describe('ProductsPage', () => {
       {
         _id: 'product1',
         name: 'Test Product 1',
+        moderationStatus: 'approved',
         price: 100,
         status: 'active',
         imageCover: 'https://example.com/image1.jpg',
@@ -266,6 +270,7 @@ describe('ProductsPage', () => {
         name: 'Test Product 2',
         price: 150,
         status: 'active',
+        moderationStatus: 'approved',
         imageCover: 'https://example.com/image2.jpg',
       },
     ];

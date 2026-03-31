@@ -54,8 +54,27 @@ const useProduct = () => {
 
           return res.data;
         } catch (error) {
-          logger.error(`Failed to fetch product ${id}:`, error);
-          throw new Error(`Failed to load product: ${error.message}`);
+          const status = error?.response?.status;
+          const backendMessage =
+            error?.response?.data?.message || error?.message || "";
+          const isUnavailable404 =
+            status === 404 ||
+            /not found or not available/i.test(backendMessage);
+          const isApprovalRelated =
+            /not approved/i.test(backendMessage) ||
+            /approved for sale/i.test(backendMessage);
+
+          if (import.meta.env.DEV) {
+            logger.error(`Failed to fetch product ${id}:`, error);
+          }
+
+          if (isUnavailable404 || isApprovalRelated) {
+            throw new Error(
+              "This product is no longer available. It may still be awaiting admin approval."
+            );
+          }
+
+          throw new Error("We could not load this product right now. Please try again.");
         }
       },
       enabled: !!id,

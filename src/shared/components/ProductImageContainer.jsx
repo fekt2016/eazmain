@@ -15,14 +15,7 @@ const skeletonPulse = keyframes`
 const ImageWrapper = styled.div`
   position: relative;
   width: 100%;
-  aspect-ratio: 1 / 1;
-  
-  /* Fallback for browsers without aspect-ratio support */
-  @supports not (aspect-ratio: 1/1) {
-    height: 0;
-    padding-bottom: 100%;
-  }
-
+  min-height: 200px;
   overflow: hidden;
   background-color: var(--color-grey-100, #f8f9fa);
   border-radius: var(--border-radius-md, 0.75rem);
@@ -34,19 +27,16 @@ const ImageWrapper = styled.div`
 `;
 
 const StyledImage = styled.img`
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) ${({ $loaded }) => ($loaded ? "scale(1)" : "scale(0.95)")};
+  display: block;
   width: auto !important;
   height: auto !important;
   max-width: 100% !important;
   max-height: 100% !important;
-  object-fit: contain !important;
+  object-fit: contain;
   object-position: center;
   background-color: transparent !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  
+  transition: opacity 0.3s ease;
+
   ${({ $loaded }) =>
     $loaded
       ? css`
@@ -56,10 +46,6 @@ const StyledImage = styled.img`
       : css`
           opacity: 0;
         `}
-
-  .image-container-hover:hover & {
-    transform: translate(-50%, -50%) scale(1.05);
-  }
 `;
 
 const SkeletonPlaceholder = styled.div`
@@ -89,11 +75,9 @@ const NoImagePlaceholder = styled.div`
 
 /**
  * Reusable product image container.
- * - Fixed 1:1 aspect ratio (no layout shift).
- * - object-fit: cover so image fills the 1:1 box without stretching; consistent with mobile.
+ * - Image maintains its original (natural) size; not forced to fill the container.
+ * - max-width/max-height: 100% so it does not overflow; object-fit: contain.
  * - Skeleton while loading, smooth fade-in when loaded.
- * - Neutral background, rounded corners, soft shadow.
- * - Optional hover zoom via parent .image-container-hover.
  */
 export default function ProductImageContainer({
   src,

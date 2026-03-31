@@ -35,5 +35,32 @@ export const devices = {
   "2xl": `(min-width: ${breakpoints["2xl"]})`,
 };
 
-export default { devicesMax, devicesMin, devices, breakpoints };
+/**
+ * Mobile-first breakpoints (640, 768, 1024, 1280, 1536px).
+ * Use when adopting mobile-first approach.
+ */
+const breakpointsMobileFirst = {
+  sm: '40rem',   // 640px
+  md: '48rem',   // 768px
+  lg: '64rem',   // 1024px
+  xl: '80rem',   // 1280px
+  '2xl': '96rem', // 1536px
+};
+
+export const devicesMinMobileFirst = {
+  sm: `(min-width: ${breakpointsMobileFirst.sm})`,
+  md: `(min-width: ${breakpointsMobileFirst.md})`,
+  lg: `(min-width: ${breakpointsMobileFirst.lg})`,
+  xl: `(min-width: ${breakpointsMobileFirst.xl})`,
+  '2xl': `(min-width: ${breakpointsMobileFirst['2xl']})`,
+};
+
+export default {
+  devicesMax,
+  devicesMin,
+  devices,
+  breakpoints,
+  breakpointsMobileFirst,
+  devicesMinMobileFirst,
+};
 

@@ -29,9 +29,16 @@ const mockUseGetProductReviews = jest.fn(() => ({
   error: null,
 }));
 
+const mockUseGetMyReviews = jest.fn(() => ({
+  data: null,
+  isLoading: false,
+  error: null,
+}));
+
 jest.mock('@/shared/hooks/useReviews', () => ({
   __esModule: true,
   useGetProductReviews: (...args) => mockUseGetProductReviews(...args),
+  useGetMyReviews: (...args) => mockUseGetMyReviews(...args),
 }));
 
 // Mock useAuth
@@ -76,14 +83,15 @@ describe('CustomerReviewPage', () => {
     });
   });
 
-  test('renders error state when product ID is missing', async () => {
+  test('renders my reviews page when no product ID (reviews route)', async () => {
     mockParams.id = undefined;
 
     renderWithProviders(<CustomerReviewPage />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('error-state')).toBeInTheDocument();
-      expect(screen.getByText('Product ID Missing')).toBeInTheDocument();
+      // Without product ID, component shows "My Reviews" page (user's reviews)
+      expect(screen.getByText(/my reviews/i)).toBeInTheDocument();
+      expect(screen.getByText(/your feedback and ratings/i)).toBeInTheDocument();
     });
   });
 

@@ -135,13 +135,21 @@ jest.mock('@/components/loading', () => ({
 }));
 
 describe('CartPage', () => {
+  const defaultAuthState = {
+    isAuthenticated: true,
+    isLoading: false,
+    user: { _id: 'user123', email: 'test@example.com' },
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockNavigate.mockClear();
-    // Clear the shared mock functions
     mockUpdateCartItemFn.mockClear();
     mockRemoveCartItemFn.mockClear();
     mockAddToCartFn.mockClear();
+    // Restore default useAuth (in case a test overrode it)
+    const { default: useAuth } = require('@/shared/hooks/useAuth');
+    useAuth.mockReturnValue(defaultAuthState);
   });
 
   test('renders cart items with product details', async () => {
@@ -355,8 +363,11 @@ describe('CartPage', () => {
       expect(mockRemoveCartItemFn).toHaveBeenCalled();
     }, { timeout: 3000 });
 
-    // Verify it was called with the correct item ID
-    expect(mockRemoveCartItemFn).toHaveBeenCalledWith('cart-item-1');
+    // Verify it was called with the correct item ID (second arg is { onSettled })
+    expect(mockRemoveCartItemFn).toHaveBeenCalledWith(
+      'cart-item-1',
+      expect.objectContaining({ onSettled: expect.any(Function) })
+    );
   });
 
   test('shows empty state when cart is empty', async () => {
@@ -430,7 +441,8 @@ describe('CartPage', () => {
 
   test('navigates to login when unauthenticated user clicks checkout', async () => {
     const { default: useAuth } = require('@/shared/hooks/useAuth');
-    useAuth.mockReturnValueOnce({
+    // Use mockReturnValue so every useAuth call in this test returns unauthenticated
+    useAuth.mockReturnValue({
       isAuthenticated: false,
       isLoading: false,
       user: null,

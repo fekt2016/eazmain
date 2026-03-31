@@ -40,9 +40,11 @@ const CartPage = () => {
   const {
     updateCartItem,
     removeCartItem,
+    clearCart,
     addToCart,
     isUpdating,
     isAdding,
+    isClearing,
     updateCartItemMutation,
     removeCartItemMutation,
     addToCartMutation,
@@ -149,10 +151,40 @@ const CartPage = () => {
         </PreorderCartBanner>
       )}
 
+      {products.length > 0 && subTotal > 0 && subTotal < 100 && (
+        <FreeShippingBanner>
+          Add GH₵{(100 - subTotal).toFixed(2)} more to qualify for <strong>free shipping</strong>.
+          <ProgressBar>
+            <ProgressFill $progress={Math.min((subTotal / 100) * 100, 100)} />
+          </ProgressBar>
+        </FreeShippingBanner>
+      )}
+
+      {products.length > 0 && subTotal >= 100 && (
+        <FreeShippingQualified>
+          🎉 You qualify for <strong>free shipping</strong>!
+        </FreeShippingQualified>
+      )}
+
       <CartContainer>
         <CartItems>
           <CartHeader>
-            <span>Product</span>
+            <div>
+              <span>Product</span>
+              {products.length > 0 && (
+                <ClearCartButton
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm('Clear all items from your cart?')) {
+                      clearCart();
+                    }
+                  }}
+                  disabled={isClearing}
+                >
+                  {isClearing ? 'Clearing...' : 'Clear Cart'}
+                </ClearCartButton>
+              )}
+            </div>
             <span>Total</span>
           </CartHeader>
 
@@ -182,7 +214,7 @@ const CartPage = () => {
                         item.variantImage ||
                         (item.product?.images && item.product.images.length > 0 ? item.product.images[0] : null) ||
                         item.product?.imageCover ||
-                        '/placeholder-image.png'
+                        '/placeholder-image.svg'
                       }
                       alt={item.variantName ? `${item.product?.name} - ${item.variantName}` : (item.product?.name || 'Product')}
                     />
@@ -385,11 +417,69 @@ const CartSummary = styled.div`
 const CartHeader = styled.div`
   display: flex;
   justify-content: space-between;
+  align-items: center;
   padding: 15px 20px;
   background: #f8f9fa;
   border-bottom: 1px solid #eaeaea;
   font-weight: 600;
   color: #495057;
+`;
+
+const ClearCartButton = styled.button`
+  margin-left: 1rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #6c757d;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+
+  &:hover:not(:disabled) {
+    color: #dc3545;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+const FreeShippingBanner = styled.div`
+  margin: 0 0 1rem 0;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+  font-size: 0.9rem;
+`;
+
+const ProgressBar = styled.div`
+  margin-top: 0.5rem;
+  height: 6px;
+  background: #c8e6c9;
+  border-radius: 3px;
+  overflow: hidden;
+`;
+
+const ProgressFill = styled.div`
+  height: 100%;
+  width: ${(props) => props.$progress}%;
+  background: #2e7d32;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+`;
+
+const FreeShippingQualified = styled.div`
+  margin: 0 0 1rem 0;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+  font-size: 0.9rem;
 `;
 
 const CartItem = styled.div`

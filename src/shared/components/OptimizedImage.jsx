@@ -26,9 +26,9 @@ const OptimizedImage = ({
     const [hasError, setHasError] = useState(false);
     const imgRef = React.useRef(null);
 
-    // Identify base URL from src
+    // Identify base URL from src (supports Cloudinary objects with public_id, secure_url, etc.)
     const baseUrlValue = typeof src === 'object' && src !== null
-        ? (src.url || src.src || src.image || src.imageUrl || '')
+        ? (src.url || src.src || src.secure_url || src.image || src.imageUrl || src.public_id || src.publicId || src.path || src.thumb || src.imagePath || '')
         : (src || '');
 
     const optimizedSrc = baseUrlValue ? getOptimizedImageUrl(baseUrlValue, slot) : '';
@@ -96,7 +96,7 @@ const OptimizedImage = ({
                     setHasError(true);
                 }}
                 loading={priority ? "eager" : "lazy"}
-                fetchpriority={priority ? "high" : "auto"}
+                fetchPriority={priority ? "high" : "auto"}
                 style={{ zIndex: 2, position: 'relative' }}
                 {...props}
             />

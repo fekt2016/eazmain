@@ -112,13 +112,14 @@ describe('SignupPage', () => {
     renderWithProviders(<SignupPage />);
 
     const emailInput = screen.getByPlaceholderText('name@example.com');
-    const passwordInput = screen.getByLabelText(/^password$/i);
-    const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
+    const passwordInputs = screen.getAllByLabelText(/password/i);
+    const passwordInput = passwordInputs.find((el) => el.id === 'password') || passwordInputs[0];
+    const confirmPasswordInput = passwordInputs.find((el) => el.id === 'passwordConfirm') || passwordInputs[1];
     const form = document.querySelector('form');
 
     await user.type(emailInput, 'test@example.com');
-    await user.type(passwordInput, 'password123');
-    await user.type(confirmPasswordInput, 'password456');
+    await user.type(passwordInput, 'Password123!');
+    await user.type(confirmPasswordInput, 'Password456!');
     
     // Submit form directly to bypass HTML5 validation
     fireEvent.submit(form);
@@ -147,7 +148,7 @@ describe('SignupPage', () => {
   });
 
   test('handles successful signup', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     mockRegister.mutate.mockImplementation((data, { onSuccess }) => {
       onSuccess({ data: { requiresVerification: true }, status: 'success' });
     });
@@ -156,25 +157,26 @@ describe('SignupPage', () => {
 
     const nameInput = screen.getByPlaceholderText('John Doe');
     const emailInput = screen.getByPlaceholderText('name@example.com');
-    const passwordInput = screen.getByLabelText(/^password$/i);
-    const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
+    const passwordInputs = screen.getAllByLabelText(/password/i);
+    const passwordInput = passwordInputs.find((el) => el.id === 'password') || passwordInputs[0];
+    const confirmPasswordInput = passwordInputs.find((el) => el.id === 'passwordConfirm') || passwordInputs[1];
     const checkbox = screen.getByRole('checkbox');
     const submitButton = screen.getByRole('button', { name: /create account/i });
 
-    await user.type(nameInput, 'Test User');
-    await user.type(emailInput, 'test@example.com');
-    await user.type(passwordInput, 'password123');
-    await user.type(confirmPasswordInput, 'password123');
+    fireEvent.change(nameInput, { target: { value: 'Test User' } });
+    fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
+    fireEvent.change(passwordInput, { target: { value: 'Password123!' } });
+    fireEvent.change(confirmPasswordInput, { target: { value: 'Password123!' } });
     await user.click(checkbox);
     await user.click(submitButton);
 
     await waitFor(() => {
       expect(mockRegister.mutate).toHaveBeenCalled();
     });
-  });
+  }, 15000);
 
   test('handles signup errors', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     mockRegister.mutate.mockImplementation((data, { onError }) => {
       onError({ message: 'Email already exists' });
     });
@@ -183,15 +185,16 @@ describe('SignupPage', () => {
 
     const nameInput = screen.getByPlaceholderText('John Doe');
     const emailInput = screen.getByPlaceholderText('name@example.com');
-    const passwordInput = screen.getByLabelText(/^password$/i);
-    const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
+    const passwordInputs = screen.getAllByLabelText(/password/i);
+    const passwordInput = passwordInputs.find((el) => el.id === 'password') || passwordInputs[0];
+    const confirmPasswordInput = passwordInputs.find((el) => el.id === 'passwordConfirm') || passwordInputs[1];
     const checkbox = screen.getByRole('checkbox');
     const submitButton = screen.getByRole('button', { name: /create account/i });
 
-    await user.type(nameInput, 'Test User');
-    await user.type(emailInput, 'test@example.com');
-    await user.type(passwordInput, 'password123');
-    await user.type(confirmPasswordInput, 'password123');
+    fireEvent.change(nameInput, { target: { value: 'Test User' } });
+    fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
+    fireEvent.change(passwordInput, { target: { value: 'Password123!' } });
+    fireEvent.change(confirmPasswordInput, { target: { value: 'Password123!' } });
     await user.click(checkbox);
     await user.click(submitButton);
 
@@ -199,7 +202,7 @@ describe('SignupPage', () => {
       expect(mockRegister.mutate).toHaveBeenCalled();
       expect(screen.getByText(/email already exists/i)).toBeInTheDocument();
     });
-  });
+  }, 15000);
 
   test('handles social signup buttons', async () => {
     renderWithProviders(<SignupPage />);

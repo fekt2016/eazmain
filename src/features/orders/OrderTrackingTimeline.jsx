@@ -14,7 +14,13 @@ import {
   FaMap,
 } from 'react-icons/fa';
 import { useGetOrderTracking } from '../../shared/hooks/useGetOrderTracking';
+import { getOrderBadgeColors } from '../../shared/utils/orderStatusBadgeStyles';
 import { LoadingState } from '../../components/loading';
+
+const timelinePalette = (key) => {
+  const { bg, color } = getOrderBadgeColors(key);
+  return { bgColor: bg, color };
+};
 
 /**
  * OrderTrackingTimeline Component
@@ -53,69 +59,84 @@ const OrderTrackingTimeline = ({ orderId, showLiveTracking = true }) => {
 
   const { currentStatus, trackingHistory = [], driverLocation } = trackingData;
 
-  // Status configuration
+  // Status configuration (colors match admin order badge palette)
   const statusConfig = {
     pending_payment: {
       icon: FaCreditCard,
       label: 'Pending Payment',
-      color: '#f39c12',
-      bgColor: '#fff3cd',
+      ...timelinePalette('pending_payment'),
       message: 'Waiting for payment confirmation',
+    },
+    payment_completed: {
+      icon: FaCheckCircle,
+      label: 'Payment completed',
+      ...timelinePalette('payment_completed'),
+      message: 'Payment received — your order is being prepared',
     },
     processing: {
       icon: FaSpinner,
       label: 'Processing',
-      color: '#3498db',
-      bgColor: '#d1ecf1',
+      ...timelinePalette('processing'),
       message: 'Your order is being processed',
     },
     confirmed: {
       icon: FaCheckCircle,
       label: 'Confirmed',
-      color: '#2ecc71',
-      bgColor: '#d4edda',
+      ...timelinePalette('confirmed'),
       message: 'Order confirmed and ready for preparation',
     },
     preparing: {
       icon: FaBox,
       label: 'Preparing',
-      color: '#9b59b6',
-      bgColor: '#e7d4f8',
+      ...timelinePalette('preparing'),
       message: 'Your order is being prepared',
     },
     ready_for_dispatch: {
       icon: FaTruck,
       label: 'Ready for Dispatch',
-      color: '#e67e22',
-      bgColor: '#ffe5d0',
+      ...timelinePalette('ready_for_dispatch'),
       message: 'Order is ready and waiting for pickup',
     },
     out_for_delivery: {
       icon: FaTruck,
       label: 'Out for Delivery',
-      color: '#3498db',
-      bgColor: '#d1ecf1',
+      ...timelinePalette('out_for_delivery'),
       message: 'Rider is on the way',
+    },
+    shipped: {
+      icon: FaTruck,
+      label: 'Shipped',
+      ...timelinePalette('shipped'),
+      message: 'Your order is on the way',
+    },
+    delivery_attempted: {
+      icon: FaTruck,
+      label: 'Delivery attempted',
+      ...timelinePalette('delivery_attempted'),
+      message: 'We could not reach you — we will try again soon',
     },
     delivered: {
       icon: FaCheckCircle,
       label: 'Delivered',
-      color: '#2ecc71',
-      bgColor: '#d4edda',
+      ...timelinePalette('delivered'),
       message: 'Package delivered successfully',
+    },
+    completed: {
+      icon: FaCheckCircle,
+      label: 'Completed',
+      ...timelinePalette('completed'),
+      message: 'Order completed',
     },
     cancelled: {
       icon: FaTimesCircle,
       label: 'Cancelled',
-      color: '#e74c3c',
-      bgColor: '#f8d7da',
+      ...timelinePalette('cancelled'),
       message: 'Order has been cancelled',
     },
     refunded: {
       icon: FaUndo,
       label: 'Refunded',
-      color: '#95a5a6',
-      bgColor: '#e9ecef',
+      ...timelinePalette('refunded'),
       message: 'Order has been refunded',
     },
   };

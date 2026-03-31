@@ -19,6 +19,7 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import { useGetUserOrderById, useRequestRefund, useGetRefundStatus, getOrderDisplayStatus } from '../../shared/hooks/useOrder';
+import { getOrderStatusColorKey, getOrderBadgeColors } from '../../shared/utils/orderStatusBadgeStyles';
 import { useGetMyReviews } from '../../shared/hooks/useReviews';
 import { usePaystackPayment } from '../../shared/hooks/usePaystackPayment';
 import { isValidPaystackUrl } from '../../shared/utils/sanitize';
@@ -42,12 +43,12 @@ const OrderDetail = () => {
       <ErrorState
         title="Order ID Missing"
         message="Order ID is required. Please go back and try again."
-        onRetry={() => navigate(-1)}
+        action={<Button variant="primary" onClick={() => navigate(-1)}>Go back</Button>}
       />
     );
   }
 
-  const { data: orderData, isLoading, isError, refetch } = useGetUserOrderById(orderId);
+  const { data: orderData, isLoading, isError, error, refetch } = useGetUserOrderById(orderId);
   const order = useMemo(() => orderData?.order, [orderData]);
   const { data: myReviewsData } = useGetMyReviews({}, { enabled: !!order?._id });
 
@@ -528,7 +529,27 @@ const OrderDetail = () => {
 
 
   if (isLoading) return <LoadingState message="Loading order details..." />;
-  if (isError) return <ErrorState title="Error loading order" message="Please try again later." />;
+  const is401 = error?.response?.status === 401;
+  if (isError) {
+    return (
+      <ErrorState
+        title={is401 ? 'Session expired' : 'Error loading order'}
+        message={
+          is401
+            ? 'Your session has expired. Please log in again to view order details.'
+            : 'Please try again later.'
+        }
+        action={
+          <Button
+            variant="primary"
+            onClick={is401 ? () => navigate(PATHS.LOGIN) : () => refetch()}
+          >
+            {is401 ? 'Log in' : 'Try again'}
+          </Button>
+        }
+      />
+    );
+  }
   if (!order) return <EmptyState title="Order not found" message="The order you're looking for doesn't exist." />;
 
   // Calculate grand total (tax is already included in subtotal for VAT-inclusive pricing)
@@ -550,9 +571,7 @@ const OrderDetail = () => {
       (total, sellerOrder) => total + (sellerOrder?.shippingCost || 0),
       0
     );
-  // Get COVID levy from order (for tracking only, NOT added to customer total - will be deducted from seller at withdrawal)
-  const totalCovidLevy = order?.totalCovidLevy || (order?.sellerOrder || []).reduce((total, sellerOrder) => total + (sellerOrder?.totalCovidLevy || 0), 0);
-  // Grand total: subtotal + shipping (COVID levy NOT included)
+  // Grand total: subtotal + shipping
   const grandTotal = order?.totalPrice || (subtotal + totalShipping);
 
   // Detect pre-order orders
@@ -613,7 +632,10 @@ const OrderDetail = () => {
           )}
           <MetaItem>
             <strong>Status:</strong>
-            <StatusBadge $status={order ? getOrderDisplayStatus(order).badgeStatus : 'pending'}>
+            <StatusBadge
+              $bg={getOrderBadgeColors(order ? getOrderStatusColorKey(order) : 'pending_payment').bg}
+              $fg={getOrderBadgeColors(order ? getOrderStatusColorKey(order) : 'pending_payment').color}
+            >
               {order ? getOrderDisplayStatus(order).displayLabel : 'Pending'}
             </StatusBadge>
             {(order.paymentStatus === 'completed' ||
@@ -1068,21 +1090,28 @@ const OrderDetail = () => {
                             <ItemPrice>GH₵{item?.price?.toFixed(2) || '0.00'}</ItemPrice>
                             <ItemQuantity>Qty: {item?.quantity || 1}</ItemQuantity>
                           </ItemMeta>
-                          {isCompleted && item?.product && !hasReviewedItem(item) && (
-                            <ReviewButton
-                              onClick={() => {
-                                setSelectedProductForReview({
-                                  productId: item.product._id || item.product.id,
-                                  productName: item.product.name,
-                                  orderId: order._id || order.id,
-                                  orderItemId: item._id || item.id,
-                                });
-                                setReviewModalOpen(true);
-                              }}
-                            >
-                              <FaStar />
-                              Write Review
-                            </ReviewButton>
+                          {isCompleted && item?.product && (
+                            hasReviewedItem(item) ? (
+                              <ReviewedBadge>
+                                <FaCheckCircle />
+                                Reviewed
+                              </ReviewedBadge>
+                            ) : (
+                              <ReviewButton
+                                onClick={() => {
+                                  setSelectedProductForReview({
+                                    productId: item.product._id || item.product.id,
+                                    productName: item.product.name,
+                                    orderId: order._id || order.id,
+                                    orderItemId: item._id || item.id,
+                                  });
+                                  setReviewModalOpen(true);
+                                }}
+                              >
+                                <FaStar />
+                                Write Review
+                              </ReviewButton>
+                            )
                           )}
                         </ItemDetails>
                         <ItemTotal>GH₵{((item?.price || 0) * (item?.quantity || 1)).toFixed(2)}</ItemTotal>
@@ -1830,26 +1859,8 @@ const StatusBadge = styled.span`
   font-size: var(--text-xs);
   font-weight: var(--font-semibold);
   text-transform: capitalize;
-  
-  background: ${props => {
-    switch (props.$status) {
-      case 'paid': return 'var(--color-green-100)';
-      case 'delivered': return 'var(--color-green-100)';
-      case 'shipped': return 'var(--color-blue-100)';
-      case 'cancelled': return 'var(--color-red-100)';
-      default: return 'var(--color-yellow-100)';
-    }
-  }};
-  
-  color: ${props => {
-    switch (props.$status) {
-      case 'paid': return 'var(--color-green-700)';
-      case 'delivered': return 'var(--color-green-700)';
-      case 'shipped': return 'var(--color-blue-700)';
-      case 'cancelled': return 'var(--color-red-700)';
-      default: return 'var(--color-yellow-700)';
-    }
-  }};
+  background: ${(props) => props.$bg};
+  color: ${(props) => props.$fg};
 `;
 
 const ContentGrid = styled.div`
@@ -2274,6 +2285,27 @@ const ReviewButton = styled.button`
 
   svg {
     font-size: 0.875rem;
+  }
+`;
+
+const ReviewedBadge = styled.span`
+  margin-top: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: var(--color-grey-100, #f7fafc);
+  color: var(--color-grey-600, #718096);
+  border: 1px solid var(--color-grey-200, #e2e8f0);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  justify-content: center;
+
+  svg {
+    font-size: 0.875rem;
+    color: var(--color-success-500, #48bb78);
   }
 `;
 

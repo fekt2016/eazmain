@@ -163,7 +163,7 @@ export default function CustomerReviewPage() {
               {userReviews.map((review) => {
                 const reviewDate = review.reviewDate || review.createdAt;
                 const status = getReviewStatus(reviewDate);
-                const productImage = review.product?.imageCover || review.product?.image || '/placeholder-product.png';
+                const productImage = review.product?.imageCover || review.product?.image || '/placeholder-product.svg';
                 const productName = review.product?.name || 'Product';
                 const reviewText = review.review || review.comment || '';
 

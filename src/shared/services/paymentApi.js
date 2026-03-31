@@ -1,5 +1,6 @@
 import api from './api';
 import logger from '../utils/logger';
+import { FRONTEND_URL } from '../config/appConfig';
 
 // SECURITY: Validate Paystack redirect URL to prevent open redirect attacks
 const isValidPaystackUrl = (url) => {
@@ -18,10 +19,13 @@ const paymentApi = {
   // SECURITY: Backend calculates payment amount - frontend should NOT send amount
   initializePaystack: async (orderId, email) => {
     try {
+      const callbackBaseUrl = FRONTEND_URL || import.meta.env.VITE_FRONTEND_URL;
+
       // SECURITY: Do NOT send amount from frontend - backend calculates it from order
       const response = await api.post("/payment/paystack/initialize", {
         orderId,
         email,
+        callbackBaseUrl,
         // amount is NOT sent - backend calculates from order total
       });
       
@@ -47,11 +51,9 @@ const paymentApi = {
   verifyPaystackPayment: async (reference, orderId) => {
     try {
       logger.log("[paymentApi] Verifying Paystack payment:", { reference, orderId });
-      const response = await api.get("/payment/paystack/verify", {
-        params: {
-          reference,
-          orderId,
-        },
+      const response = await api.post("/payment/paystack/verify", {
+        reference,
+        orderId,
       });
 
       logger.log("[paymentApi] Payment verification successful");

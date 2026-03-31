@@ -61,12 +61,21 @@ jest.mock('@/shared/hooks/useWishlist', () => ({
 
 jest.mock('@/shared/utils/productHelpers', () => ({
   __esModule: true,
-  hasProductDiscount: jest.fn((product) => 
+  hasProductDiscount: jest.fn((product) =>
     product.originalPrice && product.originalPrice > product.price
   ),
   getProductDiscountPercentage: jest.fn((product) => {
     if (!product.originalPrice || !product.price) return 0;
     return Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
+  }),
+  getProductPriceForDisplay: jest.fn((product) => {
+    if (!product) return { displayPrice: 0, originalPrice: null };
+    const base = Number(product.price) || 0;
+    const original = product.originalPrice != null ? Number(product.originalPrice) : null;
+    return {
+      displayPrice: base,
+      originalPrice: original != null && original > base ? original : null,
+    };
   }),
   isProductTrending: jest.fn(() => false),
   isProductNew: jest.fn(() => false),

@@ -1,5 +1,10 @@
-import React from "react";
+import React, { useMemo } from "react";
 import styled from "styled-components";
+import { useEazShop } from "../../shared/hooks/useEazShop";
+import ProductCard from "../../shared/components/ProductCard";
+import { Link } from "react-router-dom";
+import { PATHS } from "../../routes/routePaths";
+import { isEazShopProduct } from "../../shared/utils/isEazShopProduct";
 
 const Section = styled.section`
   margin: 3rem 0;
@@ -22,14 +27,75 @@ const Description = styled.p`
   font-size: 0.95rem;
 `;
 
+const HeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+`;
+
+const ViewAllLink = styled(Link)`
+  color: #0f172a;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+`;
+
+const ProductGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+`;
+
+const EmptyState = styled.p`
+  margin-top: 1rem;
+  color: #6b7280;
+  font-size: 0.9rem;
+`;
+
 const EazShopSection = () => {
+  const { useGetEazShopProducts } = useEazShop();
+  const { data, isLoading } = useGetEazShopProducts();
+
+  const products = useMemo(() => {
+    const list = data?.data?.products || [];
+    if (!Array.isArray(list)) return [];
+    return list.filter((product) => (
+      isEazShopProduct(product) &&
+      !product?.isDeleted &&
+      !product?.isDeletedByAdmin &&
+      !product?.isDeletedBySeller &&
+      product?.status !== "archived" &&
+      product?.status !== "inactive"
+    ));
+  }, [data]);
+
   return (
     <Section>
-      <Title>Saiisai Only (EazShop)</Title>
+      <HeaderRow>
+        <Title>Saiisai Only (EazShop)</Title>
+        <ViewAllLink to={PATHS.PRODUCTS}>View all</ViewAllLink>
+      </HeaderRow>
       <Description>
-        Curated products sold and fulfilled directly by Saiisai. This section is under active
-        development and will surface highlighted EazShop offers.
+        Curated products sold and fulfilled directly by Saiisai.
       </Description>
+      {isLoading ? (
+        <EmptyState>Loading Saiisai products...</EmptyState>
+      ) : products.length > 0 ? (
+        <ProductGrid>
+          {products.slice(0, 8).map((product) => (
+            <ProductCard
+              key={product._id || product.id}
+              product={product}
+              showAddToCart
+            />
+          ))}
+        </ProductGrid>
+      ) : (
+        <EmptyState>No Saiisai products available yet.</EmptyState>
+      )}
     </Section>
   );
 };

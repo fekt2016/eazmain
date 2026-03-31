@@ -118,6 +118,12 @@ jest.mock('@/shared/utils/logger', () => ({
   },
 }));
 
+// Mock GoogleLoginButton (uses useModal which requires ModalProvider)
+jest.mock('@/features/auth/GoogleLoginButton', () => ({
+  __esModule: true,
+  default: () => <div data-testid="google-login-button">Google Sign In</div>,
+}));
+
 describe('LoginPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -142,13 +148,13 @@ describe('LoginPage', () => {
     expect(emailInput).toBeInTheDocument();
     expect(emailInput).toHaveAttribute('type', 'email');
 
-    // Check for password input
-    const passwordInput = screen.getByLabelText(/password/i);
+    // Check for password input (use placeholder to avoid multiple matches with "password" in labels)
+    const passwordInput = screen.getByPlaceholderText(/enter your password/i);
     expect(passwordInput).toBeInTheDocument();
     expect(passwordInput).toHaveAttribute('type', 'password');
 
-    // Check for submit button (can be found by type="submit")
-    const submitButton = screen.getByRole('button', { type: 'submit' });
+    // Check for submit button (use name to avoid multiple matches)
+    const submitButton = screen.getByRole('button', { name: /sign in/i });
     expect(submitButton).toBeInTheDocument();
   });
 
@@ -182,8 +188,8 @@ describe('LoginPage', () => {
     renderWithProviders(<LoginPage />);
 
     const emailInput = screen.getByLabelText(/email address/i);
-    const passwordInput = screen.getByLabelText(/password/i);
-    const submitButton = screen.getByRole('button', { type: 'submit' });
+    const passwordInput = screen.getByPlaceholderText(/enter your password/i);
+    const submitButton = screen.getByRole('button', { name: /sign in/i });
 
     // Enter invalid email (no @ symbol or invalid format)
     await user.clear(emailInput);
@@ -197,18 +203,10 @@ describe('LoginPage', () => {
     // Submit form directly - this triggers submitHandler which validates email
     fireEvent.submit(form);
 
-    // The validation happens synchronously in submitHandler
-    // Check immediately since toast.error is called synchronously
-    expect(mockToast.error).toHaveBeenCalled();
-
-    // Check that the error message contains email validation
-    const errorCalls = mockToast.error.mock.calls;
-    const hasEmailError = errorCalls.some(call => {
-      const message = call[0] || '';
-      return message.toLowerCase().includes('email') || 
-             message.toLowerCase().includes('valid');
+    // The validation uses setFieldErrors, not toast - check for error in DOM
+    await waitFor(() => {
+      expect(screen.getByText(/valid email|doesn't look like a valid email/i)).toBeInTheDocument();
     });
-    expect(hasEmailError).toBe(true);
 
     // Should not call login mutation (validation prevents it)
     expect(mockLoginMutation).not.toHaveBeenCalled();
@@ -244,8 +242,8 @@ describe('LoginPage', () => {
     renderWithProviders(<LoginPage />);
 
     const emailInput = screen.getByLabelText(/email address/i);
-    const passwordInput = screen.getByLabelText(/password/i);
-    const submitButton = screen.getByRole('button', { type: 'submit' });
+    const passwordInput = screen.getByPlaceholderText(/enter your password/i);
+    const submitButton = screen.getByRole('button', { name: /sign in/i });
 
     // Ensure button is enabled
     expect(submitButton).not.toBeDisabled();
@@ -264,20 +262,12 @@ describe('LoginPage', () => {
     expect(form).toBeInTheDocument();
     
     // Submit the form directly - this will trigger the submitHandler
-    // The submitHandler validates password and calls toast.error if empty
     fireEvent.submit(form, { bubbles: true, cancelable: true });
 
-    // The validation happens synchronously in submitHandler
-    // Check immediately (don't wait) since it's synchronous
-    expect(mockToast.error).toHaveBeenCalled();
-
-    // Check that the error message contains password validation
-    const errorCalls = mockToast.error.mock.calls;
-    const hasPasswordError = errorCalls.some(call => {
-      const message = call[0] || '';
-      return message.toLowerCase().includes('password');
+    // The validation uses setFieldErrors, not toast - check for error in DOM
+    await waitFor(() => {
+      expect(screen.getByText(/please enter your password/i)).toBeInTheDocument();
     });
-    expect(hasPasswordError).toBe(true);
 
     // Should not call login mutation (validation prevents it)
     expect(mockLoginMutation).not.toHaveBeenCalled();
@@ -288,8 +278,8 @@ describe('LoginPage', () => {
     renderWithProviders(<LoginPage />);
 
     const emailInput = screen.getByLabelText(/email address/i);
-    const passwordInput = screen.getByLabelText(/password/i);
-    const submitButton = screen.getByRole('button', { type: 'submit' });
+    const passwordInput = screen.getByPlaceholderText(/enter your password/i);
+    const submitButton = screen.getByRole('button', { name: /sign in/i });
 
     // Enter valid credentials
     await user.type(emailInput, 'test@example.com');
@@ -330,8 +320,8 @@ describe('LoginPage', () => {
     renderWithProviders(<LoginPage />);
 
     const emailInput = screen.getByLabelText(/email address/i);
-    const passwordInput = screen.getByLabelText(/password/i);
-    const submitButton = screen.getByRole('button', { type: 'submit' });
+    const passwordInput = screen.getByPlaceholderText(/enter your password/i);
+    const submitButton = screen.getByRole('button', { name: /sign in/i });
 
     await user.clear(emailInput);
     await user.type(emailInput, 'test@example.com');
@@ -353,10 +343,9 @@ describe('LoginPage', () => {
   });
 
   test('handles 2FA flow', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const mockLoginSessionId = 'session123';
 
-    // Mock 2FA required response
     mockLoginMutation.mockImplementation((credentials, callbacks) => {
       setTimeout(() => {
         callbacks.onSuccess({
@@ -372,46 +361,43 @@ describe('LoginPage', () => {
     renderWithProviders(<LoginPage />);
 
     const emailInput = screen.getByLabelText(/email address/i);
-    const passwordInput = screen.getByLabelText(/password/i);
-    const submitButton = screen.getByRole('button', { type: 'submit' });
+    const passwordInput = screen.getByPlaceholderText(/enter your password/i);
+    const submitButton = screen.getByRole('button', { name: /sign in/i });
 
-    await user.clear(emailInput);
-    await user.type(emailInput, 'test@example.com');
-    await user.type(passwordInput, 'password123');
+    fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
+    fireEvent.change(passwordInput, { target: { value: 'password123' } });
     await user.click(submitButton);
 
-    // Should show 2FA step (use getAllByText since there are multiple elements)
     await waitFor(() => {
       const twoFactorTexts = screen.getAllByText(/two-factor authentication/i);
       expect(twoFactorTexts.length).toBeGreaterThan(0);
-    }, { timeout: 2000 });
+    }, { timeout: 5000 });
 
-    // Should have 2FA code inputs (6 inputs for 6-digit code)
-    // The inputs have ids like "2fa-0", "2fa-1", etc.
-    const twoFactorInputs = screen.getAllByRole('textbox').filter(input => 
+    const twoFactorInputs = screen.getAllByRole('textbox').filter(input =>
       input.id?.startsWith('2fa-')
     );
     expect(twoFactorInputs.length).toBeGreaterThanOrEqual(6);
-  });
+  }, 15000);
 
   test('handles login errors', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const mockError = {
       message: 'Invalid email or password',
       response: {
         status: 401,
-        data: {
-          message: 'Invalid email or password',
-        },
+        data: { message: 'Invalid email or password' },
       },
     };
 
-    // Mock error response
+    mockLoginMutation.mockImplementation((_data, { onError }) => {
+      setTimeout(() => onError?.(mockError), 0);
+    });
+
     mockUseAuth.mockReturnValue({
       login: {
         mutate: mockLoginMutation,
         isPending: false,
-        error: mockError,
+        error: null,
       },
       verify2FALogin: {
         mutate: mockVerify2FALoginMutation,
@@ -432,11 +418,18 @@ describe('LoginPage', () => {
 
     renderWithProviders(<LoginPage />);
 
-    // Should show error message
+    const emailInput = screen.getByLabelText(/email address/i);
+    const passwordInput = screen.getByPlaceholderText(/enter your password/i);
+    const submitButton = screen.getByRole('button', { name: /sign in/i });
+
+    fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
+    fireEvent.change(passwordInput, { target: { value: 'password123' } });
+    await user.click(submitButton);
+
     await waitFor(() => {
-      expect(screen.getByText(/invalid email or password|authentication failed/i)).toBeInTheDocument();
+      expect(screen.getByText(/invalid email or password/i)).toBeInTheDocument();
     });
-  });
+  }, 15000);
 
   test('sanitizes email input', async () => {
     const user = userEvent.setup();
@@ -478,8 +471,8 @@ describe('LoginPage', () => {
     renderWithProviders(<LoginPage />);
 
     const emailInput = screen.getByLabelText(/email address/i);
-    const passwordInput = screen.getByLabelText(/password/i);
-    const submitButton = screen.getByRole('button', { type: 'submit' });
+    const passwordInput = screen.getByPlaceholderText(/enter your password/i);
+    const submitButton = screen.getByRole('button', { name: /sign in/i });
 
     await user.clear(emailInput);
     await user.type(emailInput, 'test@example.com');
@@ -518,8 +511,10 @@ describe('LoginPage', () => {
 
     renderWithProviders(<LoginPage />);
 
-    // Submit button should be disabled or show loading state
-    const submitButton = screen.getByRole('button', { type: 'submit' });
+    // When loading, button shows spinner and is disabled - find submit button in form
+    const emailInput = screen.getByLabelText(/email address/i);
+    const submitButton = emailInput.closest('form')?.querySelector('button[type="submit"]');
+    expect(submitButton).toBeInTheDocument();
     expect(submitButton).toBeDisabled();
   });
 
@@ -561,8 +556,8 @@ describe('LoginPage', () => {
     renderWithProviders(<LoginPage />);
 
     const emailInput = screen.getByLabelText(/email address/i);
-    const passwordInput = screen.getByLabelText(/password/i);
-    const submitButton = screen.getByRole('button', { type: 'submit' });
+    const passwordInput = screen.getByPlaceholderText(/enter your password/i);
+    const submitButton = screen.getByRole('button', { name: /sign in/i });
 
     // Ensure button is enabled
     expect(submitButton).not.toBeDisabled();

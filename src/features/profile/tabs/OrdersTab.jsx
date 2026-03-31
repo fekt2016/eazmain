@@ -5,6 +5,7 @@ import {
 } from "../components/TabPanelContainer";
 import { LoadingState, ErrorState } from "../../../components/loading";
 import { useGetUserOrders, getOrderStructure, getOrderDisplayStatus } from "../../../shared/hooks/useOrder";
+import { getOrderStatusColorKey, getOrderBadgeColors } from "../../../shared/utils/orderStatusBadgeStyles";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
 import { FaShoppingBag, FaArrowRight } from "react-icons/fa";
@@ -42,7 +43,10 @@ const OrdersTab = () => {
                 </OrderDate>
                 <OrderTotal>GH₵{order.totalAmount?.toFixed(2) || "0.00"}</OrderTotal>
               </OrderInfo>
-              <OrderStatus status={getOrderDisplayStatus(order).badgeStatus}>
+              <OrderStatus
+                $bg={getOrderBadgeColors(getOrderStatusColorKey(order)).bg}
+                $fg={getOrderBadgeColors(getOrderStatusColorKey(order)).color}
+              >
                 {getOrderDisplayStatus(order).displayLabel}
               </OrderStatus>
               <OrderArrow>
@@ -128,25 +132,12 @@ const OrderTotal = styled.p`
 
 const OrderStatus = styled.span`
   padding: var(--space-xs) var(--space-sm);
-  border-radius: 4px;
+  border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
-  background: ${(props) => {
-    switch (props.status) {
-      case "delivered":
-      case "completed":
-        return "var(--color-success)";
-      case "shipped":
-        return "var(--color-primary)";
-      case "pending":
-        return "#F59E0B";
-      case "cancelled":
-        return "var(--color-danger)";
-      default:
-        return "var(--color-text-light)";
-    }
-  }};
-  color: white;
+  text-transform: capitalize;
+  background: ${(props) => props.$bg};
+  color: ${(props) => props.$fg};
 `;
 
 const OrderArrow = styled.div`

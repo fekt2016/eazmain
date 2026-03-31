@@ -90,18 +90,16 @@ describe('TopupSuccessPage', () => {
   });
 
   test('renders success page', async () => {
+    // Show verifying state - component displays "Verifying your payment..." when isPending
+    mockVerifyTopup.isPending = true;
+    mockVerifyTopup.isSuccess = false;
+    mockVerifyTopup.isError = false;
+
     renderWithProviders(<TopupSuccessPage />);
 
-    // Component should render (may show loading initially)
     await waitFor(() => {
-      // Check for any content that indicates the component rendered
-      const hasContent = screen.queryByText(/success/i) || 
-                        screen.queryByText(/loading/i) ||
-                        screen.queryByText(/verifying/i) ||
-                        screen.queryByText(/topup/i) ||
-                        screen.queryByText(/wallet/i);
-      expect(hasContent).toBeTruthy();
-    }, { timeout: 5000 });
+      expect(screen.getByText(/verifying|loading/i)).toBeInTheDocument();
+    }, { timeout: 3000 });
   });
 
   test('fetches payment reference from URL', async () => {

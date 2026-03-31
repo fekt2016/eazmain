@@ -22,6 +22,7 @@ import {
   FaShieldAlt,
   FaUndo,
   FaEye,
+  FaPen,
 } from "react-icons/fa";
 import useProduct from '../../shared/hooks/useProduct.js';
 import { useGetProductReviews } from '../../shared/hooks/useReviews.js';
@@ -56,6 +57,7 @@ import {
 import { getGalleryImagesForSelection } from '../../shared/utils/productVariantLogic';
 import OptimizedImage from "../../shared/components/OptimizedImage";
 import { getOptimizedImageUrl, IMAGE_SLOTS } from "../../shared/utils/cloudinaryConfig";
+import { isEazShopProduct } from "../../shared/utils/isEazShopProduct";
 
 import VariantColorImageGallery from '../../components/product/variantNameSelector/VariantColorImageGallery';
 import VariantRadioSelector from '../../components/product/variantNameSelector/VariantRadioSelector';
@@ -72,31 +74,22 @@ const ProductDetailPage = () => {
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
   const addHistoryItem = useAddHistoryItem();
   const cartTimeoutRef = useRef(null);
   const shareTimeoutRef = useRef(null);
 
   const { useGetProductById } = useProduct();
   const { data: productData, isLoading, error } = useGetProductById(id);
-  const { data: reviewsData, isLoading: reviewsLoading, error: reviewsError } = useGetProductReviews(id);
-
-  // Debug logging
-  logger.log("reviewsData", reviewsData);
-  logger.log("reviewsLoading", reviewsLoading);
-  logger.log("reviewsError", reviewsError);
-
   const product = useMemo(() => {
     if (!productData) return null;
-    // Handle various response structures
-    // 1. Standard API response: { status: 'success', data: { product: ... } }
     if (productData.data?.product) return productData.data.product;
-    // 2. Direct data response: { product: ... }
     if (productData.product) return productData.product;
-    // 3. Nested data response: { data: { ... } } -> where inner data is product
     if (productData.data?.data) return productData.data.data;
-    // 4. Direct product object (fallback)
     return productData.data || productData;
   }, [productData]);
+  const reviewsProductId = product?._id || id;
+  const { data: reviewsData, isLoading: reviewsLoading, error: reviewsError } = useGetProductReviews(reviewsProductId);
 
   // Fetch category data to get all attributes (after product is defined)
   const { useCategoryById } = useCategory();
@@ -127,7 +120,8 @@ const ProductDetailPage = () => {
   const { addToCart } = useCartActions();
   const hasRecordedView = useRef(false);
   const hasRecordedHistory = useRef(false);
-  const { user } = useAuth();
+  const { userData } = useAuth();
+  const user = userData?.user || userData?.data || userData;
   const trackActivity = useTrackActivity();
 
   const { recordProductView } = useAnalytics();
@@ -259,27 +253,77 @@ const ProductDetailPage = () => {
     setQuantity((prev) => Math.max(1, prev - 1));
   }, []);
 
+  // Check if in stock - must be defined before handleBuyNow
+  const isInStock = useMemo(() => {
+    if (!product) return false;
+    if (selectedVariant) {
+      const isActive = selectedVariant.status !== 'inactive';
+      const hasStock = (selectedVariant.stock || 0) > 0;
+      return isActive && hasStock;
+    }
+    if (variants.length > 0) {
+      return variants.some((v) => {
+        const isActive = v.status !== 'inactive';
+        const hasStock = (v.stock || 0) > 0;
+        return isActive && hasStock;
+      });
+    }
+    return isProductInStock(product, selectedVariant);
+  }, [selectedVariant, variants, product]);
+
   const handleShare = useCallback(async () => {
     const url = window.location.href;
     const title = product?.name || 'Check out this product on Saiisai';
     if (navigator.share) {
       try {
         await navigator.share({ title, url });
+        setShowShareMenu(false);
       } catch {
-        // User cancelled or browser denied — silently ignore
+        // User cancelled or browser denied — fall through to menu
+        setShowShareMenu(true);
       }
     } else {
-      try {
-        await navigator.clipboard.writeText(url);
-        // Use a light, non-blocking alert via a temporary state flag
-        setCopiedLink(true);
-        if (shareTimeoutRef.current) clearTimeout(shareTimeoutRef.current);
-        shareTimeoutRef.current = setTimeout(() => setCopiedLink(false), 2000);
-      } catch {
-        logger.warn('[Share] Clipboard write failed');
-      }
+      setShowShareMenu((prev) => !prev);
     }
   }, [product?.name]);
+
+  const handleCopyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopiedLink(true);
+      if (shareTimeoutRef.current) clearTimeout(shareTimeoutRef.current);
+      shareTimeoutRef.current = setTimeout(() => {
+        setCopiedLink(false);
+        setShowShareMenu(false);
+      }, 2000);
+    } catch {
+      logger.warn('[Share] Clipboard write failed');
+    }
+  }, []);
+
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+  const shareTitle = product?.name || 'Check out this product on Saiisai';
+
+  const handleBuyNow = useCallback(async () => {
+    if (!isInStock || !product) return;
+    const variantSku = selectedSku || (selectedVariant?.sku ? selectedVariant.sku.trim().toUpperCase() : null);
+    const variantId = selectedVariant?._id || (selectedVariant?.id || null);
+    if (variants.length > 0 && !variantSku) {
+      toast.error('Please select a variant before proceeding.');
+      return;
+    }
+    try {
+      await addToCart({ product, quantity, variantSku, variantId });
+      navigate(PATHS.CART);
+    } catch (err) {
+      logger.error('Buy Now error:', err);
+      if (err?.code === 'SKU_REQUIRED' || err?.message?.includes('variant')) {
+        toast.error('Please select a variant before proceeding.');
+      } else {
+        toast.error(err?.message || 'Failed to add to cart.');
+      }
+    }
+  }, [product, quantity, selectedSku, selectedVariant, variants, isInStock, addToCart, navigate]);
 
   const handleAddToCart = async () => {
     setIsAddingToCart(true);
@@ -357,44 +401,36 @@ const ProductDetailPage = () => {
     };
   }, []);
 
-
-  // Use utility functions for product calculations
-
-
-  const reviewCount = product?.ratingsQuantity || 0;
-  const averageRating = product?.ratingsAverage || 0;
-  // Use reviews from the separate reviews query, fallback to product.reviews
-  const reviews = useMemo(() => {
-    // Handle different response structures
-    // API response: { success: true, data: { count, reviews, averageRating } }
-    // Axios wraps it: response.data = { success: true, data: { count, reviews, averageRating } }
-    if (reviewsData) {
-      logger.log("Processing reviewsData structure:", {
-        hasData: !!reviewsData.data,
-        dataKeys: reviewsData.data ? Object.keys(reviewsData.data) : [],
-        hasDataData: !!reviewsData.data?.data,
-        dataDataKeys: reviewsData.data?.data ? Object.keys(reviewsData.data.data) : [],
-      });
-
-      // Check if it's the wrapped response: reviewsData.data.data.reviews
-      if (reviewsData.data?.data?.reviews && Array.isArray(reviewsData.data.data.reviews)) {
-        logger.log("Found reviews in reviewsData.data.data.reviews:", reviewsData.data.data.reviews.length);
-        return reviewsData.data.data.reviews;
+  // Close share menu on click outside
+  const shareMenuRef = useRef(null);
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (shareMenuRef.current && !shareMenuRef.current.contains(e.target)) {
+        setShowShareMenu(false);
       }
-      // Check if reviews are directly in data: reviewsData.data.reviews
-      if (reviewsData.data?.reviews && Array.isArray(reviewsData.data.reviews)) {
-        logger.log("Found reviews in reviewsData.data.reviews:", reviewsData.data.reviews.length);
-        return reviewsData.data.reviews;
-      }
-      // Check if reviews are at root level
-      if (Array.isArray(reviewsData.reviews)) {
-        logger.log("Found reviews in reviewsData.reviews:", reviewsData.reviews.length);
-        return reviewsData.reviews;
-      }
+    };
+    if (showShareMenu) {
+      document.addEventListener('click', handleClickOutside);
     }
-    logger.log("No reviews found in reviewsData, using product.reviews");
-    return product?.reviews || [];
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showShareMenu]);
+
+
+  // Use reviews from the separate reviews query, fallback to product.reviews (embedded in product API)
+  const reviews = useMemo(() => {
+    if (reviewsData) {
+      const apiData = reviewsData?.data ?? reviewsData;
+      const list = apiData?.reviews ?? apiData?.data?.reviews;
+      if (Array.isArray(list)) return list;
+    }
+    return Array.isArray(product?.reviews) ? product.reviews : [];
   }, [reviewsData, product]);
+
+  const reviewCount = reviews.length > 0 ? reviews.length : (product?.reviewsCount ?? product?.ratingsQuantity ?? 0);
+  const averageRating =
+    reviews.length > 0
+      ? Math.round((reviews.reduce((s, r) => s + (Number(r?.rating) || 0), 0) / reviews.length) * 10) / 10
+      : (product?.reviewsAverage ?? product?.ratingsAverage ?? 0);
 
   // Use utility functions for product calculations (must be before early returns)
   const displayPrice = getProductDisplayPrice(product, selectedVariant);
@@ -420,27 +456,6 @@ const ProductDetailPage = () => {
     }
     // Fallback to product stock
     return getProductStock(product, selectedVariant);
-  }, [selectedVariant, variants, product]);
-
-  // Check if in stock - must have stock > 0 and variant must be active (if variant exists)
-  const isInStock = useMemo(() => {
-    if (!product) return false;
-    if (selectedVariant) {
-      // Variant must be active AND have stock > 0
-      const isActive = selectedVariant.status !== 'inactive';
-      const hasStock = (selectedVariant.stock || 0) > 0;
-      return isActive && hasStock;
-    }
-    // If no variant selected, check if any active variant has stock
-    if (variants.length > 0) {
-      return variants.some((v) => {
-        const isActive = v.status !== 'inactive';
-        const hasStock = (v.stock || 0) > 0;
-        return isActive && hasStock;
-      });
-    }
-    // Fallback to product stock check
-    return isProductInStock(product, selectedVariant);
   }, [selectedVariant, variants, product]);
 
   // Product-level images (fallback when variant has no images)
@@ -553,6 +568,10 @@ const ProductDetailPage = () => {
 
               <ProductCode>SKU: {displaySku}</ProductCode>
 
+              <StockBadge $inStock={isInStock}>
+                {isInStock ? `${variantStock} in stock` : 'Out of stock'}
+              </StockBadge>
+
               {product.totalSold > 0 && (
                 <SoldCounter>
                   <FaBoxOpen />
@@ -570,6 +589,37 @@ const ProductDetailPage = () => {
 
             {product.shortDescription && (
               <ShortDescription>{product.shortDescription}</ShortDescription>
+            )}
+
+            {/* Overview: Summary, Key Features, Warranty (matches mobile) */}
+            {(product.summary || (product.keyFeatures && product.keyFeatures.length > 0) || product.warranty) && (
+              <OverviewSection>
+                {product.summary && (
+                  <OverviewItem>
+                    <OverviewTitle>Summary</OverviewTitle>
+                    <OverviewText>{product.summary}</OverviewText>
+                  </OverviewItem>
+                )}
+                {product.keyFeatures && Array.isArray(product.keyFeatures) && product.keyFeatures.length > 0 && (
+                  <OverviewItem>
+                    <OverviewTitle>Key Features</OverviewTitle>
+                    <OverviewList>
+                      {product.keyFeatures.map((feature, idx) => (
+                        <OverviewFeatureItem key={idx}>
+                          <FaAward style={{ color: 'var(--color-green-600)', flexShrink: 0 }} />
+                          <span>{feature}</span>
+                        </OverviewFeatureItem>
+                      ))}
+                    </OverviewList>
+                  </OverviewItem>
+                )}
+                {product.warranty && (
+                  <OverviewItem>
+                    <OverviewTitle>Warranty</OverviewTitle>
+                    <OverviewText>{product.warranty}</OverviewText>
+                  </OverviewItem>
+                )}
+              </OverviewSection>
             )}
           </ModernProductHeader>
 
@@ -594,8 +644,9 @@ const ProductDetailPage = () => {
                 {/* Variant image grid at top — image with details below */}
                 <VariantImagesGrid>
                   {variants.map((variant) => {
-                    // Use variant image if available, otherwise fallback to product image or placeholder
-                    const image = variant.images?.[0] || variant.image || '';
+                    // Use variant image if available, otherwise fallback to product image (matches mobile)
+                    const variantImg = variant.images?.[0] || variant.image;
+                    const image = variantImg || productImages?.[0] || '';
                     const isSelected = selectedVariant?._id === variant._id;
                     const isOutOfStock = variant.status === 'inactive' || (variant.stock || 0) === 0;
 
@@ -687,6 +738,28 @@ const ProductDetailPage = () => {
               </DescriptionSection>
             </div>
 
+            {/* Specifications (matches mobile) */}
+            {(() => {
+              const specs = product.specifications || product.specs || {};
+              const specEntries = Object.entries(specs).filter(
+                ([, v]) => v != null && v !== '' && typeof v !== 'object'
+              );
+              if (specEntries.length === 0) return null;
+              return (
+                <SpecsSection>
+                  <TabTitle style={{ fontSize: '1.8rem', marginBottom: '1rem' }}>Specifications</TabTitle>
+                  <SpecificationsGrid>
+                    {specEntries.map(([key, value]) => (
+                      <SpecItem key={key}>
+                        <SpecLabel>{key}</SpecLabel>
+                        <SpecValue>{String(value)}</SpecValue>
+                      </SpecItem>
+                    ))}
+                  </SpecificationsGrid>
+                </SpecsSection>
+              );
+            })()}
+
             {/* Inline Product Metadata - Part 2: Dim & Mfr - Moved below Specs */}
             {(selectedVariant?.dimensions ||
               product.specifications?.dimensions ||
@@ -764,6 +837,18 @@ const ProductDetailPage = () => {
                 )}
               </PrimaryActionButton>
 
+              <BuyNowButton
+                onClick={handleBuyNow}
+                disabled={
+                  !isInStock ||
+                  !selectedVariant ||
+                  isAddingToCart ||
+                  (useAttributeBasedVariants && allAttributesSelected && !selectedVariant)
+                }
+              >
+                Buy Now
+              </BuyNowButton>
+
               <SecondaryActionButton
                 onClick={toggleWishlist}
                 disabled={isAddingToWishlist || isRemovingFromWishlist}
@@ -777,50 +862,36 @@ const ProductDetailPage = () => {
                 {isAddingToWishlist ? "Adding..." : isRemovingFromWishlist ? "Removing..." : isInWishlist ? "In Wishlist" : "Wishlist"}
               </SecondaryActionButton>
 
-              <TertiaryActionButton onClick={handleShare}>
-                <FaShare />
-                {copiedLink ? 'Link Copied!' : 'Share'}
-              </TertiaryActionButton>
+              <ShareButtonWrap ref={shareMenuRef}>
+                <TertiaryActionButton onClick={handleShare}>
+                  <FaShare />
+                  {copiedLink ? 'Link Copied!' : 'Share'}
+                </TertiaryActionButton>
+                {showShareMenu && (
+                  <ShareMenu>
+                    <ShareMenuItem onClick={handleCopyLink}>
+                      {copiedLink ? '✓ Link Copied' : 'Copy Link'}
+                    </ShareMenuItem>
+                    <ShareMenuItem as="a" href={`https://wa.me/?text=${encodeURIComponent(shareTitle + ' ' + shareUrl)}`} target="_blank" rel="noopener noreferrer" onClick={() => setShowShareMenu(false)}>
+                      WhatsApp
+                    </ShareMenuItem>
+                    <ShareMenuItem as="a" href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener noreferrer" onClick={() => setShowShareMenu(false)}>
+                      Facebook
+                    </ShareMenuItem>
+                    <ShareMenuItem as="a" href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareTitle)}&url=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener noreferrer" onClick={() => setShowShareMenu(false)}>
+                      X (Twitter)
+                    </ShareMenuItem>
+                  </ShareMenu>
+                )}
+              </ShareButtonWrap>
             </ActionButtonsGrid>
           </ActionsCard>
 
-          {/* Trust & Shipping */}
-          <TrustSection>
-            <TrustItem $highlight={!!product.shipping?.freeShipping}>
-              <FaTruck />
-              <div>
-                <strong>{product.shipping?.freeShipping ? 'Free Shipping' : 'Shipping'}</strong>
-                <span>{product.shipping?.freeShipping ? 'No shipping fee on this product' : 'Standard shipping rates apply'}</span>
-              </div>
-            </TrustItem>
-            <TrustItem>
-              <FaShieldAlt />
-              <div>
-                <strong>Secure Payment</strong>
-                <span>100% protected</span>
-              </div>
-            </TrustItem>
-            <TrustItem>
-              <FaUndo />
-              <div>
-                <strong>Easy Returns</strong>
-                <span>{product.returnWindowDays ? `${product.returnWindowDays}-day return policy` : '30-day policy'}</span>
-              </div>
-            </TrustItem>
-            <TrustItem>
-              <FaClock />
-              <div>
-                <strong>Support</strong>
-                <span>24/7 available</span>
-              </div>
-            </TrustItem>
-          </TrustSection>
-
           {/* Seller Info - show when product has seller (object or id) or is EazShop */}
-          {(product.seller != null || product.isEazShopProduct) && (() => {
+          {(product.seller != null || isEazShopProduct(product)) && (() => {
             const rawSellerId = product.seller?._id ?? (typeof product.seller === 'string' ? product.seller : null);
             const sellerIdStr = rawSellerId != null ? String(typeof rawSellerId === 'object' && rawSellerId?.toString ? rawSellerId.toString() : rawSellerId) : null;
-            const displayName = (product.isEazShopProduct || product.seller?.role === 'eazshop_store')
+            const displayName = isEazShopProduct(product)
               ? "Saiisai Official Store ✓"
               : (typeof product.seller === 'object' && (product.seller?.shopName || product.seller?.name)) || "Seller";
             const sellerPagePath = sellerIdStr ? `${PATHS.SELLERS}/${sellerIdStr}` : null;
@@ -829,7 +900,7 @@ const ProductDetailPage = () => {
                 <SellerHeader>
                   <FaStore />
                   <span>Sold by</span>
-                  {(product.isEazShopProduct || product.seller?.role === 'eazshop_store') && (
+                  {isEazShopProduct(product) && (
                     <EazShopBadge>
                       <FaAward />
                       <span>Saiisai Official Store</span>
@@ -879,30 +950,87 @@ const ProductDetailPage = () => {
             );
           })()}
         </InfoSection>
+
+        {/* Trust & Shipping - full width below video, quantity, and buttons */}
+        <TrustSectionFullWidth>
+          <TrustSection>
+            <TrustItem $highlight={!!product.shipping?.freeShipping}>
+              <FaTruck />
+              <div>
+                <strong>{product.shipping?.freeShipping ? 'Free Shipping' : 'Shipping'}</strong>
+                <span>{product.shipping?.freeShipping ? 'No shipping fee on this product' : 'Standard shipping rates apply'}</span>
+              </div>
+            </TrustItem>
+            <TrustItem>
+              <FaClock />
+              <div>
+                <strong>Delivery Timeline</strong>
+                <span>{product.shippingTime || product.shipping?.deliveryTime || '3-7 business days'}</span>
+              </div>
+            </TrustItem>
+            <TrustItem>
+              <FaMapMarkerAlt />
+              <div>
+                <strong>Shipping Locations</strong>
+                <span>{product.shippingLocations || product.shipping?.locations || 'Nationwide delivery available'}</span>
+              </div>
+            </TrustItem>
+            <TrustItem>
+              <FaUndo />
+              <div>
+                <strong>Return Policy</strong>
+                <span>
+                  {product.returnPolicy ||
+                    (product.returnWindowDays ? `${product.returnWindowDays}-day return policy` : null) ||
+                    '30-day return policy. Items must be unused and in original packaging.'}
+                </span>
+              </div>
+            </TrustItem>
+            <TrustItem>
+              <FaShieldAlt />
+              <div>
+                <strong>Secure Payment</strong>
+                <span>100% protected</span>
+              </div>
+            </TrustItem>
+            <TrustItem>
+              <FaClock />
+              <div>
+                <strong>Support</strong>
+                <span>24/7 available</span>
+              </div>
+            </TrustItem>
+          </TrustSection>
+        </TrustSectionFullWidth>
       </ModernProductGrid>
 
       {/* Expanded Reviews Section at Bottom */}
       <InfoSection style={{ maxWidth: '1400px', margin: '0 auto 4rem auto' }}>
         <ModernProductHeader>
           <TabTitle style={{ fontSize: '2.4rem', marginBottom: '2.5rem' }}>Customer Reviews ({reviewCount})</TabTitle>
-          {reviewCount > 0 ? (
-            <ModernReviewsSection>
-              <ReviewsSummary>
-                <OverallRating>
-                  <RatingNumber>{averageRating.toFixed(1)}</RatingNumber>
-                  <RatingStars>
-                    <StarRating rating={averageRating} />
-                  </RatingStars>
-                  <RatingText>out of 5</RatingText>
-                </OverallRating>
+          <ModernReviewsSection>
+            <ReviewsSummary>
+              <OverallRating>
+                <RatingNumber>{averageRating.toFixed(1)}</RatingNumber>
+                <RatingStars>
+                  <StarRating rating={averageRating} />
+                </RatingStars>
+                <RatingText>out of 5</RatingText>
+              </OverallRating>
 
-                <RatingBars>
+              <RatingBars>
                   {[5, 4, 3, 2, 1].map((stars) => {
-                    const count = reviews.filter((r) => r.rating === stars).length;
-                    const percentage = reviewCount > 0 ? (count / reviewCount) * 100 : 0;
+                    const bucketToWhole = (r) => {
+                      const v = Number(r?.rating) || 0;
+                      return Math.min(5, Math.max(1, Math.round(v)));
+                    };
+                    const count = reviews.filter((r) => bucketToWhole(r) === stars).length;
+                    const total = reviews.length || reviewCount;
+                    const percentage = total > 0 ? (count / total) * 100 : 0;
+                    const label = `${stars} star${stars === 1 ? '' : 's'}`;
                     return (
                       <RatingBar key={stars}>
-                        <StarCount>{stars} stars</StarCount>
+                        <StarCount>{label}</StarCount>
                         <BarTrack>
                           <BarProgress $percentage={percentage} />
                         </BarTrack>
@@ -910,28 +1038,38 @@ const ProductDetailPage = () => {
                       </RatingBar>
                     );
                   })}
-                </RatingBars>
-              </ReviewsSummary>
+              </RatingBars>
+            </ReviewsSummary>
 
-              <ReviewGrid>
-                {reviews.slice(0, 3).map((review) => (
-                  <ReviewItem key={review._id} review={review} />
-                ))}
-              </ReviewGrid>
+            {user && (
+              <WriteReviewButton to={`/product/${id}/reviews`}>
+                <FaPen />
+                Write a Review
+              </WriteReviewButton>
+            )}
 
-              {reviewCount > 2 && (
-                <ViewAllReviews to={`/product/${id}/reviews`}>
-                  View all {reviewCount} reviews
-                </ViewAllReviews>
-              )}
-            </ModernReviewsSection>
-          ) : (
-            <NoReviewsState>
-              <NoReviewsIcon>💬</NoReviewsIcon>
-              <h3>No reviews yet</h3>
-              <p>Be the first to share your thoughts!</p>
-            </NoReviewsState>
-          )}
+            {reviewCount > 0 ? (
+              <>
+                <ReviewGrid>
+                  {reviews.slice(0, 3).map((review) => (
+                    <ReviewItem key={review._id} review={review} />
+                  ))}
+                </ReviewGrid>
+
+                {reviewCount > 2 && (
+                  <ViewAllReviews to={`/product/${id}/reviews`}>
+                    View all {reviewCount} reviews
+                  </ViewAllReviews>
+                )}
+              </>
+            ) : (
+              <NoReviewsState>
+                <NoReviewsIcon>💬</NoReviewsIcon>
+                <h3>No reviews yet</h3>
+                <p>Be the first to share your thoughts!</p>
+              </NoReviewsState>
+            )}
+          </ModernReviewsSection>
         </ModernProductHeader>
       </InfoSection>
 
@@ -955,10 +1093,10 @@ const ProductDetailPage = () => {
         </>
       )}
 
-      {/* Sticky Mobile Add to Cart: price left (bold), 8px gap, full-width Add to Cart right */}
+      {/* Sticky Mobile Add to Cart: price left (bold), 8px gap, Add to Cart + Buy Now right */}
       <StickyMobileBar>
         <StickyPrice>
-          <span className="price">GHC {(displayPrice * quantity).toFixed(2)}</span>
+          <span className="price">GH₵{(displayPrice * quantity).toFixed(2)}</span>
         </StickyPrice>
         <StickyActions>
           <StickyQtyGroup>
@@ -985,6 +1123,17 @@ const ProductDetailPage = () => {
                 ? "Add to Cart"
                 : "Out of Stock"}
           </StickyAddButton>
+          <StickyBuyNowButton
+            onClick={handleBuyNow}
+            disabled={
+              !isInStock ||
+              !selectedVariant ||
+              isAddingToCart ||
+              (useAttributeBasedVariants && allAttributesSelected && !selectedVariant)
+            }
+          >
+            Buy Now
+          </StickyBuyNowButton>
         </StickyActions>
       </StickyMobileBar>
     </ModernPageContainer>
@@ -1242,6 +1391,26 @@ const ViewCountBadge = styled.div`
   }
 `;
 
+const StockBadge = styled.div`
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  border-radius: 2rem;
+  font-size: 1.4rem;
+  font-weight: 600;
+  background: ${(props) =>
+    props.$inStock
+      ? 'linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%)'
+      : 'linear-gradient(135deg, #fed7d7 0%, #feb2b2 100%)'};
+  color: ${(props) =>
+    props.$inStock ? 'var(--color-green-800)' : 'var(--color-red-800)'};
+
+  @media (max-width: 640px) {
+    padding: 0.6rem 1.2rem;
+    font-size: 1.2rem;
+  }
+`;
+
 const ShortDescription = styled.p`
   font-size: 1.6rem;
   color: var(--color-grey-600);
@@ -1252,6 +1421,49 @@ const ShortDescription = styled.p`
   @media (max-width: 640px) {
     font-size: 1.4rem;
   }
+`;
+
+const OverviewSection = styled.div`
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-grey-100);
+`;
+
+const OverviewItem = styled.div`
+  margin-bottom: 1.5rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+`;
+
+const OverviewTitle = styled.div`
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--color-grey-900);
+  margin-bottom: 0.5rem;
+`;
+
+const OverviewText = styled.p`
+  font-size: 1.4rem;
+  color: var(--color-grey-600);
+  line-height: 1.6;
+  margin: 0;
+`;
+
+const OverviewList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
+
+const OverviewFeatureItem = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  font-size: 1.4rem;
+  color: var(--color-grey-700);
+  line-height: 1.5;
 `;
 
 const PricingCard = styled.div`
@@ -1541,30 +1753,30 @@ const QtyControls = styled.div`
   display: flex;
   align-items: center;
   border: 2px solid var(--color-grey-200);
-  border-radius: 1.2rem;
+  border-radius: 1rem;
   overflow: hidden;
   background: white;
 `;
 
 const QtyButton = styled.button`
-  width: 5rem;
-  height: 5rem;
+  width: 4rem;
+  height: 4rem;
   border: none;
   background: var(--color-grey-50);
-  font-size: 2.4rem;
+  font-size: 1.8rem;
   font-weight: 600;
   cursor: ${(props) => (props.disabled ? "not-allowed" : "pointer")};
   color: ${(props) => (props.disabled ? "var(--color-grey-400)" : "var(--color-grey-800)")};
   transition: all 0.3s ease;
-  min-width: 44px; /* Touch-friendly */
-  min-height: 44px; /* Touch-friendly */
+  min-width: 40px;
+  min-height: 40px;
 
   @media (max-width: 640px) {
-    width: 4.4rem;
-    height: 4.4rem;
-    font-size: 2rem;
-    min-width: 44px;
-    min-height: 44px;
+    width: 3.6rem;
+    height: 3.6rem;
+    font-size: 1.6rem;
+    min-width: 40px;
+    min-height: 40px;
   }
 
   &:hover:not(:disabled) {
@@ -1574,29 +1786,30 @@ const QtyButton = styled.button`
 `;
 
 const QtyDisplay = styled.span`
-  width: 6rem;
-  height: 5rem;
+  width: 4.5rem;
+  height: 4rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--color-grey-800);
   background: white;
 
   @media (max-width: 640px) {
-    width: 5rem;
-    height: 4.4rem;
-    font-size: 1.6rem;
+    width: 4rem;
+    height: 3.6rem;
+    font-size: 1.4rem;
   }
 `;
 
 const ActionButtonsGrid = styled.div`
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
   gap: 1rem;
 
   @media (max-width: 1024px) {
+    grid-template-columns: 1fr 1fr;
     gap: 0.8rem;
   }
 
@@ -1607,31 +1820,31 @@ const ActionButtonsGrid = styled.div`
 `;
 
 const BaseActionButton = styled.button`
-  padding: 1.6rem 2.4rem;
+  padding: 1rem 1.6rem;
   border: none;
-  border-radius: 1.2rem;
-  font-weight: 700;
-  font-size: 1.6rem;
+  border-radius: 1rem;
+  font-weight: 600;
+  font-size: 1.4rem;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  min-height: 44px; /* Touch-friendly */
+  gap: 0.6rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  min-height: 40px;
 
   @media (max-width: 1024px) {
-    padding: 1.4rem 2rem;
-    font-size: 1.5rem;
+    padding: 0.9rem 1.4rem;
+    font-size: 1.3rem;
   }
 
   @media (max-width: 640px) {
-    padding: 1.4rem 1.8rem;
-    font-size: 1.4rem;
-    border-radius: 1rem;
-    gap: 0.8rem;
-    min-height: 48px; /* Larger touch target on mobile */
+    padding: 0.9rem 1.2rem;
+    font-size: 1.25rem;
+    border-radius: 0.8rem;
+    gap: 0.5rem;
+    min-height: 42px;
   }
 
   &:hover:not(:disabled) {
@@ -1654,6 +1867,15 @@ const PrimaryActionButton = styled(BaseActionButton)`
   }
 `;
 
+const BuyNowButton = styled(BaseActionButton)`
+  background: linear-gradient(135deg, var(--color-grey-800) 0%, var(--color-grey-900) 100%);
+  color: white;
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, var(--color-grey-700) 0%, var(--color-grey-800) 100%);
+  }
+`;
+
 const SecondaryActionButton = styled(BaseActionButton)`
   background: ${(props) =>
     props.$active
@@ -1666,6 +1888,45 @@ const SecondaryActionButton = styled(BaseActionButton)`
     props.$active
       ? "linear-gradient(135deg, #ee5a6f 0%, #e04f5f 100%)"
       : "var(--color-grey-200)"};
+  }
+`;
+
+const ShareButtonWrap = styled.div`
+  position: relative;
+`;
+
+const ShareMenu = styled.div`
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background: var(--color-white-0);
+  border: 1px solid var(--color-grey-200);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  z-index: 100;
+  min-width: 140px;
+  overflow: hidden;
+`;
+
+const ShareMenuItem = styled.button`
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: none;
+  text-align: left;
+  font-size: 0.9rem;
+  color: var(--color-grey-800);
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover {
+    background: var(--color-grey-100);
+  }
+
+  &[href] {
+    text-decoration: none;
   }
 `;
 
@@ -1726,15 +1987,15 @@ const StickyQtyGroup = styled.div`
 `;
 
 const StickyQtyButton = styled.button`
-  width: 3.2rem;
-  height: 3.2rem;
+  width: 2.8rem;
+  height: 2.8rem;
   border-radius: 50%;
   border: 1px solid var(--color-grey-300);
   background: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.6rem;
+  font-size: 1.4rem;
   color: var(--color-grey-700);
   
   &:disabled {
@@ -1754,10 +2015,10 @@ const StickyAddButton = styled.button`
   background: #D4882A;
   color: white;
   border: none;
-  padding: 12px 24px;
+  padding: 10px 14px;
   border-radius: 8px;
   font-weight: 600;
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   flex: 1;
   min-width: 0;
   display: flex;
@@ -1775,6 +2036,31 @@ const StickyAddButton = styled.button`
   }
 `;
 
+const StickyBuyNowButton = styled.button`
+  background: var(--color-grey-800);
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1.2rem;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+
+  &:active:not(:disabled) {
+    background: var(--color-grey-900);
+  }
+  &:disabled {
+    background: var(--color-grey-400);
+    box-shadow: none;
+  }
+`;
+
 
 const ActionSpinner = styled.div`
   width: 2rem;
@@ -1783,6 +2069,11 @@ const ActionSpinner = styled.div`
   border-top-color: white;
   border-radius: 50%;
   animation: ${spin} 0.6s linear infinite;
+`;
+
+const TrustSectionFullWidth = styled.div`
+  grid-column: 1 / -1;
+  width: 100%;
 `;
 
 const TrustSection = styled.div`
@@ -2157,16 +2448,22 @@ const ChevronIcon = styled.span`
   transform: ${(props) => (props.$rotated ? "rotate(180deg)" : "rotate(0)")};
 `;
 
+const SpecsSection = styled.div`
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-grey-100);
+`;
+
 const SpecificationsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1.5rem;
-  margin-top: 2rem;
+  margin-top: 1rem;
 
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
     gap: 1rem;
-    margin-top: 1.5rem;
+    margin-top: 0.75rem;
   }
 `;
 
@@ -2448,6 +2745,28 @@ const HelpfulCount = styled.div`
   color: var(--color-grey-600, #4b5563);
 `;
 
+const WriteReviewButton = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: var(--color-primary-500);
+  color: white;
+  border-radius: 1rem;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1.4rem;
+  margin-bottom: 2rem;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: var(--color-primary-600);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.3);
+  }
+`;
+
 const ViewAllReviews = styled(Link)`
   display: block;
   text-align: center;
@@ -2478,7 +2797,7 @@ const NoReviewsIcon = styled.div`
 `;
 
 const SimilarSection = styled.div`
-  margin-bottom: 3rem;
+  margin-bottom: 0.5rem;
 `;
 
 const SectionTitle = styled.h2`

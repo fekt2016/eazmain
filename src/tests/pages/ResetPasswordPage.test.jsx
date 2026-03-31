@@ -128,7 +128,7 @@ describe('ResetPasswordPage', () => {
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/password must be at least 8 characters long/i)).toBeInTheDocument();
+      expect(screen.getByText(/needs at least 8 characters/i)).toBeInTheDocument();
       expect(mockResetPasswordWithToken.mutate).not.toHaveBeenCalled();
     });
   });
@@ -143,8 +143,9 @@ describe('ResetPasswordPage', () => {
     const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
     const submitButton = screen.getByRole('button', { name: /reset password/i });
 
-    await user.type(newPasswordInput, 'password123');
-    await user.type(confirmPasswordInput, 'password456');
+    // Use passwords that pass length, digit, and special char checks but don't match
+    await user.type(newPasswordInput, 'Password123!');
+    await user.type(confirmPasswordInput, 'Password456!');
     await user.click(submitButton);
 
     await waitFor(() => {
@@ -182,16 +183,17 @@ describe('ResetPasswordPage', () => {
     const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
     const submitButton = screen.getByRole('button', { name: /reset password/i });
 
-    await user.type(newPasswordInput, 'newpassword123');
-    await user.type(confirmPasswordInput, 'newpassword123');
+    // Use password that passes all validation (length, digit, special char)
+    await user.type(newPasswordInput, 'Newpassword123!');
+    await user.type(confirmPasswordInput, 'Newpassword123!');
     await user.click(submitButton);
 
     await waitFor(() => {
       expect(mockResetPasswordWithToken.mutate).toHaveBeenCalledWith(
         {
           token: 'valid-reset-token-123',
-          newPassword: 'newpassword123',
-          confirmPassword: 'newpassword123',
+          newPassword: 'Newpassword123!',
+          confirmPassword: 'Newpassword123!',
         },
         expect.objectContaining({
           onSuccess: expect.any(Function),
@@ -228,8 +230,9 @@ describe('ResetPasswordPage', () => {
     const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
     const submitButton = screen.getByRole('button', { name: /reset password/i });
 
-    await user.type(newPasswordInput, 'newpassword123');
-    await user.type(confirmPasswordInput, 'newpassword123');
+    // Use password that passes all validation (length, digit, special char)
+    await user.type(newPasswordInput, 'Newpassword123!');
+    await user.type(confirmPasswordInput, 'Newpassword123!');
     await user.click(submitButton);
 
     // Wait for success state
@@ -292,7 +295,7 @@ describe('ResetPasswordPage', () => {
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/password must be at least 8 characters long/i)).toBeInTheDocument();
+      expect(screen.getByText(/needs at least 8 characters/i)).toBeInTheDocument();
     });
 
     // Start typing in new password field - should clear error
@@ -300,7 +303,7 @@ describe('ResetPasswordPage', () => {
     await user.type(newPasswordInput, 'new');
 
     await waitFor(() => {
-      expect(screen.queryByText(/password must be at least 8 characters long/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/needs at least 8 characters/i)).not.toBeInTheDocument();
     });
   });
 

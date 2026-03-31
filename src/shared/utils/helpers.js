@@ -1,10 +1,8 @@
 import { jwtDecode } from "jwt-decode";
 import logger from './logger';
 
-export const formatCurrency = (value, currency = "USD") =>
-  new Intl.NumberFormat("en", { style: "currency", currency: currency }).format(
-    value
-  );
+export const formatCurrency = (value, currency = "GHS") =>
+  new Intl.NumberFormat("en-GH", { style: "currency", currency }).format(value);
 
 export function formatDate(dateStr) {
   const date = new Intl.DateTimeFormat("en", {

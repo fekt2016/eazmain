@@ -40,6 +40,7 @@ const PUBLIC_ROUTES = [
 
 const PUBLIC_GET_ENDPOINTS = [
   /^\/product\/[a-fA-F\d]{24}$/,
+  /^\/product\/[a-fA-F\d]{24}\/reviews$/,
   /^\/product\/\d+$/,
   /^\/product\/eazshop$/, // EazShop products
   /^\/seller\/[^/]+\/public-profile$/,

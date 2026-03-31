@@ -13,6 +13,7 @@ import React from 'react';
 import { screen, waitFor } from '@testing-library/react';
 import { renderWithProviders } from '../test-utils';
 import NotificationPage from '../../features/profile/NotificationPage';
+import { ModalProvider } from '@/components/modal/ModalProvider';
 
 // Mock useNotification hooks
 const mockSettings = {
@@ -63,6 +64,9 @@ jest.mock('../../shared/hooks/useNotification', () => ({
   useResetNotificationSettings: (...args) => mockUseResetNotificationSettings(...args),
 }));
 
+const renderNotificationPage = (ui = <NotificationPage />) =>
+  renderWithProviders(<ModalProvider>{ui}</ModalProvider>);
+
 describe('NotificationPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -72,7 +76,7 @@ describe('NotificationPage', () => {
   });
 
   test('renders notification settings page', async () => {
-    renderWithProviders(<NotificationPage />);
+    renderNotificationPage();
 
     await waitFor(() => {
       expect(screen.getByText(/notification settings/i)).toBeInTheDocument();
@@ -80,7 +84,7 @@ describe('NotificationPage', () => {
   });
 
   test('displays notification settings', async () => {
-    renderWithProviders(<NotificationPage />);
+    renderNotificationPage();
 
     await waitFor(() => {
       expect(screen.getByText(/customize how and when/i)).toBeInTheDocument();
@@ -94,7 +98,7 @@ describe('NotificationPage', () => {
       isError: false,
     });
 
-    renderWithProviders(<NotificationPage />);
+    renderNotificationPage();
 
     await waitFor(() => {
       expect(screen.getByText(/loading notification settings/i)).toBeInTheDocument();
@@ -108,7 +112,7 @@ describe('NotificationPage', () => {
       isError: true,
     });
 
-    renderWithProviders(<NotificationPage />);
+    renderNotificationPage();
 
     await waitFor(() => {
       expect(screen.getByText(/failed to load notification settings/i)).toBeInTheDocument();

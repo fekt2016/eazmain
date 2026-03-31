@@ -1,9 +1,23 @@
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 import { devicesMax } from "../../styles/breakpoint";
+import { cardVariants } from "../../styles/variants";
 
 // Note: To use framer-motion animations, install: npm install framer-motion
 // Then change: styled.div → styled(motion.div)
 // And import: import { motion } from "framer-motion";
+
+const variantStyles = Object.fromEntries(
+  Object.entries(cardVariants).map(([key, v]) => [
+    key,
+    css`
+      background: ${v.background};
+      border-color: ${v.borderColor};
+      box-shadow: ${v.boxShadow || 'none'};
+      ${v.color ? `color: ${v.color};` : ''}
+      ${v.backdropFilter ? `backdrop-filter: ${v.backdropFilter};` : ''}
+    `,
+  ])
+);
 
 export const Card = styled.div`
   background: var(--color-white-0);
@@ -12,6 +26,8 @@ export const Card = styled.div`
   border: 1px solid var(--color-grey-200);
   transition: all var(--transition-normal);
   overflow: hidden;
+
+  ${({ $variant }) => $variant && variantStyles[$variant]}
 
   ${({ $hover }) =>
     $hover &&

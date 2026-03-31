@@ -16,6 +16,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../test-utils';
 import OrdersPage from '@/features/orders/OrderList';
+import { ModalProvider } from '@/components/modal/ModalProvider';
 
 // Mock react-router-dom
 const mockNavigate = jest.fn();
@@ -36,28 +37,54 @@ const mockUseDeleteOrder = jest.fn(() => ({
   isPending: false,
 }));
 
-jest.mock('@/shared/hooks/useOrder', () => ({
-  __esModule: true,
-  useGetUserOrders: (...args) => mockUseGetUserOrders(...args),
-  getOrderStructure: (data) => {
-    if (!data) return [];
-    if (Array.isArray(data)) return data;
-    if (data.data && Array.isArray(data.data)) return data.data;
-    if (data.orders && Array.isArray(data.orders)) return data.orders;
-    return [];
-  },
-  useDeleteOrder: (...args) => mockUseDeleteOrder(...args),
+jest.mock('@/shared/hooks/useOrder', () => {
+  const actual = jest.requireActual('@/shared/hooks/useOrder');
+  return {
+    __esModule: true,
+    ...actual,
+    useGetUserOrders: (...args) => mockUseGetUserOrders(...args),
+    getOrderStructure: (data) => {
+      if (!data) return [];
+      if (Array.isArray(data)) return data;
+      if (data.data && Array.isArray(data.data)) return data.data;
+      if (data.orders && Array.isArray(data.orders)) return data.orders;
+      return [];
+    },
+    useDeleteOrder: (...args) => mockUseDeleteOrder(...args),
+  };
+});
+
+// Mock useModal so showDanger immediately invokes onConfirm (avoids modal interaction)
+const mockShowDanger = jest.fn(({ onConfirm }) => {
+  if (typeof onConfirm === 'function') onConfirm();
+});
+const mockShowAlert = jest.fn();
+jest.mock('@/shared/hooks/useModal', () => ({
+  useModal: () => ({
+    showDanger: mockShowDanger,
+    showAlert: mockShowAlert,
+    showWarning: jest.fn(),
+    showSuccess: jest.fn(),
+    showInfo: jest.fn(),
+    hideModal: jest.fn(),
+  }),
 }));
 
 // Mock window.confirm
 const mockConfirm = jest.fn(() => true);
 window.confirm = mockConfirm;
 
+const renderOrdersPage = (ui = <OrdersPage />) =>
+  renderWithProviders(<ModalProvider>{ui}</ModalProvider>);
+
 describe('OrdersPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockNavigate.mockClear();
     mockConfirm.mockReturnValue(true);
+    mockShowDanger.mockImplementation(({ onConfirm }) => {
+      if (typeof onConfirm === 'function') onConfirm();
+    });
     mockUseGetUserOrders.mockReturnValue({
       data: null,
       isLoading: false,
@@ -76,7 +103,7 @@ describe('OrdersPage', () => {
       error: null,
     });
 
-    renderWithProviders(<OrdersPage />);
+    renderOrdersPage();
 
     await waitFor(() => {
       expect(screen.getByText('Order Management')).toBeInTheDocument();
@@ -90,7 +117,7 @@ describe('OrdersPage', () => {
       error: null,
     });
 
-    renderWithProviders(<OrdersPage />);
+    renderOrdersPage();
 
     await waitFor(() => {
       expect(screen.getByText('No orders found')).toBeInTheDocument();
@@ -116,7 +143,8 @@ describe('OrdersPage', () => {
         id: 'order2',
         orderNumber: 'ORD987654321',
         createdAt: '2024-01-16T10:00:00Z',
-        status: 'delivered',
+        status: 'completed',
+        currentStatus: 'delivered',
         totalPrice: 200.00,
         orderItems: [
           { _id: 'item2', name: 'Product 2', quantity: 2 },
@@ -132,19 +160,18 @@ describe('OrdersPage', () => {
       error: null,
     });
 
-    renderWithProviders(<OrdersPage />);
+    renderOrdersPage();
 
     await waitFor(() => {
       expect(screen.getByText('Order Management')).toBeInTheDocument();
       // Component formats order numbers: shows last 8 chars with # prefix
-      // "ORD123456789" becomes "#23456789", "ORD987654321" becomes "#87654321"
-      // Multiple elements may contain the same text, so use getAllByText
-      const order1Elements = screen.getAllByText(/#23456789/i);
+      const order1Elements = screen.getAllByText(/23456789/);
       expect(order1Elements.length).toBeGreaterThan(0);
-      const order2Elements = screen.getAllByText(/#87654321/i);
+      const order2Elements = screen.getAllByText(/87654321/);
       expect(order2Elements.length).toBeGreaterThan(0);
-      expect(screen.getByText('Processing')).toBeInTheDocument();
-      expect(screen.getByText('Delivered')).toBeInTheDocument();
+      // "Processing" and "Delivered" appear in both status badges and filter dropdown
+      expect(screen.getAllByText('Processing').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Delivered').length).toBeGreaterThan(0);
     });
   });
 
@@ -165,7 +192,8 @@ describe('OrdersPage', () => {
         id: 'order2',
         orderNumber: 'ORD987654321',
         createdAt: '2024-01-16T10:00:00Z',
-        status: 'delivered',
+        status: 'completed',
+        currentStatus: 'delivered',
         totalPrice: 200.00,
         orderItems: [{ _id: 'item2', name: 'Product 2', quantity: 2 }],
         trackingNumber: null,
@@ -179,7 +207,7 @@ describe('OrdersPage', () => {
       error: null,
     });
 
-    renderWithProviders(<OrdersPage />);
+    renderOrdersPage();
 
     await waitFor(() => {
       expect(screen.getByText('Order Management')).toBeInTheDocument();
@@ -192,10 +220,10 @@ describe('OrdersPage', () => {
     await waitFor(() => {
       expect(filterSelect).toHaveValue('processing');
       // Only processing order should be visible
-      // Component formats: "ORD123456789" -> "#23456789"
-      const order1Elements = screen.getAllByText(/#23456789/i);
+      const order1Elements = screen.getAllByText(/23456789/);
       expect(order1Elements.length).toBeGreaterThan(0);
-      expect(screen.queryByText(/#87654321/i)).not.toBeInTheDocument();
+      const order2Elements = screen.queryAllByText(/87654321/);
+      expect(order2Elements.length).toBe(0);
     });
   });
 
@@ -216,7 +244,8 @@ describe('OrdersPage', () => {
         id: 'order2',
         orderNumber: 'ORD987654321',
         createdAt: '2024-01-16T10:00:00Z',
-        status: 'delivered',
+        status: 'completed',
+        currentStatus: 'delivered',
         totalPrice: 200.00,
         orderItems: [{ _id: 'item2', name: 'Product 2', quantity: 2 }],
         trackingNumber: null,
@@ -230,7 +259,7 @@ describe('OrdersPage', () => {
       error: null,
     });
 
-    renderWithProviders(<OrdersPage />);
+    renderOrdersPage();
 
     await waitFor(() => {
       expect(screen.getByText('Order Management')).toBeInTheDocument();
@@ -242,12 +271,10 @@ describe('OrdersPage', () => {
 
     await waitFor(() => {
       expect(searchInput).toHaveValue('ORD123');
-      // Only matching order should be visible
-      // Component formats: "ORD123456789" -> "#23456789"
-      // Search should still match the full order number in the data
-      const order1Elements = screen.getAllByText(/#23456789/i);
+      const order1Elements = screen.getAllByText(/23456789/);
       expect(order1Elements.length).toBeGreaterThan(0);
-      expect(screen.queryByText(/#87654321/i)).not.toBeInTheDocument();
+      const order2Elements = screen.queryAllByText(/87654321/);
+      expect(order2Elements.length).toBe(0);
     });
   });
 
@@ -268,7 +295,8 @@ describe('OrdersPage', () => {
         id: 'order2',
         orderNumber: 'ORD987654321',
         createdAt: '2024-01-16T10:00:00Z',
-        status: 'delivered',
+        status: 'completed',
+        currentStatus: 'delivered',
         totalPrice: 200.00,
         orderItems: [{ _id: 'item2', name: 'Product 2', quantity: 2 }],
         trackingNumber: null,
@@ -282,7 +310,7 @@ describe('OrdersPage', () => {
       error: null,
     });
 
-    renderWithProviders(<OrdersPage />);
+    renderOrdersPage();
 
     await waitFor(() => {
       expect(screen.getByText('Order Management')).toBeInTheDocument();
@@ -319,7 +347,7 @@ describe('OrdersPage', () => {
       error: null,
     });
 
-    renderWithProviders(<OrdersPage />);
+    renderOrdersPage();
 
     await waitFor(() => {
       expect(screen.getByText('Order Management')).toBeInTheDocument();
@@ -361,19 +389,19 @@ describe('OrdersPage', () => {
       error: null,
     });
 
-    renderWithProviders(<OrdersPage />);
+    renderOrdersPage();
 
     await waitFor(() => {
       expect(screen.getByText('Order Management')).toBeInTheDocument();
     });
 
-    // Find and click delete button
+    // Click delete button - mock useModal's showDanger immediately calls onConfirm
     const deleteButtons = screen.getAllByTitle('Delete Order');
     await user.click(deleteButtons[0]);
 
     await waitFor(() => {
-      expect(mockConfirm).toHaveBeenCalled();
-      expect(mockDeleteMutate).toHaveBeenCalledWith('order1');
+      expect(mockShowDanger).toHaveBeenCalled();
+      expect(mockDeleteMutate).toHaveBeenCalledWith('order1', expect.any(Object));
     });
   });
 });

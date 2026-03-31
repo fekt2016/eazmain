@@ -11,6 +11,7 @@ import { devicesMax } from "../../shared/styles/breakpoint";
 import useDynamicPageTitle from "../../shared/hooks/useDynamicPageTitle";
 import { fadeInUp } from "../../shared/styles/animations";
 import { PATHS } from "../../routes/routePaths";
+import { isEazShopProduct } from "../../shared/utils/isEazShopProduct";
 
 const ProductsPage = () => {
   useDynamicPageTitle({
@@ -133,7 +134,7 @@ const ProductsPage = () => {
 
     // Filter by EazShop only if requested
     if (showEazShopOnly) {
-      products = products.filter(p => p.isEazShopProduct);
+      products = products.filter((p) => isEazShopProduct(p));
     }
 
     // Sort products

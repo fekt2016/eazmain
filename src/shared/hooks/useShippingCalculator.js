@@ -12,7 +12,7 @@ import { shippingRateService } from '../services/shippingRateApi';
 export const useShippingCalculator = () => {
   return useMutation({
     mutationFn: async ({ weight, shippingType, zone, destination, destinationAddress, type, distanceKm, fragile, orderTime }) => {
-      const response = await shippingRateService.calculateFee({
+      const data = await shippingRateService.calculateFee({
         weight,
         shippingType,
         zone,
@@ -23,7 +23,8 @@ export const useShippingCalculator = () => {
         fragile: fragile || false,
         orderTime: orderTime || new Date().toISOString(),
       });
-      return response.data; // Returns { shippingFee, estimatedDays, baseFee, perKgFee, weight, shippingType, zone, distanceKm, breakdown }
+      // shippingRateApi returns unwrapped { shippingFee, estimatedDays, ... }
+      return data?.data ?? data;
     },
   });
 };

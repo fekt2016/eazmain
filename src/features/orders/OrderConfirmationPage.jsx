@@ -20,6 +20,7 @@ import seoConfig from "../../shared/config/seoConfig";
 import { useOrderConfirmation } from "../../shared/hooks/useOrderConfirmation";
 import { isValidPaystackUrl } from "../../shared/utils/sanitize";
 import { usePaystackPayment } from "../../shared/hooks/usePaystackPayment";
+import { getOrderBadgeColors } from "../../shared/utils/orderStatusBadgeStyles";
 
 /**
  * OrderConfirmationPage Component
@@ -210,6 +211,17 @@ const OrderConfirmationPage = () => {
     );
   }, [order?.paymentMethod]);
 
+  const isPaymentVerified = useMemo(() => {
+    const isAlreadyPaid =
+      order?.paymentStatus === "completed" ||
+      order?.paymentStatus === "paid" ||
+      order?.isPaid ||
+      !!order?.paidAt;
+    return isAlreadyPaid || verificationStatus === "success";
+  }, [order, verificationStatus]);
+
+  const paymentStatusLabel = isPaymentVerified ? "Paid" : "Pending";
+
   /**
    * Determine if order is eligible for retry payment
    * Only for Paystack/mobile_money orders that are still unpaid/pending.
@@ -220,14 +232,11 @@ const OrderConfirmationPage = () => {
       order.paymentMethod === "mobile_money" ||
       order.paymentMethod === "paystack" ||
       (!isCashOnDelivery && !isWalletPayment);
-    const isUnpaid =
-      !order.paymentStatus ||
-      order.paymentStatus === "pending" ||
-      order.paymentStatus === "failed";
+    const isUnpaid = !isPaymentVerified;
     const isNotCancelled =
       order.status !== "cancelled" && order.orderStatus !== "cancelled";
     return isPaystackPayment && isUnpaid && isNotCancelled;
-  }, [order, isCashOnDelivery, isWalletPayment]);
+  }, [order, isCashOnDelivery, isWalletPayment, isPaymentVerified]);
 
   const handlePayNow = async () => {
     if (!order) return;
@@ -495,7 +504,7 @@ const OrderConfirmationPage = () => {
                       src={item.image || ""}
                       alt={item.name || "Product"}
                       onError={(e) => {
-                        e.target.src = "/placeholder-product.png";
+                        e.target.src = "/placeholder-product.svg";
                       }}
                     />
                     <ItemDetails>
@@ -655,13 +664,26 @@ const OrderConfirmationPage = () => {
               <p>
                 <strong>Method:</strong> {paymentMethodLabel}
               </p>
+              <p>
+                <strong>Status:</strong>{" "}
+                <PaymentStatusText $paid={isPaymentVerified}>
+                  {paymentStatusLabel}
+                </PaymentStatusText>
+              </p>
 
               {isMobileMoney && (
                 <PaymentNotice>
-                  <p>
-                    Your payment is being processed. You&apos;ll receive a
-                    confirmation message shortly.
-                  </p>
+                  {isPaymentVerified ? (
+                    <p>
+                      ✅ Payment completed successfully. Your order is confirmed
+                      and is now being prepared for shipment.
+                    </p>
+                  ) : (
+                    <p>
+                      Your payment is being processed. You&apos;ll receive a
+                      confirmation message shortly.
+                    </p>
+                  )}
                 </PaymentNotice>
               )}
 
@@ -680,14 +702,23 @@ const OrderConfirmationPage = () => {
 
               {isCashOnDelivery && (
                 <PaymentNotice>
-                  <p>
-                    Please prepare cash payment of GH₵
-                    {(order?.totalAmount || 0).toFixed(2)} for the delivery
-                    agent.
-                  </p>
-                  <p style={{ marginTop: '10px', color: 'var(--color-primary-600)', fontSize: '0.9rem' }}>
-                    <strong>* Good News:</strong> You can easily update your payment method directly with the rider when they arrive at your location.
-                  </p>
+                  {isPaymentVerified ? (
+                    <p>
+                      ✅ Cash-on-delivery payment has been received and recorded
+                      as paid for this order.
+                    </p>
+                  ) : (
+                    <>
+                      <p>
+                        Please prepare cash payment of GH₵
+                        {(order?.totalAmount || 0).toFixed(2)} for the delivery
+                        agent.
+                      </p>
+                      <p style={{ marginTop: '10px', color: 'var(--color-primary-600)', fontSize: '0.9rem' }}>
+                        <strong>* Good News:</strong> You can easily update your payment method directly with the rider when they arrive at your location.
+                      </p>
+                    </>
+                  )}
                 </PaymentNotice>
               )}
 
@@ -807,6 +838,17 @@ const CheckmarkIcon = styled.div`
   font-size: 5rem;
   color: #28a745;
   margin-bottom: 20px;
+`;
+
+const PaymentStatusText = styled.span`
+  display: inline-block;
+  font-weight: 700;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: ${({ $paid }) =>
+    getOrderBadgeColors($paid ? "payment_completed" : "pending_payment").bg};
+  color: ${({ $paid }) =>
+    getOrderBadgeColors($paid ? "payment_completed" : "pending_payment").color};
 `;
 
 const ErrorIcon = styled.div`

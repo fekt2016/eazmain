@@ -46,7 +46,9 @@ const PrivacyPolicyPage = lazy(() => import("../pages/policies/PrivacyPolicyPage
 const TermsPage = lazy(() => import("../pages/policies/TermsPage"));
 const DataDeletionPage = lazy(() => import("../pages/policies/DataDeletionPage"));
 const VatTaxPolicyPage = lazy(() => import("../pages/policies/VatTaxPolicyPage"));
+const CookiePolicyPage = lazy(() => import("../pages/policies/CookiePolicyPage"));
 const ProductCarePage = lazy(() => import("../pages/product-care/ProductCarePage"));
+const SizeGuidePage = lazy(() => import("../pages/size-guide/SizeGuidePage"));
 const PartnerPage = lazy(() => import("../pages/partner/PartnerPage"));
 const CareersPage = lazy(() => import("../pages/careers/CareersPage"));
 const ShippingInfoPage = lazy(() => import("../pages/shipping/ShippingInfoPage"));
@@ -233,10 +235,26 @@ const MainRoutes = () => {
           }
         />
         <Route
+          path={PATHS.COOKIE_POLICY}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <CookiePolicyPage />
+            </Suspense>
+          }
+        />
+        <Route
           path={PATHS.PRODUCT_CARE}
           element={
             <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
               <ProductCarePage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.SIZE_GUIDE}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <SizeGuidePage />
             </Suspense>
           }
         />

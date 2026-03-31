@@ -16,6 +16,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../test-utils';
 import PaymentMethodPage from '@/features/profile/PaymentMethodPage';
+import { ModalProvider } from '@/components/modal/ModalProvider';
 
 // Mock react-router-dom
 const mockNavigate = jest.fn();
@@ -80,6 +81,9 @@ describe('PaymentMethodPage', () => {
     });
   });
 
+  const renderPaymentMethodPage = (ui = <PaymentMethodPage />) =>
+    renderWithProviders(<ModalProvider>{ui}</ModalProvider>);
+
   test('renders loading state when payment methods are loading', async () => {
     mockUseGetPaymentMethods.mockReturnValue({
       data: null,
@@ -88,7 +92,7 @@ describe('PaymentMethodPage', () => {
       refetch: jest.fn(),
     });
 
-    renderWithProviders(<PaymentMethodPage />);
+    renderPaymentMethodPage();
 
     await waitFor(() => {
       expect(screen.getByTestId('loading-state')).toBeInTheDocument();
@@ -103,7 +107,7 @@ describe('PaymentMethodPage', () => {
       refetch: jest.fn(),
     });
 
-    renderWithProviders(<PaymentMethodPage />);
+    renderPaymentMethodPage();
 
     await waitFor(() => {
       expect(screen.getByTestId('error-state')).toBeInTheDocument();
@@ -118,7 +122,7 @@ describe('PaymentMethodPage', () => {
       refetch: jest.fn(),
     });
 
-    renderWithProviders(<PaymentMethodPage />);
+    renderPaymentMethodPage();
 
     await waitFor(() => {
       expect(screen.getByText(/no payment methods/i)).toBeInTheDocument();
@@ -153,7 +157,7 @@ describe('PaymentMethodPage', () => {
       refetch: jest.fn(),
     });
 
-    renderWithProviders(<PaymentMethodPage />);
+    renderPaymentMethodPage();
 
     await waitFor(() => {
       // Mobile money number should be displayed (0241234567)
@@ -178,7 +182,7 @@ describe('PaymentMethodPage', () => {
       refetch: jest.fn(),
     });
 
-    renderWithProviders(<PaymentMethodPage />);
+    renderPaymentMethodPage();
 
     await waitFor(() => {
       expect(screen.getByText(/no payment methods/i)).toBeInTheDocument();
@@ -221,7 +225,7 @@ describe('PaymentMethodPage', () => {
       refetch: jest.fn(),
     });
 
-    renderWithProviders(<PaymentMethodPage />);
+    renderPaymentMethodPage();
 
     await waitFor(() => {
       expect(screen.getByText(/0241234567/i)).toBeInTheDocument();

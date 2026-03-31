@@ -97,6 +97,7 @@ const GlobalStyles = createGlobalStyle`
   --color-blue-100: #e0f2fe;
   --color-blue-700: #0369a1;
   --color-green-100: #dcfce7;
+  --color-green-600: #059669;
   --color-green-700: #15803d;
 
 
@@ -135,6 +136,7 @@ const GlobalStyles = createGlobalStyle`
   --color-green-500: #38a169;
   --color-yellow-100: #fef9c3;
   --color-yellow-700: #a16207;
+  --color-amber-600: #d97706;
   --color-silver-100: #e5e7eb;
   --color-silver-700: #374151;
   --color-indigo-100: #e0e7ff;
@@ -160,6 +162,7 @@ const GlobalStyles = createGlobalStyle`
   //used
   --color-red-500: #fcc;
   --color-red-600: #f87171;
+  --color-red-650: #dc2626;
   --color-red-700: #b91c1c;
   --color-red-800: #991b1b;
   
@@ -230,7 +233,10 @@ const GlobalStyles = createGlobalStyle`
   --error: var(--color-red-600);
   --error-light: var(--color-red-500);
   --success: var(--color-green-700);
+  --success-hover: var(--color-green-600);
   --warning: var(--color-yellow-700);
+  --warning-hover: var(--color-amber-600);
+  --error-hover: var(--color-red-650);
 
   /* Additional shadows */
   --shadow-gold: 0 4px 20px rgba(255, 196, 0, 0.3);

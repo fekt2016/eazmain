@@ -43,7 +43,7 @@ jest.mock('@/shared/components/LoadingSpinner', () => ({
   LoadingSpinner: () => <div data-testid="loading-spinner">Loading...</div>,
 }));
 
-// Mock loading components
+// Mock loading components (CouponPage uses ErrorState, ShimmerCouponRows, Skeleton)
 jest.mock('@/components/loading', () => ({
   __esModule: true,
   ErrorState: ({ title, message, action }) => (
@@ -53,6 +53,8 @@ jest.mock('@/components/loading', () => ({
       {action}
     </div>
   ),
+  ShimmerCouponRows: () => <div data-testid="shimmer-coupon-rows">Loading coupons...</div>,
+  Skeleton: () => <div data-testid="skeleton">Loading...</div>,
 }));
 
 // navigator.clipboard is already mocked in setupTests.js
@@ -80,8 +82,8 @@ describe('CouponsPage', () => {
     renderWithProviders(<CouponsPage />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
-      expect(screen.getByText(/loading your coupons/i)).toBeInTheDocument();
+      expect(screen.getByTestId('shimmer-coupon-rows')).toBeInTheDocument();
+      expect(screen.getByText(/loading your coupons|loading coupons/i)).toBeInTheDocument();
     });
   });
 

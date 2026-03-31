@@ -17,6 +17,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../test-utils';
 import AddressManagementPage from '@/features/profile/AddressPage';
+import { ModalProvider } from '@/components/modal/ModalProvider';
 
 // Mock react-router-dom
 const mockNavigate = jest.fn();
@@ -62,10 +63,11 @@ jest.mock('@/shared/hooks/useAddress', () => ({
   useSetDefaultAddress: (...args) => mockUseSetDefaultAddress(...args),
 }));
 
-// Mock loading components
+// Mock loading components (AddressPage uses ShimmerAddressCards for loading)
 jest.mock('@/components/loading', () => ({
   __esModule: true,
   LoadingState: () => <div data-testid="loading-state">Loading...</div>,
+  ShimmerAddressCards: () => <div data-testid="loading-state">Loading...</div>,
   ErrorState: ({ title, message, onRetry }) => (
     <div data-testid="error-state">
       <h2>{title}</h2>
@@ -74,6 +76,9 @@ jest.mock('@/components/loading', () => ({
     </div>
   ),
 }));
+
+const renderAddressPage = (ui = <AddressManagementPage />) =>
+  renderWithProviders(<ModalProvider>{ui}</ModalProvider>);
 
 describe('AddressManagementPage', () => {
   beforeEach(() => {
@@ -95,7 +100,7 @@ describe('AddressManagementPage', () => {
       refetch: jest.fn(),
     });
 
-    renderWithProviders(<AddressManagementPage />);
+    renderAddressPage();
 
     await waitFor(() => {
       expect(screen.getByTestId('loading-state')).toBeInTheDocument();
@@ -110,7 +115,7 @@ describe('AddressManagementPage', () => {
       refetch: jest.fn(),
     });
 
-    renderWithProviders(<AddressManagementPage />);
+    renderAddressPage();
 
     await waitFor(() => {
       expect(screen.getByTestId('error-state')).toBeInTheDocument();
@@ -125,7 +130,7 @@ describe('AddressManagementPage', () => {
       refetch: jest.fn(),
     });
 
-    renderWithProviders(<AddressManagementPage />);
+    renderAddressPage();
 
     await waitFor(() => {
       expect(screen.getByText(/no addresses/i)).toBeInTheDocument();
@@ -159,7 +164,7 @@ describe('AddressManagementPage', () => {
       refetch: jest.fn(),
     });
 
-    renderWithProviders(<AddressManagementPage />);
+    renderAddressPage();
 
     await waitFor(() => {
       expect(screen.getByText('123 Test St')).toBeInTheDocument();
@@ -182,7 +187,7 @@ describe('AddressManagementPage', () => {
       refetch: jest.fn(),
     });
 
-    renderWithProviders(<AddressManagementPage />);
+    renderAddressPage();
 
     await waitFor(() => {
       expect(screen.getByText(/no addresses/i)).toBeInTheDocument();

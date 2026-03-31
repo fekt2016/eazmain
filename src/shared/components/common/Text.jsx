@@ -1,12 +1,26 @@
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 import { devicesMax } from "../../styles/breakpoint";
+import { textVariants } from "../../styles/variants";
+
+const variantStyles = Object.fromEntries(
+  Object.entries(textVariants).map(([key, v]) => [
+    key,
+    css`
+      font-size: ${v.fontSize} !important;
+      color: ${v.color} !important;
+      font-weight: ${v.fontWeight} !important;
+    `,
+  ])
+);
 
 const Text = styled.p`
+  line-height: 1.5;
+  margin: 0;
   font-weight: ${({ $weight }) => $weight || 400};
   font-size: ${({ $size }) => $size || "var(--font-size-md)"};
   color: ${({ $color }) => $color || "var(--color-grey-700)"};
-  line-height: 1.5;
-  margin: 0;
+
+  ${({ $variant }) => $variant && variantStyles[$variant]}
   
   ${({ $truncate }) =>
     $truncate &&

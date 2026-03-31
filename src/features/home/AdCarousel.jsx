@@ -34,12 +34,6 @@ const SlideBackground = styled.img`
   height: 100%;
   object-fit: contain;
   background-color: transparent;
-  transition: transform 0.6s ease;
-
-  ${SlideLink}:hover &,
-  ${SlideLink}:focus & {
-    transform: scale(1.05);
-  }
 `;
 
 const SlideOverlay = styled.div`
@@ -135,7 +129,7 @@ const AdCarousel = ({ ads, className }) => {
                     src={getOptimizedImageUrl(ad.imageUrl, IMAGE_SLOTS.HOME_HERO)}
                     alt={ad.title || "Advertisement"}
                     loading="eager"
-                    fetchpriority="high"
+                    fetchPriority="high"
                   />
                 ) : null}
                 <SlideOverlay aria-hidden="true" />

@@ -125,7 +125,7 @@ export const qaData = [
     items: [
       {
         q: "How do I contact customer support?",
-        a: "You can contact our support team through multiple channels: Use the 'Contact Us' page on our website, open a support ticket from your account dashboard, send an email to our support address, or use the live chat feature (when available). Our team typically responds within 24 hours."
+        a: "You can contact our support team through multiple channels: Use the 'Contact Us' page on our website, open a support ticket from your account dashboard, or send an email to our support address. Our team typically responds within 24 hours."
       },
       {
         q: "How do I create a support ticket?",

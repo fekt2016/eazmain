@@ -1,3 +1,8 @@
+/**
+ * @deprecated Use Button from '../Button' with variant prop instead.
+ * Example: <Button variant="primary">Click</Button>
+ * These styled primitives are kept for backward compatibility.
+ */
 import styled from "styled-components";
 import { Link } from "react-router-dom";
 import { devicesMax } from "../../styles/breakpoint";
@@ -125,7 +130,7 @@ export const SuccessButton = styled(Button)`
   box-shadow: var(--shadow-sm);
 
   &:hover:not(:disabled) {
-    background: #059669;
+    background: var(--success-hover);
     box-shadow: var(--shadow-md);
   }
 `;
@@ -136,7 +141,7 @@ export const WarningButton = styled(Button)`
   box-shadow: var(--shadow-sm);
 
   &:hover:not(:disabled) {
-    background: #d97706;
+    background: var(--warning-hover);
     box-shadow: var(--shadow-md);
   }
 `;
@@ -147,7 +152,7 @@ export const ErrorButton = styled(Button)`
   box-shadow: var(--shadow-sm);
 
   &:hover:not(:disabled) {
-    background: #dc2626;
+    background: var(--error-hover);
     box-shadow: var(--shadow-md);
   }
 `;
@@ -161,8 +166,8 @@ export const DangerButton = styled(Button)`
   font-weight: var(--font-bold);
 
   &:hover:not(:disabled) {
-    background: #dc2626;
-    border-color: #dc2626;
+    background: var(--error-hover);
+    border-color: var(--error-hover);
     box-shadow: var(--shadow-lg);
     transform: translateY(-2px) scale(1.02);
   }

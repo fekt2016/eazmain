@@ -68,7 +68,7 @@ export default function Footer() {
                 <LinkItem to={PATHS.SUPPORT}>Support</LinkItem>
                 <LinkItem to={PATHS.SHIPPING_POLICY}>Shipping Info</LinkItem>
                 <LinkItem to={PATHS.REFUND_POLICY}>Return & Refund Policy</LinkItem>
-                <LinkItem to="/size-guide">Size Guide</LinkItem>
+                <LinkItem to={PATHS.SIZE_GUIDE}>Size Guide</LinkItem>
                 <LinkItem to={PATHS.PRODUCT_CARE}>Product Care</LinkItem>
               </LinkList>
             </LinkColumn>
@@ -166,7 +166,7 @@ export default function Footer() {
               <LegalLink to={PATHS.TERMS}>Terms & Service</LegalLink>
               <LegalLink to={PATHS.DATA_DELETION}>Data Deletion</LegalLink>
               <LegalLink to={PATHS.VAT_TAX_POLICY}>VAT & Tax Policy</LegalLink>
-              <LegalLink to="/cookies">Cookie Policy</LegalLink>
+              <LegalLink to={PATHS.COOKIE_POLICY}>Cookie Policy</LegalLink>
             </LegalLinks>
           </BottomContent>
         </FooterBottom>
@@ -450,6 +450,15 @@ const socialFadeIn = keyframes`
   }
 `;
 
+const socialIconFloat = keyframes`
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.04);
+  }
+`;
+
 const SocialLinks = styled.div`
   display: flex;
   flex-direction: column;
@@ -499,15 +508,37 @@ const SocialLink = styled.a`
 `;
 
 const SocialIcon = styled.span`
-  font-size: 0.9rem;
+  font-size: 2.4rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 1.1rem;
-  height: 1.1rem;
+  width: 3.2rem;
+  height: 3.2rem;
   color: inherit;
   transition: transform 0.25s ease;
   flex-shrink: 0;
+  animation: ${socialIconFloat} 2.6s ease-in-out infinite;
+
+  ${SocialLink}:hover & {
+    transform: scale(1.18) rotate(-4deg);
+    animation-duration: 1.3s;
+  }
+
+  ${SocialLink}:nth-child(2) & {
+    animation-delay: 0.15s;
+  }
+  ${SocialLink}:nth-child(3) & {
+    animation-delay: 0.3s;
+  }
+  ${SocialLink}:nth-child(4) & {
+    animation-delay: 0.45s;
+  }
+
+  @media (max-width: 767px) {
+    font-size: 2.1rem;
+    width: 2.9rem;
+    height: 2.9rem;
+  }
 `;
 
 const FooterBottom = styled.div`

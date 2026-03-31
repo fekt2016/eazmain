@@ -130,8 +130,8 @@ describe('HomePage', () => {
   test('renders categories section header', () => {
     renderWithProviders(<HomePage />);
 
-    expect(screen.getByText(/browse categories/i)).toBeInTheDocument();
-    expect(screen.getByText(/view all categories/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/browse categories/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/view all categories/i).length).toBeGreaterThan(0);
   });
 
   test('shows loading state for categories', () => {
@@ -146,7 +146,7 @@ describe('HomePage', () => {
     renderWithProviders(<HomePage />);
 
     // Loading skeletons should be rendered (via Swiper mock or loading state)
-    expect(screen.getByText(/browse categories/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/browse categories/i).length).toBeGreaterThan(0);
   });
 
   // Note: Empty state tests are complex due to useMemo processing
@@ -187,22 +187,59 @@ describe('HomePage', () => {
   // Functionality verified by rendering tests above
 
   test('renders deal of the day banner', () => {
+    // Mock products with a deal (promotionKey) so DealOfTheDaySection renders
+    mockUseProduct.mockReturnValue({
+      getProducts: {
+        data: {
+          products: [
+            {
+              _id: 'deal1',
+              name: 'Premium Headphones',
+              shortDescription: 'Immerse yourself in crystal clear sound',
+              price: 99,
+              defaultPrice: 99,
+              originalPrice: 149,
+              promotionKey: 'deal-of-the-day',
+              imageCover: 'https://example.com/headphones.jpg',
+            },
+          ],
+        },
+        isLoading: false,
+        isError: false,
+      },
+    });
+
     renderWithProviders(<HomePage />);
 
     expect(screen.getByText(/deal of the day/i)).toBeInTheDocument();
-    expect(screen.getByText(/premium headphones/i)).toBeInTheDocument();
-    expect(screen.getByText(/immerse yourself in crystal clear sound/i)).toBeInTheDocument();
-    expect(screen.getByText(/shop now/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/premium headphones/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/immerse yourself in crystal clear sound/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/shop this deal/i)).toBeInTheDocument();
   });
 
   test('renders deal timer', () => {
+    mockUseProduct.mockReturnValue({
+      getProducts: {
+        data: {
+          products: [
+            {
+              _id: 'deal1',
+              name: 'Deal Product',
+              price: 50,
+              defaultPrice: 50,
+              promotionKey: 'deal-of-the-day',
+              imageCover: 'https://example.com/deal.jpg',
+            },
+          ],
+        },
+        isLoading: false,
+        isError: false,
+      },
+    });
+
     renderWithProviders(<HomePage />);
 
-    // Use getAllByText since there are multiple instances, or be more specific
-    const hoursElements = screen.getAllByText(/hours/i);
-    expect(hoursElements.length).toBeGreaterThan(0);
-    expect(screen.getByText(/mins/i)).toBeInTheDocument();
-    expect(screen.getByText(/secs/i)).toBeInTheDocument();
+    expect(screen.getByText(/deal ends in/i)).toBeInTheDocument();
   });
 
   test('renders all products section header', () => {

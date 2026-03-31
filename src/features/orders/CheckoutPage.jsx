@@ -47,6 +47,8 @@ import NeighborhoodAutocomplete from "../../shared/components/NeighborhoodAutoco
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import locationApi from "../../shared/services/locationApi";
 import neighborhoodService from "../../shared/services/neighborhoodApi";
+import { isEazShopProduct } from "../../shared/utils/isEazShopProduct";
+import { orderService } from "../../shared/services/orderApi";
 
 // ────────────────────────────────────────────────
 // Helper functions
@@ -455,8 +457,7 @@ const CheckoutPage = () => {
     () =>
       products.some(
         (item) =>
-          item.product?.isEazShopProduct ||
-          item.product?.seller?.role === "eazshop_store"
+          isEazShopProduct(item.product)
       ),
     [products]
   );
@@ -1237,8 +1238,14 @@ const CheckoutPage = () => {
         pickupCenterId: selectedPickupCenterId,
       }),
       ...(deliveryMethod === "dispatch" && {
-        deliverySpeed: deliverySpeed === "same_day" ? "same_day" : "standard",
-        shippingType: deliverySpeed === "same_day" ? "same_day" : "standard",
+        deliverySpeed:
+          deliverySpeed === "same_day" || deliverySpeed === "express"
+            ? deliverySpeed
+            : "standard",
+        shippingType:
+          deliverySpeed === "same_day" || deliverySpeed === "express"
+            ? deliverySpeed
+            : "standard",
       }),
       ...(isInternationalPreorderEnabled && {
         orderType: "preorder_international",
@@ -1281,18 +1288,29 @@ const CheckoutPage = () => {
             window.location.href = redirectTo;
           } catch (paymentError) {
             logger.error("[CheckoutPage] Payment initialization error:", paymentError);
-            setFormError(
-              paymentError.response?.data?.message ||
-              "Failed to initialize payment. Please try again."
-            );
-            // IMPORTANT: Order has been created but payment did not start.
-            // Redirect user to order confirmation page so they can retry payment safely.
+
+            // Roll back the newly created unpaid order to avoid orphan pending orders
+            // when Paystack initialization/redirect fails before buyer completes payment.
             try {
-              const confirmationPath = `/order-confirmation?orderId=${order._id}`;
-              navigate(confirmationPath);
-            } catch (navError) {
-              logger.error("[CheckoutPage] Failed to navigate to order confirmation after payment error:", navError);
+              await orderService.deleteOrder(order._id);
+              queryClient.invalidateQueries({ queryKey: ["orders"] });
+              queryClient.invalidateQueries({ queryKey: ["order"] });
+            } catch (rollbackError) {
+              logger.error(
+                "[CheckoutPage] Failed to rollback order after payment init failure:",
+                rollbackError
+              );
             }
+
+            navigate("/cart", {
+              replace: true,
+              state: {
+                checkoutError:
+                  paymentError?.response?.data?.message ||
+                  "Payment could not be initialized. Please review your cart and try again.",
+              },
+            });
+            return;
           }
         } else if (paymentMethod === "credit_balance") {
           // Credit balance payment is handled on the backend

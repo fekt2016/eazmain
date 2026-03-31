@@ -6,7 +6,7 @@ import useCategory from '../../shared/hooks/useCategory';
 import useProducts from '../../shared/hooks/useProduct';
 import ProductCard from '../../shared/components/ProductCard';
 import Pagination from '../../shared/components/pagination';
-import { ShimmerProductGrid, ErrorState } from '../../components/loading';
+import { ShimmerProductGrid, ErrorState, EmptyState } from '../../components/loading';
 import SkeletonLoader from '../../shared/components/SkeletonLoader';
 import Container from '../../shared/components/Container';
 import { devicesMax } from '../../shared/styles/breakpoint';
@@ -597,9 +597,6 @@ const SubcategoryTab = styled.button`
   cursor: pointer;
   group: true;
 
-  &:hover img {
-    transform: scale(1.1);
-  }
 `;
 
 const TabImageWrapper = styled.div`
@@ -1065,27 +1062,6 @@ const ProductsGrid = styled.div`
   @media ${devicesMax.xs} {
     grid-template-columns: repeat(2, 1fr);
     gap: 0.5rem;
-  }
-`;
-
-const EmptyState = styled.div`
-  text-align: center;
-  padding: 6rem 2rem;
-  background: white;
-  border-radius: 20px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-  
-  h3 {
-    font-size: 2.4rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
-    color: var(--color-grey-900);
-  }
-
-  p {
-    font-size: 1.6rem;
-    color: var(--color-grey-600);
-    margin-bottom: 3rem;
   }
 `;
 

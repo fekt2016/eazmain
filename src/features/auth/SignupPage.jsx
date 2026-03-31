@@ -124,9 +124,15 @@ export default function SignupPage() {
             });
           }
           // Show friendly message for rate limiting (429) so user knows to wait and retry
-          if (error.response?.status === 429) {
+          else if (error.response?.status === 429) {
             setFormError("root", {
               message: "Too many attempts. Please wait a few minutes and try again.",
+            });
+          }
+          // Show generic error message (e.g. "Email already exists")
+          else if (error?.message) {
+            setFormError("root", {
+              message: error.message,
             });
           }
         },

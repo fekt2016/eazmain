@@ -3,6 +3,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { styled } from "styled-components";
 import Header from "./Header";
 import Footer from "./Footer";
+import CookieConsentBanner from "../components/CookieConsentBanner/CookieConsentBanner";
 
 
 const Container = styled.div`
@@ -79,6 +80,7 @@ export default function MainLayout() {
           <Outlet />
       </Main>
       {!isDashboardRoute && <Footer />}
+      <CookieConsentBanner />
     </Container>
   );
 }

@@ -121,7 +121,9 @@ const Container = styled.div`
   margin-top: 1rem;
 `;
 
-const StatusBadge = styled.span`
+const StatusBadge = styled.span.withConfig({
+  shouldForwardProp: (prop) => prop !== 'enabled',
+})`
   display: inline-block;
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;

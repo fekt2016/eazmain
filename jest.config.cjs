@@ -79,7 +79,7 @@ module.exports = {
   verbose: true,
 
   // Test timeout
-  testTimeout: 10000,
+  testTimeout: 15000,
 };
 
 

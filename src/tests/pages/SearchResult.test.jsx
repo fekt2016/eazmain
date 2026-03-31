@@ -36,6 +36,7 @@ const mockUseSearchResults = jest.fn(() => ({
 jest.mock('@/shared/hooks/useSearch', () => ({
   __esModule: true,
   useSearchResults: (...args) => mockUseSearchResults(...args),
+  useSearchSuggestions: jest.fn(() => ({ data: null })),
 }));
 
 // Mock useDynamicPageTitle

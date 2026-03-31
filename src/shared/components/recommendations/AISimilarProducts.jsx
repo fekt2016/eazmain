@@ -97,14 +97,14 @@ const AISimilarProducts = ({ productId, currentProduct, title = 'AI-Powered Simi
 };
 
 const Section = styled.section`
-  margin: 4rem 0;
-  padding: 2rem 0;
+  margin: 0.5rem 0;
+  padding: 0.5rem 0;
 `;
 
 const SectionTitle = styled.h2`
   font-size: 2rem;
   font-weight: 700;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   color: var(--color-grey-900);
   display: flex;
   align-items: center;

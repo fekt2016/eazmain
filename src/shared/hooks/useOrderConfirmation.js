@@ -130,35 +130,33 @@ export const useOrderConfirmation = (orderFromState, orderIdFromUrl, paymentRefe
         hasVerifiedRef.current = true;
         setVerificationStatus('success');
 
-        // Invalidate queries ONCE to refresh data
+        // Invalidate queries ONCE to refresh data immediately after verify succeeds.
+        // Keeping this immediate improves perceived redirect/confirmation speed.
         if (!queriesInvalidatedRef.current) {
           queriesInvalidatedRef.current = true;
-          
-          // Use invalidateQueries with a delay to ensure payment is processed
-          setTimeout(() => {
-            // Refetch the order to get updated status
-            queryClient.invalidateQueries({ 
-              queryKey: ["order", orderIdFromUrl],
-              exact: true,
-              refetchType: 'active',
-            });
-            // Also invalidate orders list to update status in admin/seller pages
-            queryClient.invalidateQueries({ 
-              queryKey: ["orders"],
-            });
-            // Invalidate admin orders
-            queryClient.invalidateQueries({ 
-              queryKey: ["admin", "orders"],
-            });
-            // Invalidate seller orders
-            queryClient.invalidateQueries({ 
-              queryKey: ["seller", "orders"],
-            });
-            // Invalidate cart to ensure it's cleared
-            queryClient.invalidateQueries({ 
-              queryKey: ["cart"],
-            });
-          }, 1500); // Increased delay to ensure backend has saved
+
+          // Refetch the order to get updated status
+          queryClient.invalidateQueries({
+            queryKey: ["order", orderIdFromUrl],
+            exact: true,
+            refetchType: 'active',
+          });
+          // Also invalidate orders list to update status in admin/seller pages
+          queryClient.invalidateQueries({
+            queryKey: ["orders"],
+          });
+          // Invalidate admin orders
+          queryClient.invalidateQueries({
+            queryKey: ["admin", "orders"],
+          });
+          // Invalidate seller orders
+          queryClient.invalidateQueries({
+            queryKey: ["seller", "orders"],
+          });
+          // Invalidate cart to ensure it's cleared
+          queryClient.invalidateQueries({
+            queryKey: ["cart"],
+          });
         }
       } catch (error) {
         const message =
@@ -173,16 +171,14 @@ export const useOrderConfirmation = (orderFromState, orderIdFromUrl, paymentRefe
           window.localStorage.setItem(verificationKey, "failed");
         }
 
-        // Even on error, invalidate once to get latest order state
+        // Even on error, invalidate once to get latest order state quickly.
         if (!queriesInvalidatedRef.current) {
           queriesInvalidatedRef.current = true;
-          setTimeout(() => {
-            queryClient.invalidateQueries({ 
-              queryKey: ["order", orderIdFromUrl],
-              exact: true,
-              refetchType: 'active',
-            });
-          }, 1000);
+          queryClient.invalidateQueries({
+            queryKey: ["order", orderIdFromUrl],
+            exact: true,
+            refetchType: 'active',
+          });
         }
       } finally {
         setIsVerifyingPayment(false);

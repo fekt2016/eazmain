@@ -13,7 +13,15 @@ export default function useAnalytics() {
     },
   });
 
+  const recordScreenView = useMutation({
+    mutationFn: analyticsApi.recordScreenView,
+    onError: (error) => {
+      logger.error('Screen view recording failed:', error);
+    },
+  });
+
   return {
     recordProductView,
+    recordScreenView,
   };
 }

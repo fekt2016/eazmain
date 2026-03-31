@@ -79,7 +79,9 @@ const TabList = styled.div`
   gap: var(--space-xs);
 `;
 
-const TabItem = styled.button`
+const TabItem = styled.button.withConfig({
+  shouldForwardProp: (prop) => prop !== 'active',
+})`
   display: flex;
   align-items: center;
   gap: var(--space-md);

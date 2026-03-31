@@ -33,7 +33,9 @@ const TabPanelContainer = ({ children, active }) => {
 
 export default TabPanelContainer;
 
-const Panel = styled.div`
+const Panel = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'active',
+})`
   display: ${(props) => (props.active ? "block" : "none")};
   animation: ${fadeIn} 0.3s ease;
   width: 100%;
@@ -112,7 +114,9 @@ export const Input = styled.input`
   }
 `;
 
-export const Button = styled.button`
+export const Button = styled.button.withConfig({
+  shouldForwardProp: (prop) => prop !== 'variant',
+})`
   padding: var(--space-md) var(--space-lg);
   border: none;
   border-radius: 8px;

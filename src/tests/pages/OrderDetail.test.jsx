@@ -43,12 +43,16 @@ const mockUseGetRefundStatus = jest.fn(() => ({
   data: null,
 }));
 
-jest.mock('@/shared/hooks/useOrder', () => ({
-  __esModule: true,
-  useGetUserOrderById: (...args) => mockUseGetUserOrderById(...args),
-  useRequestRefund: (...args) => mockUseRequestRefund(...args),
-  useGetRefundStatus: (...args) => mockUseGetRefundStatus(...args),
-}));
+jest.mock('@/shared/hooks/useOrder', () => {
+  const actual = jest.requireActual('@/shared/hooks/useOrder');
+  return {
+    __esModule: true,
+    ...actual,
+    useGetUserOrderById: (...args) => mockUseGetUserOrderById(...args),
+    useRequestRefund: (...args) => mockUseRequestRefund(...args),
+    useGetRefundStatus: (...args) => mockUseGetRefundStatus(...args),
+  };
+});
 
 // Mock useDynamicPageTitle
 jest.mock('@/shared/hooks/useDynamicPageTitle', () => ({

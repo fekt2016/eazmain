@@ -21,7 +21,7 @@ const Logo = ({
           alt="Saiisai – Ghana e-commerce and online shopping logo"
           style={{ width: "100%", height: "100%", objectFit: "contain" }}
           loading="eager"
-          fetchpriority="high"
+          fetchPriority="high"
         />
       </LogoIcon>
       {variant !== "icon" && (

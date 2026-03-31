@@ -8,6 +8,13 @@ const analyticsApi = {
     });
     return response.data;
   },
+  recordScreenView: async ({ screen, sessionId }) => {
+    const response = await api.post('/analytics/screen-views', {
+      screen,
+      sessionId,
+    });
+    return response.data;
+  },
 };
 
 export default analyticsApi;

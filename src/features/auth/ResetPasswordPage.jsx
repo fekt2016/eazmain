@@ -219,7 +219,7 @@ export default function ResetPasswordPage() {
           )}
           {passwordError && <ErrorState message={passwordError} />}
 
-          <StyledForm onSubmit={handleSubmit}>
+          <StyledForm onSubmit={handleSubmit} noValidate>
             <InputGroup>
               <Label htmlFor="newPassword">New Password</Label>
               <InputWrapper>

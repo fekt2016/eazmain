@@ -5,9 +5,9 @@ import logger from '../utils/logger';
 export const useGetProductReviews = (productId, options = {}) => {
   return useQuery({
     queryKey: ["reviews", productId],
-    queryFn: async () =>{const response =  await reviewApi.getProductReviews(productId)
-      logger.log("response", response);
-      return response
+    queryFn: async () => {
+      const response = await reviewApi.getProductReviews(productId);
+      return response?.data ?? response;
     },
     enabled: options.enabled !== false && !!productId && productId !== 'undefined' && productId !== 'null',
     ...options,

@@ -284,7 +284,9 @@ const AvatarPreviewWrapper = styled.div`
   position: relative;
 `;
 
-const AvatarPreview = styled.div`
+const AvatarPreview = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'hasImage' && prop !== 'src',
+})`
   width: 120px;
   height: 120px;
   border-radius: 50%;

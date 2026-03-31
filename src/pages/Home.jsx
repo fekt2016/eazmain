@@ -16,6 +16,7 @@ import FeaturedProducts from './components/FeaturedProducts';
 import NewArrivalsSection from './components/NewArrivalsSection';
 import BestSellersSection from './components/BestSellersSection';
 import NewsletterSection from './components/NewsletterSection';
+import TestimonialsSection from '../features/home/TestimonialsSection';
 
 const HomePageWrapper = styled.div`
   background: var(--color-grey-50);
@@ -93,6 +94,8 @@ const HomePage = () => {
             </Card>
           ))}
         </Grid>
+
+        <TestimonialsSection />
 
         <NewsletterSection />
       </Container>

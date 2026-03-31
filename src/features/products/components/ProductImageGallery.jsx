@@ -87,7 +87,7 @@ const ProductImageGallery = ({ images = [], productName = 'Product' }) => {
                     onLoad={() => setIsLoaded(true)}
                     onError={() => setIsLoaded(true)}
                     loading="eager"
-                    fetchpriority="high"
+                    fetchPriority="high"
                 />
             </S.MainImageContainer>
 

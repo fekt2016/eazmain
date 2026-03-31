@@ -18,6 +18,7 @@ import {
   getOrderDisplayStatus,
   useDeleteOrder,
 } from "../../shared/hooks/useOrder";
+import { getOrderStatusColorKey, getOrderBadgeColors } from "../../shared/utils/orderStatusBadgeStyles";
 import { useNavigate, Link } from "react-router-dom";
 import { PATHS } from "../../routes/routePaths";
 import logger from "../../shared/utils/logger";
@@ -312,7 +313,10 @@ const OrdersPage = () => {
                         <OrderTotal>GH₵{order.totalPrice.toFixed(2)}</OrderTotal>
                       </TableCell>
                       <TableCell>
-                        <StatusBadge $status={getOrderDisplayStatus(order).badgeStatus}>
+                        <StatusBadge
+                          $bg={getOrderBadgeColors(getOrderStatusColorKey(order)).bg}
+                          $fg={getOrderBadgeColors(getOrderStatusColorKey(order)).color}
+                        >
                           {getOrderDisplayStatus(order).displayLabel}
                         </StatusBadge>
                       </TableCell>
@@ -375,7 +379,10 @@ const OrdersPage = () => {
                       <OrderId>#{formatOrderNumber(order.orderNumber)}</OrderId>
                       <OrderDate>{formatDate(order.createdAt)}</OrderDate>
                     </OrderInfo>
-                    <StatusBadge $status={getOrderDisplayStatus(order).badgeStatus}>
+                    <StatusBadge
+                      $bg={getOrderBadgeColors(getOrderStatusColorKey(order)).bg}
+                      $fg={getOrderBadgeColors(getOrderStatusColorKey(order)).color}
+                    >
                       {getOrderDisplayStatus(order).displayLabel}
                     </StatusBadge>
                   </CardHeader>
@@ -713,24 +720,8 @@ const StatusBadge = styled.span`
   font-size: var(--text-xs);
   font-weight: var(--font-semibold);
   text-transform: capitalize;
-  
-  background: ${props => {
-    switch (props.$status) {
-      case 'delivered': return 'var(--color-green-100)';
-      case 'shipped': return 'var(--color-blue-100)';
-      case 'cancelled': return 'var(--color-red-100)';
-      default: return 'var(--color-yellow-100)';
-    }
-  }};
-  
-  color: ${props => {
-    switch (props.$status) {
-      case 'delivered': return 'var(--color-green-700)';
-      case 'shipped': return 'var(--color-blue-700)';
-      case 'cancelled': return 'var(--color-red-700)';
-      default: return 'var(--color-yellow-700)';
-    }
-  }};
+  background: ${(props) => props.$bg};
+  color: ${(props) => props.$fg};
 `;
 
 const RefundBadge = styled.span`

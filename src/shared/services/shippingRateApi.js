@@ -36,7 +36,12 @@ export const shippingRateService = {
     if (orderTime) payload.orderTime = orderTime;
 
     const response = await api.post('/shipping-rates/calculate', payload);
-    return response.data;
+    const body = response.data;
+    // Backend envelope: { status, data: { shippingFee, ... } }
+    if (body && typeof body === 'object' && body.data !== undefined) {
+      return body.data;
+    }
+    return body;
   },
 };
 

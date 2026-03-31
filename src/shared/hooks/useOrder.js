@@ -1,6 +1,9 @@
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
-import { orderService } from '../services/orderApi'; // Adjust the import path as necessary
+import { orderService } from '../services/orderApi';
 import logger from '../utils/logger';
+import useAuth from './useAuth';
+
+export { getOrderStatusColorKey, getOrderBadgeColors } from '../utils/orderStatusBadgeStyles';
 
 // import { useNavigate } from "react-router-dom";
 
@@ -185,32 +188,25 @@ export const useGetUserOrders = () => {
   });
 };
 export const useGetUserOrderById = (id) => {
+  const { isAuthenticated } = useAuth();
   return useQuery({
-    queryKey: ["order", id], // Include id in queryKey for unique caching
+    queryKey: ["order", id],
     queryFn: async () => {
-      if (!id) {
-        logger.log("[useGetUserOrderById] No ID provided, returning null");
-        return null;
-      }
-      logger.log("[useGetUserOrderById] Fetching order with ID:", id);
+      if (!id) return null;
       const response = await orderService.getUserOrderById(id);
-      logger.log("[useGetUserOrderById] API Response structure:", {
-        hasData: !!response?.data,
-        hasOrder: !!response?.data?.order,
-        hasStatus: !!response?.status,
-        keys: response ? Object.keys(response) : null,
-        dataKeys: response?.data ? Object.keys(response.data) : null,
-      });
-      // Backend returns: { status: 'success', data: { order: {...} } }
-      // Return the full response.data which contains { status, data: { order } }
-      return response.data || response; // Return just the data
+      return response.data || response;
     },
-    enabled: !!id, // Only run query when id is available
-    retry: 2,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false, // Prevent refetch on window focus
-    refetchOnMount: false, // Only refetch when explicitly invalidated
-    refetchOnReconnect: false, // Prevent refetch on reconnect
+    enabled: !!id && !!isAuthenticated,
+    retry: (failureCount, error) => {
+      if (error?.response?.status === 401) return false;
+      return failureCount < 2;
+    },
+    // Payment/order status can change outside current tab (Paystack callback,
+    // webhook, rider/COD updates), so always fetch fresh order details.
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always',
+    refetchOnReconnect: true,
   });
 };
 

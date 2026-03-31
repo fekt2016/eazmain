@@ -373,7 +373,7 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
                                       alt={category.name}
                                       loading="lazy"
                                       onError={(e) => {
-                                        e.target.src = "/api/placeholder/30/30";
+                                        e.target.src = "/placeholder-product.svg";
                                       }}
                                     />
                                     <CategoryName>{category.name}</CategoryName>
@@ -409,7 +409,7 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
                                       alt={subCategory.name}
                                       loading="lazy"
                                       onError={(e) => {
-                                        e.target.src = "/api/placeholder/60/60";
+                                        e.target.src = "/placeholder-product.svg";
                                       }}
                                     />
                                     <SubCategoryGridName>
@@ -468,7 +468,6 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
                               src={getOptimizedImageUrl(user.photo, IMAGE_SLOTS.AVATAR)}
                               alt={user?.name || 'User'}
                               loading="eager"
-                              fetchpriority="high"
                               key={`avatar-${user?.photo}-${user?._id || user?.id}-${Date.now()}`} // Force re-render when photo or user changes
                               onError={(e) => {
                                 // Fallback to initials if image fails to load
@@ -671,7 +670,9 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
 // Modern Styled Components
 // Using fadeIn from unified animations
 
-const ModernHeader = styled.header`
+const ModernHeader = styled.header.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isScrolled',
+})`
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -815,7 +816,9 @@ const CategoriesContainer = styled.div`
   flex-shrink: 0; /* Prevent categories button from shrinking */
 `;
 
-const CategoriesButton = styled.button`
+const CategoriesButton = styled.button.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isActive',
+})`
   display: flex;
   align-items: center;
   gap: var(--space-sm);
@@ -930,7 +933,9 @@ const CategoriesList = styled.ul`
   padding: 1rem 0;
 `;
 
-const CategoryItem = styled.li`
+const CategoryItem = styled.li.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isActive',
+})`
   transition: all 0.3s ease;
   border-left: 3px solid transparent;
   border-left-color: ${props => props.isActive ? 'var(--color-primary-500)' : 'transparent'};

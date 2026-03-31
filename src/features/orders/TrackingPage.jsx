@@ -19,6 +19,10 @@ import { LoadingState, ErrorState } from "../../components/loading";
 import useDynamicPageTitle from "../../shared/hooks/useDynamicPageTitle";
 import logger from "../../shared/utils/logger";
 import Container from "../../shared/components/Container";
+import {
+  getOrderBadgeColors,
+  getOrderStatusColorKey,
+} from "../../shared/utils/orderStatusBadgeStyles";
 
 const TrackingPage = () => {
   const { trackingNumber } = useParams();
@@ -176,26 +180,6 @@ const TrackingPage = () => {
         return <FaExclamationCircle />;
       default:
         return <FaClock />;
-    }
-  };
-
-  const getStepColor = (step) => {
-    if (step.isCompleted) {
-      return "#F7C948"; // Yellow for completed
-    } else if (step.isActive) {
-      return "#2D7FF9"; // Blue for active
-    } else {
-      return "#D1D5DB"; // Gray for pending
-    }
-  };
-
-  const getStepBgColor = (step) => {
-    if (step.isCompleted) {
-      return "#F7C948"; // Yellow background
-    } else if (step.isActive) {
-      return "#2D7FF9"; // Blue background
-    } else {
-      return "#E5E7EB"; // Gray background
     }
   };
 
@@ -361,6 +345,38 @@ const TrackingPage = () => {
 
   const completeTimeline = buildCompleteTimeline();
 
+  const getTimelineStepColors = (step) => {
+    if (step.isPending) {
+      return {
+        lineColor: '#E5E7EB',
+        iconBg: '#E5E7EB',
+        iconBorder: '#D1D5DB',
+        iconFg: '#9CA3AF',
+        labelColor: '#9CA3AF',
+      };
+    }
+    const { bg, color } = getOrderBadgeColors(
+      getOrderStatusColorKey({ ...orderData, currentStatus: step.status })
+    );
+    return {
+      lineColor: color,
+      iconBg: bg,
+      iconBorder: color,
+      iconFg: color,
+      labelColor: color,
+    };
+  };
+
+  const headerStatusColors = getOrderBadgeColors(
+    getOrderStatusColorKey(orderData)
+  );
+  const paymentBadgeColors = getOrderBadgeColors(
+    orderData.paymentStatus === 'paid' ||
+      orderData.paymentStatus === 'completed'
+      ? 'payment_completed'
+      : 'pending_payment'
+  );
+
   // Get estimated delivery from shipping options (stored in order)
   const getEstimatedDelivery = () => {
     // For international pre-orders, prefer a date anchored on the
@@ -495,7 +511,7 @@ const TrackingPage = () => {
 
           <CurrentStatus>
             <StatusLabel>Current Status</StatusLabel>
-            <StatusBadge $color={getStepColor(completeTimeline.find(s => s.isActive) || completeTimeline[0])}>
+            <StatusBadge $bg={headerStatusColors.bg} $fg={headerStatusColors.color}>
               {getStatusIcon(currentStatus)}
               {formatStatusLabel(currentStatus)}
             </StatusBadge>
@@ -518,17 +534,30 @@ const TrackingPage = () => {
             <Timeline>
               {completeTimeline.map((step, index) => {
                 const isLast = index === completeTimeline.length - 1;
-                const stepColor = getStepColor(step);
-                const stepBgColor = getStepBgColor(step);
+                const stepColors = getTimelineStepColors(step);
 
                 return (
-                  <TimelineItem key={step.status} $completed={step.isCompleted} $isActive={step.isActive} $isLast={isLast}>
-                    <TimelineIcon $color={stepColor} $bgColor={stepBgColor} $completed={step.isCompleted} $isActive={step.isActive}>
+                  <TimelineItem
+                    key={step.status}
+                    $completed={step.isCompleted}
+                    $isActive={step.isActive}
+                    $isLast={isLast}
+                    $connectorColor={stepColors.lineColor}
+                  >
+                    <TimelineIcon
+                      $iconBg={stepColors.iconBg}
+                      $iconBorder={stepColors.iconBorder}
+                      $iconFg={stepColors.iconFg}
+                    >
                       {getStatusIcon(step.status, step.icon)}
                     </TimelineIcon>
                     <TimelineContent>
-                      <TimelineStatus $color={stepColor}>
-                        {step.isCompleted && <FaCheckCircle style={{ marginRight: '0.5rem', color: stepColor }} />}
+                      <TimelineStatus $color={stepColors.labelColor}>
+                        {step.isCompleted && (
+                          <FaCheckCircle
+                            style={{ marginRight: '0.5rem', color: stepColors.labelColor }}
+                          />
+                        )}
                         {step.label}
                       </TimelineStatus>
                       {step.historyEntry && step.historyEntry.message && (
@@ -544,7 +573,11 @@ const TrackingPage = () => {
                         </TimelineLocation>
                       )}
                     </TimelineContent>
-                    {!isLast && <TimelineLine $color={step.isCompleted ? stepColor : "#E5E7EB"} />}
+                    {!isLast && (
+                      <TimelineLine
+                        $color={step.isCompleted ? stepColors.lineColor : '#E5E7EB'}
+                      />
+                    )}
                   </TimelineItem>
                 );
               })}
@@ -723,7 +756,7 @@ const TrackingPage = () => {
               <InfoRow>
                 <InfoLabel>Payment Status</InfoLabel>
                 <InfoValue>
-                  <PaymentBadge $paid={orderData.paymentStatus === 'paid' || orderData.paymentStatus === 'completed'}>
+                  <PaymentBadge $bg={paymentBadgeColors.bg} $fg={paymentBadgeColors.color}>
                     {(orderData.paymentStatus === 'paid' || orderData.paymentStatus === 'completed') ? 'Paid' : 'Pending'}
                   </PaymentBadge>
                 </InfoValue>
@@ -1091,8 +1124,8 @@ const PaymentBadge = styled.span`
   border-radius: 6px;
   font-size: 0.875rem;
   font-weight: 600;
-  background: ${props => props.$paid ? '#d1fae5' : '#fef3c7'};
-  color: ${props => props.$paid ? '#065f46' : '#92400e'};
+  background: ${(props) => props.$bg};
+  color: ${(props) => props.$fg};
 `;
 
 const Header = styled.div`
@@ -1254,8 +1287,8 @@ const StatusBadge = styled.div`
   align-items: center;
   gap: 0.75rem;
   padding: 1rem 1.5rem;
-  background: ${(props) => `${props.$color}15`};
-  color: ${(props) => props.$color};
+  background: ${(props) => props.$bg};
+  color: ${(props) => props.$fg};
   border-radius: 8px;
   font-size: 1.125rem;
   font-weight: 600;
@@ -1293,11 +1326,7 @@ const TimelineItem = styled.div`
     top: 2.5rem;
     width: 2px;
     height: calc(100% - 1rem);
-    background: ${props => {
-    if (props.$completed) return '#F7C948';
-    if (props.$isActive) return '#2D7FF9';
-    return '#E5E7EB';
-  }};
+    background: ${(props) => props.$connectorColor || '#E5E7EB'};
   }
 `;
 
@@ -1308,21 +1337,14 @@ const TimelineIcon = styled.div`
   width: 2rem;
   height: 2rem;
   border-radius: 50%;
-  background: ${(props) => {
-    if (props.$completed) return props.$bgColor || '#F7C948';
-    if (props.$isActive) return props.$bgColor || '#2D7FF9';
-    return props.$bgColor || '#E5E7EB';
-  }};
-  color: ${(props) => {
-    if (props.$completed || props.$isActive) return "white";
-    return "#9CA3AF";
-  }};
+  background: ${(props) => props.$iconBg || '#E5E7EB'};
+  color: ${(props) => props.$iconFg || '#9CA3AF'};
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.875rem;
   z-index: 1;
-  border: 2px solid ${(props) => props.$color || '#D1D5DB'};
+  border: 2px solid ${(props) => props.$iconBorder || '#D1D5DB'};
 `;
 
 const TimelineContent = styled.div`

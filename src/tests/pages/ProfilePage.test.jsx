@@ -42,10 +42,13 @@ jest.mock('@/shared/hooks/useAuth', () => ({
   default: (...args) => mockUseAuth(...args),
 }));
 
-// Mock loading components
+// Mock loading components (ProfilePage uses ShimmerAddressCards for loading)
 jest.mock('@/components/loading', () => ({
   __esModule: true,
   LoadingState: ({ message }) => <div data-testid="loading-state">{message}</div>,
+  ShimmerAddressCards: () => (
+    <div data-testid="loading-state">Loading profile...</div>
+  ),
 }));
 
 jest.mock('@/shared/components/ErrorDisplay', () => ({
