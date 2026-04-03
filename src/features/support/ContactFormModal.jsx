@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { FaTimes, FaPaperclip, FaSpinner } from 'react-icons/fa';
 import styled from 'styled-components';
 import { useCreateTicket } from '../../shared/hooks/useSupport';
@@ -200,16 +200,8 @@ const ContactFormModal = ({
 
   return (
     <AnimatePresence>
-      <ModalOverlay
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-      >
+      <ModalOverlay onClick={onClose}>
         <ModalContainer
-          initial={{ scale: 0.9, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.9, opacity: 0, y: 20 }}
           onClick={(e) => e.stopPropagation()}
           $primaryColor={primaryColor}
         >
@@ -222,39 +214,41 @@ const ContactFormModal = ({
 
           <Form onSubmit={handleSubmit}>
             <FormBody>
-              <FormGroup>
-                <Label htmlFor="name">
-                  Full Name <Required>*</Required>
-                </Label>
-                <Input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="Enter your full name"
-                  disabled={isSubmitting}
-                  $hasError={!!errors.name}
-                />
-                {errors.name && <ErrorMessage>{errors.name}</ErrorMessage>}
-              </FormGroup>
+              <FormRow>
+                <FormGroup>
+                  <Label htmlFor="name">
+                    Full Name <Required>*</Required>
+                  </Label>
+                  <Input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    placeholder="Enter your full name"
+                    disabled={isSubmitting}
+                    $hasError={!!errors.name}
+                  />
+                  {errors.name && <ErrorMessage>{errors.name}</ErrorMessage>}
+                </FormGroup>
 
-              <FormGroup>
-                <Label htmlFor="email">
-                  Email <Required>*</Required>
-                </Label>
-                <Input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="Enter your email"
-                  disabled={isSubmitting}
-                  $hasError={!!errors.email}
-                />
-                {errors.email && <ErrorMessage>{errors.email}</ErrorMessage>}
-              </FormGroup>
+                <FormGroup>
+                  <Label htmlFor="email">
+                    Email <Required>*</Required>
+                  </Label>
+                  <Input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="Enter your email"
+                    disabled={isSubmitting}
+                    $hasError={!!errors.email}
+                  />
+                  {errors.email && <ErrorMessage>{errors.email}</ErrorMessage>}
+                </FormGroup>
+              </FormRow>
 
               <FormGroup>
                 <Label htmlFor="department">
@@ -360,7 +354,7 @@ const ContactFormModal = ({
                           const productId = item.product?._id || item.product || item.productId;
                           const productName = item.product?.name || 'Product';
                           const quantity = item.quantity || 1;
-                          
+
                           return (
                             <option key={productId || index} value={productId}>
                               {productName} - Qty: {quantity}
@@ -464,28 +458,25 @@ const ContactFormModal = ({
 export default ContactFormModal;
 
 // Styled Components
-const ModalOverlay = styled(motion.div)`
+const ModalOverlay = styled.div`
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2000;
-  padding: var(--spacing-md);
+  padding: 16px;
   backdrop-filter: blur(4px);
 `;
 
-const ModalContainer = styled(motion.div)`
-  background: var(--color-white-0);
-  border-radius: var(--border-radius-xl);
-  box-shadow: var(--shadow-lg);
+const ModalContainer = styled.div`
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
   width: 100%;
-  max-width: 60rem;
-  max-height: 90vh;
+  max-width: 560px;
+  max-height: 92vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -495,30 +486,30 @@ const ModalHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-lg) var(--spacing-xl);
-  border-bottom: 1px solid var(--color-grey-200);
-  background: var(--color-grey-50);
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--color-grey-100);
 `;
 
 const ModalTitle = styled.h2`
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-bold);
-  color: var(--color-grey-800);
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--color-grey-900);
   margin: 0;
 `;
 
 const CloseButton = styled.button`
-  background: none;
+  background: var(--color-grey-100);
   border: none;
-  font-size: var(--font-size-lg);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   color: var(--color-grey-500);
   cursor: pointer;
-  padding: var(--spacing-xs);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--border-radius-sm);
-  transition: all var(--transition-base);
+  font-size: 0.85rem;
+  transition: all 0.2s;
 
   &:hover {
     background: var(--color-grey-200);
@@ -534,21 +525,34 @@ const Form = styled.form`
 `;
 
 const FormBody = styled.div`
-  padding: var(--spacing-xl);
+  padding: 20px 24px;
   overflow-y: auto;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+const FormRow = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+
+  @media (max-width: 500px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const FormGroup = styled.div`
-  margin-bottom: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 `;
 
 const Label = styled.label`
-  display: block;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-semibold);
+  font-size: 0.78rem;
+  font-weight: 700;
   color: var(--color-grey-700);
-  margin-bottom: var(--spacing-xs);
 `;
 
 const Required = styled.span`
@@ -557,105 +561,64 @@ const Required = styled.span`
 
 const Input = styled.input`
   width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 2px solid
-    ${(props) =>
-      props.$hasError ? 'var(--color-red-500)' : 'var(--color-grey-300)'};
-  border-radius: var(--border-radius-md);
-  font-size: var(--font-size-md);
+  padding: 9px 12px;
+  border: 1.5px solid ${(props) => props.$hasError ? 'var(--color-red-500)' : 'var(--color-grey-300)'};
+  border-radius: 8px;
+  font-size: 0.85rem;
   color: var(--color-grey-900);
-  transition: all var(--transition-base);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: #fff;
 
   &:focus {
-    outline: none;
-    border-color: ${(props) => props.$primaryColor || 'var(--color-primary-500)'};
-    box-shadow: 0 0 0 3px
-      ${(props) =>
-        props.$hasError
-          ? 'var(--color-red-100)'
-          : props.$primaryColor
-          ? `${props.$primaryColor}20`
-          : 'var(--color-primary-100)'};
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 3px rgba(212,136,42,0.1);
   }
 
   &:disabled {
-    background: var(--color-grey-100);
-    cursor: not-allowed;
-    opacity: 0.6;
-  }
-
-  &:read-only {
     background: var(--color-grey-50);
-    cursor: default;
+    opacity: 0.7;
+    cursor: not-allowed;
   }
 
-  &::placeholder {
-    color: var(--color-grey-400);
-  }
+  &::placeholder { color: var(--color-grey-400); }
 `;
 
 const Select = styled.select`
   width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 2px solid
-    ${(props) =>
-      props.$hasError ? 'var(--color-red-500)' : 'var(--color-grey-300)'};
-  border-radius: var(--border-radius-md);
-  font-size: var(--font-size-md);
+  padding: 9px 12px;
+  border: 1.5px solid ${(props) => props.$hasError ? 'var(--color-red-500)' : 'var(--color-grey-300)'};
+  border-radius: 8px;
+  font-size: 0.85rem;
   color: var(--color-grey-900);
-  background: var(--color-white-0);
+  background: #fff;
   cursor: pointer;
-  transition: all var(--transition-base);
+  outline: none;
+  transition: border-color 0.2s;
 
-  &:focus {
-    outline: none;
-    border-color: var(--color-primary-500);
-    box-shadow: 0 0 0 3px
-      ${(props) =>
-        props.$hasError
-          ? 'var(--color-red-100)'
-          : 'var(--color-primary-100)'};
-  }
-
-  &:disabled {
-    background: var(--color-grey-100);
-    cursor: not-allowed;
-    opacity: 0.6;
-  }
+  &:focus { border-color: var(--color-primary-500); }
+  &:disabled { background: var(--color-grey-50); opacity: 0.7; cursor: not-allowed; }
 `;
 
 const TextArea = styled.textarea`
   width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 2px solid
-    ${(props) =>
-      props.$hasError ? 'var(--color-red-500)' : 'var(--color-grey-300)'};
-  border-radius: var(--border-radius-md);
-  font-size: var(--font-size-md);
+  padding: 9px 12px;
+  border: 1.5px solid ${(props) => props.$hasError ? 'var(--color-red-500)' : 'var(--color-grey-300)'};
+  border-radius: 8px;
+  font-size: 0.85rem;
   color: var(--color-grey-900);
   resize: vertical;
-  min-height: 12rem;
-  transition: all var(--transition-base);
+  min-height: 100px;
+  outline: none;
+  transition: border-color 0.2s;
 
   &:focus {
-    outline: none;
     border-color: var(--color-primary-500);
-    box-shadow: 0 0 0 3px
-      ${(props) =>
-        props.$hasError
-          ? 'var(--color-red-100)'
-          : 'var(--color-primary-100)'};
+    box-shadow: 0 0 0 3px rgba(212,136,42,0.1);
   }
 
-  &:disabled {
-    background: var(--color-grey-100);
-    cursor: not-allowed;
-    opacity: 0.6;
-  }
-
-  &::placeholder {
-    color: var(--color-grey-400);
-  }
+  &:disabled { background: var(--color-grey-50); opacity: 0.7; cursor: not-allowed; }
+  &::placeholder { color: var(--color-grey-400); }
 `;
 
 const FileInputWrapper = styled.div`
@@ -674,155 +637,129 @@ const FileInput = styled.input`
 const FileInputLabel = styled.label`
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md);
-  border: 2px dashed var(--color-grey-300);
-  border-radius: var(--border-radius-md);
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1.5px dashed var(--color-grey-300);
+  border-radius: 8px;
   background: var(--color-grey-50);
   cursor: pointer;
-  transition: all var(--transition-base);
-  font-size: var(--font-size-sm);
-  color: var(--color-grey-700);
+  font-size: 0.82rem;
+  color: var(--color-grey-600);
+  transition: all 0.2s;
 
   &:hover {
     border-color: var(--color-primary-500);
-    background: var(--color-primary-50);
+    background: #fffbf5;
     color: var(--color-primary-700);
-  }
-
-  svg {
-    font-size: var(--font-size-md);
   }
 `;
 
 const ScreenshotPreview = styled.div`
   position: relative;
-  margin-top: var(--spacing-sm);
+  margin-top: 8px;
   display: inline-block;
 `;
 
 const PreviewImage = styled.img`
-  max-width: 20rem;
-  max-height: 15rem;
-  border-radius: var(--border-radius-md);
-  border: 1px solid var(--color-grey-300);
+  max-width: 180px;
+  max-height: 120px;
+  border-radius: 8px;
+  border: 1px solid var(--color-grey-200);
 `;
 
 const RemoveButton = styled.button`
   position: absolute;
-  top: -0.8rem;
-  right: -0.8rem;
+  top: -8px;
+  right: -8px;
   background: var(--color-red-600);
-  color: var(--color-white-0);
+  color: #fff;
   border: none;
   border-radius: 50%;
-  width: 2.4rem;
-  height: 2.4rem;
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: var(--font-size-sm);
-  transition: all var(--transition-base);
+  font-size: 0.7rem;
+  transition: all 0.2s;
 
-  &:hover {
-    background: var(--color-red-700);
-    transform: scale(1.1);
-  }
+  &:hover { background: var(--color-red-700); }
 `;
 
 const ErrorMessage = styled.span`
-  display: block;
-  margin-top: var(--spacing-xs);
-  font-size: var(--font-size-xs);
+  font-size: 0.72rem;
   color: var(--color-red-600);
 `;
 
 const HelperText = styled.p`
-  display: block;
-  margin-top: var(--spacing-xs);
-  font-size: var(--font-size-xs);
+  font-size: 0.72rem;
   color: var(--color-grey-500);
   font-style: italic;
+  margin: 0;
 `;
 
 const ModalFooter = styled.div`
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: var(--spacing-md);
-  padding: var(--spacing-lg) var(--spacing-xl);
-  border-top: 1px solid var(--color-grey-200);
-  background: var(--color-grey-50);
+  gap: 10px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--color-grey-100);
 
-  @media (max-width: 768px) {
+  @media (max-width: 500px) {
     flex-direction: column-reverse;
-
-    button {
-      width: 100%;
-    }
+    button { width: 100%; }
   }
 `;
 
 const CancelButton = styled.button`
-  padding: var(--spacing-sm) var(--spacing-lg);
-  background: var(--color-white-0);
+  padding: 9px 20px;
+  background: #fff;
   color: var(--color-grey-700);
-  border: 1px solid var(--color-grey-300);
-  border-radius: var(--border-radius-md);
-  font-size: var(--font-size-md);
-  font-weight: var(--font-semibold);
+  border: 1.5px solid var(--color-grey-300);
+  border-radius: 9px;
+  font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all var(--transition-base);
+  transition: all 0.2s;
 
   &:hover:not(:disabled) {
     background: var(--color-grey-50);
     border-color: var(--color-grey-400);
   }
 
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
 `;
 
 const SubmitButton = styled.button`
-  padding: var(--spacing-sm) var(--spacing-lg);
-  background: ${(props) => props.$primaryColor || 'var(--color-primary-500)'};
-  color: var(--color-white-0);
+  padding: 9px 20px;
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
+  color: #fff;
   border: none;
-  border-radius: var(--border-radius-md);
-  font-size: var(--font-size-md);
-  font-weight: var(--font-semibold);
+  border-radius: 9px;
+  font-size: 0.85rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: all var(--transition-base);
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  justify-content: center;
+  gap: 7px;
+  box-shadow: 0 4px 12px rgba(212,136,42,0.3);
+  transition: all 0.2s;
 
   &:hover:not(:disabled) {
-    opacity: 0.9;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(212,136,42,0.4);
   }
 
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
 
   .spinner {
     animation: spin 1s linear infinite;
   }
 
   @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 `;
-

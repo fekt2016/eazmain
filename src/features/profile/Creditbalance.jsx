@@ -1,4 +1,4 @@
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 import {
   FaCoins,
   FaHistory,
@@ -7,6 +7,8 @@ import {
   FaSort,
   FaSortUp,
   FaSortDown,
+  FaWallet,
+  FaExchangeAlt,
 } from "react-icons/fa";
 import { devicesMax } from '../../shared/styles/breakpoint';
 import { useWalletBalance, useWalletTransactions } from '../../shared/hooks/useWallet';
@@ -16,6 +18,11 @@ import { formatDate } from '../../shared/utils/helpers';
 import { useApplyUserCoupon } from '../../shared/hooks/useCoupon';
 import { LoadingState, ButtonSpinner, ErrorState } from '../../components/loading';
 import { PATHS } from '../../routes/routePaths';
+
+const fadeUp = keyframes`
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
 
 const CreditBalance = () => {
   const navigate = useNavigate();
@@ -52,7 +59,6 @@ const CreditBalance = () => {
 
   const isLoading = isBalanceLoading || isTransactionsLoading;
 
-  // Function to handle sorting
   const requestSort = (key) => {
     if (sortBy === key) {
       setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
@@ -60,32 +66,24 @@ const CreditBalance = () => {
       setSortBy(key);
       setSortOrder('desc');
     }
-    setPage(1); // Reset to first page when sorting changes
+    setPage(1);
   };
 
-  // Function to handle coupon application
   const applyCoupon = async () => {
     applyCouponMutate(couponCode);
   };
 
-  // Get sort icon for a column
   const getSortIcon = (key) => {
     if (sortBy !== key) return <FaSort />;
     return sortOrder === "desc" ? <FaSortDown /> : <FaSortUp />;
   };
 
-  // Get transaction type color
   const getTransactionColor = (type) => {
-    if (type.startsWith('CREDIT_')) {
-      return 'var(--color-green-700)';
-    } else if (type === 'CREDIT_REFUND') {
-      return 'var(--color-blue-700)';
-    } else {
-      return 'var(--color-red-700)';
-    }
+    if (type === 'CREDIT_REFUND') return '#2563eb';
+    if (type.startsWith('CREDIT_')) return '#059669';
+    return '#dc2626';
   };
 
-  // Get transaction type label
   const getTransactionTypeLabel = (type) => {
     const labels = {
       'CREDIT_TOPUP': 'Top-up',
@@ -100,12 +98,11 @@ const CreditBalance = () => {
   if (isLoading) {
     return (
       <PageContainer>
-        <LoadingState message="Loading credit balance..." />
+        <LoadingState message="Loading your wallet..." />
       </PageContainer>
     );
   }
 
-  // Handle any potential error gracefully
   if (!walletData && !isBalanceLoading) {
     return (
       <PageContainer>
@@ -116,580 +113,575 @@ const CreditBalance = () => {
 
   return (
     <PageContainer>
-      <Header>
-        <Title>
-          <FaCoins />
-          <h1>Credit Balance</h1>
-        </Title>
-      </Header>
+      {/* ── Page Banner ─────────────────────────────────── */}
+      <PageBanner>
+        <BannerOverlay />
+        <BannerInner>
+          <BannerIcon><FaWallet /></BannerIcon>
+          <div>
+            <BannerTitle>My Wallet</BannerTitle>
+            <BannerSub>Manage your credit balance and transactions</BannerSub>
+          </div>
+        </BannerInner>
+      </PageBanner>
 
-      <BalanceCard>
-        <BalanceLabel>Available Balance</BalanceLabel>
-        <BalanceAmount>
-          GH&#x20B5;{(wallet.availableBalance ?? wallet.balance ?? 0).toFixed(2)}
-        </BalanceAmount>
-        <BalanceInfo>
-          <InfoItem>
-            <span>Currency</span>
-            <strong>{wallet.currency || 'GHS'}</strong>
-          </InfoItem>
-          <InfoItem>
-            <span>Total Transactions</span>
-            <strong>{pagination.total || 0}</strong>
-          </InfoItem>
-        </BalanceInfo>
-      </BalanceCard>
+      <ContentWrap>
+        {/* ── Balance Hero Card ─────────────────────────── */}
+        <BalanceHero>
+          <HeroGlowLeft />
+          <HeroDots />
+          <HeroInner>
+            <BalanceLabel>Available Balance</BalanceLabel>
+            <BalanceAmount>
+              GH₵{(wallet.availableBalance ?? wallet.balance ?? 0).toFixed(2)}
+            </BalanceAmount>
+            <BalanceMeta>
+              <MetaPill>
+                <span>Currency</span>
+                <strong>{wallet.currency || 'GHS'}</strong>
+              </MetaPill>
+              <MetaPill>
+                <span>Total Transactions</span>
+                <strong>{pagination.total || 0}</strong>
+              </MetaPill>
+            </BalanceMeta>
+          </HeroInner>
+        </BalanceHero>
 
-      {/* Coupon Application Section */}
-      <CouponSection>
-        <SectionHeader>
-          <FaPlus />
-          <h2>Apply Coupon</h2>
-        </SectionHeader>
+        {/* ── Quick Actions ─────────────────────────────── */}
+        <ActionGrid>
+          <ActionCard onClick={() => navigate(PATHS.WALLET_ADD_MONEY)}>
+            <ActionIconCircle $gold>
+              <FaPlus />
+            </ActionIconCircle>
+            <ActionBody>
+              <ActionTitle>Add Money</ActionTitle>
+              <ActionSub>Top up via Paystack</ActionSub>
+            </ActionBody>
+            <ActionChevron><FaArrowRight /></ActionChevron>
+          </ActionCard>
 
-        <CouponForm>
-          <CouponInput
-            type="text"
-            placeholder="Enter coupon code"
-            value={couponCode}
-            onChange={(e) => setCouponCode(e.target.value)}
-            disabled={isApplying}
-          />
-          <ApplyButton onClick={applyCoupon} disabled={isApplying}>
-            {isApplying ? <ButtonSpinner size="sm" /> : "Apply Coupon"}
-          </ApplyButton>
+          <ActionCard>
+            <ActionIconCircle>
+              <FaHistory />
+            </ActionIconCircle>
+            <ActionBody>
+              <ActionTitle>Transaction History</ActionTitle>
+              <ActionSub>View all past activity</ActionSub>
+            </ActionBody>
+            <ActionChevron><FaArrowRight /></ActionChevron>
+          </ActionCard>
+        </ActionGrid>
 
-          {couponError && (
-            <ErrorState message={couponError?.message || "Failed to apply coupon"} />
-          )}
-        </CouponForm>
-      </CouponSection>
-
-      <ActionCards>
-        <ActionCard onClick={() => navigate(PATHS.WALLET_ADD_MONEY)}>
-          <ActionIcon $color="var(--color-primary-600)">
+        {/* ── Apply Coupon ──────────────────────────────── */}
+        <Card>
+          <CardHeading>
             <FaPlus />
-          </ActionIcon>
-          <ActionContent>
-            <h3>Add Money</h3>
-            <p>Top up your wallet via Paystack</p>
-          </ActionContent>
-          <ActionArrow>
-            <FaArrowRight />
-          </ActionArrow>
-        </ActionCard>
-        <ActionCard>
-          <ActionIcon $color="var(--color-green-700)">
+            <span>Apply Coupon</span>
+          </CardHeading>
+          <CouponRow>
+            <CouponInput
+              type="text"
+              placeholder="Enter coupon code…"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value)}
+              disabled={isApplying}
+            />
+            <ApplyBtn onClick={applyCoupon} disabled={isApplying || !couponCode.trim()}>
+              {isApplying ? <ButtonSpinner size="sm" /> : 'Apply'}
+            </ApplyBtn>
+          </CouponRow>
+          {couponError && (
+            <CouponError>{couponError?.message || 'Failed to apply coupon.'}</CouponError>
+          )}
+        </Card>
+
+        {/* ── Transaction History ───────────────────────── */}
+        <Card>
+          <CardHeading>
             <FaHistory />
-          </ActionIcon>
-          <ActionContent>
-            <h3>Transaction History</h3>
-            <p>View all transactions</p>
-          </ActionContent>
-          <ActionArrow>
-            <FaArrowRight />
-          </ActionArrow>
-        </ActionCard>
-      </ActionCards>
+            <span>Recent Transactions</span>
+          </CardHeading>
 
-      <TransactionSection>
-        <SectionHeader>
-          <FaHistory />
-          <h2>Recent Transactions</h2>
-        </SectionHeader>
-
-        {/* Filter buttons */}
-        <FilterButtons>
-          <FilterButton
-            $active={typeFilter === null}
-            onClick={() => setTypeFilter(null)}
-          >
-            All
-          </FilterButton>
-          <FilterButton
-            $active={typeFilter === 'CREDIT_TOPUP'}
-            onClick={() => setTypeFilter('CREDIT_TOPUP')}
-          >
-            Top-ups
-          </FilterButton>
-          <FilterButton
-            $active={typeFilter === 'DEBIT_ORDER'}
-            onClick={() => setTypeFilter('DEBIT_ORDER')}
-          >
-            Orders
-          </FilterButton>
-          <FilterButton
-            $active={typeFilter === 'CREDIT_REFUND'}
-            onClick={() => setTypeFilter('CREDIT_REFUND')}
-          >
-            Refunds
-          </FilterButton>
-        </FilterButtons>
-
-        <TransactionTable>
-          <thead>
-            <tr>
-              <TableHeader onClick={() => requestSort("createdAt")} $clickable>
-                Date {getSortIcon("createdAt")}
-              </TableHeader>
-              <TableHeader
-                onClick={() => requestSort("type")}
-                $clickable
+          <FilterPills>
+            {[
+              { label: 'All', value: null },
+              { label: 'Top-ups', value: 'CREDIT_TOPUP' },
+              { label: 'Orders', value: 'DEBIT_ORDER' },
+              { label: 'Refunds', value: 'CREDIT_REFUND' },
+            ].map((f) => (
+              <FilterPill
+                key={f.label}
+                $active={typeFilter === f.value}
+                onClick={() => setTypeFilter(f.value)}
               >
-                Type {getSortIcon("type")}
-              </TableHeader>
-              <TableHeader
-                onClick={() => requestSort("description")}
-                $clickable
-              >
-                Description {getSortIcon("description")}
-              </TableHeader>
-              <TableHeader
-                $align="right"
-                onClick={() => requestSort("amount")}
-                $clickable
-              >
-                Amount {getSortIcon("amount")}
-              </TableHeader>
-            </tr>
-          </thead>
-          <tbody>
-            {!transactions || transactions.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={4} $align="center">
-                  No transactions found
-                </TableCell>
-              </TableRow>
-            ) : (
-              transactions.map((transaction) => (
-                <TableRow key={transaction._id}>
-                  <TableCell>{formatDate(transaction.createdAt)}</TableCell>
-                  <TableCell>
-                    <TypeBadge $color={getTransactionColor(transaction.type)}>
-                      {getTransactionTypeLabel(transaction.type)}
-                    </TypeBadge>
-                  </TableCell>
-                  <TableCell>{transaction.description}</TableCell>
-                  <TableCell
-                    $color={getTransactionColor(transaction.type)}
-                    $align="right"
-                  >
-                    {transaction.amount > 0 ? "+" : ""}GH₵
-                    {Math.abs(transaction.amount).toFixed(2)}
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </tbody>
-        </TransactionTable>
+                {f.label}
+              </FilterPill>
+            ))}
+          </FilterPills>
 
-        {/* Pagination */}
-        {pagination.pages > 1 && (
-          <PaginationContainer>
-            <PaginationButton
-              onClick={() => setPage(page - 1)}
-              disabled={page === 1}
-            >
-              Previous
-            </PaginationButton>
-            <PageInfo>
-              Page {pagination.page} of {pagination.pages}
-            </PageInfo>
-            <PaginationButton
-              onClick={() => setPage(page + 1)}
-              disabled={page === pagination.pages}
-            >
-              Next
-            </PaginationButton>
-          </PaginationContainer>
-        )}
-      </TransactionSection>
+          <TableWrap>
+            <TxTable>
+              <thead>
+                <tr>
+                  <TH onClick={() => requestSort("createdAt")}>Date {getSortIcon("createdAt")}</TH>
+                  <TH onClick={() => requestSort("type")}>Type {getSortIcon("type")}</TH>
+                  <TH onClick={() => requestSort("description")}>Description {getSortIcon("description")}</TH>
+                  <TH $right onClick={() => requestSort("amount")}>Amount {getSortIcon("amount")}</TH>
+                </tr>
+              </thead>
+              <tbody>
+                {!transactions || transactions.length === 0 ? (
+                  <tr>
+                    <TD colSpan={4} $center>No transactions found</TD>
+                  </tr>
+                ) : (
+                  transactions.map((tx) => (
+                    <TRow key={tx._id}>
+                      <TD>{formatDate(tx.createdAt)}</TD>
+                      <TD>
+                        <TxBadge $color={getTransactionColor(tx.type)}>
+                          {getTransactionTypeLabel(tx.type)}
+                        </TxBadge>
+                      </TD>
+                      <TD>{tx.description}</TD>
+                      <TD $right $color={getTransactionColor(tx.type)}>
+                        {tx.amount > 0 ? '+' : ''}GH₵{Math.abs(tx.amount).toFixed(2)}
+                      </TD>
+                    </TRow>
+                  ))
+                )}
+              </tbody>
+            </TxTable>
+          </TableWrap>
+
+          {pagination.pages > 1 && (
+            <Pagination>
+              <PageBtn onClick={() => setPage(page - 1)} disabled={page === 1}>
+                Previous
+              </PageBtn>
+              <PageInfo>Page {pagination.page} of {pagination.pages}</PageInfo>
+              <PageBtn onClick={() => setPage(page + 1)} disabled={page === pagination.pages}>
+                Next
+              </PageBtn>
+            </Pagination>
+          )}
+        </Card>
+      </ContentWrap>
     </PageContainer>
   );
 };
 
 export default CreditBalance;
 
-// Styled Components - Updated with new styles for sorting
+/* ─── Styled Components ──────────────────────────────────── */
+
 const PageContainer = styled.div`
-  max-width: 1200px;
+  width: 100%;
+  min-height: 100vh;
+  background: #f9f7f4;
+  font-family: "Inter", sans-serif;
+`;
+
+/* ── Banner ─────────────────── */
+const PageBanner = styled.div`
+  position: relative;
+  background: linear-gradient(135deg, #1a1f2e 0%, #2d3444 50%, #1a2035 100%);
+  overflow: hidden;
+  padding: 2.5rem 2rem;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(212,136,42,0.12) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
+  }
+`;
+
+const BannerOverlay = styled.div`
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(212,136,42,0.15) 0%, transparent 60%);
+  pointer-events: none;
+`;
+
+const BannerInner = styled.div`
+  position: relative;
+  z-index: 1;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 30px 20px;
-`;
-
-const Header = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-  flex-wrap: wrap;
-  gap: 20px;
-`;
-
-const Title = styled.div`
   display: flex;
   align-items: center;
-  gap: 15px;
-
-  h1 {
-    font-size: 2.4rem;
-    font-weight: 700;
-    color: var(--color-grey-900);
-  }
-
-  svg {
-    color: var(--color-bitcoin-900);
-    font-size: 2.4rem;
-  }
+  gap: 1.25rem;
+  animation: ${fadeUp} 0.4s ease;
 `;
 
-const BalanceCard = styled.div`
-  background: linear-gradient(
-    135deg,
-    var(--color-primary-500),
-    var(--color-primary-700)
-  );
-  border-radius: var(--border-radius-lg);
-  padding: 30px;
-  color: white;
-  margin-bottom: 30px;
-  box-shadow: var(--shadow-lg);
-`;
-
-const BalanceLabel = styled.p`
-  font-size: 1.6rem;
-  margin-bottom: 10px;
-  opacity: 0.9;
-`;
-
-const BalanceAmount = styled.h2`
-  font-size: 4rem;
-  font-weight: 700;
-  margin-bottom: 20px;
-
-  @media ${devicesMax.sm} {
-    font-size: 3rem;
-  }
-`;
-
-const BalanceInfo = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-  padding-top: 20px;
-`;
-
-const InfoItem = styled.div`
-  span {
-    display: block;
-    font-size: 1.4rem;
-    opacity: 0.8;
-    margin-bottom: 5px;
-  }
-
-  strong {
-    font-size: 1.8rem;
-    font-weight: 600;
-  }
-`;
-
-const ActionCards = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-  margin-bottom: 40px;
-`;
-
-const ActionCard = styled.div`
-  background: white;
-  border-radius: var(--border-radius-lg);
-  padding: 25px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  box-shadow: var(--shadow-md);
-  transition: all 0.3s;
-  cursor: pointer;
-
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow-lg);
-
-    > div:last-child {
-      transform: translateX(5px);
-    }
-  }
-`;
-
-const ActionIcon = styled.div`
-  width: 60px;
-  height: 60px;
+const BannerIcon = styled.div`
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  background: ${(props) => props.$color};
+  background: rgba(212,136,42,0.2);
+  border: 2px solid rgba(212,136,42,0.4);
   display: flex;
   align-items: center;
   justify-content: center;
-
-  svg {
-    color: white;
-    font-size: 2.4rem;
-  }
+  font-size: 1.35rem;
+  color: #D4882A;
+  flex-shrink: 0;
 `;
 
-const ActionContent = styled.div`
-  flex: 1;
-
-  h3 {
-    font-size: 1.8rem;
-    margin-bottom: 5px;
-    color: var(--color-grey-800);
-  }
-
-  p {
-    font-size: 1.4rem;
-    color: var(--color-grey-500);
-  }
+const BannerTitle = styled.h1`
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 0.2rem;
 `;
 
-const ActionArrow = styled.div`
-  color: var(--color-grey-400);
-  transition: transform 0.3s;
-
-  svg {
-    font-size: 1.6rem;
-  }
+const BannerSub = styled.p`
+  font-size: 0.88rem;
+  color: rgba(255,255,255,0.6);
+  margin: 0;
 `;
 
-const TransactionSection = styled.div`
-  background: white;
-  border-radius: var(--border-radius-lg);
-  padding: 30px;
-  box-shadow: var(--shadow-md);
-`;
-
-const SectionHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 25px;
-
-  h2 {
-    margin: 0;
-    font-size: 2rem;
-    color: var(--color-grey-800);
-  }
-
-  svg {
-    color: var(--color-grey-600);
-    font-size: 2rem;
-  }
-`;
-
-const TransactionTable = styled.table`
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 20px;
-`;
-
-const TableHeader = styled.th`
-  text-align: ${(props) => props.$align || "left"};
-  padding: 15px 10px;
-  border-bottom: 2px solid var(--color-grey-200);
-  color: var(--color-grey-600);
-  font-weight: 600;
-  font-size: 1.4rem;
-  cursor: ${(props) => (props.$clickable ? "pointer" : "default")};
-  user-select: none;
-  position: relative;
-
-  &:hover {
-    background-color: ${(props) =>
-    props.$clickable ? "var(--color-grey-100)" : "transparent"};
-  }
-
-  svg {
-    margin-left: 5px;
-    font-size: 1.2rem;
-    vertical-align: middle;
-  }
-`;
-
-const TableRow = styled.tr`
-  &:nth-child(even) {
-    background: var(--color-grey-50);
-  }
-
-  &:hover {
-    background: var(--color-grey-100);
-  }
-`;
-
-const TableCell = styled.td`
-  padding: 15px 10px;
-  border-bottom: 1px solid var(--color-grey-100);
-  color: ${(props) => props.$color || "var(--color-grey-700)"};
-  text-align: ${(props) => props.$align || "left"};
-  font-size: 1.4rem;
-
-  &:first-child {
-    font-weight: 500;
-  }
-`;
-
-const ViewAllButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: transparent;
-  color: var(--primary-700);
-  border: none;
-  font-size: 1.5rem;
-  font-weight: 600;
-  cursor: pointer;
+/* ── Content ─────────────────── */
+const ContentWrap = styled.div`
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 10px 20px;
-  transition: all 0.3s;
+  padding: 2rem 1.5rem 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+`;
+
+/* ── Balance Hero ─────────────── */
+const BalanceHero = styled.div`
+  position: relative;
+  background: linear-gradient(135deg, #1a1f2e 0%, #2d3755 60%, #1a2035 100%);
+  border-radius: 20px;
+  overflow: hidden;
+  animation: ${fadeUp} 0.4s ease 0.1s both;
+`;
+
+const HeroGlowLeft = styled.div`
+  position: absolute;
+  top: -40px;
+  left: -40px;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(212,136,42,0.25), transparent 70%);
+  pointer-events: none;
+`;
+
+const HeroDots = styled.div`
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(212,136,42,0.1) 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
+`;
+
+const HeroInner = styled.div`
+  position: relative;
+  z-index: 1;
+  padding: 2.5rem 2rem;
+`;
+
+const BalanceLabel = styled.p`
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.65);
+  margin: 0 0 0.5rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 600;
+`;
+
+const BalanceAmount = styled.h2`
+  font-size: 3.2rem;
+  font-weight: 800;
+  color: #D4882A;
+  margin: 0 0 1.5rem;
+  line-height: 1;
+
+  @media ${devicesMax.sm} { font-size: 2.4rem; }
+`;
+
+const BalanceMeta = styled.div`
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(255,255,255,0.1);
+`;
+
+const MetaPill = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+
+  span {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.55);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  strong {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #ffffff;
+  }
+`;
+
+/* ── Action Grid ─────────────── */
+const ActionGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  animation: ${fadeUp} 0.4s ease 0.15s both;
+
+  @media (max-width: 560px) { grid-template-columns: 1fr; }
+`;
+
+const ActionCard = styled.div`
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #f0e8d8;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transition: all 0.2s ease;
 
   &:hover {
-    color: var(--color-primary-800);
-    transform: translateX(5px);
-
-    svg {
-      transform: translateX(3px);
-    }
-  }
-
-  svg {
-    transition: transform 0.3s;
-    font-size: 1.2rem;
+    border-color: #D4882A;
+    box-shadow: 0 4px 16px rgba(212,136,42,0.15);
+    transform: translateY(-2px);
   }
 `;
 
-const CouponSection = styled.div`
-  background: white;
-  border-radius: var(--border-radius-lg);
-  padding: 25px;
-  box-shadow: var(--shadow-md);
-  margin-bottom: 30px;
-`;
-
-const CouponForm = styled.div`
+const ActionIconCircle = styled.div`
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: ${({ $gold }) => $gold ? 'rgba(212,136,42,0.12)' : 'rgba(26,31,46,0.08)'};
+  color: ${({ $gold }) => $gold ? '#D4882A' : '#1a1f2e'};
   display: flex;
-  gap: 15px;
-  margin-top: 15px;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+`;
 
-  @media ${devicesMax.sm} {
-    flex-direction: column;
-  }
+const ActionBody = styled.div`
+  flex: 1;
+`;
+
+const ActionTitle = styled.h3`
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1a1f2e;
+  margin: 0 0 0.15rem;
+`;
+
+const ActionSub = styled.p`
+  font-size: 0.78rem;
+  color: #9ca3af;
+  margin: 0;
+`;
+
+const ActionChevron = styled.div`
+  color: #d1d5db;
+  font-size: 0.85rem;
+  transition: transform 0.2s;
+
+  ${ActionCard}:hover & { transform: translateX(4px); color: #D4882A; }
+`;
+
+/* ── Generic Card ─────────────── */
+const Card = styled.div`
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #f0e8d8;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  animation: ${fadeUp} 0.4s ease 0.2s both;
+`;
+
+const CardHeading = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a1f2e;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f0e8d8;
+
+  svg { color: #D4882A; }
+`;
+
+/* ── Coupon ─────────────────── */
+const CouponRow = styled.div`
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+
+  @media ${devicesMax.sm} { flex-direction: column; }
 `;
 
 const CouponInput = styled.input`
   flex: 1;
-  padding: 12px 16px;
-  border: 1px solid var(--color-grey-300);
-  border-radius: var(--border-radius-md);
-  font-size: 1.5rem;
+  padding: 0.7rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  transition: border-color 0.2s;
 
   &:focus {
     outline: none;
-    border-color: var(--color-primary-500);
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    border-color: #D4882A;
+    box-shadow: 0 0 0 3px rgba(212,136,42,0.12);
   }
+
+  &:disabled { background: #f9fafb; }
 `;
 
-const ApplyButton = styled.button`
-  padding: 12px 24px;
-  background: var(--color-primary-600);
-  color: white;
+const ApplyBtn = styled.button`
+  padding: 0.7rem 1.5rem;
+  background: ${({ disabled }) => disabled ? '#e5e7eb' : '#D4882A'};
+  color: ${({ disabled }) => disabled ? '#9ca3af' : '#ffffff'};
   border: none;
-  border-radius: var(--border-radius-md);
-  font-size: 1.5rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: ${({ disabled }) => disabled ? 'not-allowed' : 'pointer'};
+  transition: background 0.2s;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) { background: #B8711F; }
+
+  @media ${devicesMax.sm} { width: 100%; }
+`;
+
+const CouponError = styled.p`
+  margin-top: 0.75rem;
+  font-size: 0.82rem;
+  color: #dc2626;
+`;
+
+/* ── Filters ─────────────────── */
+const FilterPills = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+`;
+
+const FilterPill = styled.button`
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s;
-
-  &:hover:not(:disabled) {
-    background: var(--color-primary-700);
-  }
-
-  &:disabled {
-    background: var(--color-grey-400);
-    cursor: not-allowed;
-  }
-
-  @media ${devicesMax.sm} {
-    width: 100%;
-  }
-`;
-
-const FilterButtons = styled.div`
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-`;
-
-const FilterButton = styled.button`
-  padding: 8px 16px;
-  background: ${(props) => (props.$active ? 'var(--color-primary-600)' : 'white')};
-  color: ${(props) => (props.$active ? 'white' : 'var(--color-grey-700)')};
-  border: 1px solid ${(props) => (props.$active ? 'var(--color-primary-600)' : 'var(--color-grey-300)')};
-  border-radius: var(--border-radius-md);
-  font-size: 1.4rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.15s;
+  background: ${({ $active }) => $active ? '#D4882A' : '#f9f5ef'};
+  color: ${({ $active }) => $active ? '#ffffff' : '#6b7280'};
+  border: 1px solid ${({ $active }) => $active ? '#D4882A' : '#e5e7eb'};
 
   &:hover {
-    background: ${(props) => (props.$active ? 'var(--color-primary-700)' : 'var(--color-grey-100)')};
+    background: ${({ $active }) => $active ? '#B8711F' : '#f0e8d8'};
+    color: ${({ $active }) => $active ? '#ffffff' : '#D4882A'};
+    border-color: #D4882A;
   }
 `;
 
-const TypeBadge = styled.span`
-  display: inline-block;
-  padding: 4px 8px;
-  background: ${(props) => props.$color}20;
-  color: ${(props) => props.$color};
-  border-radius: var(--border-radius-sm);
-  font-size: 1.2rem;
-  font-weight: 600;
+/* ── Transaction Table ─────────── */
+const TableWrap = styled.div`
+  overflow-x: auto;
+  margin: 0 -0.25rem;
 `;
 
-const PaginationContainer = styled.div`
+const TxTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+`;
+
+const TH = styled.th`
+  text-align: ${({ $right }) => $right ? 'right' : 'left'};
+  padding: 0.75rem 0.875rem;
+  background: #f9f7f4;
+  border-bottom: 2px solid #f0e8d8;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+
+  svg { margin-left: 4px; font-size: 0.65rem; vertical-align: middle; }
+  &:hover { background: #f0e8d8; color: #D4882A; }
+`;
+
+const TRow = styled.tr`
+  &:nth-child(even) { background: #fdf9f5; }
+  &:hover { background: #fff7ed; }
+`;
+
+const TD = styled.td`
+  padding: 0.875rem;
+  border-bottom: 1px solid #f5f0ea;
+  font-size: 0.85rem;
+  color: ${({ $color }) => $color || '#374151'};
+  text-align: ${({ $right }) => $right ? 'right' : $center => $center ? 'center' : 'left'};
+  font-weight: ${({ $right }) => $right ? '600' : '400'};
+
+  &:first-child { font-weight: 500; }
+`;
+
+const TxBadge = styled.span`
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: ${({ $color }) => $color}18;
+  color: ${({ $color }) => $color};
+`;
+
+/* ── Pagination ─────────────── */
+const Pagination = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 20px;
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid var(--color-grey-200);
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f0e8d8;
 `;
 
-const PaginationButton = styled.button`
-  padding: 10px 20px;
-  background: var(--color-primary-600);
-  color: white;
+const PageBtn = styled.button`
+  padding: 0.5rem 1.25rem;
+  background: ${({ disabled }) => disabled ? '#f3f4f6' : '#D4882A'};
+  color: ${({ disabled }) => disabled ? '#9ca3af' : '#ffffff'};
   border: none;
-  border-radius: var(--border-radius-md);
-  font-size: 1.4rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
+  cursor: ${({ disabled }) => disabled ? 'not-allowed' : 'pointer'};
+  transition: background 0.2s;
 
-  &:hover:not(:disabled) {
-    background: var(--color-primary-700);
-  }
-
-  &:disabled {
-    background: var(--color-grey-400);
-    cursor: not-allowed;
-    opacity: 0.6;
-  }
+  &:hover:not(:disabled) { background: #B8711F; }
 `;
 
 const PageInfo = styled.span`
-  font-size: 1.4rem;
-  color: var(--color-grey-600);
+  font-size: 0.85rem;
+  color: #6b7280;
   font-weight: 500;
 `;

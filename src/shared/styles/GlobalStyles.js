@@ -313,6 +313,8 @@ const GlobalStyles = createGlobalStyle`
 
 html {
   width: 100%;
+  /* Root horizontal clip only; overflow-x on body forces overflow-y: auto (spec). */
+  overflow-x: hidden;
   font-size: 62.5%;
   @media ${devicesMax.md} {
     font-size: 60%;
@@ -332,7 +334,6 @@ body {
   line-height: 1.5;
   font-size: 1.6rem;
   width: 100%;
-  overflow-x: hidden;
 }
 
 h1, h2, h3, h4, h5, h6 {

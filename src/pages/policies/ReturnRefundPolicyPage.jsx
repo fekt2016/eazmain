@@ -72,19 +72,19 @@ const ReturnRefundPolicyPage = () => {
 
   return (
     <PolicyContainer>
+      <PolicyHeader>
+        <PolicyTitle>Return &amp; Refund Policy</PolicyTitle>
+        <LastUpdated>Last Updated: {lastUpdatedDate}</LastUpdated>
+      </PolicyHeader>
       <PolicyContent
         initial="hidden"
         animate="visible"
         variants={staggerContainer}
       >
-        {/* Header */}
-        <PolicyHeader variants={staggerItem}>
-          <PolicyTitle>Return & Refund Policy</PolicyTitle>
-          <LastUpdated>Last Updated: {lastUpdatedDate}</LastUpdated>
-          <IntroText>
-            If you are not satisfied with an item purchased on Saiisai, you may be eligible to return it and receive a refund. Please follow the procedure outlined in this Return and Refund Policy.
-          </IntroText>
-        </PolicyHeader>
+        {/* Intro */}
+        <IntroText>
+          If you are not satisfied with an item purchased on Saiisai, you may be eligible to return it and receive a refund. Please follow the procedure outlined in this Return and Refund Policy.
+        </IntroText>
 
         {/* Section 1: How do I make a return? */}
         <PolicySection variants={staggerItem}>

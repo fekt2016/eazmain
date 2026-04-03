@@ -4,7 +4,6 @@ import {
   FaLock,
   FaMobileAlt,
   FaShieldAlt,
-  FaShoppingBag,
   FaMapMarkerAlt,
   FaBell,
   FaCreditCard,
@@ -12,7 +11,6 @@ import {
 
 const tabs = [
   { id: "account", label: "Account", icon: FaUser },
-  { id: "orders", label: "Orders", icon: FaShoppingBag },
   { id: "address", label: "Address", icon: FaMapMarkerAlt },
   { id: "payment", label: "Payment", icon: FaCreditCard },
   { id: "notifications", label: "Alerts", icon: FaBell },

@@ -41,7 +41,8 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const dropdownRef = useRef(null);
   const categoriesDropdownRef = useRef(null);
-  const searchRef = useRef(null);
+  const desktopSearchRef = useRef(null);
+  const mobileSearchRef = useRef(null);
 
   const { logout, userData } = useAuth();
 
@@ -51,7 +52,11 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
     getParentCategories;
 
   // Improved search suggestions hook with better caching
-  const { data: searchSuggestionsData, isLoading: isSearchProductsLoading } =
+  const {
+    data: searchSuggestionsData,
+    isLoading: isSearchProductsLoading,
+    isError: isSearchSuggestionsError,
+  } =
     useSearchSuggestions(debouncedSearchTerm, {
       staleTime: 2 * 60 * 1000, // 2 minutes
     });
@@ -189,12 +194,44 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
         // Navigate to search results page
         navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
         setShowSearchSuggestions(false);
-        if (searchRef.current) searchRef.current.querySelector('input').blur();
+        if (typeof document !== 'undefined' && document.activeElement?.blur) {
+          document.activeElement.blur();
+        }
       }
     } else if (e.key === "Escape") {
       setShowSearchSuggestions(false);
     }
   };
+
+  const normalizeSuggestionPath = useCallback((urlOrPath) => {
+    if (!urlOrPath || typeof urlOrPath !== "string") return null;
+    const trimmed = urlOrPath.trim();
+
+    // Block dangerous protocols and malformed payloads.
+    if (
+      /^javascript:/i.test(trimmed) ||
+      /^data:/i.test(trimmed) ||
+      /^vbscript:/i.test(trimmed)
+    ) {
+      return null;
+    }
+
+    // Allow in-app relative routes only.
+    if (trimmed.startsWith("/")) return trimmed;
+
+    // For absolute URLs, only keep same-origin paths.
+    if (/^https?:\/\//i.test(trimmed)) {
+      try {
+        const parsed = new URL(trimmed);
+        if (parsed.origin !== window.location.origin) return null;
+        return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+      } catch {
+        return null;
+      }
+    }
+
+    return null;
+  }, []);
 
   // Handle suggestion selection
   const handleSuggestionSelect = (suggestion) => {
@@ -229,7 +266,10 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
         break;
       case "seller":
       case "store":
-        navigate(suggestion.url || `/sellers/${suggestion.id || suggestion._id}`);
+        navigate(
+          normalizeSuggestionPath(suggestion.url) ||
+          `/sellers/${suggestion.id || suggestion._id}`
+        );
         break;
       default:
         // fallback: general search
@@ -253,7 +293,11 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
       setShowCategoriesDropdown(false);
       setHoveredCategory(null);
     }
-    if (searchRef.current && !searchRef.current.contains(event.target)) {
+    const clickedInsideDesktopSearch =
+      desktopSearchRef.current?.contains(event.target);
+    const clickedInsideMobileSearch =
+      mobileSearchRef.current?.contains(event.target);
+    if (!clickedInsideDesktopSearch && !clickedInsideMobileSearch) {
       setShowSearchSuggestions(false);
     }
   }, []);
@@ -446,9 +490,10 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
                   setActiveSuggestion={setActiveSuggestion}
                   activeSuggestion={activeSuggestion}
                   isSearchProductsLoading={isSearchProductsLoading}
+                  isSearchSuggestionsError={isSearchSuggestionsError}
                   navigate={navigate}
                   handleSuggestionSelect={handleSuggestionSelect}
-                  searchRef={searchRef}
+                  searchRef={desktopSearchRef}
                 />
               </SearchContainer>
             </NavSection>
@@ -591,9 +636,10 @@ export default function Header({ onToggleSidebar, isSidebarOpen }) {
               setActiveSuggestion={setActiveSuggestion}
               activeSuggestion={activeSuggestion}
               isSearchProductsLoading={isSearchProductsLoading}
+              isSearchSuggestionsError={isSearchSuggestionsError}
               navigate={navigate}
               handleSuggestionSelect={handleSuggestionSelect}
-              searchRef={searchRef}
+              searchRef={mobileSearchRef}
             />
           </MobileSearchSection>
         </Container>
@@ -677,22 +723,23 @@ const ModernHeader = styled.header.withConfig({
   top: 0;
   z-index: 1000;
   background: ${props => props.isScrolled
-    ? 'rgba(255, 255, 255, 0.95)'
-    : 'var(--color-white-0)'
+    ? 'rgba(255, 255, 255, 0.97)'
+    : '#ffffff'
   };
   backdrop-filter: ${props => props.isScrolled ? 'blur(20px)' : 'none'};
   box-shadow: ${props => props.isScrolled
-    ? '0 4px 20px rgba(0, 0, 0, 0.08)'
-    : '0 1px 0 rgba(0, 0, 0, 0.05)'
+    ? '0 4px 24px rgba(0, 0, 0, 0.1)'
+    : '0 1px 0 #f0e8d8'
   };
   transition: all 0.3s ease;
 `;
 
 const TopBar = styled.div`
-  background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%);
-  padding: 0.8rem 0;
-  color: var(--color-white-0);
-  font-size: var(--text-sm);
+  background: #1a1f2e;
+  padding: 0.7rem 0;
+  color: rgba(255,255,255,0.85);
+  font-size: 1.25rem;
+  border-bottom: 1px solid rgba(212,136,42,0.2);
 
   @media (max-width: 768px) {
     display: none;
@@ -726,14 +773,14 @@ const TopLink = styled(Link)`
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.8);
   text-decoration: none;
-  font-size: var(--text-sm);
-  font-weight: 400;
-  transition: all var(--transition-base);
+  font-size: 1.25rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
 
   &:hover {
-    color: var(--color-white-0);
+    color: #D4882A;
     transform: translateY(-1px);
   }
 `;
@@ -753,7 +800,8 @@ const RightLinks = styled.div`
 
 const MainHeader = styled.div`
   padding: 1rem 0;
-  position: relative; /* Ensure dropdown positioning context */
+  position: relative;
+  border-bottom: 1px solid #f0e8d8;
 `;
 
 const HeaderContent = styled.div`
@@ -824,25 +872,27 @@ const CategoriesButton = styled.button.withConfig({
   gap: var(--space-sm);
   padding: var(--space-sm) var(--space-lg);
   background: ${props => props.isActive
-    ? 'linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%)'
-    : 'var(--color-white-0)'
+    ? 'linear-gradient(135deg, #1a1f2e 0%, #2d3444 100%)'
+    : '#ffffff'
   };
-  color: ${props => props.isActive ? 'var(--color-white-0)' : 'var(--color-grey-700)'};
-  border: 2px solid ${props => props.isActive ? 'transparent' : 'var(--color-grey-200)'};
+  color: ${props => props.isActive ? '#ffffff' : 'var(--color-grey-700)'};
+  border: 1.5px solid ${props => props.isActive ? 'transparent' : '#f0e8d8'};
   border-radius: var(--radius-xl);
   cursor: pointer;
   font-weight: var(--font-medium);
   font-size: var(--text-sm);
-  transition: all var(--transition-base);
+  transition: all 0.2s ease;
   white-space: nowrap;
+  box-shadow: ${props => props.isActive ? '0 4px 14px rgba(26,31,46,0.2)' : 'none'};
 
   &:hover {
     background: ${props => props.isActive
-    ? 'linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%)'
-    : 'var(--color-grey-50)'
+    ? 'linear-gradient(135deg, #1a1f2e 0%, #2d3444 100%)'
+    : '#fff7ed'
   };
+    border-color: ${props => props.isActive ? 'transparent' : '#D4882A'};
+    color: ${props => props.isActive ? '#ffffff' : '#D4882A'};
     transform: translateY(-1px);
-    box-shadow: var(--shadow-sm);
   }
 `;
 
@@ -936,14 +986,14 @@ const CategoriesList = styled.ul`
 const CategoryItem = styled.li.withConfig({
   shouldForwardProp: (prop) => prop !== 'isActive',
 })`
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   border-left: 3px solid transparent;
-  border-left-color: ${props => props.isActive ? 'var(--color-primary-500)' : 'transparent'};
-  background: ${props => props.isActive ? 'var(--color-white-0)' : 'transparent'};
+  border-left-color: ${props => props.isActive ? '#D4882A' : 'transparent'};
+  background: ${props => props.isActive ? '#ffffff' : 'transparent'};
 
   &:hover {
-    background: var(--color-white-0);
-    border-left-color: var(--color-primary-300);
+    background: #ffffff;
+    border-left-color: rgba(212,136,42,0.5);
   }
 `;
 
@@ -953,10 +1003,10 @@ const CategoryLink = styled(Link)`
   padding: 1.5rem 2rem;
   text-decoration: none;
   color: var(--color-grey-700);
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 
   &:hover {
-    color: var(--color-primary-500);
+    color: #D4882A;
   }
 `;
 
@@ -1001,16 +1051,18 @@ const SubCategoryGridLink = styled(Link)`
   align-items: center;
   text-decoration: none;
   color: var(--color-grey-800);
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   padding: 1.5rem;
   border-radius: 12px;
   background: var(--color-grey-50);
+  border: 1px solid transparent;
 
   &:hover {
-    color: var(--color-primary-500);
+    color: #D4882A;
     transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-    background: var(--color-white-0);
+    box-shadow: 0 8px 20px rgba(212,136,42,0.12);
+    background: #fff7ed;
+    border-color: rgba(212,136,42,0.2);
   }
 `;
 
@@ -1021,11 +1073,11 @@ const SubCategoryCircleImage = styled.img`
   border-radius: 50%;
   margin-bottom: 1rem;
   background: var(--color-white-0);
-  border: 2px solid var(--color-grey-200);
-  transition: all 0.3s ease;
+  border: 2px solid #f0e8d8;
+  transition: all 0.2s ease;
 
   ${SubCategoryGridLink}:hover & {
-    border-color: var(--color-primary-500);
+    border-color: #D4882A;
     transform: scale(1.05);
   }
 `;
@@ -1091,13 +1143,13 @@ const BottomLink = styled(Link)`
   gap: 1rem;
   text-decoration: none;
   color: var(--color-grey-700);
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   padding: 0.8rem 1.2rem;
   border-radius: 10px;
 
   &:hover {
-    color: var(--color-primary-500);
-    background: var(--color-grey-50);
+    color: #D4882A;
+    background: #fff7ed;
     transform: translateY(-1px);
   }
 `;
@@ -1115,12 +1167,12 @@ const UserAvatar = styled.div`
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
-  border: 2px solid var(--color-primary-200);
-  background: var(--color-primary-50);
+  border: 2px solid #f0e8d8;
+  background: #fff7ed;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 `;
 
 const AvatarImage = styled.img`
@@ -1136,8 +1188,8 @@ const AvatarFallback = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
-  color: var(--color-white-0);
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
+  color: #ffffff;
   font-size: 1.6rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -1205,8 +1257,8 @@ const MobileMenuButton = styled.button`
   z-index: 1001;
 
   &:hover {
-    background: var(--color-grey-50);
-    color: var(--color-primary-500);
+    background: #fff7ed;
+    color: #D4882A;
   }
 
   @media (min-width: 769px) {
@@ -1232,12 +1284,12 @@ const AccountButton = styled.button`
   transition: all 0.3s ease;
 
   &:hover {
-    background: var(--color-grey-50);
-    color: var(--color-primary-500);
+    background: #fff7ed;
+    color: #D4882A;
   }
 
   &:hover ${UserAvatar} {
-    border-color: var(--color-primary-400);
+    border-color: #D4882A;
     transform: scale(1.05);
   }
 `;
@@ -1289,8 +1341,8 @@ const DropdownItem = styled(Link)`
   text-align: left;
 
   &:hover {
-    background: var(--color-grey-50);
-    color: var(--color-primary-500);
+    background: #fff7ed;
+    color: #D4882A;
     padding-left: 2.5rem;
   }
 `;
@@ -1338,8 +1390,8 @@ const mobileMenuItemStyles = `
   text-decoration: none;
   font-size: 1.5rem;
   font-weight: 500;
-  border-bottom: 1px solid var(--color-grey-100);
-  transition: all 0.3s ease;
+  border-bottom: 1px solid #f0e8d8;
+  transition: all 0.2s ease;
   position: relative;
   cursor: pointer;
   border: none;
@@ -1347,9 +1399,9 @@ const mobileMenuItemStyles = `
   text-align: left;
 
   &:hover {
-    background: var(--color-grey-50);
-    color: var(--color-primary-500);
-    padding-left: 2.5rem;
+    background: #fff7ed;
+    color: #D4882A;
+    padding-left: 2.8rem;
   }
 
   svg {
@@ -1365,18 +1417,19 @@ const mobileMenuItemStyles = `
 const MobileMenuItem = styled.a`
   ${mobileMenuItemStyles}
   background: ${props => props.$highlight
-    ? 'linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%)'
+    ? 'linear-gradient(135deg, #1a1f2e 0%, #2d3444 100%)'
     : 'transparent'
   };
-  color: ${props => props.$highlight ? 'var(--color-white-0)' : 'var(--color-grey-700)'};
+  color: ${props => props.$highlight ? '#ffffff' : 'var(--color-grey-700)'};
+  border-bottom: 1px solid ${props => props.$highlight ? 'rgba(212,136,42,0.3)' : '#f0e8d8'};
 
   &:hover {
     background: ${props => props.$highlight
-    ? 'linear-gradient(135deg, var(--primary-600) 0%, var(--primary-800) 100%)'
-    : 'var(--color-grey-50)'
+    ? 'linear-gradient(135deg, #D4882A 0%, #f0a845 100%)'
+    : '#fff7ed'
   };
-    color: ${props => props.$highlight ? 'var(--color-white-0)' : 'var(--color-primary-500)'};
-    padding-left: ${props => props.$highlight ? '2rem' : '2.5rem'};
+    color: ${props => props.$highlight ? '#ffffff' : '#D4882A'};
+    padding-left: ${props => props.$highlight ? '2rem' : '2.8rem'};
   }
 `;
 

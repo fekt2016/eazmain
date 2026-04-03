@@ -51,38 +51,32 @@ jest.mock('@/shared/hooks/useDynamicPageTitle', () => ({
   default: jest.fn(() => {}),
 }));
 
-// Mock ProductCard component with interactive remove button
-// The mock simulates the real ProductCard's remove functionality
-// Note: The mock accesses useRemoveFromWishlist hook which is also mocked
-jest.mock('@/shared/components/ProductCard', () => {
+// Mock wishlist card (keeps tests stable; real card is covered by integration/E2E)
+jest.mock('@/features/wishlist/WishlistProductCard', () => {
   const React = require('react');
-  
+
   return {
     __esModule: true,
-    default: function MockProductCard({ product, showWishlistButton, showRemoveButton }) {
-      // Access the mocked hook - this will use our mockUseRemoveFromWishlist
+    default: function MockWishlistProductCard({ product }) {
       const { useRemoveFromWishlist } = require('@/shared/hooks/useWishlist');
       const { mutate: removeWishlist } = useRemoveFromWishlist();
-      
+
       return (
         <div data-testid={`product-card-${product._id}`}>
           <div data-testid="product-name">{product.name}</div>
           <div data-testid="product-price">GH₵{product.price}</div>
-          <div data-testid="show-wishlist-button">{String(showWishlistButton)}</div>
-          <div data-testid="show-remove-button">{String(showRemoveButton)}</div>
-          {showRemoveButton && (
-            <button
-              data-testid={`remove-button-${product._id}`}
-              aria-label="Remove product"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                removeWishlist(product._id);
-              }}
-            >
-              Remove
-            </button>
-          )}
+          <button
+            type="button"
+            data-testid={`remove-button-${product._id}`}
+            aria-label="Remove from wishlist"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              removeWishlist(String(product._id));
+            }}
+          >
+            Remove
+          </button>
         </div>
       );
     },
@@ -131,6 +125,7 @@ const createTestProduct = (overrides = {}) => ({
   defaultPrice: 100,
   imageCover: 'https://example.com/image.jpg',
   stock: 10,
+  totalStock: 10,
   ...overrides,
 });
 
@@ -188,13 +183,9 @@ describe('WishlistPage', () => {
     renderWithProviders(<WishlistPage />);
 
     await waitFor(() => {
-      // Check for error icon (⚠️)
       expect(screen.getByText('⚠️')).toBeInTheDocument();
-      // Check for error title
-      expect(screen.getByText('Error loading wishlist')).toBeInTheDocument();
-      // Check for error message
+      expect(screen.getByText('Something went wrong')).toBeInTheDocument();
       expect(screen.getByText(errorMessage)).toBeInTheDocument();
-      // Check for Continue Shopping link
       const continueShoppingLink = screen.getByRole('link', { name: /continue shopping/i });
       expect(continueShoppingLink).toBeInTheDocument();
       expect(continueShoppingLink).toHaveAttribute('href', '/');
@@ -217,18 +208,14 @@ describe('WishlistPage', () => {
     renderWithProviders(<WishlistPage />);
 
     await waitFor(() => {
-      // Check for empty icon (❤️)
-      expect(screen.getByText('❤️')).toBeInTheDocument();
-      // Check for empty title
       expect(screen.getByText('Your wishlist is empty')).toBeInTheDocument();
-      // Check for empty message
-      expect(screen.getByText(/Save items you love by clicking the heart icon/i)).toBeInTheDocument();
-      // Check for Continue Shopping link
-      const continueShoppingLink = screen.getByRole('link', { name: /continue shopping/i });
-      expect(continueShoppingLink).toBeInTheDocument();
-      expect(continueShoppingLink).toHaveAttribute('href', '/');
-      // Check for item count (0 items)
-      expect(screen.getByText(/0 items saved for later/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Tap the heart icon on any product to save it here for later/i)
+      ).toBeInTheDocument();
+      const browseLink = screen.getByRole('link', { name: /browse products/i });
+      expect(browseLink).toBeInTheDocument();
+      expect(browseLink).toHaveAttribute('href', '/');
+      expect(screen.getByText(/0 saved items/i)).toBeInTheDocument();
     });
   });
 
@@ -239,16 +226,9 @@ describe('WishlistPage', () => {
     renderWithProviders(<WishlistPage />);
 
     await waitFor(() => {
-      // Check for page title
-      expect(screen.getByText('Your Wishlist')).toBeInTheDocument();
-      // Check for singular item count
-      expect(screen.getByText(/1 item saved for later/i)).toBeInTheDocument();
-      // Check for ProductCard
+      expect(screen.getByRole('heading', { name: /my wishlist/i })).toBeInTheDocument();
+      expect(screen.getByText(/1 saved item(?!s)/i)).toBeInTheDocument();
       expect(screen.getByTestId('product-card-product1')).toBeInTheDocument();
-      // Check ProductCard props
-      expect(screen.getByTestId('show-wishlist-button')).toHaveTextContent('false');
-      expect(screen.getByTestId('show-remove-button')).toHaveTextContent('true');
-      // Check for Continue Shopping link
       const continueShoppingLink = screen.getByRole('link', { name: /continue shopping/i });
       expect(continueShoppingLink).toBeInTheDocument();
     });
@@ -266,13 +246,10 @@ describe('WishlistPage', () => {
     renderWithProviders(<WishlistPage />);
 
     await waitFor(() => {
-      // Check for plural item count
-      expect(screen.getByText(/3 items saved for later/i)).toBeInTheDocument();
-      // Check for all ProductCards
+      expect(screen.getByText(/3 saved items/i)).toBeInTheDocument();
       expect(screen.getByTestId('product-card-product1')).toBeInTheDocument();
       expect(screen.getByTestId('product-card-product2')).toBeInTheDocument();
       expect(screen.getByTestId('product-card-product3')).toBeInTheDocument();
-      // Check product names are displayed
       expect(screen.getByText('Test Product 1')).toBeInTheDocument();
       expect(screen.getByText('Test Product 2')).toBeInTheDocument();
       expect(screen.getByText('Test Product 3')).toBeInTheDocument();
@@ -329,7 +306,7 @@ describe('WishlistPage', () => {
       // Product should be extracted from nested structure
       expect(screen.getByTestId('product-card-product1')).toBeInTheDocument();
       expect(screen.getByText('Test Product')).toBeInTheDocument();
-      expect(screen.getByText(/1 item saved for later/i)).toBeInTheDocument();
+      expect(screen.getByText(/1 saved item(?!s)/i)).toBeInTheDocument();
     });
   });
 
@@ -348,12 +325,12 @@ describe('WishlistPage', () => {
       expect(screen.getByTestId('product-card-product1')).toBeInTheDocument();
     });
 
-    const removeButton = screen.getByRole('button', { name: /remove product/i });
+    const removeButton = screen.getByRole('button', { name: /remove from wishlist/i });
     expect(removeButton).toBeInTheDocument();
 
     await user.click(removeButton);
 
-    expect(mockRemoveFromWishlist).toHaveBeenCalledWith(product._id);
+    expect(mockRemoveFromWishlist).toHaveBeenCalledWith(String(product._id));
     expect(mockRemoveFromWishlist).toHaveBeenCalledTimes(1);
   });
 
@@ -391,7 +368,7 @@ describe('WishlistPage', () => {
     renderWithProviders(<WishlistPage />);
 
     await waitFor(() => {
-      const heading = screen.getByRole('heading', { name: /your wishlist/i });
+      const heading = screen.getByRole('heading', { name: /my wishlist/i });
       expect(heading).toBeInTheDocument();
       expect(heading.tagName).toBe('H1');
     });
@@ -404,9 +381,9 @@ describe('WishlistPage', () => {
     renderWithProviders(<WishlistPage />);
 
     await waitFor(() => {
-      const removeButton = screen.getByRole('button', { name: /remove product/i });
+      const removeButton = screen.getByRole('button', { name: /remove from wishlist/i });
       expect(removeButton).toBeInTheDocument();
-      expect(removeButton).toHaveAttribute('aria-label', 'Remove product');
+      expect(removeButton).toHaveAttribute('aria-label', 'Remove from wishlist');
     });
   });
 
@@ -446,10 +423,9 @@ describe('WishlistPage', () => {
     renderWithProviders(<WishlistPage />);
 
     await waitFor(() => {
-      expect(screen.getByText(/1 item saved for later/i)).toBeInTheDocument();
-      // Verify it's not showing 0 or 2 items
-      expect(screen.queryByText(/0 items saved for later/i)).not.toBeInTheDocument();
-      expect(screen.queryByText(/2 items saved for later/i)).not.toBeInTheDocument();
+      expect(screen.getByText(/1 saved item(?!s)/i)).toBeInTheDocument();
+      expect(screen.queryByText(/0 saved items/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/2 saved items/i)).not.toBeInTheDocument();
     });
   });
 
@@ -464,7 +440,7 @@ describe('WishlistPage', () => {
     renderWithProviders(<WishlistPage />);
 
     await waitFor(() => {
-      expect(screen.getByText(/3 items saved for later/i)).toBeInTheDocument();
+      expect(screen.getByText(/3 saved items/i)).toBeInTheDocument();
     });
   });
 
@@ -509,7 +485,7 @@ describe('WishlistPage', () => {
       // Should only show valid products
       expect(screen.getByTestId('product-card-product1')).toBeInTheDocument();
       expect(screen.getByTestId('product-card-product2')).toBeInTheDocument();
-      expect(screen.getByText(/2 items saved for later/i)).toBeInTheDocument();
+      expect(screen.getByText(/2 saved items/i)).toBeInTheDocument();
     });
   });
 

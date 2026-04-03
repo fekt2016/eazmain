@@ -1145,7 +1145,7 @@ const ModernPageContainer = styled.div`
   max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
-  background: var(--color-grey-50);
+  background: #f9f7f4;
   min-height: 100vh;
   width: 100%;
   box-sizing: border-box;
@@ -1268,7 +1268,7 @@ const ModernProductHeader = styled.div`
 
 const CategoryBadge = styled.span`
   display: inline-block;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
   color: white;
   padding: 0.5rem 1.5rem;
   border-radius: 2rem;
@@ -1292,7 +1292,7 @@ const ModernProductTitle = styled.h1`
   color: var(--color-grey-900);
   margin-bottom: 1.5rem;
   line-height: 1.2;
-  background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+  background: linear-gradient(135deg, #1a1f2e 0%, #2d3444 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   width: 100%;
@@ -1539,9 +1539,9 @@ const PriceDisplay = styled.div`
 const CurrentPrice = styled.div`
   font-size: 4.8rem;
   font-weight: 800;
-  color: var(--color-primary-500);
+  color: #D4882A;
   line-height: 1;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 
@@ -2193,8 +2193,8 @@ const SellerAvatar = styled.div`
   height: 7rem;
   border-radius: 50%;
   overflow: hidden;
-  border: 3px solid var(--color-primary-500);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  border: 3px solid #D4882A;
+  box-shadow: 0 4px 12px rgba(212,136,42,0.3);
 
   img {
     width: 100%;
@@ -2289,14 +2289,14 @@ const EazShopBadge = styled.div`
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
   color: white;
   padding: 0.4rem 1rem;
   border-radius: 50px;
   font-weight: 700;
   font-size: 1.2rem;
   margin-left: auto;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 2px 8px rgba(212,136,42,0.3);
 
   svg {
     font-size: 1rem;
@@ -2806,7 +2806,7 @@ const SectionTitle = styled.h2`
   color: var(--color-grey-900);
   margin-bottom: 2.5rem;
   text-align: center;
-  background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 

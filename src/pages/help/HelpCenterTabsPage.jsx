@@ -1,36 +1,129 @@
 import { useState, useMemo } from 'react';
 import styled from 'styled-components';
+import { FaSearch } from 'react-icons/fa';
 import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
-import Container from '../../components/ui/Container';
-import PageHeroComponent from '../../components/ui/PageHero';
-import HelpSectionHeader from '../../components/help/HelpSectionHeader';
-import HelpSearchBar from '../../components/help/HelpSearchBar';
 import HelpTabs from '../../components/help/HelpTabs';
 import HelpTabPanel from '../../components/help/HelpTabPanel';
 import qaData from '../../data/help/qaData';
 import { devicesMax } from '../../shared/styles/breakpoint';
 
-const PageContainer = styled.div`
+// ── Layout ────────────────────────────────────────────
+const Page = styled.div`
   min-height: 100vh;
-  background: var(--color-white-0);
-  padding-bottom: var(--spacing-3xl);
+  background: var(--color-grey-50);
 `;
 
-const ContentWrapper = styled(Container)`
-  padding-top: var(--spacing-2xl);
-  max-width: 120rem;
-  
+const Hero = styled.div`
+  background: linear-gradient(135deg, #1a1f2e 0%, #2d3444 60%, #1a2035 100%);
+  padding: 52px 24px 64px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(212,136,42,0.10) 1px, transparent 1px);
+    background-size: 26px 26px;
+    pointer-events: none;
+  }
+
   @media ${devicesMax.md} {
-    padding-top: var(--spacing-xl);
+    padding: 36px 16px 52px;
   }
 `;
 
-const TabsSection = styled.section`
-  margin-bottom: var(--spacing-2xl);
+const HeroInner = styled.div`
+  position: relative;
+  z-index: 1;
+  max-width: 640px;
+  margin: 0 auto;
 `;
 
+const HeroTitle = styled.h1`
+  font-size: var(--font-size-3xl);
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 0.8rem;
+  letter-spacing: -0.02em;
+
+  @media ${devicesMax.sm} {
+    font-size: var(--font-size-2xl);
+  }
+`;
+
+const HeroSub = styled.p`
+  font-size: var(--font-size-md);
+  color: rgba(255,255,255,0.7);
+  margin: 0 0 2.8rem;
+`;
+
+const SearchWrap = styled.div`
+  position: relative;
+  max-width: 520px;
+  margin: 0 auto;
+`;
+
+const SearchIcon = styled.span`
+  position: absolute;
+  left: 1.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-grey-400);
+  font-size: var(--font-size-md);
+  pointer-events: none;
+`;
+
+const SearchInput = styled.input`
+  width: 100%;
+  padding: 1.4rem 1.6rem 1.4rem 4.4rem;
+  border: none;
+  border-radius: 1.2rem;
+  font-size: var(--font-size-md);
+  background: #fff;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+  outline: none;
+  color: var(--color-grey-800);
+
+  &::placeholder { color: var(--color-grey-400); }
+
+  &:focus {
+    box-shadow: 0 4px 24px rgba(0,0,0,0.18), 0 0 0 3px rgba(212,136,42,0.25);
+  }
+`;
+
+const Content = styled.div`
+  max-width: 900px;
+  margin: -24px auto 0;
+  padding: 0 24px 60px;
+  position: relative;
+  z-index: 2;
+
+  @media ${devicesMax.md} {
+    padding: 0 16px 48px;
+  }
+`;
+
+const Card = styled.div`
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+  padding: 28px 28px 20px;
+
+  @media ${devicesMax.sm} {
+    padding: 20px 16px 16px;
+  }
+`;
+
+const ResultCount = styled.p`
+  font-size: 0.8rem;
+  color: var(--color-grey-400);
+  margin: 0 0 16px;
+`;
+
+// ── Component ─────────────────────────────────────────
 const HelpCenterTabsPage = () => {
-  // SEO
   useDynamicPageTitle({
     title: 'Help Center - Saiisai',
     description: 'Find quick answers to common questions about orders, payments, returns, account management, and more.',
@@ -38,55 +131,32 @@ const HelpCenterTabsPage = () => {
     defaultDescription: 'Get help with your orders, account, payments, shipping, and more.',
   });
 
-  // FAQ Schema
   const faqSchema = useMemo(() => {
-    // Collect all Q&A items from data
     const allQuestions = [];
     qaData.forEach(category => {
       category.items.forEach(item => {
         allQuestions.push({
           "@type": "Question",
           "name": item.q,
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": item.a
-          }
+          "acceptedAnswer": { "@type": "Answer", "text": item.a }
         });
       });
     });
-
     return {
       "@context": "https://schema.org",
       "@type": "FAQPage",
-      "mainEntity": allQuestions.slice(0, 10) // Limit to top 10 for rich results
+      "mainEntity": allQuestions.slice(0, 10)
     };
   }, []);
 
-  // State
   const [activeTab, setActiveTab] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Extract categories and tab labels
   const categories = useMemo(() => qaData.map((cat) => cat.category), []);
-  const tabLabels = categories;
-
-  // Handle search
-  const handleSearch = (term) => {
-    setSearchTerm(term);
-    // Clear search when empty
-    if (!term) {
-      setSearchTerm('');
-    }
-  };
-
-  // Get current category data
   const currentCategoryData = qaData[activeTab] || { items: [] };
 
-  // When searching, show results from all categories
-  // When not searching, show items from the active tab's category
   const displayItems = useMemo(() => {
     if (searchTerm.trim()) {
-      // Search across all categories
       const matchingItems = [];
       qaData.forEach((category) => {
         category.items.forEach((item) => {
@@ -100,53 +170,52 @@ const HelpCenterTabsPage = () => {
       });
       return matchingItems;
     }
-    // No search - show items from active tab
     return currentCategoryData.items || [];
   }, [searchTerm, activeTab, currentCategoryData]);
 
   return (
-    <PageContainer>
-      {/* FAQ Structured Data */}
-      <script type="application/ld+json">
-        {JSON.stringify(faqSchema)}
-      </script>
-      {/* Page Hero */}
-      <PageHeroComponent
-        title="Help Center"
-        subtitle="Find quick answers to common questions"
-        variant="default"
-      />
+    <Page>
+      <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
 
-      {/* Main Content */}
-      <ContentWrapper constrained>
-        {/* Section Header */}
-        <HelpSectionHeader
-          title="How can we help you?"
-          subtitle="Browse our frequently asked questions organized by category, or search for specific topics."
-        />
+      <Hero>
+        <HeroInner>
+          <HeroTitle>Help Center</HeroTitle>
+          <HeroSub>Find quick answers to common questions</HeroSub>
+          <SearchWrap>
+            <SearchIcon><FaSearch /></SearchIcon>
+            <SearchInput
+              type="text"
+              placeholder="Search for help articles, FAQs, or topics..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </SearchWrap>
+        </HeroInner>
+      </Hero>
 
-        {/* Search Bar */}
-        <HelpSearchBar onSearch={handleSearch} />
+      <Content>
+        <Card>
+          {searchTerm.trim() ? (
+            <ResultCount>
+              {displayItems.length} result{displayItems.length !== 1 ? 's' : ''} for &ldquo;{searchTerm}&rdquo;
+            </ResultCount>
+          ) : (
+            <HelpTabs
+              tabs={categories}
+              activeTab={activeTab}
+              onTabChange={(idx) => { setActiveTab(idx); setSearchTerm(''); }}
+            />
+          )}
 
-        {/* Tabs Section */}
-        <TabsSection>
-          <HelpTabs
-            tabs={tabLabels}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-          />
-
-          {/* Show active tab panel with filtered items */}
           <HelpTabPanel
             isActive={true}
             items={displayItems}
             searchTerm={searchTerm}
           />
-        </TabsSection>
-      </ContentWrapper>
-    </PageContainer>
+        </Card>
+      </Content>
+    </Page>
   );
 };
 
 export default HelpCenterTabsPage;
-

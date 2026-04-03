@@ -691,22 +691,24 @@ export default function AddressPage() {
                         $isDefault={address.isDefault}
                       >
                         {address.isDefault ? <FaStar /> : <FaRegStar />}
+                        {address.isDefault ? "Default" : "Set Default"}
                       </SetDefaultButton>
                       <EditButton
                         onClick={() => handleEditAddress(address)}
                         title="Edit address"
                       >
                         <FaEdit />
+                        Edit
                       </EditButton>
                       <Button
                         variant="danger"
-                        iconOnly
                         onClick={() => handleDeleteAddress(address.id || address._id)}
                         loading={isDeleting}
                         ariaLabel="Delete address"
                         title="Delete address"
                       >
                         <FaTrash />
+                        Delete
                       </Button>
                     </ActionButtons>
                   </AddressHeader>
@@ -766,29 +768,52 @@ export default function AddressPage() {
 
 // Modern Styled Components
 const PageContainer = styled.div`
-  max-width: 120rem;
-  margin: 0 auto;
-  padding: 2.4rem;
+  width: 100%;
+  min-height: 100vh;
+  background: #f9f7f4;
+  font-family: "Inter", sans-serif;
 
   @media (max-width: 768px) {
     padding: 1.6rem;
   }
 `;
 
+/* ── Banner ─────────────────── */
 const HeaderSection = styled.section`
-  margin-bottom: 3.2rem;
+  position: relative;
+  background: linear-gradient(135deg, #1a1f2e 0%, #2d3444 50%, #1a2035 100%);
+  overflow: hidden;
+  padding: 2.5rem 2rem;
+  margin-bottom: 0;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(212,136,42,0.12) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(212,136,42,0.15) 0%, transparent 60%);
+    pointer-events: none;
+  }
 `;
 
 const HeaderContent = styled.div`
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 2.4rem;
-
-  @media (max-width: 1024px) {
-    flex-direction: column;
-    gap: 2rem;
-  }
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
 `;
 
 const TitleSection = styled.div`
@@ -798,62 +823,50 @@ const TitleSection = styled.div`
 const BackButton = styled.button`
   display: inline-flex;
   align-items: center;
-  gap: 0.8rem;
-  background: var(--color-white-0);
-  color: var(--primary-700);
-  border: 1px solid var(--color-grey-300);
-  padding: 0.8rem 1.6rem;
+  gap: 0.5rem;
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.85);
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 0.5rem 1rem;
   border-radius: 8px;
+  font-size: 0.82rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-  margin-bottom: 1.6rem;
+  margin-bottom: 0.75rem;
 
   &:hover {
-    background: var(--color-primary-50);
-    border-color: var(--color-primary-500);
-    transform: translateY(-1px);
+    background: rgba(212,136,42,0.2);
+    border-color: rgba(212,136,42,0.4);
+    color: #D4882A;
   }
 
   svg {
-    font-size: 1.4rem;
+    font-size: 0.82rem;
   }
 `;
 
 const Title = styled.h1`
-  font-size: 3.2rem;
-  font-weight: 800;
-  color: var(--color-grey-900);
-  margin-bottom: 0.8rem;
-  background: linear-gradient(135deg, var(--color-grey-900) 0%, var(--color-grey-700) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-
-  @media (max-width: 768px) {
-    font-size: 2.8rem;
-  }
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 0.2rem;
 `;
 
 const Subtitle = styled.p`
-  font-size: 1.6rem;
-  color: var(--color-grey-600);
-  max-width: 50rem;
+  font-size: 0.88rem;
+  color: rgba(255,255,255,0.6);
+  margin: 0;
 `;
 
 const StatsCard = styled.div`
   display: flex;
-  background: var(--color-white-0);
-  border-radius: 20px;
-  padding: 2rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-  border: 1px solid var(--color-grey-100);
-  min-width: 25rem;
-
-  @media (max-width: 768px) {
-    min-width: auto;
-    width: 100%;
-  }
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(212,136,42,0.25);
+  border-radius: 14px;
+  padding: 1rem 1.5rem;
+  backdrop-filter: blur(6px);
+  gap: 0;
 `;
 
 const StatItem = styled.div`
@@ -863,29 +876,34 @@ const StatItem = styled.div`
 `;
 
 const StatValue = styled.div`
-  font-size: 2.4rem;
+  font-size: 1.75rem;
   font-weight: 800;
-  color: var(--primary-700);
+  color: #D4882A;
   line-height: 1;
 `;
 
 const StatLabel = styled.div`
-  font-size: 1.2rem;
-  color: var(--color-grey-600);
-  margin-top: 0.4rem;
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.6);
+  margin-top: 0.25rem;
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 `;
 
 const StatDivider = styled.div`
   width: 1px;
-  background: var(--color-grey-200);
+  background: rgba(255,255,255,0.15);
   margin: 0.4rem 0;
 `;
 
 const ContentWrapper = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 3.2rem;
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
 `;
 
 const FormSection = styled.section`
@@ -907,14 +925,14 @@ const FormHeader = styled.div`
 const FormTitle = styled.h2`
   font-size: 2.4rem;
   font-weight: 700;
-  color: var(--color-grey-900);
+  color: #1a1f2e;
   display: flex;
   align-items: center;
   gap: 1.2rem;
   margin-bottom: 0.8rem;
 
   svg {
-    color: var(--color-primary-500);
+    color: #D4882A;
   }
 `;
 
@@ -969,8 +987,8 @@ const Input = styled.input`
 
   &:focus {
     outline: none;
-    border-color: var(--color-primary-500);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    border-color: #D4882A;
+    box-shadow: 0 0 0 3px rgba(212, 136, 42, 0.15);
   }
 
   &::placeholder {
@@ -993,8 +1011,8 @@ const Select = styled.select`
 
   &:focus {
     outline: none;
-    border-color: var(--color-primary-500);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    border-color: #D4882A;
+    box-shadow: 0 0 0 3px rgba(212, 136, 42, 0.15);
   }
 
   &:disabled {
@@ -1014,8 +1032,8 @@ const Textarea = styled.textarea`
 
   &:focus {
     outline: none;
-    border-color: var(--color-primary-500);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    border-color: #D4882A;
+    box-shadow: 0 0 0 3px rgba(212, 136, 42, 0.15);
   }
 
   &::placeholder {
@@ -1034,18 +1052,20 @@ const LocationButton = styled.button`
   gap: 0.4rem;
   margin-left: auto;
   padding: 0.6rem 1rem;
-  background: var(--color-primary-500);
-  color: var(--color-white-0);
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
+  color: white;
   border: none;
   border-radius: 8px;
   font-size: 1.2rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: 0 2px 6px rgba(212, 136, 42, 0.3);
 
   &:hover:not(:disabled) {
-    background: var(--color-primary-600);
+    background: linear-gradient(135deg, #B8711F 0%, #D4882A 100%);
     transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(212, 136, 42, 0.4);
   }
 
   &:disabled {
@@ -1084,7 +1104,7 @@ const CheckboxLabel = styled.label`
   cursor: pointer;
 
   svg {
-    color: var(--color-primary-500);
+    color: #D4882A;
   }
 
   &:has(input:disabled) {
@@ -1144,7 +1164,7 @@ const AddAddressSection = styled.section``;
 
 const AddAddressCard = styled.div`
   background: var(--color-white-0);
-  border: 2px dashed var(--color-primary-300);
+  border: 2px dashed #f0c070;
   border-radius: 20px;
   padding: 3.2rem;
   text-align: center;
@@ -1156,23 +1176,24 @@ const AddAddressCard = styled.div`
   gap: 1.6rem;
 
   &:hover {
-    background: var(--color-primary-50);
-    border-color: var(--color-primary-500);
+    background: #fff7ed;
+    border-color: #D4882A;
     transform: translateY(-4px);
-    box-shadow: 0 8px 30px rgba(99, 102, 241, 0.15);
+    box-shadow: 0 8px 30px rgba(212, 136, 42, 0.15);
   }
 `;
 
 const AddIcon = styled.div`
   width: 6rem;
   height: 6rem;
-  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-white-0);
+  color: white;
   font-size: 2.4rem;
+  box-shadow: 0 4px 12px rgba(212, 136, 42, 0.35);
 `;
 
 const AddContent = styled.div``;
@@ -1208,14 +1229,14 @@ const SectionHeader = styled.div`
 const SectionTitle = styled.h2`
   font-size: 2.4rem;
   font-weight: 700;
-  color: var(--color-grey-900);
+  color: #1a1f2e;
   display: flex;
   align-items: center;
   gap: 1.2rem;
   margin-bottom: 0.8rem;
 
   svg {
-    color: var(--color-primary-500);
+    color: #D4882A;
   }
 `;
 
@@ -1225,8 +1246,8 @@ const SectionDescription = styled.p`
 `;
 
 const CountBadge = styled.span`
-  background: var(--color-primary-500);
-  color: var(--color-white-0);
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
+  color: white;
   border-radius: 20px;
   padding: 0.4rem 1.2rem;
   font-size: 1.4rem;
@@ -1245,21 +1266,17 @@ const AddressGrid = styled.div`
 `;
 
 const AddressCard = styled.div`
-  background: var(--color-white-0);
-  border: 2px solid ${props =>
-    props.$isDefault ? 'var(--color-primary-200)' : 'var(--color-grey-200)'};
+  border: 2px solid ${props => props.$isDefault ? '#D4882A' : '#f0e8d8'};
   border-radius: 20px;
   padding: 2.4rem;
   position: relative;
   transition: all 0.3s;
-  background: ${props =>
-    props.$isDefault ? 'var(--color-primary-50)' : 'var(--color-white-0)'};
+  background: ${props => props.$isDefault ? '#fff7ed' : 'var(--color-white-0)'};
 
   &:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
-    border-color: ${props =>
-    props.$isDefault ? 'var(--color-primary-300)' : 'var(--color-primary-200)'};
+    box-shadow: 0 12px 40px rgba(212, 136, 42, 0.12);
+    border-color: #D4882A;
   }
 `;
 
@@ -1267,8 +1284,8 @@ const DefaultBadge = styled.div`
   position: absolute;
   top: 1.2rem;
   right: 1.2rem;
-  background: var(--color-primary-500);
-  color: var(--color-white-0);
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
+  color: white;
   padding: 0.6rem 1.2rem;
   border-radius: 20px;
   font-size: 1.2rem;
@@ -1276,13 +1293,18 @@ const DefaultBadge = styled.div`
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  box-shadow: 0 2px 8px rgba(212, 136, 42, 0.35);
 `;
 
 const AddressHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 1.2rem;
+  flex-wrap: wrap;
   margin-bottom: 1.6rem;
+  padding-bottom: 1.6rem;
+  border-bottom: 1px solid #f0e8d8;
 `;
 
 const AddressInfo = styled.div`
@@ -1304,21 +1326,26 @@ const AddressPhone = styled.p`
 
 const ActionButtons = styled.div`
   display: flex;
-  gap: 0.8rem;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
 `;
 
 const ActionButton = styled.button`
-  width: 3.2rem;
-  height: 3.2rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.2rem;
   background: var(--color-white-0);
   border: 1px solid var(--color-grey-300);
   border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 500;
   color: var(--color-grey-600);
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
 
   &:hover:not(:disabled) {
     transform: translateY(-1px);
@@ -1343,8 +1370,9 @@ const SetDefaultButton = styled(ActionButton)`
 
 const EditButton = styled(ActionButton)`
   &:hover:not(:disabled) {
-    color: var(--primary-700);
-    border-color: var(--color-primary-300);
+    color: #D4882A;
+    border-color: #D4882A;
+    background: #fff7ed;
   }
 `;
 
@@ -1453,18 +1481,20 @@ const AddButton = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 0.8rem;
-  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
-  color: var(--color-white-0);
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
+  color: white;
   border: none;
   padding: 1.2rem 2.4rem;
   border-radius: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(212, 136, 42, 0.3);
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 8px 25px rgba(212, 136, 42, 0.4);
+    background: linear-gradient(135deg, #B8711F 0%, #D4882A 100%);
   }
 `;
 
@@ -1485,16 +1515,17 @@ const HelpText = styled.span`
 const RetryButton = styled.button`
   margin-top: 2rem;
   padding: 1rem 2rem;
-  background: var(--color-primary-500);
-  color: var(--color-white-0);
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
+  color: white;
   border: none;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(212, 136, 42, 0.3);
 
   &:hover {
-    background: var(--color-primary-600);
+    background: linear-gradient(135deg, #B8711F 0%, #D4882A 100%);
     transform: translateY(-1px);
   }
 `;

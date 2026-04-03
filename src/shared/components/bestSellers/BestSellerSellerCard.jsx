@@ -76,7 +76,16 @@ const AvatarContainer = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  background: ${({ $bgImage, $fallbackBg }) =>
+    $bgImage
+      ? `linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.88) 0%,
+          rgba(255, 255, 255, 0.72) 100%
+        ), url(${$bgImage})`
+      : $fallbackBg || 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)'};
+  background-size: cover;
+  background-position: center;
   padding: 2rem;
 `;
 
@@ -197,6 +206,28 @@ const ViewShopButton = styled(Link)`
 `;
 
 const BestSellerSellerCard = ({ seller, rank }) => {
+  const getFallbackBackground = (seed) => {
+    const palettes = [
+      'linear-gradient(135deg, #FFF8E1 0%, #FFECB3 100%)',
+      'linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%)',
+      'linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%)',
+      'linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 100%)',
+      'linear-gradient(135deg, #FCE4EC 0%, #F8BBD0 100%)',
+    ];
+    const key = String(seed || 'seller');
+    const hash = Array.from(key).reduce(
+      (acc, char) => acc + char.charCodeAt(0),
+      0
+    );
+    return palettes[hash % palettes.length];
+  };
+
+  const sellerBackgroundImage =
+    seller.backgroundImage || seller.coverImage || seller.bannerImage || null;
+  const fallbackBackground = getFallbackBackground(
+    seller._id || seller.id || seller.shopName || seller.name
+  );
+
   const stars = Array.from({ length: 5 }, (_, i) => (
     <FaStar
       key={i}
@@ -215,7 +246,10 @@ const BestSellerSellerCard = ({ seller, rank }) => {
         {rank <= 3 ? <CrownIcon /> : `#${rank}`}
       </RankingBadge>
 
-      <AvatarContainer>
+      <AvatarContainer
+        $bgImage={sellerBackgroundImage}
+        $fallbackBg={fallbackBackground}
+      >
         <SellerAvatar
           src={getOptimizedImageUrl(seller.avatar || seller.logo, IMAGE_SLOTS.AVATAR, `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23ffc400' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='40' font-weight='bold'%3E${(seller.shopName || seller.name || 'Shop').charAt(0).toUpperCase()}%3C/text%3E%3C/svg%3E`)}
           alt={seller.shopName || seller.name || 'Seller'}

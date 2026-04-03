@@ -15,9 +15,9 @@ const Logo = ({
   const logoContent = (
     <LogoContainer className={className} $variant={variant} {...props}>
       <LogoIcon $variant={variant}>
-        {/* Use shared PNG logo from public folder */}
+        {/* Use provided Saiisai PNG logo from public folder */}
         <img
-          src="/saiisailogo.png"
+          src="/newSaiisaiLogo.png"
           alt="Saiisai – Ghana e-commerce and online shopping logo"
           style={{ width: "100%", height: "100%", objectFit: "contain" }}
           loading="eager"

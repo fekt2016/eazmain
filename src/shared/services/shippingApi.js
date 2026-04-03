@@ -2,6 +2,15 @@ import api from './api';
 import logger from '../utils/logger';
 
 const shippingService = {
+  /**
+   * Public: platform free-delivery minimum (GHS), or null if not configured.
+   * GET /api/v1/shipping/free-delivery
+   */
+  getFreeDeliveryInfo: async () => {
+    const response = await api.get('/shipping/free-delivery');
+    return response.data;
+  },
+
   // Get active pickup centers
   getPickupCenters: async (city = null) => {
     const params = city ? { city } : {};

@@ -477,23 +477,24 @@ export default ProductCard;
 const CardContainer = styled.div`
   position: relative;
   background: white;
-  border-radius: 1.2rem; /* Reduced from 1.6rem */
+  border-radius: 1.2rem;
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06); /* Reduced shadow */
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid var(--color-grey-100);
+  border: 1px solid #f0e8d8;
   display: flex;
   flex-direction: ${({ $layout }) => ($layout === "horizontal" ? "row" : "column")};
   height: 100%;
   width: 100%;
-  max-width: 320px; /* Prevent oversized cards */
+  max-width: 320px;
   margin: 0 auto;
   animation: ${fadeIn} 0.5s ease-out;
 
   &:hover {
-    transform: translateY(-4px); 
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08); 
-    
+    transform: translateY(-4px);
+    box-shadow: 0 8px 28px rgba(212, 136, 42, 0.16);
+    border-color: #D4882A;
+
     .image-overlay {
       opacity: 1;
     }
@@ -626,8 +627,8 @@ const DiscountBadge = styled(Badge)`
 `;
 
 const TrendingBadge = styled(Badge)`
-  background: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-700) 100%);
-  color: var(--color-white-0);
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
+  color: white;
   display: flex;
   align-items: center;
   gap: 0.3rem;
@@ -745,10 +746,10 @@ const ProductCategory = styled.span`
 `;
 
 const ProductBrand = styled.span`
-  font-size: 1.1rem; /* Reduced from 1.3rem */
-  color: var(--primary-700);
+  font-size: 1.1rem;
+  color: #D4882A;
   font-weight: 600;
-  margin-bottom: 0.1rem; /* Reduced from 0.2rem */
+  margin-bottom: 0.1rem;
 `;
 
 const ProductShopName = styled.span`
@@ -782,7 +783,7 @@ const ProductName = styled.h3`
   overflow: hidden;
 
   ${CardContainer}:hover & {
-    color: var(--color-primary-500);
+    color: #D4882A;
   }
 `;
 
@@ -818,9 +819,9 @@ const PriceSection = styled.div`
 `;
 
 const CurrentPrice = styled.span`
-  font-size: 1.35rem; 
+  font-size: 1.35rem;
   font-weight: 700;
-  color: var(--color-primary-500);
+  color: #D4882A;
 `;
 
 const OriginalPrice = styled.span`
@@ -830,9 +831,9 @@ const OriginalPrice = styled.span`
 `;
 
 const PriceRange = styled.span`
-  font-size: 1.5rem; /* Reduced from 1.8rem */
+  font-size: 1.5rem;
   font-weight: 800;
-  color: var(--color-primary-500);
+  color: #D4882A;
 `;
 
 const StockAndSoldRow = styled.div`

@@ -115,8 +115,11 @@ export default function CustomerReviewPage() {
       <HeaderSection>
         <HeaderContent>
           <TitleSection>
-            <Title>My Reviews</Title>
-            <Subtitle>Your feedback and ratings for purchased products</Subtitle>
+            <BannerIcon><FaStar /></BannerIcon>
+            <div>
+              <Title>My Reviews</Title>
+              <Subtitle>Your feedback and ratings for purchased products</Subtitle>
+            </div>
           </TitleSection>
 
           {reviewStats && (
@@ -294,62 +297,92 @@ export default function CustomerReviewPage() {
 
 // Modern Styled Components
 const PageContainer = styled.div`
-  max-width: 120rem;
-  margin: 0 auto;
-  padding: 2.4rem;
-
-  @media ${devicesMax.md} {
-    padding: 1.6rem;
-  }
+  width: 100%;
+  min-height: 100vh;
+  background: #f9f7f4;
+  font-family: "Inter", sans-serif;
 `;
 
+/* ── Banner ─────────────────── */
 const HeaderSection = styled.section`
-  margin-bottom: 3.2rem;
+  position: relative;
+  background: linear-gradient(135deg, #1a1f2e 0%, #2d3444 50%, #1a2035 100%);
+  overflow: hidden;
+  padding: 2.5rem 2rem;
+  margin-bottom: 2rem;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(212,136,42,0.12) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(212,136,42,0.15) 0%, transparent 60%);
+    pointer-events: none;
+  }
 `;
 
 const HeaderContent = styled.div`
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 2.4rem;
-
-  @media ${devicesMax.lg} {
-    flex-direction: column;
-    gap: 2rem;
-  }
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
 `;
 
 const TitleSection = styled.div`
-  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+`;
+
+const BannerIcon = styled.div`
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(212,136,42,0.2);
+  border: 2px solid rgba(212,136,42,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  color: #D4882A;
+  flex-shrink: 0;
 `;
 
 const Title = styled.h1`
-  font-size: 3.2rem;
-  font-weight: 800;
-  color: var(--color-grey-900);
-  margin-bottom: 0.8rem;
-  background: linear-gradient(135deg, var(--color-grey-900) 0%, var(--color-grey-700) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 0.2rem;
 
   @media ${devicesMax.md} {
-    font-size: 2.8rem;
+    font-size: 1.35rem;
   }
 `;
 
 const Subtitle = styled.p`
-  font-size: 1.6rem;
-  color: var(--color-grey-600);
-  max-width: 50rem;
+  font-size: 0.88rem;
+  color: rgba(255,255,255,0.6);
+  margin: 0;
 `;
 
 const StatsGrid = styled.div`
   display: flex;
-  gap: 1.6rem;
+  gap: 1rem;
 
   @media ${devicesMax.sm} {
-    flex-direction: column;
     width: 100%;
   }
 `;
@@ -357,29 +390,26 @@ const StatsGrid = styled.div`
 const StatCard = styled.div`
   display: flex;
   align-items: center;
-  gap: 1.2rem;
-  background: var(--color-white-0);
-  padding: 1.6rem;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-  border: 1px solid var(--color-grey-100);
-  min-width: 20rem;
-
-  @media ${devicesMax.sm} {
-    min-width: auto;
-  }
+  gap: 0.75rem;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(212,136,42,0.25);
+  padding: 0.85rem 1.25rem;
+  border-radius: 12px;
+  backdrop-filter: blur(6px);
+  min-width: 130px;
 `;
 
 const StatIcon = styled.div`
-  width: 4rem;
-  height: 4rem;
-  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
-  border-radius: 12px;
+  width: 34px;
+  height: 34px;
+  background: rgba(212,136,42,0.2);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-white-0);
-  font-size: 1.6rem;
+  color: #D4882A;
+  font-size: 1rem;
+  flex-shrink: 0;
 `;
 
 const StatContent = styled.div`
@@ -388,25 +418,30 @@ const StatContent = styled.div`
 `;
 
 const StatValue = styled.div`
-  font-size: 2.4rem;
+  font-size: 1.4rem;
   font-weight: 800;
-  color: var(--color-grey-900);
+  color: #ffffff;
   line-height: 1;
 `;
 
 const StatLabel = styled.div`
-  font-size: 1.2rem;
-  color: var(--color-grey-600);
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.6);
   font-weight: 500;
-  margin-top: 0.4rem;
+  margin-top: 0.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 `;
 
 const ContentSection = styled.section`
-  background: var(--color-white-0);
-  border-radius: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-  border: 1px solid var(--color-grey-100);
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f0e8d8;
   overflow: hidden;
+  max-width: 1200px;
+  margin: 0 auto 2rem;
+  padding: 0 1.5rem 1.5rem;
 `;
 
 const ReviewContent = styled.div`
@@ -470,17 +505,17 @@ const ReviewGrid = styled.div`
 `;
 
 const ReviewCard = styled.div`
-  background: var(--color-white-0);
-  border-radius: 20px;
-  border: 1px solid var(--color-grey-200);
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #f0e8d8;
   overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.25s ease;
   position: relative;
 
   &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
-    border-color: var(--color-primary-200);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    border-color: rgba(212,136,42,0.4);
   }
 `;
 
@@ -659,10 +694,10 @@ const EditButton = styled.button`
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  background: var(--color-white-0);
-  color: var(--color-grey-700);
-  border: 1px solid var(--color-grey-300);
-  padding: 0.6rem 1.2rem;
+  background: #ffffff;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem 1rem;
   border-radius: 8px;
   font-size: 1.2rem;
   font-weight: 500;
@@ -670,9 +705,9 @@ const EditButton = styled.button`
   transition: all 0.2s;
 
   &:hover {
-    background: var(--color-primary-50);
-    border-color: var(--color-primary-500);
-    color: var(--primary-700);
+    background: rgba(212,136,42,0.08);
+    border-color: #D4882A;
+    color: #D4882A;
   }
 
   svg {
@@ -750,8 +785,8 @@ const StepItem = styled.div`
 const StepNumber = styled.div`
   width: 3.2rem;
   height: 3.2rem;
-  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
-  color: var(--color-white-0);
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
+  color: #ffffff;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -794,18 +829,19 @@ const PrimaryButton = styled.button`
   display: flex;
   align-items: center;
   gap: 0.8rem;
-  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
-  color: var(--color-white-0);
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
+  color: #ffffff;
   border: none;
   padding: 1.2rem 2.4rem;
   border-radius: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: 0 4px 14px rgba(212,136,42,0.3);
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 8px 25px rgba(212,136,42,0.4);
   }
 
   svg {

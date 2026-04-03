@@ -51,6 +51,36 @@ export const FRONTEND_URL = (() => {
 // Data Deletion Instructions URL (canonical buyer app URL)
 export const DATA_DELETION_URL = `${FRONTEND_URL}/data-deletion`;
 
+// Seller dashboard (eazseller web) — marketing links, promos
+export const SELLER_APP_URL =
+  readEnv('VITE_SELLER_APP_URL') || 'https://seller.saiisai.com';
+
+/** Fallback (GHS) for cart “free shipping” messaging if /shipping/free-delivery fails; API value wins when set in admin. */
+export const FREE_SHIPPING_MIN_FALLBACK_GHS = (() => {
+  const raw = readEnv('VITE_FREE_SHIPPING_MIN_GHS');
+  const n = raw != null && raw !== '' ? parseFloat(String(raw), 10) : NaN;
+  return Number.isFinite(n) && n > 0 ? n : 100;
+})();
+
+/**
+ * Checkout “Bank transfer” instructions (buyer web). Override via VITE_* in .env.
+ * Buyer mobile mirrors these with EXPO_PUBLIC_CHECKOUT_BANK_* (see saiisai/src/config/checkoutBankTransfer.js).
+ * Defaults match previous hardcoded values.
+ */
+const checkoutBankStr = (key, fallback) => {
+  const v = readEnv(key);
+  const s = v != null ? String(v).trim() : '';
+  return s !== '' ? s : fallback;
+};
+
+export const CHECKOUT_BANK_TRANSFER = (() => ({
+  bankName: checkoutBankStr('VITE_CHECKOUT_BANK_NAME', 'CBG Bank'),
+  branch: checkoutBankStr('VITE_CHECKOUT_BANK_BRANCH', 'Nima Branch'),
+  accountName: checkoutBankStr('VITE_CHECKOUT_BANK_ACCOUNT_NAME', 'EasyworldPc'),
+  accountNumber: checkoutBankStr('VITE_CHECKOUT_BANK_ACCOUNT_NUMBER', '2297931640001'),
+  reference: checkoutBankStr('VITE_CHECKOUT_BANK_REFERENCE', 'Your Order Number'),
+}))();
+
 // Optional: Google Maps API key
 export const GOOGLE_MAPS_API_KEY = readEnv("VITE_GOOGLE_MAPS_API_KEY");
 
@@ -61,7 +91,10 @@ const appConfig = {
   TIKTOK_PIXEL_ID,
   FRONTEND_URL,
   DATA_DELETION_URL,
+  SELLER_APP_URL,
   GOOGLE_MAPS_API_KEY,
+  FREE_SHIPPING_MIN_FALLBACK_GHS,
+  CHECKOUT_BANK_TRANSFER,
 };
 
 export default appConfig;

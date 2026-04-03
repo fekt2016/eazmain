@@ -295,8 +295,7 @@ const PublicSellerProfile = () => {
             </EmptyState>
           ) : (
             <Grid
-              variant="products"
-              $mobileTwoColumns={true}
+              columns={4}
               style={{ marginTop: '1rem' }}
             >
               {products.map((product) => (
@@ -368,7 +367,7 @@ export default PublicSellerProfile;
 // Modern Styled Components
 const ProfileContainer = styled.div`
   min-height: 100vh;
-  background: #f8fafc;
+  background: #f9f7f4;
   width: 100%;
 `;
 
@@ -403,15 +402,17 @@ const NotFoundIcon = styled.div`
 const BackButton = styled(Link)`
   margin-top: 1rem;
   padding: 0.75rem 1.5rem;
-  background: var(--color-primary-500, #ffc400);
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
   color: white;
   text-decoration: none;
   border-radius: 8px;
   font-weight: 600;
-  transition: background 0.2s;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(212, 136, 42, 0.3);
 
   &:hover {
-    background: var(--color-primary-600, #e29800);
+    background: linear-gradient(135deg, #B8711F 0%, #D4882A 100%);
+    box-shadow: 0 4px 16px rgba(212, 136, 42, 0.4);
   }
 `;
 
@@ -426,7 +427,7 @@ const Banner = styled.div`
   background-image: url(${(props) => props.bgImage});
   background-size: cover;
   background-position: center;
-  background-color: #f1f5f9;
+  background-color: #1a1f2e;
 
   @media (max-width: 768px) {
     height: 250px;
@@ -439,7 +440,22 @@ const BannerOverlay = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(99, 102, 241, 0.8) 100%);
+  background: linear-gradient(135deg, rgba(26, 31, 46, 0.92) 0%, rgba(45, 52, 68, 0.88) 100%);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(212, 136, 42, 0.18) 0%, transparent 60%);
+  }
 `;
 
 const HeaderContent = styled.div`
@@ -471,10 +487,10 @@ const Avatar = styled.img`
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  border: 4px solid white;
+  border: 4px solid #D4882A;
   object-fit: cover;
   background: white;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(212, 136, 42, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
 
   @media (max-width: 768px) {
     width: 100px;
@@ -567,9 +583,11 @@ const ActionButtons = styled.div`
 
 const FollowButton = styled.button`
   padding: 0.75rem 1.5rem;
-  background: ${props => props.$isFollowing ? '#10b981' : 'transparent'};
-  color: ${props => props.$isFollowing ? 'white' : 'white'};
-  border: 2px solid white;
+  background: ${props => props.$isFollowing
+    ? 'linear-gradient(135deg, #D4882A 0%, #f0a845 100%)'
+    : 'transparent'};
+  color: white;
+  border: 2px solid ${props => props.$isFollowing ? '#D4882A' : 'rgba(255,255,255,0.7)'};
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
@@ -579,9 +597,13 @@ const FollowButton = styled.button`
   gap: 0.5rem;
   transition: all 0.2s;
   min-width: 120px;
+  box-shadow: ${props => props.$isFollowing ? '0 4px 12px rgba(212,136,42,0.4)' : 'none'};
 
   &:hover {
-    background: ${props => props.$isFollowing ? '#059669' : 'rgba(255, 255, 255, 0.1)'};
+    background: ${props => props.$isFollowing
+      ? 'linear-gradient(135deg, #B8711F 0%, #D4882A 100%)'
+      : 'rgba(212, 136, 42, 0.15)'};
+    border-color: #D4882A;
   }
 
   &:disabled {
@@ -592,9 +614,9 @@ const FollowButton = styled.button`
 
 const ShareButton = styled.button`
   padding: 0.75rem 1.5rem;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
   color: white;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.25);
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
@@ -604,9 +626,11 @@ const ShareButton = styled.button`
   gap: 0.5rem;
   transition: all 0.2s;
   min-width: 120px;
+  backdrop-filter: blur(4px);
 
   &:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(212, 136, 42, 0.2);
+    border-color: rgba(212, 136, 42, 0.6);
   }
 `;
 
@@ -639,7 +663,8 @@ const StatsCard = styled.div`
   background: white;
   border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f0e8d8;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
   display: flex;
   justify-content: space-around;
   align-items: center;
@@ -652,7 +677,7 @@ const StatItem = styled.div`
 const StatNumber = styled.div`
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1e293b;
+  color: #D4882A;
 `;
 
 const StatLabel = styled.div`
@@ -664,21 +689,24 @@ const StatLabel = styled.div`
 const StatDivider = styled.div`
   width: 1px;
   height: 40px;
-  background: #e2e8f0;
+  background: #f0e8d8;
 `;
 
 const InfoCard = styled.div`
   background: white;
   border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f0e8d8;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
 `;
 
 const CardTitle = styled.h3`
   font-size: 1.125rem;
   font-weight: 600;
-  color: #1e293b;
+  color: #1a1f2e;
   margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #f0e8d8;
 `;
 
 const Description = styled.p`
@@ -701,7 +729,7 @@ const InfoListItem = styled.div`
   font-size: 0.9rem;
 
   svg {
-    color: #94a3b8;
+    color: #D4882A;
   }
 `;
 
@@ -726,7 +754,7 @@ const SectionHeader = styled.div`
 const SectionTitle = styled.h2`
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1e293b;
+  color: #1a1f2e;
   margin-bottom: 0.5rem;
 `;
 
@@ -742,7 +770,7 @@ const SortFilter = styled.div`
 
 const FilterButton = styled.button`
   padding: 0.5rem 1rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #f0e8d8;
   background: white;
   border-radius: 6px;
   color: #64748b;
@@ -751,7 +779,9 @@ const FilterButton = styled.button`
   transition: all 0.2s;
 
   &:hover {
-    border-color: #cbd5e1;
+    border-color: #D4882A;
+    color: #D4882A;
+    background: #fff7ed;
   }
 `;
 
@@ -760,7 +790,8 @@ const EmptyState = styled.div`
   padding: 4rem 2rem;
   background: white;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f0e8d8;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
 `;
 
 const EmptyIcon = styled.div`
@@ -783,7 +814,7 @@ const SimilarSellersHeader = styled.div`
 const SimilarSellersTitle = styled.h2`
   font-size: 1.75rem;
   font-weight: 700;
-  color: #1e293b;
+  color: #1a1f2e;
   margin-bottom: 0.5rem;
 `;
 
@@ -807,7 +838,8 @@ const SimilarSellerCard = styled(Link)`
   background: white;
   border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f0e8d8;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   transition: all 0.3s ease;
   text-decoration: none;
   color: inherit;
@@ -818,7 +850,9 @@ const SimilarSellerCard = styled(Link)`
 
   &:hover {
     transform: translateY(-4px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    border-color: #D4882A;
+    box-shadow: 0 8px 24px rgba(212, 136, 42, 0.18);
+    background: #fff7ed;
   }
 `;
 
@@ -827,9 +861,14 @@ const SimilarSellerAvatar = styled.img`
   height: 80px;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid #e2e8f0;
+  border: 3px solid #f0e8d8;
   margin-bottom: 1rem;
-  background: #f1f5f9;
+  background: #fff7ed;
+  transition: border-color 0.3s ease;
+
+  ${SimilarSellerCard}:hover & {
+    border-color: #D4882A;
+  }
 `;
 
 const SimilarSellerInfo = styled.div`
@@ -839,7 +878,7 @@ const SimilarSellerInfo = styled.div`
 const SimilarSellerName = styled.h3`
   font-size: 1rem;
   font-weight: 600;
-  color: #1e293b;
+  color: #1a1f2e;
   margin-bottom: 0.5rem;
   display: -webkit-box;
   -webkit-line-clamp: 1;

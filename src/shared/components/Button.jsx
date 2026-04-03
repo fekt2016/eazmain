@@ -4,53 +4,50 @@ import LoadingSpinner from "./LoadingSpinner";
 
 const sizeStyles = {
   xs: css`
-    padding: var(--spacing-xs);
-    font-size: var(--font-size-xs);
-    border-radius: var(--border-radius-sm);
+    padding: 1rem;
+    font-size: 0.8rem;
+    border-radius: 6px;
     min-height: 2.4rem;
   `,
   sm: css`
-    padding: var(--spacing-xs) var(--spacing-sm);
-    font-size: var(--font-size-sm);
-    border-radius: var(--border-radius-sm);
+    padding: 1rem 1rem;
+    font-size: 0.875rem;
+    border-radius: 6px;
     min-height: 3.2rem;
   `,
   md: css`
-    padding: var(--spacing-sm) var(--spacing-md);
-    font-size: var(--font-size-md);
-    border-radius: var(--border-radius-md);
+    padding: 1rem 1rem;
+    font-size: 0.9rem;
+    border-radius: 9px;
     min-height: 4rem;
   `,
   lg: css`
-    padding: var(--spacing-md) var(--spacing-lg);
-    font-size: var(--font-size-lg);
-    border-radius: var(--border-radius-lg);
+    padding: 1rem 1rem;
+    font-size: 1.1rem;
+    border-radius: 12px;
     min-height: 4.8rem;
   `,
 };
 
 const variantStyles = {
   primary: css`
-    background-color: var(--color-button-primary);
-    color: var(--color-white-0);
+    background-color: #E8920A;
+    color: #FFFFFF;
     border: none;
     &:hover:not(:disabled) {
-      background-color: var(--color-button-primary-hover);
+      background-color: #E8920A;
       transform: translateY(-1px);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
     }
     &:active:not(:disabled) {
-      background-color: var(--color-button-primary-hover);
       transform: translateY(0);
     }
   `,
   secondary: css`
-    background-color: var(--color-white-0);
-    color: var(--primary-700);
-    border: 1px solid var(--color-primary-300);
+    background-color: #1F2937;
+    color: #FFFFFF;
+    border: none;
     &:hover:not(:disabled) {
-      background-color: var(--color-primary-50);
-      border-color: var(--color-primary-400);
+      background-color: #374151;
       transform: translateY(-1px);
     }
     &:active:not(:disabled) {
@@ -59,19 +56,19 @@ const variantStyles = {
   `,
   outline: css`
     background-color: transparent;
-    color: var(--color-grey-700);
-    border: 1px solid var(--color-grey-300);
+    color: #374151;
+    border: 1px solid #E5E7EB;
     &:hover:not(:disabled) {
-      background-color: var(--color-grey-50);
-      border-color: var(--color-grey-400);
+      background-color: #F9F8F5;
+      border-color: #D1D5DB;
     }
   `,
   danger: css`
-    background-color: var(--color-red-600);
-    color: var(--color-white-0);
+    background-color: #A32D2D;
+    color: #FFFFFF;
     border: none;
     &:hover:not(:disabled) {
-      background-color: var(--color-red-700);
+      background-color: #A32D2D;
       transform: translateY(-1px);
     }
     &:active:not(:disabled) {
@@ -80,18 +77,18 @@ const variantStyles = {
   `,
   ghost: css`
     background-color: transparent;
-    color: var(--color-grey-700);
+    color: #374151;
     border: none;
     &:hover:not(:disabled) {
-      background-color: var(--color-grey-100);
+      background-color: #F9F8F5;
     }
   `,
   success: css`
-    background-color: var(--color-green-700);
-    color: var(--color-white-0);
+    background-color: #3B6D11;
+    color: #FFFFFF;
     border: none;
     &:hover:not(:disabled) {
-      background-color: var(--color-green-500);
+      background-color: #3B6D11;
       transform: translateY(-1px);
     }
     &:active:not(:disabled) {
@@ -100,13 +97,13 @@ const variantStyles = {
   `,
   link: css`
     background-color: transparent;
-    color: var(--color-primary-500);
+    color: #E8920A;
     border: none;
     text-decoration: underline;
     padding: 0;
     min-height: auto;
     &:hover:not(:disabled) {
-      color: var(--primary-700);
+      color: #E8920A;
     }
   `,
 };
@@ -116,10 +113,9 @@ const ButtonStyled = styled.button`
   align-items: center;
   justify-content: center;
   gap: var(--spacing-xs);
-  font-weight: ${({ $weight }) => $weight || 'var(--font-semibold)'};
-  letter-spacing: 0.3px;
+  font-weight: ${({ $weight }) => $weight || 500};
   cursor: pointer;
-  transition: var(--transition-base);
+  transition: 0.12s;
   width: ${({ $fullWidth }) => ($fullWidth ? "100%" : "auto")};
   position: relative;
   white-space: nowrap;
@@ -132,7 +128,7 @@ const ButtonStyled = styled.button`
       width: ${$size === "xs" ? "2.4rem" : $size === "sm" ? "3.2rem" : $size === "md" ? "4rem" : "4.8rem"};
       height: ${$size === "xs" ? "2.4rem" : $size === "sm" ? "3.2rem" : $size === "md" ? "4rem" : "4.8rem"};
       padding: 0;
-      border-radius: ${({ $round }) => ($round ? "50%" : "var(--border-radius-md)")};
+      border-radius: ${({ $round }) => ($round ? "50%" : "9px")};
     `}
 
   ${({ $size }) => sizeStyles[$size || "md"]};
@@ -157,7 +153,7 @@ const ButtonStyled = styled.button`
   
   &:focus {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(255, 196, 0, 0.2);
+    box-shadow: 0 0 0 3px rgba(43, 122, 255, 0.2);
   }
   
   &:focus-visible {
@@ -167,14 +163,14 @@ const ButtonStyled = styled.button`
   
   @media ${devicesMax.sm} {
     font-size: ${({ $size }) => {
-    if ($size === "lg") return "var(--font-size-md)";
-    if ($size === "md") return "var(--font-size-sm)";
-    return "var(--font-size-xs)";
+    if ($size === "lg") return "0.9rem";
+    if ($size === "md") return "0.875rem";
+    return "0.8rem";
   }};
     padding: ${({ $size, $iconOnly }) => {
     if ($iconOnly) return "0";
-    if ($size === "lg") return "var(--spacing-sm) var(--spacing-md)";
-    return "var(--spacing-xs) var(--spacing-sm)";
+    if ($size === "lg") return "1rem 1rem";
+    return "1rem 1rem";
   }};
   }
 `;

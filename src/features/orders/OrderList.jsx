@@ -1,8 +1,7 @@
 import { useState, useMemo } from "react";
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 import {
   FaSearch,
-  FaFilter,
   FaShoppingBag,
   FaEye,
   FaEdit,
@@ -11,6 +10,11 @@ import {
   FaSort,
   FaSortUp,
   FaSortDown,
+  FaBoxOpen,
+  FaTruck,
+  FaCheckCircle,
+  FaTimesCircle,
+  FaClock,
 } from "react-icons/fa";
 import {
   useGetUserOrders,
@@ -25,45 +29,56 @@ import logger from "../../shared/utils/logger";
 import { useModal } from "../../shared/hooks/useModal";
 import { LoadingState, ErrorState } from "../../components/loading";
 
+const STATUS_FILTERS = [
+  { key: "all",        label: "All Orders",  icon: FaBoxOpen },
+  { key: "processing", label: "Processing",   icon: FaClock },
+  { key: "shipped",    label: "Shipped",      icon: FaTruck },
+  { key: "delivered",  label: "Delivered",    icon: FaCheckCircle },
+  { key: "cancelled",  label: "Cancelled",    icon: FaTimesCircle },
+];
+
 const OrdersPage = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortConfig, setSortConfig] = useState({
-    key: "date",
-    direction: "desc",
-  });
+  const [sortConfig, setSortConfig] = useState({ key: "date", direction: "desc" });
+
   const { data: ordersData, isLoading, error, isError } = useGetUserOrders();
   const { mutate: deleteOrder } = useDeleteOrder();
   const { showDanger, showAlert } = useModal();
 
   const orders = getOrderStructure(ordersData);
 
-  // Sort orders
+  /* ── Derived stats ── */
+  const stats = useMemo(() => {
+    const count = (status) =>
+      orders.filter((o) => getOrderDisplayStatus(o).badgeStatus === status).length;
+    return {
+      total:      orders.length,
+      processing: count("processing"),
+      delivered:  count("delivered"),
+      cancelled:  count("cancelled"),
+    };
+  }, [orders]);
+
+  /* ── Sort ── */
   const sortedOrders = useMemo(() => {
     return [...orders].sort((a, b) => {
       if (sortConfig.key === "date") {
-        const dateA = new Date(a.createdAt);
-        const dateB = new Date(b.createdAt);
-        return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
+        const dA = new Date(a.createdAt), dB = new Date(b.createdAt);
+        return sortConfig.direction === "asc" ? dA - dB : dB - dA;
       }
-
-      if (a[sortConfig.key] < b[sortConfig.key]) {
-        return sortConfig.direction === "asc" ? -1 : 1;
-      }
-      if (a[sortConfig.key] > b[sortConfig.key]) {
-        return sortConfig.direction === "asc" ? 1 : -1;
-      }
+      if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === "asc" ? -1 : 1;
+      if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === "asc" ? 1 : -1;
       return 0;
     });
   }, [orders, sortConfig]);
 
-  // Filter orders based on status and search term
+  /* ── Filter ── */
   const filteredOrders = useMemo(() => {
     return sortedOrders.filter((order) => {
       const { badgeStatus } = getOrderDisplayStatus(order);
-      const matchesFilter =
-        filter === "all" || badgeStatus === filter;
+      const matchesFilter = filter === "all" || badgeStatus === filter;
       const matchesSearch =
         (order.orderNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.user?.name?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -74,7 +89,7 @@ const OrdersPage = () => {
   const requestSort = (key) => {
     setSortConfig({
       key,
-      direction: sortConfig.key === key && sortConfig.direction === "asc" ? "desc" : "asc"
+      direction: sortConfig.key === key && sortConfig.direction === "asc" ? "desc" : "asc",
     });
   };
 
@@ -83,645 +98,649 @@ const OrdersPage = () => {
     return sortConfig.direction === "asc" ? <FaSortUp /> : <FaSortDown />;
   };
 
-  const handleView = (orderId) => navigate(`/orders/${orderId}`);
-  const handleEdit = (orderId) => logger.debug("Edit order:", orderId);
-  const handleDelete = (orderId) => {
+  const handleView   = (id) => navigate(`/orders/${id}`);
+  const handleEdit   = (id) => logger.debug("Edit order:", id);
+  const handleDelete = (id) => {
     showDanger({
-      title: "Delete Order?",
-      message: "Are you sure you want to delete this order?",
+      title: "Cancel Order?",
+      message: "Are you sure you want to cancel this order? This action cannot be undone.",
       onConfirm: () => {
-        deleteOrder(orderId, {
-          onSuccess: (response) => {
-            const message =
-              response?.data?.message ||
-              response?.message ||
-              "Order updated successfully.";
+        deleteOrder(id, {
+          onSuccess: (res) => {
             showAlert({
               title: "Order updated",
-              message: message,
-              variant: "success"
+              message: res?.data?.message || res?.message || "Order updated successfully.",
+              variant: "success",
             });
           },
-          onError: (error) => {
-            const backendMessage =
-              error?.response?.data?.message ||
-              error?.message ||
-              "Failed to update order.";
-
-            if (backendMessage === "This order can no longer be cancelled.") {
-              showAlert({
-                title: "Order cannot be cancelled",
-                message: "This order has already been paid or is being processed and can no longer be cancelled.",
-                variant: "error"
-              });
-            } else {
-              showAlert({
-                title: "Order update failed",
-                message: backendMessage,
-                variant: "error"
-              });
-            }
+          onError: (err) => {
+            const msg = err?.response?.data?.message || err?.message || "Failed to update order.";
+            showAlert({
+              title: msg === "This order can no longer be cancelled."
+                ? "Order cannot be cancelled"
+                : "Order update failed",
+              message: msg === "This order can no longer be cancelled."
+                ? "This order has already been paid or is being processed and can no longer be cancelled."
+                : msg,
+              variant: "error",
+            });
           },
         });
-      }
+      },
     });
   };
 
-  const formatOrderNumber = (orderNumber) => {
-    return orderNumber.length > 8 ? orderNumber.slice(-8) : orderNumber;
-  };
+  const formatOrderNumber = (n) => (n.length > 8 ? n.slice(-8) : n);
+  const formatDate = (d) =>
+    new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
+  /* ── Loading / Error ── */
+  if (isLoading) return (
+    <PageWrapper>
+      <PageBanner>
+        <BannerInner>
+          <BannerLeft>
+            <BannerIcon><FaShoppingBag /></BannerIcon>
+            <BannerText>
+              <PageTitle>My Orders</PageTitle>
+              <PageSubtitle>Track and manage your purchases</PageSubtitle>
+            </BannerText>
+          </BannerLeft>
+        </BannerInner>
+      </PageBanner>
+      <LoadingState message="Loading your orders…" />
+    </PageWrapper>
+  );
 
-  if (isLoading) {
-    return (
-      <OrdersPageContainer>
-        <PageHeader>
-          <HeaderContent>
-            <HeaderIcon>
-              <FaShoppingBag />
-            </HeaderIcon>
-            <HeaderText>
-              <PageTitle>Order Management</PageTitle>
-              <PageSubtitle>View and manage all customer orders</PageSubtitle>
-            </HeaderText>
-          </HeaderContent>
-        </PageHeader>
-        <LoadingState message="Loading your orders..." />
-      </OrdersPageContainer>
-    );
-  }
-
-  if (isError || error) {
-    return (
-      <OrdersPageContainer>
-        <PageHeader>
-          <HeaderContent>
-            <HeaderIcon>
-              <FaShoppingBag />
-            </HeaderIcon>
-            <HeaderText>
-              <PageTitle>Order Management</PageTitle>
-              <PageSubtitle>View and manage all customer orders</PageSubtitle>
-            </HeaderText>
-          </HeaderContent>
-        </PageHeader>
-        <ErrorState
-          message="Failed to load orders."
-          details={error?.message || "An unexpected error occurred while fetching your orders."}
-        />
-      </OrdersPageContainer>
-    );
-  }
+  if (isError || error) return (
+    <PageWrapper>
+      <PageBanner>
+        <BannerInner>
+          <BannerLeft>
+            <BannerIcon><FaShoppingBag /></BannerIcon>
+            <BannerText>
+              <PageTitle>My Orders</PageTitle>
+              <PageSubtitle>Track and manage your purchases</PageSubtitle>
+            </BannerText>
+          </BannerLeft>
+        </BannerInner>
+      </PageBanner>
+      <ErrorState message="Failed to load orders." details={error?.message} />
+    </PageWrapper>
+  );
 
   return (
-    <OrdersPageContainer>
-      {/* Header Section */}
-      <PageHeader>
-        <HeaderContent>
-          <HeaderIcon>
-            <FaShoppingBag />
-          </HeaderIcon>
-          <HeaderText>
-            <PageTitle>Order Management</PageTitle>
-            <PageSubtitle>View and manage all customer orders</PageSubtitle>
-          </HeaderText>
-        </HeaderContent>
-      </PageHeader>
+    <PageWrapper>
 
-      {/* Controls Section */}
-      <ControlsSection>
-        <SearchWrapper>
-          <SearchInputWrapper>
-            <SearchIcon>
-              <FaSearch />
-            </SearchIcon>
-            <SearchInput
-              type="text"
-              placeholder="Search orders..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </SearchInputWrapper>
-        </SearchWrapper>
+      {/* ── Banner Header ── */}
+      <PageBanner>
+        <BannerInner>
+          <BannerLeft>
+            <BannerIcon><FaShoppingBag /></BannerIcon>
+            <BannerText>
+              <PageTitle>My Orders</PageTitle>
+              <PageSubtitle>Track and manage your purchases</PageSubtitle>
+            </BannerText>
+          </BannerLeft>
+          <StatRow>
+            <StatPill>
+              <StatNum>{stats.total}</StatNum>
+              <StatName>Total</StatName>
+            </StatPill>
+            <StatDivider />
+            <StatPill $color="#f59e0b">
+              <StatNum>{stats.processing}</StatNum>
+              <StatName>Processing</StatName>
+            </StatPill>
+            <StatDivider />
+            <StatPill $color="#059669">
+              <StatNum>{stats.delivered}</StatNum>
+              <StatName>Delivered</StatName>
+            </StatPill>
+            <StatDivider />
+            <StatPill $color="#dc2626">
+              <StatNum>{stats.cancelled}</StatNum>
+              <StatName>Cancelled</StatName>
+            </StatPill>
+          </StatRow>
+        </BannerInner>
+      </PageBanner>
 
-        <FilterWrapper>
-          <FilterLabel>
-            <FaFilter />
-            Filter by:
-          </FilterLabel>
-          <FilterSelect
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-          >
-            <option value="all">All Orders</option>
-            <option value="processing">Processing</option>
-            <option value="shipped">Shipped</option>
-            <option value="delivered">Delivered</option>
-            <option value="cancelled">Cancelled</option>
-          </FilterSelect>
-        </FilterWrapper>
-      </ControlsSection>
+      {/* ── Controls ── */}
+      <ControlsBar>
+        <SearchBox>
+          <SearchIconWrap><FaSearch /></SearchIconWrap>
+          <SearchInput
+            type="text"
+            placeholder="Search by order number…"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </SearchBox>
 
-      {/* Orders Content */}
-      <ContentSection>
+        <FilterPills role="group" aria-label="Filter orders by status">
+          {STATUS_FILTERS.map(({ key, label, icon: Icon }) => (
+            <FilterPill
+              key={key}
+              $active={filter === key}
+              onClick={() => setFilter(key)}
+              type="button"
+            >
+              <Icon />
+              {label}
+            </FilterPill>
+          ))}
+        </FilterPills>
+      </ControlsBar>
+
+      {/* ── Content ── */}
+      <ContentCard>
         {filteredOrders.length === 0 ? (
           <EmptyState>
-            <EmptyIcon>
-              <FaFileAlt />
-            </EmptyIcon>
+            <EmptyIcon><FaFileAlt /></EmptyIcon>
             <EmptyTitle>No orders found</EmptyTitle>
-            <EmptyMessage>
+            <EmptyMsg>
               {searchTerm || filter !== "all"
-                ? "Try adjusting your search or filter criteria"
-                : "No orders have been placed yet"
-              }
-            </EmptyMessage>
+                ? "Try adjusting your search or filter."
+                : "You haven't placed any orders yet."}
+            </EmptyMsg>
+            {!searchTerm && filter === "all" && (
+              <ShopNowLink to={PATHS.PRODUCTS}>Start Shopping →</ShopNowLink>
+            )}
           </EmptyState>
         ) : (
           <>
-            {/* Desktop Table View */}
-            <TableContainer>
-              <OrdersTable>
-                <TableHead>
-                  <TableRow>
-                    <TableHeader
-                      $sortable
-                      onClick={() => requestSort("orderNumber")}
-                    >
-                      <HeaderContent>
-                        Order ID
-                        <SortIcon>{getSortIcon("orderNumber")}</SortIcon>
-                      </HeaderContent>
-                    </TableHeader>
-                    <TableHeader
-                      $sortable
-                      onClick={() => requestSort("date")}
-                    >
-                      <HeaderContent>
-                        Date
-                        <SortIcon>{getSortIcon("date")}</SortIcon>
-                      </HeaderContent>
-                    </TableHeader>
-                    <TableHeader>Items</TableHeader>
-                    <TableHeader>Tracking Number</TableHeader>
-                    <TableHeader
-                      $sortable
-                      onClick={() => requestSort("totalPrice")}
-                    >
-                      <HeaderContent>
-                        Total
-                        <SortIcon>{getSortIcon("totalPrice")}</SortIcon>
-                      </HeaderContent>
-                    </TableHeader>
-                    <TableHeader>Status</TableHeader>
-                    <TableHeader>Refund</TableHeader>
-                    <TableHeader>Actions</TableHeader>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredOrders.map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell>
-                        <OrderId>#{formatOrderNumber(order.orderNumber)}</OrderId>
-                      </TableCell>
-                      <TableCell>
-                        <OrderDate>{formatDate(order.createdAt)}</OrderDate>
-                      </TableCell>
-                      <TableCell>
-                        <ItemCount>{order.orderItems.length} items</ItemCount>
-                      </TableCell>
-                      <TableCell>
+            {/* ── Desktop Table ── */}
+            <TableScroll>
+              <Table>
+                <THead>
+                  <TR>
+                    <TH $sortable onClick={() => requestSort("orderNumber")}>
+                      Order ID <SortIcon>{getSortIcon("orderNumber")}</SortIcon>
+                    </TH>
+                    <TH $sortable onClick={() => requestSort("date")}>
+                      Date <SortIcon>{getSortIcon("date")}</SortIcon>
+                    </TH>
+                    <TH>Items</TH>
+                    <TH>Tracking</TH>
+                    <TH $sortable onClick={() => requestSort("totalPrice")}>
+                      Total <SortIcon>{getSortIcon("totalPrice")}</SortIcon>
+                    </TH>
+                    <TH>Status</TH>
+                    <TH>Refund</TH>
+                    <TH>Actions</TH>
+                  </TR>
+                </THead>
+                <tbody>
+                  {filteredOrders.map((order, i) => (
+                    <TR key={order.id} $even={i % 2 === 0}>
+                      <TD>
+                        <OrderNum>#{formatOrderNumber(order.orderNumber)}</OrderNum>
+                      </TD>
+                      <TD>
+                        <DateText>{formatDate(order.createdAt)}</DateText>
+                      </TD>
+                      <TD>
+                        <ItemBadge>{order.orderItems.length} item{order.orderItems.length !== 1 ? 's' : ''}</ItemBadge>
+                      </TD>
+                      <TD>
                         {order.trackingNumber ? (
                           <TrackingLink
                             onClick={() => navigate(`/tracking/${order.trackingNumber}`)}
-                            title={order.orderType === 'preorder_international' ? 'Track International Shipment' : 'Track Order'}
+                            title="Track order"
                           >
                             {order.trackingNumber}
                           </TrackingLink>
                         ) : (
-                          <TrackingPending>Pending...</TrackingPending>
+                          <TrackingPending>Pending…</TrackingPending>
                         )}
-                      </TableCell>
-                      <TableCell>
-                        <OrderTotal>GH₵{order.totalPrice.toFixed(2)}</OrderTotal>
-                      </TableCell>
-                      <TableCell>
+                      </TD>
+                      <TD>
+                        <TotalText>GH₵{order.totalPrice.toFixed(2)}</TotalText>
+                      </TD>
+                      <TD>
                         <StatusBadge
                           $bg={getOrderBadgeColors(getOrderStatusColorKey(order)).bg}
                           $fg={getOrderBadgeColors(getOrderStatusColorKey(order)).color}
                         >
                           {getOrderDisplayStatus(order).displayLabel}
                         </StatusBadge>
-                      </TableCell>
-                      <TableCell>
+                      </TD>
+                      <TD>
                         {order.refundRequested && (
-                          <Link
-                            to={PATHS.REFUND_DETAIL.replace(':orderId', order.id || order._id)}
-                            style={{ textDecoration: 'none' }}
-                            title="Click to view refund details"
-                          >
-                            <RefundBadge $status={order.refundStatus} $clickable>
-                              {order.refundStatus === 'pending' && 'Refund Pending'}
-                              {order.refundStatus === 'approved' && 'Refund Approved'}
-                              {order.refundStatus === 'rejected' && 'Refund Rejected'}
+                          <Link to={PATHS.REFUND_DETAIL.replace(':orderId', order.id || order._id)} style={{ textDecoration: 'none' }}>
+                            <RefundBadge $status={order.refundStatus}>
+                              {order.refundStatus === 'pending'    && 'Refund Pending'}
+                              {order.refundStatus === 'approved'   && 'Refund Approved'}
+                              {order.refundStatus === 'rejected'   && 'Refund Rejected'}
                               {order.refundStatus === 'processing' && 'Refund Processing'}
-                              {order.refundStatus === 'completed' && 'Refund Completed'}
-                              {!order.refundStatus && 'Refund Requested'}
+                              {order.refundStatus === 'completed'  && 'Refund Completed'}
+                              {!order.refundStatus                 && 'Refund Requested'}
                               {' →'}
                             </RefundBadge>
                           </Link>
                         )}
-                      </TableCell>
-                      <TableCell>
-                        <ActionButtons>
-                          <ActionButton
-                            $variant="view"
-                            onClick={() => handleView(order.id)}
-                            title="View Details"
-                          >
-                            <FaEye />
-                          </ActionButton>
-                          <ActionButton
-                            $variant="edit"
-                            onClick={() => handleEdit(order.id)}
-                            title="Edit Order"
-                          >
-                            <FaEdit />
-                          </ActionButton>
-                          <ActionButton
-                            $variant="delete"
-                            onClick={() => handleDelete(order.id)}
-                            title="Delete Order"
-                          >
-                            <FaTrash />
-                          </ActionButton>
-                        </ActionButtons>
-                      </TableCell>
-                    </TableRow>
+                      </TD>
+                      <TD>
+                        <ActionRow>
+                          <IconBtn $variant="view"   onClick={() => handleView(order.id)}   title="View details"><FaEye /></IconBtn>
+                          <IconBtn $variant="edit"   onClick={() => handleEdit(order.id)}   title="Edit order"><FaEdit /></IconBtn>
+                          <IconBtn $variant="delete" onClick={() => handleDelete(order.id)} title="Cancel order"><FaTrash /></IconBtn>
+                        </ActionRow>
+                      </TD>
+                    </TR>
                   ))}
-                </TableBody>
-              </OrdersTable>
-            </TableContainer>
+                </tbody>
+              </Table>
+            </TableScroll>
 
-            {/* Mobile Card View */}
-            <MobileOrdersList>
+            {/* ── Mobile Cards ── */}
+            <MobileList>
               {filteredOrders.map((order) => (
-                <OrderCard key={order.id}>
-                  <CardHeader>
-                    <OrderInfo>
-                      <OrderId>#{formatOrderNumber(order.orderNumber)}</OrderId>
-                      <OrderDate>{formatDate(order.createdAt)}</OrderDate>
-                    </OrderInfo>
+                <MobileCard key={order.id}>
+                  <MobileCardTop>
+                    <MobileOrderMeta>
+                      <OrderNum>#{formatOrderNumber(order.orderNumber)}</OrderNum>
+                      <DateText>{formatDate(order.createdAt)}</DateText>
+                    </MobileOrderMeta>
                     <StatusBadge
                       $bg={getOrderBadgeColors(getOrderStatusColorKey(order)).bg}
                       $fg={getOrderBadgeColors(getOrderStatusColorKey(order)).color}
                     >
                       {getOrderDisplayStatus(order).displayLabel}
                     </StatusBadge>
-                  </CardHeader>
+                  </MobileCardTop>
 
-                  <CardBody>
-                    <OrderDetails>
-                      <DetailItem>
-                        <DetailLabel>Items</DetailLabel>
-                        <DetailValue>{order.orderItems.length} items</DetailValue>
-                      </DetailItem>
-                      <DetailItem>
-                        <DetailLabel>Tracking Number</DetailLabel>
-                        <DetailValue>
+                  <MobileCardBody>
+                    <MobileDetailGrid>
+                      <MobileDetailItem>
+                        <MobileDetailLabel>Items</MobileDetailLabel>
+                        <MobileDetailValue>{order.orderItems.length} item{order.orderItems.length !== 1 ? 's' : ''}</MobileDetailValue>
+                      </MobileDetailItem>
+                      <MobileDetailItem>
+                        <MobileDetailLabel>Total</MobileDetailLabel>
+                        <MobileDetailValue $gold>GH₵{order.totalPrice.toFixed(2)}</MobileDetailValue>
+                      </MobileDetailItem>
+                      <MobileDetailItem $full>
+                        <MobileDetailLabel>Tracking</MobileDetailLabel>
+                        <MobileDetailValue>
                           {order.trackingNumber ? (
-                            <TrackingLink
-                              onClick={() => navigate(`/tracking/${order.trackingNumber}`)}
-                              title={order.orderType === 'preorder_international' ? 'Track International Shipment' : 'Track Order'}
-                            >
+                            <TrackingLink onClick={() => navigate(`/tracking/${order.trackingNumber}`)}>
                               {order.trackingNumber}
                             </TrackingLink>
                           ) : (
-                            <TrackingPending>Pending...</TrackingPending>
+                            <TrackingPending>Pending…</TrackingPending>
                           )}
-                        </DetailValue>
-                      </DetailItem>
-                      <DetailItem>
-                        <DetailLabel>Total</DetailLabel>
-                        <DetailValue>GH₵{order.totalPrice.toFixed(2)}</DetailValue>
-                      </DetailItem>
+                        </MobileDetailValue>
+                      </MobileDetailItem>
                       {order.refundRequested && (
-                        <DetailItem>
-                          <DetailLabel>Refund</DetailLabel>
-                          <DetailValue>
-                            <Link
-                              to={PATHS.REFUND_DETAIL.replace(':orderId', order.id || order._id)}
-                              style={{ textDecoration: 'none' }}
-                              title="Click to view refund details"
-                            >
-                              <RefundBadge $status={order.refundStatus} $clickable>
-                                {order.refundStatus === 'pending' && 'Refund Pending'}
-                                {order.refundStatus === 'approved' && 'Refund Approved'}
-                                {order.refundStatus === 'rejected' && 'Refund Rejected'}
+                        <MobileDetailItem $full>
+                          <MobileDetailLabel>Refund</MobileDetailLabel>
+                          <MobileDetailValue>
+                            <Link to={PATHS.REFUND_DETAIL.replace(':orderId', order.id || order._id)} style={{ textDecoration: 'none' }}>
+                              <RefundBadge $status={order.refundStatus}>
+                                {order.refundStatus === 'pending'    && 'Refund Pending'}
+                                {order.refundStatus === 'approved'   && 'Refund Approved'}
+                                {order.refundStatus === 'rejected'   && 'Refund Rejected'}
                                 {order.refundStatus === 'processing' && 'Refund Processing'}
-                                {order.refundStatus === 'completed' && 'Refund Completed'}
-                                {!order.refundStatus && 'Refund Requested'}
+                                {order.refundStatus === 'completed'  && 'Refund Completed'}
+                                {!order.refundStatus                 && 'Refund Requested'}
                                 {' →'}
                               </RefundBadge>
                             </Link>
-                          </DetailValue>
-                        </DetailItem>
+                          </MobileDetailValue>
+                        </MobileDetailItem>
                       )}
-                    </OrderDetails>
-                  </CardBody>
+                    </MobileDetailGrid>
+                  </MobileCardBody>
 
-                  <CardActions>
-                    <ActionButtons>
-                      <ActionButton
-                        $variant="view"
-                        onClick={() => handleView(order.id)}
-                        title="View Details"
-                      >
-                        <FaEye />
-                        <span>View</span>
-                      </ActionButton>
-                      <ActionButton
-                        $variant="edit"
-                        onClick={() => handleEdit(order.id)}
-                        title="Edit Order"
-                      >
-                        <FaEdit />
-                        <span>Edit</span>
-                      </ActionButton>
-                      <ActionButton
-                        $variant="delete"
-                        onClick={() => handleDelete(order.id)}
-                        title="Delete Order"
-                      >
-                        <FaTrash />
-                        <span>Delete</span>
-                      </ActionButton>
-                    </ActionButtons>
-                  </CardActions>
-                </OrderCard>
+                  <MobileCardActions>
+                    <MobileActionBtn $variant="view"   onClick={() => handleView(order.id)}>
+                      <FaEye /> View
+                    </MobileActionBtn>
+                    <MobileActionBtn $variant="edit"   onClick={() => handleEdit(order.id)}>
+                      <FaEdit /> Edit
+                    </MobileActionBtn>
+                    <MobileActionBtn $variant="delete" onClick={() => handleDelete(order.id)}>
+                      <FaTrash /> Cancel
+                    </MobileActionBtn>
+                  </MobileCardActions>
+                </MobileCard>
               ))}
-            </MobileOrdersList>
+            </MobileList>
           </>
         )}
-      </ContentSection>
+      </ContentCard>
 
-      {/* Footer */}
+      {/* ── Footer ── */}
       {filteredOrders.length > 0 && (
         <TableFooter>
-          <PaginationInfo>
-            Showing {filteredOrders.length} of {orders.length} orders
-          </PaginationInfo>
-          {/* Pagination controls can be implemented here */}
+          <FooterCount>
+            Showing <strong>{filteredOrders.length}</strong> of <strong>{orders.length}</strong> orders
+          </FooterCount>
         </TableFooter>
       )}
-    </OrdersPageContainer>
+    </PageWrapper>
   );
 };
 
-// Styled Components using Global Design System
-const OrdersPageContainer = styled.div`
+export default OrdersPage;
+
+/* ─── Animations ─────────────────────────────────────────── */
+const fadeUp = keyframes`
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
+
+/* ─── Layout ─────────────────────────────────────────────── */
+const PageWrapper = styled.div`
   max-width: 1200px;
   margin: 0 auto;
-  padding: var(--spacing-xl);
-  background: var(--color-grey-50);
+  padding: 2rem 1.5rem 3rem;
   min-height: 100vh;
+  animation: ${fadeUp} 0.35s ease;
 
   @media (max-width: 768px) {
-    padding: var(--spacing-md);
+    padding: 1rem 0.75rem 2rem;
   }
 `;
 
-const PageHeader = styled.div`
-  background: var(--color-white-0);
-  border-radius: var(--border-radius-lg);
-  padding: var(--spacing-xl);
-  margin-bottom: var(--spacing-lg);
-  box-shadow: var(--shadow-sm);
+/* ─── Banner ─────────────────────────────────────────────── */
+const PageBanner = styled.div`
+  background: linear-gradient(135deg, #1A1F2E 0%, #2d3444 55%, #1a2035 100%);
+  border-radius: 16px;
+  padding: 1.75rem 2rem;
+  margin-bottom: 1.25rem;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(212,136,42,0.1) 1px, transparent 1px);
+    background-size: 26px 26px;
+    pointer-events: none;
+  }
+
+  @media (max-width: 768px) {
+    padding: 1.25rem 1rem;
+    border-radius: 12px;
+  }
 `;
 
-const HeaderContent = styled.div`
+const BannerInner = styled.div`
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
 `;
 
-const HeaderIcon = styled.div`
-  width: 48px;
-  height: 48px;
-  border-radius: var(--border-radius-lg);
-  background: var(--gradient-primary);
+const BannerLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+`;
+
+const BannerIcon = styled.div`
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: rgba(212, 136, 42, 0.18);
+  border: 1px solid rgba(212, 136, 42, 0.3);
+  color: #f0a845;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-white-0);
-  font-size: var(--font-size-lg);
+  font-size: 1.3rem;
+  flex-shrink: 0;
 `;
 
-const HeaderText = styled.div`
-  flex: 1;
-`;
+const BannerText = styled.div``;
 
 const PageTitle = styled.h1`
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-bold);
-  color: var(--color-grey-900);
-  margin-bottom: var(--spacing-xs);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 0.2rem;
+  line-height: 1.2;
 `;
 
 const PageSubtitle = styled.p`
-  color: var(--color-grey-600);
-  font-size: var(--font-size-sm);
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.55);
   margin: 0;
 `;
 
-const ControlsSection = styled.div`
+const StatRow = styled.div`
   display: flex;
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-lg);
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 0;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 0.6rem 1rem;
 
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: var(--spacing-md);
+  @media (max-width: 640px) {
+    width: 100%;
+    justify-content: space-around;
   }
 `;
 
-const SearchWrapper = styled.div`
-  flex: 1;
-  min-width: 300px;
+const StatPill = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0 1rem;
 `;
 
-const SearchInputWrapper = styled.div`
+const StatNum = styled.div`
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1;
+`;
+
+const StatName = styled.div`
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.5);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+`;
+
+const StatDivider = styled.div`
+  width: 1px;
+  height: 28px;
+  background: rgba(255,255,255,0.12);
+`;
+
+/* ─── Controls ───────────────────────────────────────────── */
+const ControlsBar = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+`;
+
+const SearchBox = styled.div`
   position: relative;
-  background: var(--color-white-0);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-sm);
 `;
 
-const SearchIcon = styled.div`
+const SearchIconWrap = styled.div`
   position: absolute;
-  left: var(--spacing-lg);
+  left: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--color-grey-500);
-  font-size: var(--font-size-sm);
+  color: #9ca3af;
+  font-size: 0.85rem;
+  pointer-events: none;
 `;
 
 const SearchInput = styled.input`
   width: 100%;
-  padding: var(--spacing-md) var(--spacing-md) var(--spacing-md) var(--spacing-3xl);
-  border: 1px solid var(--color-grey-200);
-  border-radius: var(--border-radius-lg);
-  font-size: var(--font-size-sm);
-  background: var(--color-white-0);
-  transition: var(--transition-base);
+  padding: 0.75rem 1rem 0.75rem 2.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  background: #ffffff;
+  color: #1a1a1a;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 
   &:focus {
     outline: none;
-    border-color: var(--color-primary-500);
-    box-shadow: 0 0 0 3px var(--color-primary-100);
+    border-color: #D4882A;
+    box-shadow: 0 0 0 3px rgba(212,136,42,0.12);
   }
 
-  &::placeholder {
-    color: var(--color-grey-400);
-  }
+  &::placeholder { color: #9ca3af; }
 `;
 
-const FilterWrapper = styled.div`
+const FilterPills = styled.div`
   display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  background: var(--color-white-0);
-  padding: var(--spacing-md) var(--spacing-lg);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-sm);
+  gap: 0.5rem;
+  flex-wrap: wrap;
 `;
 
-const FilterLabel = styled.label`
-  display: flex;
+const FilterPill = styled.button`
+  display: inline-flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  font-weight: var(--font-medium);
-  color: var(--color-grey-700);
-  font-size: var(--font-size-sm);
-  white-space: nowrap;
-`;
-
-const FilterSelect = styled.select`
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--color-grey-300);
-  border-radius: var(--border-radius-md);
-  background: var(--color-white-0);
-  font-size: var(--font-size-sm);
-  color: var(--color-grey-700);
+  gap: 0.4rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid ${({ $active }) => ($active ? '#D4882A' : '#e5e7eb')};
+  background: ${({ $active }) => ($active ? '#fff7ed' : '#ffffff')};
+  color: ${({ $active }) => ($active ? '#B8711F' : '#6b7280')};
+  font-size: 0.82rem;
+  font-weight: 600;
   cursor: pointer;
-  min-width: 140px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
 
-  &:focus {
-    outline: none;
-    border-color: var(--color-primary-500);
+  svg { font-size: 0.75rem; }
+
+  &:hover {
+    border-color: #D4882A;
+    color: #B8711F;
+    background: #fff7ed;
   }
 `;
 
-const ContentSection = styled.div`
-  background: var(--color-white-0);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-sm);
+/* ─── Content Card ───────────────────────────────────────── */
+const ContentCard = styled.div`
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #f0e8d8;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
   overflow: hidden;
 `;
 
-const TableContainer = styled.div`
+/* ─── Table ──────────────────────────────────────────────── */
+const TableScroll = styled.div`
   overflow-x: auto;
-  
+
   @media (max-width: 768px) {
     display: none;
   }
 `;
 
-const OrdersTable = styled.table`
+const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
-  min-width: 800px;
+  min-width: 820px;
 `;
 
-const TableHead = styled.thead`
-  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
+const THead = styled.thead`
+  background: #fafafa;
+  border-bottom: 2px solid #f0e8d8;
 `;
 
-const TableRow = styled.tr`
-  border-bottom: 1px solid var(--color-grey-200);
-  transition: var(--transition-base);
+const TR = styled.tr`
+  border-bottom: 1px solid #f5f5f5;
+  background: ${({ $even }) => ($even ? '#ffffff' : '#fdfcfb')};
+  transition: background 0.15s ease;
 
   &:hover {
-    background: var(--color-grey-50);
+    background: #fff9f0;
+  }
+
+  &:last-child {
+    border-bottom: none;
   }
 `;
 
-const TableHeader = styled.th`
-  padding: var(--spacing-lg);
+const TH = styled.th`
+  padding: 0.85rem 1rem;
   text-align: left;
-  font-weight: var(--font-semibold);
-  color: var(--color-white-0);
-  cursor: ${props => props.$sortable ? 'pointer' : 'default'};
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  cursor: ${({ $sortable }) => ($sortable ? 'pointer' : 'default')};
   user-select: none;
-  transition: var(--transition-base);
 
-  ${props => props.$sortable && `
-    &:hover {
-      background: var(--color-primary-600);
-    }
+  ${({ $sortable }) => $sortable && `
+    &:hover { color: #D4882A; }
   `}
 `;
 
 const SortIcon = styled.span`
-  font-size: var(--font-size-sm);
-  opacity: 0.8;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  opacity: 0.7;
+  font-size: 0.7rem;
 `;
 
-const TableBody = styled.tbody``;
-
-const TableCell = styled.td`
-  padding: var(--spacing-lg);
+const TD = styled.td`
+  padding: 0.9rem 1rem;
   vertical-align: middle;
 `;
 
-const OrderId = styled.span`
-  font-weight: var(--font-semibold);
-  color: var(--color-grey-900);
+const OrderNum = styled.span`
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #1a1a1a;
   font-family: 'Courier New', monospace;
 `;
 
-const OrderDate = styled.span`
-  color: var(--color-grey-700);
-  font-size: var(--font-size-sm);
+const DateText = styled.span`
+  font-size: 0.82rem;
+  color: #6b7280;
 `;
 
-const ItemCount = styled.span`
-  color: var(--color-grey-600);
-  font-size: var(--font-size-sm);
+const ItemBadge = styled.span`
+  font-size: 0.82rem;
+  color: #374151;
+  background: #f3f4f6;
+  border-radius: 20px;
+  padding: 0.2rem 0.6rem;
+  font-weight: 500;
 `;
 
-const OrderTotal = styled.span`
-  font-weight: var(--font-semibold);
-  color: var(--primary-700);
+const TotalText = styled.span`
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #B8711F;
 `;
 
 const StatusBadge = styled.span`
   display: inline-block;
-  padding: var(--spacing-xs) var(--spacing-md);
-  border-radius: var(--border-radius-cir);
-  font-size: var(--text-xs);
-  font-weight: var(--font-semibold);
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
   text-transform: capitalize;
-  background: ${(props) => props.$bg};
-  color: ${(props) => props.$fg};
+  white-space: nowrap;
+  background: ${({ $bg }) => $bg};
+  color: ${({ $fg }) => $fg};
 `;
 
 const RefundBadge = styled.span`
@@ -730,222 +749,248 @@ const RefundBadge = styled.span`
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 600;
-  text-transform: none;
-  cursor: ${({ $clickable }) => ($clickable ? 'pointer' : 'default')};
-  transition: all 0.2s;
-  ${({ $clickable }) =>
-    $clickable &&
-    `
-    &:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-  `}
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  white-space: nowrap;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  }
 
   background: ${({ $status }) => {
     switch ($status) {
-      case 'approved':
-      case 'completed':
-        return 'rgba(22,163,74,0.12)'; // green soft
-      case 'pending':
-      case 'processing':
-        return 'rgba(234,179,8,0.12)'; // yellow soft
-      case 'rejected':
-        return 'rgba(220,38,38,0.12)'; // red soft
-      default:
-        return 'rgba(59,130,246,0.08)'; // blue soft
+      case 'approved': case 'completed':  return 'rgba(22,163,74,0.1)';
+      case 'pending':  case 'processing': return 'rgba(234,179,8,0.1)';
+      case 'rejected':                    return 'rgba(220,38,38,0.1)';
+      default:                            return 'rgba(59,130,246,0.08)';
     }
   }};
 
   color: ${({ $status }) => {
     switch ($status) {
-      case 'approved':
-      case 'completed':
-        return '#16a34a';
-      case 'pending':
-      case 'processing':
-        return '#b45309';
-      case 'rejected':
-        return '#b91c1c';
-      default:
-        return '#1d4ed8';
+      case 'approved': case 'completed':  return '#16a34a';
+      case 'pending':  case 'processing': return '#b45309';
+      case 'rejected':                    return '#b91c1c';
+      default:                            return '#1d4ed8';
     }
   }};
 `;
 
-const ActionButtons = styled.div`
-  display: flex;
-  gap: var(--spacing-sm);
+const TrackingLink = styled.span`
+  color: #D4882A;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+
+  &:hover { color: #B8711F; }
 `;
 
-const ActionButton = styled.button`
+const TrackingPending = styled.span`
+  color: #9ca3af;
+  font-style: italic;
+  font-size: 0.82rem;
+`;
+
+/* ─── Action buttons ─────────────────────────────────────── */
+const ActionRow = styled.div`
+  display: flex;
+  gap: 0.4rem;
+`;
+
+const IconBtn = styled.button`
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-sm);
-  border: none;
-  border-radius: var(--border-radius-md);
-  font-size: var(--font-size-sm);
+  justify-content: center;
   cursor: pointer;
-  transition: var(--transition-base);
-  
-  background: ${props => {
-    switch (props.$variant) {
-      case 'view': return 'var(--color-blue-100)';
-      case 'edit': return 'var(--color-yellow-100)';
-      case 'delete': return 'var(--color-red-100)';
-      default: return 'var(--color-grey-100)';
-    }
-  }};
-  
-  color: ${props => {
-    switch (props.$variant) {
-      case 'view': return 'var(--color-blue-700)';
-      case 'edit': return 'var(--color-yellow-700)';
-      case 'delete': return 'var(--color-red-700)';
-      default: return 'var(--color-grey-700)';
-    }
-  }};
+  font-size: 0.8rem;
+  transition: all 0.15s ease;
+
+  background: ${({ $variant }) => ({
+    view:   'rgba(59,130,246,0.1)',
+    edit:   'rgba(234,179,8,0.1)',
+    delete: 'rgba(220,38,38,0.1)',
+  }[$variant] || '#f3f4f6')};
+
+  color: ${({ $variant }) => ({
+    view:   '#2563eb',
+    edit:   '#b45309',
+    delete: '#dc2626',
+  }[$variant] || '#374151')};
 
   &:hover {
     transform: translateY(-1px);
-    box-shadow: var(--shadow-sm);
-    
-    background: ${props => {
-    switch (props.$variant) {
-      case 'view': return 'var(--color-blue-200)';
-      case 'edit': return 'var(--color-yellow-200)';
-      case 'delete': return 'var(--color-red-200)';
-      default: return 'var(--color-grey-200)';
-    }
-  }};
-  }
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 
-  @media (max-width: 768px) {
-    flex: 1;
-    justify-content: center;
+    background: ${({ $variant }) => ({
+      view:   'rgba(59,130,246,0.2)',
+      edit:   'rgba(234,179,8,0.2)',
+      delete: 'rgba(220,38,38,0.2)',
+    }[$variant] || '#e5e7eb')};
   }
 `;
 
-const MobileOrdersList = styled.div`
+/* ─── Mobile Cards ───────────────────────────────────────── */
+const MobileList = styled.div`
   display: none;
   flex-direction: column;
-  gap: var(--spacing-md);
-  padding: var(--spacing-lg);
+  gap: 0;
 
   @media (max-width: 768px) {
     display: flex;
   }
 `;
 
-const OrderCard = styled.div`
-  background: var(--color-white-0);
-  border: 1px solid var(--color-grey-200);
-  border-radius: var(--border-radius-lg);
-  padding: var(--spacing-lg);
-  box-shadow: var(--shadow-sm);
-  transition: var(--transition-base);
+const MobileCard = styled.div`
+  border-bottom: 1px solid #f0f0f0;
+  padding: 1rem;
 
-  &:hover {
-    box-shadow: var(--shadow-md);
-    border-color: var(--color-primary-200);
-  }
+  &:last-child { border-bottom: none; }
 `;
 
-const CardHeader = styled.div`
+const MobileCardTop = styled.div`
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: var(--spacing-md);
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
 `;
 
-const OrderInfo = styled.div`
-  flex: 1;
-`;
-
-const CardBody = styled.div`
-  margin-bottom: var(--spacing-md);
-`;
-
-const OrderDetails = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-md);
-`;
-
-const DetailItem = styled.div`
+const MobileOrderMeta = styled.div`
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: 0.2rem;
 `;
 
-const DetailLabel = styled.span`
-  font-size: var(--text-xs);
-  color: var(--color-grey-500);
-  font-weight: var(--font-medium);
+const MobileCardBody = styled.div`
+  margin-bottom: 0.85rem;
 `;
 
-const DetailValue = styled.span`
-  font-size: var(--text-sm);
-  color: var(--color-grey-800);
-  font-weight: var(--font-semibold);
+const MobileDetailGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem 1rem;
 `;
 
-const TrackingLink = styled.span`
-  color: var(--primary-700);
+const MobileDetailItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  ${({ $full }) => $full && 'grid-column: 1 / -1;'}
+`;
+
+const MobileDetailLabel = styled.span`
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+`;
+
+const MobileDetailValue = styled.span`
+  font-size: 0.85rem;
+  font-weight: ${({ $gold }) => ($gold ? 700 : 500)};
+  color: ${({ $gold }) => ($gold ? '#B8711F' : '#374151')};
+`;
+
+const MobileCardActions = styled.div`
+  display: flex;
+  gap: 0.5rem;
+`;
+
+const MobileActionBtn = styled.button`
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
   cursor: pointer;
-  text-decoration: underline;
-  font-weight: 500;
-  transition: color 0.2s;
+  transition: all 0.15s ease;
+
+  background: ${({ $variant }) => ({
+    view:   'rgba(59,130,246,0.08)',
+    edit:   'rgba(234,179,8,0.08)',
+    delete: 'rgba(220,38,38,0.08)',
+  }[$variant] || '#f3f4f6')};
+
+  color: ${({ $variant }) => ({
+    view:   '#2563eb',
+    edit:   '#b45309',
+    delete: '#dc2626',
+  }[$variant] || '#374151')};
 
   &:hover {
-    color: var(--color-primary-700);
+    background: ${({ $variant }) => ({
+      view:   'rgba(59,130,246,0.15)',
+      edit:   'rgba(234,179,8,0.15)',
+      delete: 'rgba(220,38,38,0.15)',
+    }[$variant] || '#e5e7eb')};
   }
 `;
 
-const TrackingPending = styled.span`
-  color: var(--color-grey-500);
-  font-style: italic;
-`;
-
-const CardActions = styled.div``;
-
+/* ─── Empty State ────────────────────────────────────────── */
 const EmptyState = styled.div`
   text-align: center;
-  padding: var(--spacing-3xl);
-  color: var(--color-grey-500);
+  padding: 4rem 1.5rem;
+  color: #9ca3af;
 `;
 
 const EmptyIcon = styled.div`
-  font-size: var(--font-size-4xl);
-  margin-bottom: var(--spacing-lg);
-  opacity: 0.5;
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.35;
 `;
 
 const EmptyTitle = styled.h3`
-  font-size: var(--font-size-xl);
-  color: var(--color-grey-700);
-  margin-bottom: var(--spacing-sm);
+  font-size: 1.1rem;
+  color: #374151;
+  font-weight: 700;
+  margin: 0 0 0.4rem;
 `;
 
-const EmptyMessage = styled.p`
-  color: var(--color-grey-600);
-  font-size: var(--font-size-sm);
-  margin: 0;
+const EmptyMsg = styled.p`
+  font-size: 0.88rem;
+  color: #6b7280;
+  margin: 0 0 1.25rem;
 `;
 
+const ShopNowLink = styled(Link)`
+  display: inline-block;
+  padding: 0.65rem 1.5rem;
+  background: #D4882A;
+  color: #fff;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.2s ease;
+
+  &:hover { background: #B8711F; }
+`;
+
+/* ─── Footer ─────────────────────────────────────────────── */
 const TableFooter = styled.div`
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-lg);
-  background: var(--color-white-0);
-  border-top: 1px solid var(--color-grey-200);
+  justify-content: flex-end;
+  padding: 0.85rem 1.25rem;
+  border-top: 1px solid #f0e8d8;
+  background: #fafafa;
 `;
 
-const PaginationInfo = styled.div`
-  font-size: var(--font-size-sm);
-  color: var(--color-grey-600);
-`;
+const FooterCount = styled.div`
+  font-size: 0.82rem;
+  color: #6b7280;
 
-export default OrdersPage;
+  strong { color: #374151; }
+`;

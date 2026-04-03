@@ -4,16 +4,17 @@ import styled from 'styled-components';
 import { devicesMax } from '../../shared/styles/breakpoint';
 
 const CountdownContainer = styled.div`
-  background: linear-gradient(135deg, var(--color-red-500) 0%, var(--color-orange-500) 100%);
+  background: linear-gradient(135deg, #1a1f2e 0%, #2d3444 100%);
   color: var(--color-white-0);
   padding: var(--space-md) var(--space-lg);
-  border-radius: var(--radius-lg);
-  margin: var(--space-xl) 0;
+  border-radius: 16px;
+  margin: 0 0 1.25rem 0;
+  border: 1px solid rgba(212, 136, 42, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-md);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 24px rgba(26, 31, 46, 0.08);
 
   @media ${devicesMax.sm} {
     flex-direction: column;
@@ -28,9 +29,11 @@ const CountdownText = styled.span`
   display: flex;
   align-items: center;
   gap: var(--space-xs);
+  color: rgba(255, 255, 255, 0.92);
 
   svg {
     font-size: var(--text-xl);
+    color: #d4882a;
     animation: pulse 2s infinite;
   }
 
@@ -58,9 +61,10 @@ const Timer = styled.div`
 `;
 
 const TimeUnit = styled.span`
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(212, 136, 42, 0.2);
+  border: 1px solid rgba(212, 136, 42, 0.35);
   padding: var(--space-xs) var(--space-sm);
-  border-radius: var(--radius-md);
+  border-radius: 10px;
   min-width: 50px;
   text-align: center;
 

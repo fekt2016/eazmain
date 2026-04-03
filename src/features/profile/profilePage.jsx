@@ -17,7 +17,6 @@ import AccountTab from "./tabs/AccountTab";
 import SecurityTab from "./tabs/SecurityTab";
 import TwoFactorTab from "./tabs/TwoFactorTab";
 import DevicesTab from "./tabs/DevicesTab";
-import OrdersTab from "./tabs/OrdersTab";
 import AddressTab from "./tabs/AddressTab";
 import NotificationTab from "./tabs/NotificationTab";
 import PaymentTab from "./tabs/PaymentTab";
@@ -116,10 +115,6 @@ const ProfilePage = () => {
 
             <TabPanelContainer active={activeTab === "devices"}>
               <DevicesTab />
-            </TabPanelContainer>
-
-            <TabPanelContainer active={activeTab === "orders"}>
-              <OrdersTab />
             </TabPanelContainer>
 
             <TabPanelContainer active={activeTab === "address"}>

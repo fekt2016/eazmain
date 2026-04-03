@@ -4,6 +4,7 @@ import { devicesMax } from '../../shared/styles/breakpoint';
 const Container = styled.div`
   width: 100%;
   max-width: 100%;
+  box-sizing: border-box;
   margin: 0 auto;
   padding: 0 2rem;
 

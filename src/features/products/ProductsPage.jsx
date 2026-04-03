@@ -321,12 +321,11 @@ export default ProductsPage;
 
 // Styled Components
 const PageContainer = styled.div`
-width: 100%;
+  width: 100%;
   padding: 3rem 0 5rem;
-  background-color: #f8fafc;
+  background-color: #f9f7f4;
   min-height: 100vh;
   animation: ${fadeInUp} 0.6s ease-out;
-
 `;
 
 const PageHeader = styled.div`
@@ -380,18 +379,19 @@ const FilterButton = styled.button`
   align-items: center;
   gap: 0.5rem;
   padding: 1rem 2rem;
-  background: #667eea;
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
   color: white;
   border: none;
   border-radius: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 14px rgba(212,136,42,0.3);
 
   &:hover {
-    background: #764ba2;
+    background: linear-gradient(135deg, #B8711F 0%, #D4882A 100%);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 6px 18px rgba(212,136,42,0.4);
   }
 
   @media ${devicesMax.sm} {
@@ -403,7 +403,7 @@ const FilterButton = styled.button`
 const EazShopSection = styled.section`
   margin-bottom: 4rem;
   padding: 3rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1a1f2e 0%, #2d3444 50%, #1a2035 100%);
   border-radius: 20px;
   position: relative;
   overflow: hidden;
@@ -411,13 +411,17 @@ const EazShopSection = styled.section`
   &::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: 
-      radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%),
-      radial-gradient(circle at 80% 80%, rgba(255,255,255,0.1) 0%, transparent 50%);
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(212,136,42,0.12) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 30% 50%, rgba(212,136,42,0.2) 0%, transparent 60%);
     pointer-events: none;
   }
 `;
@@ -425,7 +429,7 @@ const EazShopSection = styled.section`
 const EazShopHeader = styled.div`
   margin-bottom: 2rem;
   position: relative;
-  z-index: 1;
+  z-index: 2;
 `;
 
 const HeaderLeft = styled.div`
@@ -499,7 +503,7 @@ const EazShopGrid = styled.div`
   grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
   position: relative;
-  z-index: 1;
+  z-index: 2;
   margin-bottom: 2rem;
 
   @media (max-width: 900px) {
@@ -661,7 +665,7 @@ const Select = styled.select`
 
   &:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #D4882A;
   }
 `;
 
@@ -674,6 +678,7 @@ const SortBar = styled.div`
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f0e8d8;
 `;
 
 const SortLabel = styled.label`
@@ -698,7 +703,7 @@ const SortSelect = styled.select`
 
   &:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #D4882A;
   }
 `;
 

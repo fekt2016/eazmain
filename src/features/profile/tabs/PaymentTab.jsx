@@ -77,6 +77,7 @@ const PaymentTab = () => {
               <PaymentActions>
                 <ActionButton variant="danger" aria-label="Delete payment method" onClick={() => handleDelete(method._id)}>
                   <FaTrash />
+                  <span>Delete</span>
                 </ActionButton>
               </PaymentActions>
             </PaymentCard>
@@ -188,13 +189,16 @@ const PaymentActions = styled.div`
 `;
 
 const ActionButton = styled.button`
-  padding: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
   border: none;
   border-radius: 6px;
   background: ${(props) =>
     props.variant === "danger" ? "var(--color-danger)" : "var(--color-bg-light)"};
   color: ${(props) =>
     props.variant === "danger" ? "white" : "var(--color-text-dark)"};
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
 

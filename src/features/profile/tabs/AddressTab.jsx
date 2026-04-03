@@ -59,9 +59,11 @@ const AddressTab = () => {
               <AddressActions>
                 <ActionButton aria-label="Edit address" onClick={() => navigate("/checkout")}>
                   <FaEdit />
+                  <span>Edit</span>
                 </ActionButton>
                 <ActionButton variant="danger" aria-label="Delete address" onClick={() => navigate("/checkout")}>
                   <FaTrash />
+                  <span>Delete</span>
                 </ActionButton>
               </AddressActions>
             </AddressCard>
@@ -154,13 +156,16 @@ const AddressActions = styled.div`
 `;
 
 const ActionButton = styled.button`
-  padding: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
   border: none;
   border-radius: 6px;
   background: ${(props) =>
     props.variant === "danger" ? "var(--color-danger)" : "var(--color-bg-light)"};
   color: ${(props) =>
     props.variant === "danger" ? "white" : "var(--color-text-dark)"};
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
 

@@ -1,223 +1,260 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { FaPlus, FaSearch, FaFilter, FaTicketAlt, FaClock, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaTicketAlt, FaChevronRight, FaInbox } from 'react-icons/fa';
 import styled from 'styled-components';
 import { useMyTickets } from '../../shared/hooks/useSupport';
 import { STATUS_COLORS, PRIORITY_COLORS } from './supportTypes';
 import { PATHS } from '../../routes/routePaths';
 
-const Container = styled.div`
-  max-width: 120rem;
-  margin: 0 auto;
-  padding: 3rem 2rem;
+// ── Layout ─────────────────────────────────────────────
+const Page = styled.div`
   min-height: 100vh;
-  background: #fafbfc;
+  background: var(--color-grey-50);
+  padding: 32px 24px 60px;
 `;
 
+const Inner = styled.div`
+  max-width: 860px;
+  margin: 0 auto;
+`;
+
+// ── Header ─────────────────────────────────────────────
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 3rem;
+  margin-bottom: 28px;
+  gap: 16px;
   flex-wrap: wrap;
-  gap: 1.6rem;
 `;
 
 const Title = styled.h1`
-  font-size: 2.4rem;
-  font-weight: 700;
-  color: #1a202c;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--color-grey-900);
   margin: 0;
 `;
 
-const CreateButton = styled(motion.button)`
-  display: flex;
+const CreateBtn = styled.button`
+  display: inline-flex;
   align-items: center;
-  gap: 0.8rem;
-  background: #00C896;
-  color: #ffffff;
+  gap: 7px;
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
+  color: #fff;
   border: none;
-  padding: 1.2rem 2.4rem;
-  border-radius: 0.8rem;
-  font-size: 1rem;
-  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
   cursor: pointer;
+  box-shadow: 0 4px 14px rgba(212,136,42,0.35);
   transition: all 0.2s ease;
-  
+
   &:hover {
-    background: #00A67E;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 200, 150, 0.3);
+    box-shadow: 0 6px 18px rgba(212,136,42,0.45);
   }
 `;
 
-const FiltersBar = styled.div`
+// ── Filters ────────────────────────────────────────────
+const FiltersRow = styled.div`
   display: flex;
-  gap: 1.6rem;
-  margin-bottom: 2.4rem;
+  gap: 10px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
   align-items: center;
 `;
 
-const SearchInput = styled.div`
+const SearchWrap = styled.div`
   position: relative;
   flex: 1;
-  min-width: 20rem;
+  min-width: 200px;
 `;
 
-const SearchIcon = styled.div`
+const SearchIconWrap = styled.span`
   position: absolute;
-  left: 1.2rem;
+  left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: #64748b;
+  color: var(--color-grey-400);
+  font-size: 0.8rem;
+  pointer-events: none;
 `;
 
-const Input = styled.input`
+const SearchInput = styled.input`
   width: 100%;
-  padding: 1rem 1rem 1rem 4rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.8rem;
-  font-size: 1rem;
-  background: #ffffff;
-  transition: all 0.2s ease;
-  
-  &:focus {
-    outline: none;
-    border-color: #00C896;
-    box-shadow: 0 0 0 3px rgba(0, 200, 150, 0.1);
-  }
+  padding: 10px 12px 10px 36px;
+  border: 1.5px solid var(--color-grey-200);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.2s;
+
+  &:focus { border-color: var(--color-primary-500); }
+  &::placeholder { color: var(--color-grey-400); }
 `;
 
 const FilterSelect = styled.select`
-  padding: 1rem 1.2rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.8rem;
-  font-size: 1rem;
-  background: #ffffff;
+  padding: 10px 12px;
+  border: 1.5px solid var(--color-grey-200);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  background: #fff;
   cursor: pointer;
-  min-width: 15rem;
-  
-  &:focus {
-    outline: none;
-    border-color: #00C896;
-  }
+  outline: none;
+  min-width: 140px;
+  color: var(--color-grey-700);
+
+  &:focus { border-color: var(--color-primary-500); }
 `;
 
+// ── Tickets ────────────────────────────────────────────
 const TicketsList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 1.6rem;
+  gap: 10px;
 `;
 
-const TicketCard = styled(motion.div)`
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 1.2rem;
-  padding: 2.4rem;
+const TicketCard = styled.div`
+  background: #fff;
+  border: 1.5px solid var(--color-grey-200);
+  border-radius: 14px;
+  padding: 18px 20px;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
   &:hover {
-    border-color: #00C896;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
+    border-color: var(--color-primary-400);
+    box-shadow: 0 4px 16px rgba(212,136,42,0.10);
+    transform: translateY(-1px);
   }
 `;
 
-const TicketHeader = styled.div`
+const TicketIconWrap = styled.div`
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--color-grey-100);
+  color: var(--color-grey-400);
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1.2rem;
-  gap: 1.6rem;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
 `;
 
-const TicketLeft = styled.div`
+const TicketBody = styled.div`
   flex: 1;
   min-width: 0;
 `;
 
-const TicketNumber = styled.div`
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #64748b;
-  margin-bottom: 0.4rem;
+const TicketTop = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+`;
+
+const TicketNumber = styled.span`
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-grey-400);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 `;
 
 const TicketTitle = styled.h3`
-  font-size: 1.25rem;
+  font-size: 0.93rem;
   font-weight: 700;
-  color: #1a202c;
-  margin: 0 0 0.8rem 0;
-  line-height: 1.3;
+  color: var(--color-grey-900);
+  margin: 0 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 const TicketMeta = styled.div`
+  font-size: 0.78rem;
+  color: var(--color-grey-400);
   display: flex;
-  gap: 1.6rem;
+  gap: 8px;
   flex-wrap: wrap;
-  font-size: 0.875rem;
-  color: #64748b;
 `;
 
 const TicketRight = styled.div`
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.8rem;
+  gap: 6px;
+  flex-shrink: 0;
+`;
+
+const ChevronWrap = styled.span`
+  color: var(--color-grey-300);
+  font-size: 0.75rem;
+  margin-top: 2px;
 `;
 
 const Badge = styled.span`
   display: inline-flex;
   align-items: center;
-  padding: 0.4rem 0.8rem;
-  border-radius: 0.4rem;
-  font-size: 0.75rem;
-  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
   text-transform: capitalize;
-  background: ${props => props.$bgColor || '#e2e8f0'};
-  color: ${props => props.$color || '#1a202c'};
+  background: ${props => props.$bg || 'var(--color-grey-100)'};
+  color: ${props => props.$color || 'var(--color-grey-600)'};
 `;
 
-const EmptyState = styled.div`
+// ── Empty State ────────────────────────────────────────
+const EmptyCard = styled.div`
+  background: #fff;
+  border: 1.5px solid var(--color-grey-200);
+  border-radius: 16px;
+  padding: 64px 24px;
   text-align: center;
-  padding: 6rem 2rem;
-  background: #ffffff;
-  border-radius: 1.2rem;
-  border: 1px solid #e2e8f0;
 `;
 
-const EmptyIcon = styled.div`
-  font-size: 4rem;
-  color: #cbd5e1;
-  margin-bottom: 1.6rem;
+const EmptyIconWrap = styled.div`
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: var(--color-grey-100);
+  color: var(--color-grey-300);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  margin: 0 auto 20px;
 `;
 
 const EmptyTitle = styled.h3`
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #1a202c;
-  margin: 0 0 0.8rem 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-grey-800);
+  margin: 0 0 6px;
 `;
 
 const EmptyText = styled.p`
-  font-size: 1rem;
-  color: #64748b;
-  margin: 0 0 2.4rem 0;
+  font-size: 0.85rem;
+  color: var(--color-grey-500);
+  margin: 0 0 24px;
 `;
 
-const LoadingState = styled.div`
+const LoadingWrap = styled.div`
   text-align: center;
-  padding: 6rem 2rem;
-  color: #64748b;
+  padding: 60px 24px;
+  color: var(--color-grey-400);
+  font-size: 0.9rem;
 `;
 
-/**
- * Tickets List Page (Buyer)
- */
+// ── Component ──────────────────────────────────────────
 const TicketsListPage = () => {
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState('');
@@ -231,7 +268,6 @@ const TicketsListPage = () => {
 
   const tickets = data?.data?.tickets || [];
 
-  // Filter by search query
   const filteredTickets = tickets.filter((ticket) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
@@ -242,168 +278,135 @@ const TicketsListPage = () => {
     );
   });
 
-  const handleTicketClick = (ticketId) => {
-    navigate(`/support/tickets/${ticketId}`);
-  };
-
-  const handleCreateTicket = () => {
-    navigate('/support');
-  };
+  const handleTicketClick = (ticketId) => navigate(`/support/tickets/${ticketId}`);
+  const handleCreateTicket = () => navigate('/support');
 
   const getStatusBadge = (status) => {
-    const colors = STATUS_COLORS[status] || '#6B7280';
+    const color = STATUS_COLORS[status] || '#6B7280';
     return (
-      <Badge $bgColor={`${colors}15`} $color={colors}>
+      <Badge $bg={`${color}18`} $color={color}>
         {status.replace('_', ' ')}
       </Badge>
     );
   };
 
   const getPriorityBadge = (priority) => {
-    const colors = PRIORITY_COLORS[priority] || '#6B7280';
+    const color = PRIORITY_COLORS[priority] || '#6B7280';
     return (
-      <Badge $bgColor={`${colors}15`} $color={colors}>
+      <Badge $bg={`${color}18`} $color={color}>
         {priority}
       </Badge>
     );
   };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric',
     });
   };
 
-  if (isLoading) {
-    return (
-      <Container>
-        <LoadingState>Loading tickets...</LoadingState>
-      </Container>
-    );
-  }
+  if (isLoading) return <Page><LoadingWrap>Loading your tickets&hellip;</LoadingWrap></Page>;
 
-  if (error) {
-    return (
-      <Container>
-        <EmptyState>
-          <EmptyTitle>Error loading tickets</EmptyTitle>
+  if (error) return (
+    <Page>
+      <Inner>
+        <EmptyCard>
+          <EmptyTitle>Couldn&apos;t load tickets</EmptyTitle>
           <EmptyText>Please try again later.</EmptyText>
-        </EmptyState>
-      </Container>
-    );
-  }
+        </EmptyCard>
+      </Inner>
+    </Page>
+  );
 
   return (
-    <Container>
-      <Header>
-        <Title>My Support Tickets</Title>
-        <CreateButton
-          onClick={handleCreateTicket}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <FaPlus />
-          Create New Ticket
-        </CreateButton>
-      </Header>
+    <Page>
+      <Inner>
+        <Header>
+          <Title>My Support Tickets</Title>
+          <CreateBtn onClick={handleCreateTicket}>
+            <FaPlus />
+            Create New Ticket
+          </CreateBtn>
+        </Header>
 
-      <FiltersBar>
-        <SearchInput>
-          <SearchIcon>
-            <FaSearch />
-          </SearchIcon>
-          <Input
-            type="text"
-            placeholder="Search tickets..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </SearchInput>
-        <FilterSelect
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="">All Status</option>
-          <option value="open">Open</option>
-          <option value="in_progress">In Progress</option>
-          <option value="awaiting_user">Awaiting Response</option>
-          <option value="resolved">Resolved</option>
-          <option value="closed">Closed</option>
-        </FilterSelect>
-        <FilterSelect
-          value={departmentFilter}
-          onChange={(e) => setDepartmentFilter(e.target.value)}
-        >
-          <option value="">All Departments</option>
-          <option value="Orders & Delivery">Orders & Delivery</option>
-          <option value="Payments & Billing">Payments & Billing</option>
-          <option value="Shipping & Returns">Shipping & Returns</option>
-          <option value="Account & Profile">Account & Profile</option>
-        </FilterSelect>
-      </FiltersBar>
+        <FiltersRow>
+          <SearchWrap>
+            <SearchIconWrap><FaSearch /></SearchIconWrap>
+            <SearchInput
+              type="text"
+              placeholder="Search tickets..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </SearchWrap>
+          <FilterSelect value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <option value="">All Status</option>
+            <option value="open">Open</option>
+            <option value="in_progress">In Progress</option>
+            <option value="awaiting_user">Awaiting Response</option>
+            <option value="resolved">Resolved</option>
+            <option value="closed">Closed</option>
+          </FilterSelect>
+          <FilterSelect value={departmentFilter} onChange={(e) => setDepartmentFilter(e.target.value)}>
+            <option value="">All Departments</option>
+            <option value="Orders & Delivery">Orders &amp; Delivery</option>
+            <option value="Payments & Billing">Payments &amp; Billing</option>
+            <option value="Shipping & Returns">Shipping &amp; Returns</option>
+            <option value="Account & Profile">Account &amp; Profile</option>
+          </FilterSelect>
+        </FiltersRow>
 
-      {filteredTickets.length === 0 ? (
-        <EmptyState>
-          <EmptyIcon>
-            <FaTicketAlt />
-          </EmptyIcon>
-          <EmptyTitle>No tickets found</EmptyTitle>
-          <EmptyText>
-            {searchQuery || statusFilter || departmentFilter
-              ? 'Try adjusting your filters'
-              : "You haven't created any support tickets yet."}
-          </EmptyText>
-          {!searchQuery && !statusFilter && !departmentFilter && (
-            <CreateButton
-              onClick={handleCreateTicket}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <FaPlus />
-              Create Your First Ticket
-            </CreateButton>
-          )}
-        </EmptyState>
-      ) : (
-        <TicketsList>
-          {filteredTickets.map((ticket) => (
-            <TicketCard
-              key={ticket._id}
-              onClick={() => handleTicketClick(ticket._id)}
-              whileHover={{ y: -2 }}
-              transition={{ duration: 0.2 }}
-            >
-              <TicketHeader>
-                <TicketLeft>
-                  <TicketNumber>{ticket.ticketNumber}</TicketNumber>
+        {filteredTickets.length === 0 ? (
+          <EmptyCard>
+            <EmptyIconWrap>
+              {searchQuery || statusFilter || departmentFilter ? <FaSearch /> : <FaInbox />}
+            </EmptyIconWrap>
+            <EmptyTitle>
+              {searchQuery || statusFilter || departmentFilter ? 'No tickets match your filters' : 'No tickets found'}
+            </EmptyTitle>
+            <EmptyText>
+              {searchQuery || statusFilter || departmentFilter
+                ? 'Try adjusting your search or filters.'
+                : "You haven't created any support tickets yet."}
+            </EmptyText>
+            {!searchQuery && !statusFilter && !departmentFilter && (
+              <CreateBtn onClick={handleCreateTicket}>
+                <FaPlus />
+                Create Your First Ticket
+              </CreateBtn>
+            )}
+          </EmptyCard>
+        ) : (
+          <TicketsList>
+            {filteredTickets.map((ticket) => (
+              <TicketCard key={ticket._id} onClick={() => handleTicketClick(ticket._id)}>
+                <TicketIconWrap><FaTicketAlt /></TicketIconWrap>
+                <TicketBody>
+                  <TicketTop>
+                    <TicketNumber>{ticket.ticketNumber}</TicketNumber>
+                    <span style={{ color: 'var(--color-grey-300)', fontSize: '0.7rem' }}>·</span>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--color-grey-400)' }}>{ticket.department}</span>
+                  </TicketTop>
                   <TicketTitle>{ticket.title}</TicketTitle>
                   <TicketMeta>
-                    <span>{ticket.department}</span>
-                    <span>•</span>
-                    <span>{formatDate(ticket.createdAt)}</span>
+                    <span>Created {formatDate(ticket.createdAt)}</span>
                     {ticket.lastMessageAt && (
-                      <>
-                        <span>•</span>
-                        <span>Last updated: {formatDate(ticket.lastMessageAt)}</span>
-                      </>
+                      <span>· Updated {formatDate(ticket.lastMessageAt)}</span>
                     )}
                   </TicketMeta>
-                </TicketLeft>
+                </TicketBody>
                 <TicketRight>
                   {getStatusBadge(ticket.status)}
                   {getPriorityBadge(ticket.priority)}
+                  <ChevronWrap><FaChevronRight /></ChevronWrap>
                 </TicketRight>
-              </TicketHeader>
-            </TicketCard>
-          ))}
-        </TicketsList>
-      )}
-    </Container>
+              </TicketCard>
+            ))}
+          </TicketsList>
+        )}
+      </Inner>
+    </Page>
   );
 };
 
 export default TicketsListPage;
-

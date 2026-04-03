@@ -10,12 +10,18 @@ import MainRoutes from "./routes/MainRoutes";
 import GlobalLoading from "./shared/components/GlobalLoading";
 import ScrollToTop from "./shared/ScrollToTop";
 import ErrorBoundary from "./shared/components/ErrorBoundary";
+import useRouteSEO from "./shared/hooks/useRouteSEO";
 import queryClient from "@/api/queryClient";
 
 // ReactQueryDevtools only in development
 const ReactQueryDevtools = import.meta.env.DEV
   ? lazy(() => import("@tanstack/react-query-devtools").then((mod) => ({ default: mod.ReactQueryDevtools })))
   : () => null;
+
+function SEOManager() {
+  useRouteSEO();
+  return null;
+}
 
 function App() {
   // Suppress known harmless CORS errors from Cloudflare Turnstile on Paystack checkout
@@ -63,6 +69,7 @@ function App() {
           <GlobalStyles />
           <GlobalLoading />
           <BrowserRouter basename="">
+            <SEOManager />
             <ScrollToTop />
             <MainRoutes />
           </BrowserRouter>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import styled from "styled-components";
-import { FaCheckCircle } from "react-icons/fa";
+import { FaCheckCircle, FaCalendarAlt, FaEnvelope } from "react-icons/fa";
 import { getAvatarUrl } from "../../../shared/utils/avatarUtils";
 
 const getInitials = (name) => {
@@ -12,6 +12,7 @@ const getInitials = (name) => {
 
 const ProfileHeader = ({ userInfo }) => {
   const [avatarError, setAvatarError] = useState(false);
+
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
@@ -27,50 +28,94 @@ const ProfileHeader = ({ userInfo }) => {
   const showInitials = !photoUrl || avatarError;
 
   return (
-    <HeaderContainer>
-      <AvatarWrapper>
-        {showInitials ? (
-          <AvatarInitials>{getInitials(userInfo?.name)}</AvatarInitials>
-        ) : (
-          <Avatar
-            src={photoUrl}
-            alt={userInfo?.name || "User"}
-            onError={() => setAvatarError(true)}
-          />
-        )}
-        {isVerified && (
-          <VerifiedBadge>
-            <FaCheckCircle />
-          </VerifiedBadge>
-        )}
-      </AvatarWrapper>
-      <UserInfo>
-        <UserName>{userInfo?.name || "User"}</UserName>
-        <UserEmail>{userInfo?.email || "No email"}</UserEmail>
-        {userInfo?.createdAt && (
-          <JoinDate>Member since {formatDate(userInfo.createdAt)}</JoinDate>
-        )}
-      </UserInfo>
-    </HeaderContainer>
+    <HeaderBanner>
+      <BannerOverlay />
+      <BannerContent>
+        <AvatarWrapper>
+          {showInitials ? (
+            <AvatarInitials>{getInitials(userInfo?.name)}</AvatarInitials>
+          ) : (
+            <AvatarImg
+              src={photoUrl}
+              alt={userInfo?.name || "User"}
+              onError={() => setAvatarError(true)}
+            />
+          )}
+          {isVerified && (
+            <VerifiedBadge title="Verified account">
+              <FaCheckCircle />
+            </VerifiedBadge>
+          )}
+        </AvatarWrapper>
+
+        <UserDetails>
+          <NameRow>
+            <UserName>{userInfo?.name || "User"}</UserName>
+            {isVerified && <VerifiedPill>Verified</VerifiedPill>}
+          </NameRow>
+
+          <MetaRow>
+            <MetaItem>
+              <FaEnvelope />
+              <span>{userInfo?.email || "No email"}</span>
+            </MetaItem>
+            {userInfo?.createdAt && (
+              <MetaItem>
+                <FaCalendarAlt />
+                <span>Member since {formatDate(userInfo.createdAt)}</span>
+              </MetaItem>
+            )}
+          </MetaRow>
+        </UserDetails>
+      </BannerContent>
+    </HeaderBanner>
   );
 };
 
 export default ProfileHeader;
 
-const HeaderContainer = styled.div`
+/* ─── Styled Components ──────────────────────────────────── */
+
+const HeaderBanner = styled.div`
+  position: relative;
+  width: 100%;
+  background: linear-gradient(135deg, #1A1F2E 0%, #2d3444 50%, #1a2035 100%);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 2rem;
+  min-height: 140px;
+
+  /* Decorative dot pattern */
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(212,136,42,0.12) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
+  }
+`;
+
+const BannerOverlay = styled.div`
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(212,136,42,0.18) 0%, transparent 60%);
+  pointer-events: none;
+`;
+
+const BannerContent = styled.div`
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
-  gap: var(--space-lg);
-  padding: var(--space-xl);
-  background: var(--color-bg-card);
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  margin-bottom: var(--space-xl);
+  gap: 1.75rem;
+  padding: 2rem 2.25rem;
 
   @media (max-width: 768px) {
     flex-direction: column;
-    text-align: center;
-    padding: var(--space-lg);
+    align-items: flex-start;
+    padding: 1.5rem 1.25rem;
+    gap: 1rem;
   }
 `;
 
@@ -79,67 +124,114 @@ const AvatarWrapper = styled.div`
   flex-shrink: 0;
 `;
 
-const Avatar = styled.img`
-  width: 80px;
-  height: 80px;
+const AvatarImg = styled.img`
+  width: 88px;
+  height: 88px;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid var(--color-border);
+  border: 3px solid #D4882A;
+  box-shadow: 0 0 0 3px rgba(212,136,42,0.25);
+
+  @media (max-width: 768px) {
+    width: 72px;
+    height: 72px;
+  }
 `;
 
 const AvatarInitials = styled.div`
-  width: 80px;
-  height: 80px;
+  width: 88px;
+  height: 88px;
   border-radius: 50%;
-  background: #9CA3AF;
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.6rem;
-  font-weight: 600;
-  border: 3px solid var(--color-border);
+  font-size: 2rem;
+  font-weight: 700;
+  border: 3px solid rgba(255,255,255,0.2);
+  box-shadow: 0 0 0 3px rgba(212,136,42,0.25);
+
+  @media (max-width: 768px) {
+    width: 72px;
+    height: 72px;
+    font-size: 1.6rem;
+  }
 `;
 
 const VerifiedBadge = styled.div`
   position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 28px;
-  height: 28px;
-  background: var(--color-success);
+  bottom: 2px;
+  right: 2px;
+  width: 24px;
+  height: 24px;
+  background: #059669;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  border: 3px solid var(--color-bg-card);
-  font-size: 14px;
+  border: 2px solid #1A1F2E;
+  font-size: 12px;
 `;
 
-const UserInfo = styled.div`
+const UserDetails = styled.div`
   flex: 1;
+  min-width: 0;
+`;
+
+const NameRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.6rem;
 `;
 
 const UserName = styled.h1`
-  font-family: "Plus Jakarta Sans", sans-serif;
-  font-size: 24px;
+  font-size: 1.65rem;
   font-weight: 700;
-  color: var(--color-text-dark);
-  margin: 0 0 var(--space-xs) 0;
-`;
-
-const UserEmail = styled.p`
-  font-family: "Inter", sans-serif;
-  font-size: 16px;
-  color: var(--color-text-light);
-  margin: 0 0 var(--space-sm) 0;
-`;
-
-const JoinDate = styled.p`
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  color: var(--color-text-light);
+  color: #ffffff;
   margin: 0;
+  text-transform: capitalize;
+  line-height: 1.2;
+
+  @media (max-width: 768px) {
+    font-size: 1.35rem;
+  }
 `;
 
+const VerifiedPill = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: rgba(5, 150, 105, 0.2);
+  color: #6ee7b7;
+  border: 1px solid rgba(5, 150, 105, 0.35);
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+`;
+
+const MetaRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+`;
+
+const MetaItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: rgba(255,255,255,0.65);
+  font-size: 0.85rem;
+
+  svg {
+    color: #D4882A;
+    flex-shrink: 0;
+    font-size: 0.8rem;
+  }
+`;

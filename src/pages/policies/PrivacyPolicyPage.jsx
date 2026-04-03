@@ -71,19 +71,19 @@ const PrivacyPolicyPage = () => {
 
   return (
     <PolicyContainer>
+      <PolicyHeader>
+        <PolicyTitle>Privacy Policy</PolicyTitle>
+        <LastUpdated>Effective Date: {effectiveDate}</LastUpdated>
+      </PolicyHeader>
       <PolicyContent
         initial="hidden"
         animate="visible"
         variants={staggerContainer}
       >
-        {/* Header */}
-        <PolicyHeader variants={staggerItem}>
-          <PolicyTitle>Privacy Policy</PolicyTitle>
-          <LastUpdated>Effective Date: {effectiveDate}</LastUpdated>
-          <IntroText>
-            At Saiisai, we are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, share, and safeguard your information when you use our marketplace platform, including our website and mobile applications. By using Saiisai, you agree to the practices described in this policy.
-          </IntroText>
-        </PolicyHeader>
+        {/* Intro */}
+        <IntroText>
+          At Saiisai, we are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, share, and safeguard your information when you use our marketplace platform, including our website and mobile applications. By using Saiisai, you agree to the practices described in this policy.
+        </IntroText>
 
         {/* Section 1: Introduction */}
         <PolicySection variants={staggerItem}>

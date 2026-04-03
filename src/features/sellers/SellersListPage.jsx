@@ -143,246 +143,195 @@ export default function SellersListPage() {
 
       <ContentWrapper>
         <Container>
-          <ContentLayout>
-            {/* Filter Overlay */}
-            <FilterOverlay $isOpen={showFilters} onClick={toggleFilters} />
+          {/* Horizontal Filter Bar */}
+          <FilterBar>
+            <SearchInputWrapper>
+              <FaSearch />
+              <SearchInput
+                type="text"
+                placeholder="Search sellers..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </SearchInputWrapper>
 
-            {/* Filter Sidebar */}
-            <FilterSidebar $isOpen={showFilters}>
-              <FilterHeader>
-                <h3>Filters</h3>
-                <CloseButton onClick={toggleFilters}>
-                  <FaTimes />
-                </CloseButton>
-              </FilterHeader>
+            <RatingPillRow>
+              {[0, 3, 4, 4.5].map((rating) => (
+                <RatingPill
+                  key={rating}
+                  $active={minRating === rating}
+                  onClick={() => setMinRating(rating)}
+                >
+                  {rating === 0 ? 'All' : `${rating}★+`}
+                </RatingPill>
+              ))}
+            </RatingPillRow>
 
-              <FilterScroll>
-                {/* Search Filter */}
-                <FilterGroup>
-                  <FilterSectionTitle>
-                    <span>Search</span>
-                  </FilterSectionTitle>
-                  <SearchInputWrapper>
-                    <FaSearch />
-                    <SearchInput
-                      type="text"
-                      placeholder="Search by shop name..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </SearchInputWrapper>
-                </FilterGroup>
+            {locations.length > 0 && (
+              <LocationSelect
+                value={locationFilter}
+                onChange={(e) => setLocationFilter(e.target.value)}
+              >
+                <option value="">All Locations</option>
+                {locations.map((location) => (
+                  <option key={location} value={location}>{location}</option>
+                ))}
+              </LocationSelect>
+            )}
 
-                {/* Rating Filter */}
-                <FilterGroup>
-                  <FilterSectionTitle>
-                    <span>Minimum Rating</span>
-                  </FilterSectionTitle>
-                  <RatingFilter>
-                    {[0, 3, 4, 4.5].map((rating) => (
-                      <RatingOption
-                        key={rating}
-                        $active={minRating === rating}
-                        onClick={() => setMinRating(rating)}
-                      >
-                        <StarRating rating={rating} size="16px" />
-                        <span>{rating === 0 ? 'All' : `${rating}+`}</span>
-                      </RatingOption>
-                    ))}
-                  </RatingFilter>
-                </FilterGroup>
+            <SortContainer>
+              <FaSortAmountDown />
+              <SortSelect value={sortOption} onChange={(e) => setSortOption(e.target.value)}>
+                <option value="rating-desc">Highest Rated</option>
+                <option value="rating-asc">Lowest Rated</option>
+                <option value="products-desc">Most Products</option>
+                <option value="products-asc">Fewest Products</option>
+                <option value="name-asc">Name (A-Z)</option>
+                <option value="name-desc">Name (Z-A)</option>
+              </SortSelect>
+            </SortContainer>
 
-                {/* Location Filter */}
-                {locations.length > 0 && (
-                  <FilterGroup>
-                    <FilterSectionTitle>
-                      <span>Location</span>
-                    </FilterSectionTitle>
-                    <LocationSelect
-                      value={locationFilter}
-                      onChange={(e) => setLocationFilter(e.target.value)}
-                    >
-                      <option value="">All Locations</option>
-                      {locations.map((location) => (
-                        <option key={location} value={location}>
-                          {location}
-                        </option>
-                      ))}
-                    </LocationSelect>
-                  </FilterGroup>
+            {(searchQuery || minRating > 0 || locationFilter) && (
+              <ClearFiltersButton onClick={clearFilters}>
+                <FaTimes /> Clear
+              </ClearFiltersButton>
+            )}
+          </FilterBar>
+
+          {/* Results bar */}
+          <ResultsBar>
+            <ResultsCount>
+              Showing <strong>{sellers.length}</strong> of <strong>{allSellers.length}</strong> sellers
+            </ResultsCount>
+            {(searchQuery || minRating > 0 || locationFilter) && (
+              <ActiveFilters>
+                {searchQuery && (
+                  <FilterBadge>
+                    Search: "{searchQuery}" <FaTimes onClick={() => setSearchQuery("")} />
+                  </FilterBadge>
                 )}
-
-                {/* Clear Filters */}
-                {(searchQuery || minRating > 0 || locationFilter) && (
-                  <ClearFiltersButton onClick={clearFilters}>
-                    Clear All Filters
-                  </ClearFiltersButton>
+                {minRating > 0 && (
+                  <FilterBadge>
+                    Rating: {minRating}+ <FaTimes onClick={() => setMinRating(0)} />
+                  </FilterBadge>
                 )}
-              </FilterScroll>
-            </FilterSidebar>
+                {locationFilter && (
+                  <FilterBadge>
+                    Location: {locationFilter} <FaTimes onClick={() => setLocationFilter("")} />
+                  </FilterBadge>
+                )}
+              </ActiveFilters>
+            )}
+          </ResultsBar>
 
-            {/* Main Content */}
-            <MainContent>
-              <ContentHeader>
-                <ResultsInfo>
-                  <ResultsCount>
-                    Showing <strong>{sellers.length}</strong> of <strong>{allSellers.length}</strong> sellers
-                  </ResultsCount>
-                  {(searchQuery || minRating > 0 || locationFilter) && (
-                    <ActiveFilters>
-                      {searchQuery && (
-                        <FilterBadge>
-                          Search: "{searchQuery}"
-                          <FaTimes onClick={() => setSearchQuery("")} />
-                        </FilterBadge>
-                      )}
-                      {minRating > 0 && (
-                        <FilterBadge>
-                          Rating: {minRating}+
-                          <FaTimes onClick={() => setMinRating(0)} />
-                        </FilterBadge>
-                      )}
-                      {locationFilter && (
-                        <FilterBadge>
-                          Location: {locationFilter}
-                          <FaTimes onClick={() => setLocationFilter("")} />
-                        </FilterBadge>
-                      )}
-                    </ActiveFilters>
-                  )}
-                </ResultsInfo>
-
-                <ControlsContainer>
-                  <MobileFilterButton onClick={toggleFilters}>
-                    <FaFilter /> Filters
-                  </MobileFilterButton>
-
-                  <SortContainer>
-                    <FaSortAmountDown />
-                    <SortSelect value={sortOption} onChange={(e) => setSortOption(e.target.value)}>
-                      <option value="rating-desc">Highest Rated</option>
-                      <option value="rating-asc">Lowest Rated</option>
-                      <option value="products-desc">Most Products</option>
-                      <option value="products-asc">Fewest Products</option>
-                      <option value="name-asc">Name (A-Z)</option>
-                      <option value="name-desc">Name (Z-A)</option>
-                    </SortSelect>
-                  </SortContainer>
-                </ControlsContainer>
-              </ContentHeader>
-
-              {sellers.length === 0 ? (
-                <EmptyState>
-                  <EmptyIcon>🏪</EmptyIcon>
-                  <EmptyTitle>No Sellers Found</EmptyTitle>
-                  <EmptyText>
-                    {searchQuery || minRating > 0 || locationFilter
-                      ? "Try adjusting your filters to see more results."
-                      : "Check back later for new sellers."}
-                  </EmptyText>
-                  {(searchQuery || minRating > 0 || locationFilter) && (
-                    <ClearFiltersButton onClick={clearFilters} style={{ marginTop: '2rem' }}>
-                      Clear All Filters
-                    </ClearFiltersButton>
-                  )}
-                </EmptyState>
-              ) : (
-                <SellersGrid>
-                  {sellers.map((seller) => {
-                    const productImages = seller.products
-                      ?.flatMap((product) => product.images || [])
-                      ?.filter((img) => img)
-                      ?.slice(0, 3) || [];
-
-                    return (
-                      <SellerCard key={seller.id || seller._id} to={`${PATHS.SELLERS}/${seller.id || seller._id}`}>
-                        <SellerCardHeader>
-                          <SellerAvatarContainer>
-                            <SellerAvatar
-                              src={seller.avatar || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23ffc400' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='40' font-weight='bold'%3EShop%3C/text%3E%3C/svg%3E"}
-                              alt={seller.shopName || seller.name}
-                              onError={(e) => {
-                                e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23ffc400' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='40' font-weight='bold'%3EShop%3C/text%3E%3C/svg%3E";
-                              }}
-                            />
-                            <VerifiedBadge>
-                              <FaShieldAlt />
-                            </VerifiedBadge>
-                          </SellerAvatarContainer>
-                          <SellerHeaderContent>
-                            <SellerName>{seller.shopName || seller.name}</SellerName>
-                            <SellerRating>
-                              <StarRating rating={seller.rating || seller.ratings?.average || 0} size="14px" />
-                              <RatingText>
-                                {(seller.rating || seller.ratings?.average || 0).toFixed(1)}
-                              </RatingText>
-                            </SellerRating>
-                            {seller.location && (
-                              <SellerLocation>
-                                <FaMapMarkerAlt size={12} />
-                                <span>{seller.location}</span>
-                              </SellerLocation>
-                            )}
-                          </SellerHeaderContent>
-                        </SellerCardHeader>
-
-                        <SellerCardBody>
-                          <SellerStats>
-                            <StatItem>
-                              <StatIcon>📦</StatIcon>
-                              <StatContent>
-                                <StatValue>{seller.productCount || seller.products?.length || 0}</StatValue>
-                                <StatLabel>Products</StatLabel>
-                              </StatContent>
-                            </StatItem>
-                            {seller.totalSold && (
-                              <StatItem>
-                                <StatIcon>✅</StatIcon>
-                                <StatContent>
-                                  <StatValue>{seller.totalSold}</StatValue>
-                                  <StatLabel>Sold</StatLabel>
-                                </StatContent>
-                              </StatItem>
-                            )}
-                          </SellerStats>
-
-                          {productImages.length > 0 && (
-                            <ProductPreviewSection>
-                              <PreviewLabel>Featured Products</PreviewLabel>
-                              <ProductPreview>
-                                {productImages.map((image, index) => (
-                                  <PreviewImageWrapper key={index}>
-                                    <PreviewImage
-                                      src={image}
-                                      alt={`Product ${index + 1}`}
-                                      onError={(e) => {
-                                        e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect fill='%23e2e8f0' width='80' height='80'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2364748b' font-size='24'%3EP%3C/text%3E%3C/svg%3E";
-                                      }}
-                                    />
-                                  </PreviewImageWrapper>
-                                ))}
-                                {productImages.length < 3 && (seller.productCount || seller.products?.length || 0) > productImages.length && (
-                                  <MoreProductsIndicator>
-                                    +{Math.max(0, (seller.productCount || seller.products?.length || 0) - productImages.length)}
-                                  </MoreProductsIndicator>
-                                )}
-                              </ProductPreview>
-                            </ProductPreviewSection>
-                          )}
-                        </SellerCardBody>
-
-                        <SellerCardFooter>
-                          <ViewShopButton>
-                            View Shop <FaArrowRight />
-                          </ViewShopButton>
-                        </SellerCardFooter>
-                      </SellerCard>
-                    );
-                  })}
-                </SellersGrid>
+          {sellers.length === 0 ? (
+            <EmptyState>
+              <EmptyIcon>🏪</EmptyIcon>
+              <EmptyTitle>No Sellers Found</EmptyTitle>
+              <EmptyText>
+                {searchQuery || minRating > 0 || locationFilter
+                  ? "Try adjusting your filters to see more results."
+                  : "Check back later for new sellers."}
+              </EmptyText>
+              {(searchQuery || minRating > 0 || locationFilter) && (
+                <ClearFiltersButton onClick={clearFilters} style={{ marginTop: '2rem', width: 'auto', padding: '1.2rem 2.4rem' }}>
+                  <FaTimes /> Clear All Filters
+                </ClearFiltersButton>
               )}
-            </MainContent>
-          </ContentLayout>
+            </EmptyState>
+          ) : (
+            <SellersGrid>
+              {sellers.map((seller) => {
+                const productImages = seller.products
+                  ?.flatMap((product) => product.images || [])
+                  ?.filter((img) => img)
+                  ?.slice(0, 3) || [];
+
+                return (
+                  <SellerCard key={seller.id || seller._id} to={`${PATHS.SELLERS}/${seller.id || seller._id}`}>
+                    <SellerCardHeader>
+                      <SellerAvatarContainer>
+                        <SellerAvatar
+                          src={seller.avatar || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23D4882A' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='40' font-weight='bold'%3EShop%3C/text%3E%3C/svg%3E"}
+                          alt={seller.shopName || seller.name}
+                          onError={(e) => {
+                            e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23D4882A' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='40' font-weight='bold'%3EShop%3C/text%3E%3C/svg%3E";
+                          }}
+                        />
+                        <VerifiedBadge>
+                          <FaShieldAlt />
+                        </VerifiedBadge>
+                      </SellerAvatarContainer>
+                      <SellerHeaderContent>
+                        <SellerName>{seller.shopName || seller.name}</SellerName>
+                        <SellerRating>
+                          <StarRating rating={seller.rating || seller.ratings?.average || 0} size="14px" />
+                          <RatingText>{(seller.rating || seller.ratings?.average || 0).toFixed(1)}</RatingText>
+                        </SellerRating>
+                        {seller.location && (
+                          <SellerLocation>
+                            <FaMapMarkerAlt size={12} />
+                            <span>{seller.location}</span>
+                          </SellerLocation>
+                        )}
+                      </SellerHeaderContent>
+                    </SellerCardHeader>
+
+                    <SellerCardBody>
+                      <SellerStats>
+                        <StatItem>
+                          <StatIcon>📦</StatIcon>
+                          <StatContent>
+                            <StatValue>{seller.productCount || seller.products?.length || 0}</StatValue>
+                            <StatLabel>Products</StatLabel>
+                          </StatContent>
+                        </StatItem>
+                        {seller.totalSold && (
+                          <StatItem>
+                            <StatIcon>✅</StatIcon>
+                            <StatContent>
+                              <StatValue>{seller.totalSold}</StatValue>
+                              <StatLabel>Sold</StatLabel>
+                            </StatContent>
+                          </StatItem>
+                        )}
+                      </SellerStats>
+
+                      {productImages.length > 0 && (
+                        <ProductPreviewSection>
+                          <PreviewLabel>Featured Products</PreviewLabel>
+                          <ProductPreview>
+                            {productImages.map((image, index) => (
+                              <PreviewImageWrapper key={index}>
+                                <PreviewImage
+                                  src={image}
+                                  alt={`Product ${index + 1}`}
+                                  onError={(e) => {
+                                    e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect fill='%23f0e8d8' width='80' height='80'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23D4882A' font-size='24'%3EP%3C/text%3E%3C/svg%3E";
+                                  }}
+                                />
+                              </PreviewImageWrapper>
+                            ))}
+                            {productImages.length < 3 && (seller.productCount || seller.products?.length || 0) > productImages.length && (
+                              <MoreProductsIndicator>
+                                +{Math.max(0, (seller.productCount || seller.products?.length || 0) - productImages.length)}
+                              </MoreProductsIndicator>
+                            )}
+                          </ProductPreview>
+                        </ProductPreviewSection>
+                      )}
+                    </SellerCardBody>
+
+                    <SellerCardFooter>
+                      <ViewShopButton>
+                        View Shop <FaArrowRight />
+                      </ViewShopButton>
+                    </SellerCardFooter>
+                  </SellerCard>
+                );
+              })}
+            </SellersGrid>
+          )}
         </Container>
       </ContentWrapper>
     </PageContainer>
@@ -392,23 +341,43 @@ export default function SellersListPage() {
 // Styled Components
 const PageContainer = styled.div`
   min-height: 100vh;
-  background: linear-gradient(to bottom, var(--color-grey-50) 0%, var(--color-white-0) 100%);
+  background: #f9f7f4;
 `;
 
 const PageHeader = styled.div`
-  padding: 3rem 0;
+  padding: 5rem 0;
   text-align: center;
   margin-bottom: 2rem;
-  background: var(--color-white-0);
-  border-bottom: 1px solid var(--color-grey-200);
+  background: linear-gradient(135deg, #1a1f2e 0%, #2d3444 50%, #1a2035 100%);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(212,136,42,0.12) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 30% 50%, rgba(212,136,42,0.2) 0%, transparent 60%);
+    pointer-events: none;
+  }
 `;
 
 const PageTitle = styled.h1`
   font-size: 3.5rem;
   font-weight: 700;
-  color: var(--color-grey-800);
+  color: #ffffff;
   margin-bottom: 1rem;
   letter-spacing: -1px;
+  position: relative;
+  z-index: 1;
 
   @media ${devicesMax.md} {
     font-size: 2.5rem;
@@ -417,31 +386,74 @@ const PageTitle = styled.h1`
 
 const PageDescription = styled.p`
   font-size: 1.6rem;
-  color: var(--color-grey-600);
+  color: rgba(255,255,255,0.7);
   margin: 0;
+  position: relative;
+  z-index: 1;
 `;
 
 const ContentWrapper = styled.div`
-  padding: 2rem 0;
+  padding: 2rem 0 4rem;
   width: 100%;
 `;
 
-const ContentLayout = styled.div`
+const FilterBar = styled.div`
   display: flex;
-  gap: 2rem;
-  align-items: flex-start;
+  align-items: center;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+  background: #ffffff;
+  border: 1px solid #f0e8d8;
+  border-radius: 16px;
+  padding: 1.4rem 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 
   @media ${devicesMax.md} {
-    flex-direction: column;
-    gap: 1rem;
+    padding: 1.2rem;
+    gap: 0.8rem;
   }
+`;
+
+const RatingPillRow = styled.div`
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+`;
+
+const RatingPill = styled.button`
+  padding: 0.6rem 1.4rem;
+  border-radius: 20px;
+  border: 1.5px solid ${props => props.$active ? '#D4882A' : 'var(--color-grey-200)'};
+  background: ${props => props.$active ? '#fff7ed' : '#ffffff'};
+  color: ${props => props.$active ? '#B8711F' : 'var(--color-grey-700)'};
+  font-size: 1.3rem;
+  font-weight: ${props => props.$active ? '600' : '500'};
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  &:hover {
+    border-color: #D4882A;
+    background: #fff7ed;
+    color: #B8711F;
+  }
+`;
+
+const ResultsBar = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
 `;
 
 const FilterSidebar = styled.aside`
   width: 280px;
   background: var(--color-white-0);
   border-radius: 16px;
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  border: 1px solid #f0e8d8;
   padding: 2rem;
   position: sticky;
   top: 2rem;
@@ -562,7 +574,7 @@ const SearchInput = styled.input`
 
   &:focus {
     outline: none;
-    border-color: var(--color-primary-500);
+    border-color: #D4882A;
     background: var(--color-white-0);
   }
 
@@ -582,15 +594,15 @@ const RatingOption = styled.div`
   align-items: center;
   gap: 1rem;
   padding: 1rem;
-  border: 2px solid ${props => props.$active ? 'var(--color-primary-500)' : 'var(--color-grey-200)'};
+  border: 2px solid ${props => props.$active ? '#D4882A' : 'var(--color-grey-200)'};
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: ${props => props.$active ? 'var(--color-yellow-100)' : 'var(--color-white-0)'};
+  background: ${props => props.$active ? '#fff7ed' : 'var(--color-white-0)'};
 
   &:hover {
-    border-color: var(--color-primary-500);
-    background: var(--color-yellow-100);
+    border-color: #D4882A;
+    background: #fff7ed;
   }
 
   span {
@@ -613,7 +625,7 @@ const LocationSelect = styled.select`
 
   &:focus {
     outline: none;
-    border-color: var(--color-primary-500);
+    border-color: #D4882A;
     background: var(--color-white-0);
   }
 `;
@@ -621,7 +633,7 @@ const LocationSelect = styled.select`
 const ClearFiltersButton = styled.button`
   width: 100%;
   padding: 1.2rem;
-  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
   color: white;
   border: none;
   border-radius: 12px;
@@ -630,10 +642,12 @@ const ClearFiltersButton = styled.button`
   cursor: pointer;
   transition: all 0.3s ease;
   margin-top: 1rem;
+  box-shadow: 0 4px 14px rgba(212,136,42,0.3);
 
   &:hover {
+    background: linear-gradient(135deg, #B8711F 0%, #D4882A 100%);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 196, 0, 0.3);
+    box-shadow: 0 6px 18px rgba(212,136,42,0.4);
   }
 `;
 
@@ -681,20 +695,20 @@ const FilterBadge = styled.div`
   align-items: center;
   gap: 0.5rem;
   padding: 0.6rem 1.2rem;
-  background: linear-gradient(135deg, var(--color-yellow-100) 0%, var(--color-white-0) 100%);
-  border: 1px solid rgba(255, 196, 0, 0.3);
+  background: #fff7ed;
+  border: 1px solid rgba(212,136,42,0.3);
   border-radius: 20px;
   font-size: 1.3rem;
-  color: var(--color-grey-800);
+  color: #B8711F;
   font-weight: 500;
 
   svg {
     cursor: pointer;
-    color: var(--color-grey-600);
+    color: #D4882A;
     transition: color 0.3s ease;
 
     &:hover {
-      color: var(--color-grey-800);
+      color: #B8711F;
     }
   }
 `;
@@ -720,8 +734,8 @@ const MobileFilterButton = styled.button`
   transition: all 0.3s ease;
 
   &:hover {
-    border-color: var(--color-primary-500);
-    color: var(--color-primary-500);
+    border-color: #D4882A;
+    color: #D4882A;
   }
 
   @media ${devicesMax.md} {
@@ -756,13 +770,12 @@ const SortSelect = styled.select`
 
 const SellersGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2.5rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
   width: 100%;
 
-  @media ${devicesMax.lg} {
+  @media (max-width: 1280px) {
     grid-template-columns: repeat(3, 1fr);
-    gap: 2rem;
   }
 
   @media ${devicesMax.md} {
@@ -772,7 +785,7 @@ const SellersGrid = styled.div`
 
   @media ${devicesMax.sm} {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: 1.2rem;
   }
 `;
 
@@ -800,13 +813,13 @@ const ViewShopButton = styled.div`
   justify-content: center;
   gap: 0.5rem;
   padding: 1rem 1.5rem;
-  background: linear-gradient(135deg, var(--color-grey-50) 0%, var(--color-white-0) 100%);
+  background: linear-gradient(135deg, #fff7ed 0%, #ffffff 100%);
   border-radius: 12px;
   font-size: 1.4rem;
   font-weight: 600;
-  color: var(--color-grey-800);
+  color: #D4882A;
   transition: all 0.3s ease;
-  border: 1px solid var(--color-grey-200);
+  border: 1px solid #f0e8d8;
 
   svg {
     transition: transform 0.3s ease;
@@ -818,10 +831,10 @@ const SellerAvatar = styled.img`
   height: 100px;
   border-radius: 50%;
   object-fit: cover;
-  border: 4px solid white;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border: 4px solid #f0e8d8;
+  box-shadow: 0 4px 16px rgba(212,136,42,0.15);
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
 `;
 
 const SellerCard = styled(Link)`
@@ -829,25 +842,25 @@ const SellerCard = styled(Link)`
   background: white;
   border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   text-decoration: none;
   color: inherit;
   display: flex;
   flex-direction: column;
   height: 100%;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  border: 1px solid #f0e8d8;
 
   &:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-    border-color: rgba(255, 196, 0, 0.3);
+    transform: translateY(-6px);
+    box-shadow: 0 12px 36px rgba(212,136,42,0.15);
+    border-color: rgba(212,136,42,0.35);
 
     ${ViewShopButton} {
-      background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
+      background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
       transform: translateX(5px);
       color: white;
-      border-color: rgba(255, 196, 0, 0.3);
+      border-color: rgba(212,136,42,0.4);
 
       svg {
         transform: translateX(3px);
@@ -863,12 +876,12 @@ const SellerCard = styled(Link)`
 const SellerCardHeader = styled.div`
   position: relative;
   padding: 2rem 2rem 1.5rem;
-  background: linear-gradient(135deg, var(--color-grey-50) 0%, var(--color-white-0) 100%);
+  background: linear-gradient(135deg, #fffbf4 0%, #ffffff 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  border-bottom: 1px solid var(--color-grey-100);
+  border-bottom: 1px solid #f0e8d8;
 `;
 
 const SellerAvatarContainer = styled.div`
@@ -1038,21 +1051,21 @@ const MoreProductsIndicator = styled.div`
   width: 70px;
   height: 70px;
   border-radius: 12px;
-  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-size: 1.4rem;
   font-weight: 700;
-  border: 2px solid rgba(255, 196, 0, 0.3);
+  border: 2px solid rgba(212,136,42,0.3);
   flex-shrink: 0;
 `;
 
 const SellerCardFooter = styled.div`
   padding: 1.5rem 2rem;
-  border-top: 1px solid var(--color-grey-100);
-  background: var(--color-grey-50);
+  border-top: 1px solid #f0e8d8;
+  background: #fffbf4;
 `;
 
 const EmptyState = styled.div`

@@ -1,21 +1,17 @@
-/**
- * WishlistPage Component - Optimized
- * 
- * Improvements:
- * - Memoized product extraction for better performance
- * - Better empty state handling
- * - Optimized re-renders
- * - Loading state handling
- */
-
 import { useMemo } from "react";
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 import { Link } from "react-router-dom";
+import { FaHeart, FaShoppingBag, FaArrowRight } from "react-icons/fa";
 import { useWishlist } from '../../shared/hooks/useWishlist';
 import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 import seoConfig from '../../shared/config/seoConfig';
-import ProductCard from '../../shared/components/ProductCard';
+import WishlistProductCard from './WishlistProductCard';
 import { LoadingState } from '../../components/loading';
+
+const fadeUp = keyframes`
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
 
 const WishlistPage = () => {
   useDynamicPageTitle({
@@ -31,362 +27,284 @@ const WishlistPage = () => {
   });
   const { data: wishlistData, isLoading, error } = useWishlist();
 
-  // Memoized product extraction - only recalculates when wishlistData changes
   const wishlist = useMemo(() => {
     if (!wishlistData) return [];
-    
-    // Extract products from wishlist items
     const wishlistItems = wishlistData?.data?.wishlist?.products || wishlistData?.data?.products || [];
-    
-    // Map wishlist items to products, handling both structures
     return wishlistItems
-      .filter(Boolean) // Remove any null/undefined items first
+      .filter(Boolean)
       .map((item) => {
-        // If item has a product property (populated), use item.product
-        if (item && item.product && typeof item.product === 'object') {
-          return item.product;
-        }
-        // Otherwise, item is already the product
+        if (item && item.product && typeof item.product === 'object') return item.product;
         return item;
       })
-      .filter(Boolean); // Remove any null/undefined products
+      .filter(Boolean);
   }, [wishlistData]);
 
-  // Show loading state
   if (isLoading) {
     return (
       <PageContainer>
-        <MainContent>
-          <LoadingState message="Loading your wishlist..." />
-        </MainContent>
+        <LoadingState message="Loading your wishlist..." />
       </PageContainer>
     );
   }
 
-  // Show error state
   if (error) {
     return (
       <PageContainer>
-        <MainContent>
-          <EmptyState>
-            <EmptyIcon>⚠️</EmptyIcon>
-            <EmptyTitle>Error loading wishlist</EmptyTitle>
-            <EmptyText>
-              {error.message || "Something went wrong. Please try again."}
-            </EmptyText>
-            <ShopButton to="/">Continue Shopping</ShopButton>
-          </EmptyState>
-        </MainContent>
+        <EmptyBox>
+          <EmptyIconWrap style={{ background: '#fff1f0' }}>⚠️</EmptyIconWrap>
+          <EmptyTitle>Something went wrong</EmptyTitle>
+          <EmptyText>{error.message || "We couldn't load your wishlist. Please try again."}</EmptyText>
+          <ShopButton to="/">Continue Shopping <FaArrowRight /></ShopButton>
+        </EmptyBox>
       </PageContainer>
     );
   }
 
   return (
     <PageContainer>
-      <MainContent>
-        <PageHeader>
-          <PageTitle>Your Wishlist</PageTitle>
-          <PageSubtitle>
-            {wishlist.length} item{wishlist.length !== 1 ? "s" : ""} saved for
-            later
-          </PageSubtitle>
-        </PageHeader>
+      {/* ── Banner ───────────────────────────────────────────── */}
+      <PageBanner>
+        <BannerOverlay />
+        <BannerInner>
+          <BannerIcon><FaHeart /></BannerIcon>
+          <BannerTextGroup>
+            <BannerTitle>My Wishlist</BannerTitle>
+            <BannerSub>
+              {wishlist.length} saved item{wishlist.length !== 1 ? 's' : ''} — ready to order when you are
+            </BannerSub>
+          </BannerTextGroup>
+        </BannerInner>
+      </PageBanner>
 
+      <ContentWrap>
         {wishlist.length === 0 ? (
-          <EmptyState>
-            <EmptyIcon>❤️</EmptyIcon>
+          <EmptyBox>
+            <EmptyIconWrap>
+              <FaHeart />
+            </EmptyIconWrap>
             <EmptyTitle>Your wishlist is empty</EmptyTitle>
             <EmptyText>
-              Save items you love by clicking the heart icon
+              Tap the heart icon on any product to save it here for later.
             </EmptyText>
-            <ShopButton to="/">Continue Shopping</ShopButton>
-          </EmptyState>
+            <ShopButton to="/">
+              <FaShoppingBag /> Browse Products
+            </ShopButton>
+          </EmptyBox>
         ) : (
           <>
             <WishlistGrid>
-              {wishlist.map((product) => {
-                return (
-                  <ProductCard
-                    key={product._id}
-                    product={product}
-                    showWishlistButton={false}
-                    showRemoveButton={true}
-                  />
-                );
-              })}
+              {wishlist.map((product) => (
+                <WishlistProductCard
+                  key={product._id || product.id}
+                  product={product}
+                />
+              ))}
             </WishlistGrid>
 
-            <ContinueShopping to="/">Continue Shopping</ContinueShopping>
+            <BottomRow>
+              <ContinueLink to="/">
+                <FaShoppingBag /> Continue Shopping
+              </ContinueLink>
+            </BottomRow>
           </>
         )}
-      </MainContent>
+      </ContentWrap>
     </PageContainer>
   );
 };
 
-// Styled Components
+export default WishlistPage;
+
+/* ─── Styled Components ──────────────────────────────────── */
+
 const PageContainer = styled.div`
   width: 100%;
-  background-color: #f8f9fc;
   min-height: 100vh;
+  background: #f9f7f4;
+  font-family: "Inter", sans-serif;
 `;
 
-const MainContent = styled.div`
-  width: 100%;
-  margin: 40px auto;
-  padding: 0 20px;
+/* ── Banner ─────────────────── */
+const PageBanner = styled.div`
+  position: relative;
+  background: linear-gradient(135deg, #1a1f2e 0%, #2d3444 50%, #1a2035 100%);
+  overflow: hidden;
+  padding: 2.5rem 2rem;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(212,136,42,0.12) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
+  }
 `;
 
-const PageHeader = styled.div`
-  text-align: center;
-  margin-bottom: 40px;
+const BannerOverlay = styled.div`
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(212,136,42,0.15) 0%, transparent 60%);
+  pointer-events: none;
 `;
 
-const PageTitle = styled.h1`
-  font-size: 32px;
+const BannerInner = styled.div`
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  animation: ${fadeUp} 0.4s ease;
+`;
+
+const BannerIcon = styled.div`
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(212,136,42,0.2);
+  border: 2px solid rgba(212,136,42,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: #D4882A;
+  flex-shrink: 0;
+`;
+
+const BannerTextGroup = styled.div``;
+
+const BannerTitle = styled.h1`
+  font-size: 1.75rem;
   font-weight: 700;
-  margin-bottom: 10px;
-  color: #2e3a59;
+  color: #ffffff;
+  margin: 0 0 0.25rem 0;
+  line-height: 1.2;
 
-  @media (max-width: 768px) {
-    font-size: 28px;
+  @media (max-width: 480px) {
+    font-size: 1.4rem;
   }
 `;
 
-const PageSubtitle = styled.p`
-  font-size: 18px;
-  color: #858796;
-  max-width: 600px;
+const BannerSub = styled.p`
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.65);
+  margin: 0;
+`;
+
+/* ── Content ─────────────────── */
+const ContentWrap = styled.div`
+  max-width: 1300px;
   margin: 0 auto;
-
-  @media (max-width: 768px) {
-    font-size: 16px;
-  }
-`;
-
-const EmptyState = styled.div`
-  background: white;
-  border-radius: 15px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-  padding: 60px 20px;
-  text-align: center;
-  max-width: 600px;
-  margin: 0 auto;
-`;
-
-const EmptyIcon = styled.div`
-  font-size: 60px;
-  margin-bottom: 20px;
-`;
-
-const EmptyTitle = styled.h2`
-  font-size: 24px;
-  margin-bottom: 10px;
-  color: #2e3a59;
-`;
-
-const EmptyText = styled.p`
-  color: #858796;
-  margin-bottom: 30px;
-  font-size: 16px;
-`;
-
-const ShopButton = styled(Link)`
-  display: inline-block;
-  background: #4e73df;
-  color: white;
-  padding: 12px 30px;
-  border-radius: 30px;
-  text-decoration: none;
-  font-weight: 600;
-  transition: background 0.3s;
-
-  &:hover {
-    background: #2e59d9;
-  }
+  padding: 2rem 1.5rem 3rem;
 `;
 
 const WishlistGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
-  margin-bottom: 40px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  width: 100%;
+  align-items: stretch;
+  animation: ${fadeUp} 0.45s ease 0.1s both;
 
-  /* Responsive breakpoints for vertical columns */
-  @media (max-width: 1400px) {
-    grid-template-columns: repeat(3, 1fr);
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+    gap: 1rem;
   }
 
-  @media (max-width: 1024px) {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
+  @media (min-width: 768px) {
+    gap: 1.15rem;
   }
 
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-
-  @media (max-width: 480px) {
-    gap: 16px;
+  @media (min-width: 1200px) {
+    gap: 1.25rem;
   }
 `;
 
-// const WishlistItem = styled.div`
-//   background: white;
-//   border-radius: 15px;
-//   overflow: hidden;
-//   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-//   transition: all 0.3s;
-//   position: relative;
-//   border: 1px solid #eaecf4;
-//   display: flex;
-//   flex-direction: column;
+const BottomRow = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-top: 2.5rem;
+`;
 
-//   &:hover {
-//     transform: translateY(-5px);
-//     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
-//   }
-// `;
+const ContinueLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 2rem;
+  border: 2px solid #D4882A;
+  border-radius: 30px;
+  color: #D4882A;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  background: transparent;
 
-// const ProductImage = styled.div`
-//   height: 200px;
-//   width: 100%;
-//   background: #f8f9fc;
-//   display: flex;
-//   align-items: center;
-//   justify-content: center;
-//   padding: 20px;
+  &:hover {
+    background: #D4882A;
+    color: #ffffff;
+  }
+`;
 
-//   img {
-//     max-height: 100%;
-//     max-width: 100%;
-//     object-fit: contain;
-//     transition: transform 0.3s;
-//   }
+/* ── Empty / Error State ─────── */
+const EmptyBox = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 4rem 1.5rem;
+  max-width: 480px;
+  margin: 3rem auto;
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px solid #f0e8d8;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  animation: ${fadeUp} 0.4s ease;
+`;
 
-//   &:hover img {
-//     transform: scale(1.05);
-//   }
-// `;
+const EmptyIconWrap = styled.div`
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(212,136,42,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: #D4882A;
+  margin-bottom: 1.5rem;
+`;
 
-// const ProductInfo = styled.div`
-//   padding: 20px;
-//   flex-grow: 1;
-//   display: flex;
-//   flex-direction: column;
-// `;
+const EmptyTitle = styled.h2`
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1a1f2e;
+  margin: 0 0 0.5rem 0;
+`;
 
-// const ProductName = styled.h3`
-//   font-size: 18px;
-//   font-weight: 600;
-//   margin-bottom: 10px;
-//   color: #2e3a59;
-// `;
+const EmptyText = styled.p`
+  font-size: 0.95rem;
+  color: #6b7280;
+  margin: 0 0 1.75rem 0;
+  line-height: 1.55;
+`;
 
-// const ProductPrice = styled.div`
-//   font-size: 20px;
-//   font-weight: 700;
-//   color: #4e73df;
-//   margin-top: auto;
-//   margin-bottom: 15px;
-// `;
-
-// const ActionsRow = styled.div`
-//   display: flex;
-//   gap: 10px;
-//   margin-top: 10px;
-// `;
-
-// const RemoveButton = styled.button`
-//   flex: 1;
-//   display: flex;
-//   align-items: center;
-//   justify-content: center;
-//   gap: 8px;
-//   padding: 10px;
-//   background: #f8f9fc;
-//   color: #e74a3b;
-//   border: 1px solid #eaecf4;
-//   border-radius: 5px;
-//   font-weight: 500;
-//   cursor: pointer;
-//   transition: all 0.3s;
-
-//   &:hover {
-//     background: #ffecec;
-//     border-color: #e74a3b;
-//   }
-
-//   span {
-//     font-size: 14px;
-//   }
-// `;
-
-// const AddToCartButton = styled.button`
-//   flex: 1;
-//   display: flex;
-//   align-items: center;
-//   justify-content: center;
-//   gap: 8px;
-//   padding: 10px;
-//   background: #4e73df;
-//   color: white;
-//   border: none;
-//   border-radius: 5px;
-//   font-weight: 500;
-//   cursor: pointer;
-//   transition: background 0.3s;
-
-//   &:hover {
-//     background: #2e59d9;
-//   }
-
-//   span {
-//     font-size: 14px;
-//   }
-// `;
-
-// const WishlistButton = styled.button`
-//   position: absolute;
-//   top: 15px;
-//   right: 15px;
-//   background: rgba(255, 255, 255, 0.8);
-//   border: none;
-//   border-radius: 50%;
-//   width: 36px;
-//   height: 36px;
-//   display: flex;
-//   align-items: center;
-//   justify-content: center;
-//   cursor: pointer;
-//   z-index: 10;
-//   transition: all 0.3s;
-//   font-size: 18px;
-
-//   &:hover {
-//     background: white;
-//     transform: scale(1.1);
-//   }
-// `;
-
-const ContinueShopping = styled(Link)`
-  display: block;
-  width: max-content;
-  margin: 0 auto;
-  padding: 12px 30px;
-  background: #f8f9fc;
-  color: #4e73df;
-  border: 1px solid #4e73df;
+const ShopButton = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 2rem;
+  background: #D4882A;
+  color: #ffffff;
   border-radius: 30px;
   text-decoration: none;
   font-weight: 600;
-  transition: all 0.3s;
+  font-size: 0.9rem;
+  transition: background 0.2s ease;
 
   &:hover {
-    background: #4e73df;
-    color: white;
+    background: #B8711F;
   }
 `;
-
-export default WishlistPage;

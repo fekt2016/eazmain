@@ -12,14 +12,12 @@ const Container = styled.div`
   justify-content: top;
  
 `;
-const Main = styled.div`
-  flex: 1;
+const Main = styled.main`
+  flex: 1 0 auto;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   padding: 1rem;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-
 `;
 
 export default function MainLayout() {

@@ -3,30 +3,21 @@ import styled, { css } from "styled-components";
 import { devicesMax } from '../../shared/styles/breakpoint';
 import {
   FaShoppingBag,
-  FaStar,
-  FaMapMarkerAlt,
-  FaMoneyBill,
   FaHeart,
   FaTicketAlt,
-  FaCreditCard,
-  FaHistory,
-  FaUserShield,
+  FaMoneyBillWave,
   FaUserCog,
   FaSignOutAlt,
   FaChevronRight,
   FaHome,
-  FaThLarge,
-  FaTag,
   FaHeadset,
   FaEnvelope,
 } from "react-icons/fa";
 import useAuth from '../hooks/useAuth';
-import { getAvatarUrl } from '../utils/avatarUtils';
 import { getOptimizedImageUrl, IMAGE_SLOTS } from '../utils/cloudinaryConfig';
 import { useWalletBalance } from '../hooks/useWallet';
 import { useGetUserOrders, getOrderStructure } from '../hooks/useOrder';
 import { useMemo, useState } from 'react';
-
 import { PATHS } from '../../routes/routePaths';
 
 const getInitials = (name) => {
@@ -60,498 +51,416 @@ const SideBar = ({ $isOpen, onClose }) => {
     });
   };
 
-  const browseItems = [
-    { path: PATHS.HOME, icon: <FaHome />, label: "Home" },
-  ];
+  const handleNavClick = () => {
+    if (window.innerWidth <= 768 && onClose) onClose();
+  };
+
   const accountItems = [
     { path: PATHS.PROFILE, icon: <FaUserCog />, label: "My Profile" },
     { path: PATHS.ORDERS, icon: <FaShoppingBag />, label: "My Orders", badge: orderCount > 0 ? orderCount : null },
     { path: PATHS.WISHLIST, icon: <FaHeart />, label: "Wishlist" },
-    { path: PATHS.CREDIT, icon: <FaMoneyBill />, label: "Balance", amount: isBalanceLoading ? "..." : `GH₵${balance.toFixed(2)}` },
     { path: PATHS.COUPON, icon: <FaTicketAlt />, label: "Coupons" },
   ];
 
-  const handleNavClick = () => {
-    if (window.innerWidth <= 768 && onClose) {
-      onClose();
-    }
-  };
-
   return (
     <SidebarContainer $isOpen={$isOpen}>
-      {/* User name and avatar at top */}
-      <UserSectionTop>
-        <SidebarUserAvatar>
-          {showAvatarPhoto ? (
-            <img src={getOptimizedImageUrl(user.photo, IMAGE_SLOTS.AVATAR)} alt={user?.name || 'User'} onError={() => setAvatarError(true)} />
-          ) : null}
-          <SidebarInitials $show={!showAvatarPhoto}>{getInitials(user?.name || user?.email)}</SidebarInitials>
-        </SidebarUserAvatar>
-        <SidebarUserName>{user?.name || user?.email || 'Account'}</SidebarUserName>
-      </UserSectionTop>
 
+      {/* ── User card ── */}
+      <UserCard>
+        <AvatarRing>
+          {showAvatarPhoto ? (
+            <img
+              src={getOptimizedImageUrl(user.photo, IMAGE_SLOTS.AVATAR)}
+              alt={user?.name || 'User'}
+              onError={() => setAvatarError(true)}
+            />
+          ) : (
+            <InitialsFallback>{getInitials(user?.name || user?.email)}</InitialsFallback>
+          )}
+        </AvatarRing>
+        <UserMeta>
+          <UserFullName>{user?.name || 'Account'}</UserFullName>
+          <UserEmailText>{user?.email || ''}</UserEmailText>
+        </UserMeta>
+      </UserCard>
+
+      {/* ── Balance card ── */}
+      <BalanceCard to={PATHS.CREDIT} onClick={handleNavClick}>
+        <BalanceIcon><FaMoneyBillWave /></BalanceIcon>
+        <BalanceInfo>
+          <BalanceLabel>Available Balance</BalanceLabel>
+          <BalanceAmount>
+            {isBalanceLoading ? '—' : `GH₵${balance.toFixed(2)}`}
+          </BalanceAmount>
+        </BalanceInfo>
+        <FaChevronRight size={12} style={{ color: '#D4882A', marginLeft: 'auto', flexShrink: 0 }} />
+      </BalanceCard>
+
+      {/* ── Navigation ── */}
       <NavContainer>
+
         <NavGroup>
           <NavGroupLabel>Browse</NavGroupLabel>
-          {browseItems.map((item) => (
-            <NavItem key={item.path} to={item.path} $activeclassname="active" onClick={handleNavClick}>
-              <NavIcon>{item.icon}</NavIcon>
-              <NavLabel>{item.label}</NavLabel>
-              <NavArrow><FaChevronRight /></NavArrow>
-            </NavItem>
-          ))}
+          <NavItem to={PATHS.HOME} onClick={handleNavClick} end>
+            <NavIcon><FaHome /></NavIcon>
+            <NavLabel>Home</NavLabel>
+            <NavArrow><FaChevronRight /></NavArrow>
+          </NavItem>
         </NavGroup>
+
         <NavGroup>
-          <NavGroupLabel>Account</NavGroupLabel>
+          <NavGroupLabel>My Account</NavGroupLabel>
           {accountItems.map((item) => (
-            <NavItem key={item.path} to={item.path} $activeclassname="active" onClick={handleNavClick}>
+            <NavItem key={item.path} to={item.path} onClick={handleNavClick}>
               <NavIcon>{item.icon}</NavIcon>
               <NavLabel>{item.label}</NavLabel>
               <NavMeta>
                 {item.badge && <NotificationBadge>{item.badge}</NotificationBadge>}
-                {item.amount && <NavAmount>{item.amount}</NavAmount>}
                 <NavArrow><FaChevronRight /></NavArrow>
               </NavMeta>
             </NavItem>
           ))}
         </NavGroup>
+
         <NavGroup>
           <NavGroupLabel>Help</NavGroupLabel>
-          <NavItem to={PATHS.SUPPORT} $activeclassname="active" onClick={handleNavClick}>
+          <NavItem to={PATHS.SUPPORT} onClick={handleNavClick}>
             <NavIcon><FaHeadset /></NavIcon>
             <NavLabel>24/7 Support</NavLabel>
             <NavArrow><FaChevronRight /></NavArrow>
           </NavItem>
-          <NavItem to={PATHS.CONTACT} $activeclassname="active" onClick={handleNavClick}>
+          <NavItem to={PATHS.CONTACT} onClick={handleNavClick}>
             <NavIcon><FaEnvelope /></NavIcon>
             <NavLabel>Contact Us</NavLabel>
             <NavArrow><FaChevronRight /></NavArrow>
           </NavItem>
-          <LogoutButton onClick={handleLogout}>
-            <LogoutIcon><FaSignOutAlt /></LogoutIcon>
-            <LogoutText>Logout</LogoutText>
-          </LogoutButton>
         </NavGroup>
       </NavContainer>
+
+      {/* ── Logout ── */}
+      <LogoutWrapper>
+        <LogoutButton onClick={handleLogout}>
+          <LogoutIcon><FaSignOutAlt /></LogoutIcon>
+          <LogoutText>Logout</LogoutText>
+        </LogoutButton>
+      </LogoutWrapper>
+
     </SidebarContainer>
   );
 };
 
 export default SideBar;
 
+/* ─── Styled Components ─────────────────────────────────── */
 
 const SidebarContainer = styled.div`
- display: flex;
- flex-direction: column;
- border-right: 1px solid var(--color-grey-100);
- position: sticky;
- top: 0;
- box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.02), 0 4px 12px rgba(0, 0, 0, 0.03);
- transition: all 0.3s ease;
- width: 30rem;
- height: 100vh;
- background: white;
-
- @media ${devicesMax.md} {
-   position: fixed;
-   top: 0;
-   left: 0;
-   z-index: 1000;
-   transform: translateX(-100%);
-   width: 30rem;
-   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-   height: 100vh;
-   overflow-y: auto;
-  
-   ${props => props.$isOpen && css`
-     transform: translateX(0);
-   `}
- }
-`
-
-const BrandSection = styled.div`
-  padding: var(--spacing-xl) var(--spacing-lg) var(--spacing-lg);
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  border-bottom: 1px solid var(--color-grey-100);
-`;
-
-const BrandLogo = styled.div`
-  width: 4rem;
-  height: 4rem;
-  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-white-0);
-  font-size: 1.8rem;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-`;
-
-const BrandText = styled.div`
   display: flex;
   flex-direction: column;
+  width: 30rem;
+  height: 100vh;
+  background: #ffffff;
+  border-right: 1px solid #f0e8d8;
+  position: sticky;
+  top: 0;
+  overflow: hidden;
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.04);
+
+  @media ${devicesMax.md} {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    transform: translateX(-100%);
+    width: 30rem;
+    height: 100vh;
+    overflow-y: auto;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    ${props => props.$isOpen && css`
+      transform: translateX(0);
+    `}
+  }
 `;
 
-const BrandName = styled.h1`
-  font-size: 2rem;
-  font-weight: 500;
-  color: var(--color-grey-900);
-  margin: 0;
-  line-height: 1;
-`;
-
-const BrandSubtitle = styled.span`
-  font-size: 1.2rem;
-  color: var(--color-grey-500);
-  font-weight: 500;
-  margin-top: 0.2rem;
-`;
-
-const UserSectionTop = styled.div`
-  padding: var(--spacing-lg);
+/* User Card */
+const UserCard = styled.div`
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
-  border-bottom: 1px solid var(--color-grey-200);
-  margin-bottom: var(--spacing-sm);
+  gap: 1.1rem;
+  padding: 1.6rem 1.4rem 1.2rem;
+  border-bottom: 1px solid #f5ede0;
+  background: linear-gradient(135deg, #fffbf2 0%, #fff9ee 100%);
+  flex-shrink: 0;
 `;
-const SidebarUserAvatar = styled.div`
-  width: 48px;
-  height: 48px;
+
+const AvatarRing = styled.div`
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
+  border: 2.5px solid #D4882A;
+  overflow: hidden;
+  flex-shrink: 0;
   background: #9CA3AF;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
-  flex-shrink: 0;
-  position: relative;
-  img { width: 100%; height: 100%; object-fit: cover; }
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 `;
-const SidebarInitials = styled.span`
-  display: ${(p) => (p.$show ? 'flex' : 'none')};
-  align-items: center;
-  justify-content: center;
-  position: absolute;
-  inset: 0;
+
+const InitialsFallback = styled.span`
   color: #fff;
-  font-size: 1.2rem;
-  font-weight: 600;
-`;
-const SidebarUserName = styled.div`
-  font-size: 1.4rem;
-  font-weight: 600;
-  color: var(--color-grey-900);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 `;
 
-const UserSection = styled.div`
-  padding: var(--spacing-lg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-md);
-  background: var(--color-grey-50);
-  margin: var(--spacing-md) var(--spacing-lg);
-  border-radius: 16px;
-  border: 1px solid var(--color-grey-200);
-`;
-
-const UserAvatar = styled.div`
-  width: 5rem;
-  height: 5rem;
-  border-radius: 14px;
-  background: var(--color-white-0);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2.4rem;
-  color: var(--color-primary-500);
-  position: relative;
-  overflow: hidden;
-`;
-
-const AvatarImage = styled.img`
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 14px;
-  border: 2px solid var(--color-white-0);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-`;
-
-const OnlineIndicator = styled.div`
-  position: absolute;
-  bottom: 0.2rem;
-  right: 0.2rem;
-  width: 1.2rem;
-  height: 1.2rem;
-  background: var(--color-success-500);
-  border: 2px solid var(--color-white-0);
-  border-radius: 50%;
-`;
-
-const UserInfo = styled.div`
-  flex: 1;
+const UserMeta = styled.div`
   min-width: 0;
+  flex: 1;
 `;
 
-const UserName = styled.div`
-  font-size: 1.6rem;
-  font-weight: 500;
-  color: var(--color-grey-900);
-  margin-bottom: 0.2rem;
+const UserFullName = styled.div`
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1a1a1a;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   text-transform: capitalize;
+  line-height: 1.2;
+  margin-bottom: 0.2rem;
 `;
 
-const UserTier = styled.div`
-  font-size: 1.2rem;
-  color: var(--primary-700);
-  font-weight: 500;
-  background: var(--color-primary-50);
-  padding: 0.2rem 0.8rem;
-  border-radius: 20px;
-  display: inline-block;
+const UserEmailText = styled.div`
+  font-size: 1.1rem;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
-const StatsSection = styled.div`
+/* Balance Card */
+const BalanceCard = styled(NavLink)`
   display: flex;
   align-items: center;
-  background: var(--color-white-0);
-  margin: 0 var(--spacing-lg) var(--spacing-lg);
-  padding: var(--spacing-md);
-  border-radius: 16px;
-  border: 1px solid var(--color-grey-200);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  gap: 0.9rem;
+  margin: 1rem 1.2rem 0.25rem;
+  padding: 0.85rem 1rem;
+  background: linear-gradient(135deg, #fff7ed 0%, #fef3e2 100%);
+  border: 1px solid rgba(212, 136, 42, 0.22);
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  flex-shrink: 0;
+
+  &:hover {
+    box-shadow: 0 4px 14px rgba(212, 136, 42, 0.15);
+    transform: translateY(-1px);
+  }
 `;
 
-const StatItem = styled.div`
+const BalanceIcon = styled.div`
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(212, 136, 42, 0.12);
+  color: #D4882A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+`;
+
+const BalanceInfo = styled.div`
   flex: 1;
-  text-align: center;
-  padding: 0 var(--spacing-sm);
+  min-width: 0;
 `;
 
-const StatValue = styled.div`
-  font-size: 1.8rem;
+const BalanceLabel = styled.div`
+  font-size: 1rem;
+  color: #9a6b2a;
   font-weight: 500;
-  color: var(--color-grey-900);
+  line-height: 1;
+  margin-bottom: 0.2rem;
+`;
+
+const BalanceAmount = styled.div`
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #B8711F;
   line-height: 1;
 `;
 
-const StatLabel = styled.div`
-  font-size: 1.1rem;
-  color: var(--color-grey-600);
-  margin-top: 0.4rem;
-  font-weight: 500;
-`;
-
-const StatDivider = styled.div`
-  width: 1px;
-  height: 3rem;
-  background: var(--color-grey-300);
-`;
-
+/* Navigation */
 const NavContainer = styled.nav`
   flex: 1;
-  padding: 0 var(--spacing-lg);
+  padding: 0.5rem 1rem 0;
   overflow-y: auto;
-  
+
   &::-webkit-scrollbar {
-    width: 4px;
+    width: 3px;
   }
-  
   &::-webkit-scrollbar-track {
     background: transparent;
   }
-  
   &::-webkit-scrollbar-thumb {
-    background: var(--color-grey-300);
+    background: #e5e7eb;
     border-radius: 2px;
   }
 `;
 
 const NavGroup = styled.div`
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: 0.25rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #f5f5f5;
+
+  &:last-child {
+    border-bottom: none;
+  }
 `;
 
 const NavGroupLabel = styled.div`
-  font-size: 1.2rem;
-  font-weight: 500;
-  color: var(--color-grey-500);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #9ca3af;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: var(--spacing-sm);
-  padding: 0 var(--spacing-sm);
-  
-  @media ${devicesMax.lg} {
-    display: none;
-  }
+  letter-spacing: 0.6px;
+  padding: 0.7rem 0.6rem 0.3rem;
 `;
 
-// Define NavArrow, NavIcon, and NotificationBadge before NavItem since NavItem references them
 const NavArrow = styled.span`
-  font-size: 1rem;
-  opacity: 0;
-  transition: all 0.2s ease;
-  color: var(--color-grey-500);
+  font-size: 0.85rem;
+  color: #d1d5db;
   display: flex;
   align-items: center;
-  
-  @media ${devicesMax.lg} {
-    display: none;
-  }
+  transition: transform 0.2s ease, color 0.2s ease;
 `;
 
 const NavIcon = styled.span`
-  font-size: 1.6rem;
-  margin-right: var(--spacing-md);
+  font-size: 1.5rem;
   display: flex;
   align-items: center;
-  min-width: 2.4rem;
-  transition: all 0.2s ease;
-  color: var(--color-grey-600);
+  color: #9ca3af;
   flex-shrink: 0;
+  transition: color 0.2s ease;
+  width: 2rem;
 `;
 
 const NotificationBadge = styled.span`
-  background: var(--color-error-500);
-  color: var(--color-white-0);
-  font-size: 1.1rem;
-  font-weight: 500;
-  padding: 0.2rem 0.6rem;
-  border-radius: 8px;
-  min-width: 2rem;
-  height: 2rem;
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 0.1rem 0.5rem;
+  border-radius: 20px;
+  min-width: 1.8rem;
+  height: 1.8rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  
-  @media ${devicesMax.lg} {
-    position: absolute;
-    top: 0.8rem;
-    right: 0.8rem;
-    transform: scale(0.8);
-  }
 `;
 
 const NavItem = styled(NavLink)`
   display: flex;
   align-items: center;
-  padding: var(--spacing-md) var(--spacing-sm);
-  color: var(--color-grey-700);
-  transition: all 0.2s ease;
-  border-radius: 12px;
+  gap: 0.85rem;
+  padding: 0.75rem 0.6rem;
+  color: #374151;
   text-decoration: none;
-  margin-bottom: 0.4rem;
-  position: relative;
+  border-radius: 10px;
+  margin-bottom: 0.15rem;
+  transition: background 0.15s ease, color 0.15s ease;
+  border-left: 3px solid transparent;
 
   &:hover {
-    background: var(--color-primary-50);
-    color: var(--color-primary-700);
-    transform: translateX(4px);
-    
+    background: #fdf5e4;
+    color: #B8711F;
+
+    ${NavIcon} {
+      color: #D4882A;
+    }
+
     ${NavArrow} {
-      opacity: 1;
+      color: #D4882A;
       transform: translateX(2px);
     }
   }
 
   &.active {
-    background: var(--color-primary-50);
-    color: var(--color-primary-600);
-    border-left: 4px solid var(--color-primary-600);
+    background: #fff7ed;
+    color: #B8711F;
+    border-left-color: #D4882A;
     font-weight: 600;
-    
+
     ${NavIcon} {
-      color: var(--color-primary-600);
+      color: #D4882A;
     }
-    
+
     ${NavArrow} {
-      color: var(--color-primary-600);
-      opacity: 1;
-    }
-    
-    ${NotificationBadge} {
-      background: var(--color-primary-600);
-      color: var(--color-white-0);
+      color: #D4882A;
     }
   }
 `;
 
 const NavLabel = styled.span`
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   font-weight: 500;
   flex: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-left: 1rem;
-  display: block;
 `;
 
 const NavMeta = styled.div`
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: 0.5rem;
   margin-left: auto;
 `;
 
-const NavAmount = styled.span`
-  font-size: 1.2rem;
-  font-weight: 500;
-  color: var(--color-success-600);
-  background: var(--color-success-50);
-  padding: 0.2rem 0.6rem;
-  border-radius: 8px;
-  display: block;
-`;
-
-const LogoutSection = styled.div`
-  padding: var(--spacing-lg);
-  border-top: 1px solid var(--color-grey-100);
-  margin-top: auto;
+/* Logout */
+const LogoutWrapper = styled.div`
+  padding: 0.85rem 1rem;
+  border-top: 1px solid #f0f0f0;
+  flex-shrink: 0;
 `;
 
 const LogoutButton = styled.button`
   display: flex;
   align-items: center;
+  gap: 0.85rem;
   width: 100%;
-  padding: var(--spacing-md) var(--spacing-sm);
+  padding: 0.75rem 0.6rem;
   background: transparent;
   border: none;
-  border-radius: 12px;
-  color: var(--color-grey-700);
+  border-radius: 10px;
+  color: #6b7280;
   cursor: pointer;
-  font-size: 1.4rem;
-  font-weight: 500;
-  text-align: left;
-  margin-top: 0.4rem;
-  
+  transition: background 0.15s ease, color 0.15s ease;
+
   &:hover {
-    background: var(--color-error-50, #fee2e2);
-    color: var(--color-error-600, #dc2626);
+    background: #fee2e2;
+    color: #dc2626;
   }
 `;
 
 const LogoutIcon = styled.span`
-  font-size: 1.6rem;
-  margin-right: var(--spacing-md);
+  font-size: 1.5rem;
   display: flex;
   align-items: center;
-  min-width: 2.4rem;
+  flex-shrink: 0;
+  width: 2rem;
 `;
 
 const LogoutText = styled.span`
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   font-weight: 500;
-  flex: 1;
-  text-align: left;
 `;

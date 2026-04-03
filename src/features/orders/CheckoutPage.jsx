@@ -15,7 +15,7 @@ import {
 import { useGetUserAddress, useCreateAddress } from "../../shared/hooks/useAddress";
 import { useCreateOrder } from "../../shared/hooks/useOrder";
 import { useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import {
   useGetCart,
   getCartStructure,
@@ -49,6 +49,11 @@ import locationApi from "../../shared/services/locationApi";
 import neighborhoodService from "../../shared/services/neighborhoodApi";
 import { isEazShopProduct } from "../../shared/utils/isEazShopProduct";
 import { orderService } from "../../shared/services/orderApi";
+import shippingApi from "../../shared/services/shippingApi";
+import {
+  FREE_SHIPPING_MIN_FALLBACK_GHS,
+  CHECKOUT_BANK_TRANSFER,
+} from "../../shared/config/appConfig";
 
 // ────────────────────────────────────────────────
 // Helper functions
@@ -145,7 +150,7 @@ const normalizeApiResponse = (response) => {
 
 const getShippingItems = (rawItems) => {
   if (!rawItems || !Array.isArray(rawItems) || rawItems.length === 0) {
-    logger.warn("⚠️ getShippingItems: rawItems is empty or not an array");
+    if (!import.meta.env.PROD) logger.warn("⚠️ getShippingItems: rawItems is empty or not an array");
     return [];
   }
 
@@ -181,7 +186,7 @@ const getShippingItems = (rawItems) => {
 
   const filtered = mapped.filter((item) => {
     const isValid = item.productId && item.sellerId;
-    if (!isValid) {
+    if (!isValid && !import.meta.env.PROD) {
       logger.warn("⚠️ Filtering out item - missing productId or sellerId:", item);
     }
     return isValid;
@@ -291,6 +296,7 @@ const CheckoutPage = () => {
 
   // Delivery method states
   const [deliveryMethod, setDeliveryMethod] = useState("dispatch");
+  const [hasChosenDelivery, setHasChosenDelivery] = useState(false);
   const [deliverySpeed, setDeliverySpeed] = useState("standard");
   const [isFragileItem, setIsFragileItem] = useState(false); // "standard" or "same_day"
   const [selectedPickupCenterId, setSelectedPickupCenterId] = useState(null);
@@ -304,19 +310,16 @@ const CheckoutPage = () => {
       walletData?.data?.wallet?.balance ??
       0;
 
-    // DEBUG: Log wallet balance details for troubleshooting
-    if ((typeof __DEV__ !== 'undefined' && __DEV__) || !import.meta.env.PROD) {
-      if (walletData) {
-        logger.debug('[CheckoutPage] 💰 Wallet balance details:', {
-          availableBalance: walletData?.data?.wallet?.availableBalance,
-          balance: walletData?.data?.wallet?.balance,
-          holdAmount: walletData?.data?.wallet?.holdAmount,
-          calculatedAvailableBalance: walletData?.data?.wallet?.balance
-            ? Math.max(0, (walletData.data.wallet.balance || 0) - (walletData.data.wallet.holdAmount || 0))
-            : 0,
-          finalCreditBalance: availableBalance,
-        });
-      }
+    if (import.meta.env.DEV && walletData) {
+      logger.debug('[CheckoutPage] 💰 Wallet balance details:', {
+        availableBalance: walletData?.data?.wallet?.availableBalance,
+        balance: walletData?.data?.wallet?.balance,
+        holdAmount: walletData?.data?.wallet?.holdAmount,
+        calculatedAvailableBalance: walletData?.data?.wallet?.balance
+          ? Math.max(0, (walletData.data.wallet.balance || 0) - (walletData.data.wallet.holdAmount || 0))
+          : 0,
+        finalCreditBalance: availableBalance,
+      });
     }
 
     return availableBalance;
@@ -365,50 +368,11 @@ const CheckoutPage = () => {
 
   const products = useMemo(
     () =>
-      (rawItems || []).map((item) => {
-        // CRITICAL: Extract sku (standardized field name) with backward compatibility
-        let sku = item.sku || item.variantSku || null;
-
-        // Backward compatibility: If sku missing, try to resolve from variant
-        if (!sku && item.variant) {
-          // Case 1: variant object with SKU
-          if (typeof item.variant === 'object' && item.variant !== null && item.variant.sku) {
-            sku = item.variant.sku.trim().toUpperCase();
-          }
-          // Case 2: variant ID - resolve from product variants
-          else if (Array.isArray(item.product?.variants)) {
-            const variantId = typeof item.variant === 'string'
-              ? item.variant
-              : (item.variant._id?.toString ? item.variant._id.toString() : String(item.variant._id || item.variant));
-
-            if (variantId) {
-              const found = item.product.variants.find(
-                (v) => {
-                  const vId = v._id?.toString ? v._id.toString() : String(v._id);
-                  return vId === variantId;
-                }
-              );
-              if (found?.sku) {
-                sku = found.sku.trim().toUpperCase();
-              }
-            }
-          }
-        }
-
-        // Case 3: Single-variant product auto-assignment
-        if (!sku && Array.isArray(item.product?.variants) && item.product.variants.length === 1) {
-          const variantSku = item.product.variants[0].sku;
-          if (variantSku) {
-            sku = variantSku.trim().toUpperCase();
-          }
-        }
-
-        return {
-          product: item.product,
-          quantity: item.quantity,
-          sku: sku, // Standardized field name - SKU is the unit of commerce
-        };
-      }),
+      (rawItems || []).map((item) => ({
+        product: item.product,
+        quantity: item.quantity,
+        sku: item.sku || item.variantSku || resolveSkuFromCartItem(item),
+      })),
     [rawItems]
   );
 
@@ -416,6 +380,27 @@ const CheckoutPage = () => {
     () => products.some((item) => item.product?.isPreOrder),
     [products],
   );
+
+  const { data: freeDeliveryResponse, isError: freeDeliveryError, isLoading: freeDeliveryLoading } =
+    useQuery({
+      queryKey: ["shipping", "free-delivery"],
+      queryFn: () => shippingApi.getFreeDeliveryInfo(),
+      staleTime: 5 * 60 * 1000,
+    });
+
+  const freeShippingMinGhs = useMemo(() => {
+    const raw = freeDeliveryResponse?.data?.freeDeliveryThreshold;
+    if (raw != null && Number(raw) > 0) return Number(raw);
+    if (freeDeliveryError) return FREE_SHIPPING_MIN_FALLBACK_GHS;
+    if (freeDeliveryLoading) return null;
+    return null;
+  }, [freeDeliveryResponse, freeDeliveryError, freeDeliveryLoading]);
+
+  const showFreeShippingPromo =
+    freeShippingMinGhs != null && freeShippingMinGhs > 0 && !hasPreorderItem;
+
+  const qualifiesForFreeShipping =
+    showFreeShippingPromo && subTotal >= freeShippingMinGhs;
 
   // Derive origin country from pre-order products.
   // If pre-order product exists but no origin specified, default to "China"
@@ -516,8 +501,7 @@ const CheckoutPage = () => {
     if (paymentMethod !== "credit_balance") return false;
     const isInsufficient = creditBalance < total;
 
-    // DEBUG: Log balance check details
-    if ((typeof __DEV__ !== 'undefined' && __DEV__) || !import.meta.env.PROD) {
+    if (import.meta.env.DEV) {
       logger.debug('[CheckoutPage] 💰 Balance check:', {
         creditBalance,
         total,
@@ -550,6 +534,20 @@ const CheckoutPage = () => {
     });
   }, []);
 
+  useEffect(() => {
+    if (!qualifiesForFreeShipping || deliveryMethod !== "dispatch") {
+      return;
+    }
+    setDeliverySpeed("standard");
+    setShippingFee(0);
+    setShippingQuote({
+      totalShippingFee: 0,
+      deliveryEstimate: "",
+      shippingType: "standard",
+    });
+    setIsFragileItem(false);
+  }, [qualifiesForFreeShipping, deliveryMethod]);
+
   // ────────────────────────────────────────────────
   // Effects
   // ────────────────────────────────────────────────
@@ -562,8 +560,6 @@ const CheckoutPage = () => {
         paymentMethod,
         couponCode,
         couponData,
-        discount,
-        newAddress,
       };
       storage.saveCheckoutState(checkoutState);
       storage.saveRedirect("/checkout");
@@ -577,8 +573,6 @@ const CheckoutPage = () => {
     paymentMethod,
     couponCode,
     couponData,
-    discount,
-    newAddress,
   ]);
 
   // Restore saved checkout state after login
@@ -592,10 +586,15 @@ const CheckoutPage = () => {
       if (savedState.paymentMethod) setPaymentMethod(savedState.paymentMethod);
       if (savedState.couponCode) setCouponCode(savedState.couponCode);
       if (savedState.couponData) setCouponData(savedState.couponData);
-      if (savedState.discount) setDiscount(savedState.discount);
-      if (savedState.newAddress) setNewAddress(savedState.newAddress);
     }
   }, [isAuthenticated]);
+
+  // Stable cache key for cart contents — prevents unnecessary validateCart calls on background refetches
+  const cartItemsKey = useMemo(() => {
+    const list = getCartStructure(cartData);
+    if (!list?.length) return "";
+    return list.map((item) => `${item.product?._id || item.productId}:${item.quantity}:${item.sku || item.variantSku || ""}`).join(",");
+  }, [cartData]);
 
   // Fetch backend totals (including tax from admin platform-settings) when cart or options change
   useEffect(() => {
@@ -632,7 +631,7 @@ const CheckoutPage = () => {
     );
   }, [
     isAuthenticated,
-    cartData,
+    cartItemsKey,
     couponCode,
     deliveryMethod,
     selectedAddressId,
@@ -730,6 +729,7 @@ const CheckoutPage = () => {
 
   const handleDeliveryMethodChange = (method) => {
     setDeliveryMethod(method);
+    setHasChosenDelivery(true);
     // Reset delivery speed when switching away from dispatch
     if (method !== "dispatch") {
       setDeliverySpeed("standard");
@@ -747,7 +747,7 @@ const CheckoutPage = () => {
 
   const handleAddressChange = (e) => {
     const { name, value } = e.target;
-    setErrors({});
+    setErrors((prev) => { const next = { ...prev }; delete next[name]; return next; });
     setFormError("");
 
     // SECURITY: Basic sanitization while typing (no HTML, limited length)
@@ -833,17 +833,21 @@ const CheckoutPage = () => {
           // This gives us the proper digital address format (e.g., GA-123-4567)
           let digitalAddress = "";
           try {
-            const digitalAddressResponse = await locationApi.convertCoordinatesToDigitalAddress(latitude, longitude);
-            const digitalAddressData = digitalAddressResponse?.data || digitalAddressResponse;
-            console.log("digitalAddressData", digitalAddressData);
-            digitalAddress = digitalAddressData?.digitalAddress || "";
-          } catch (digitalError) {
-            // If digital address conversion fails, log but don't block the rest of the flow
-            logger.warn("Failed to convert coordinates to GhanaPost GPS digital address:", digitalError);
-            // Fallback: Generate a basic format if conversion fails
-            const latSuffix = Math.floor((Math.abs(latitude) % 1) * 10000);
-            const lngPrefix = Math.abs(Math.floor(longitude));
-            digitalAddress = `GA-${String(lngPrefix).padStart(3, "0")}-${String(latSuffix).padStart(4, "0")}`;
+            // Try hybrid lookup first (combines GhanaPostGPS + Google Maps)
+            const hybridResponse = await locationApi.hybridLocationLookup(latitude, longitude);
+            const hybridData = hybridResponse?.data || hybridResponse;
+            digitalAddress = hybridData?.digitalAddress || "";
+          } catch {
+            // Hybrid failed — fall back to direct GhanaPostGPS conversion
+            try {
+              const digitalAddressResponse = await locationApi.convertCoordinatesToDigitalAddress(latitude, longitude);
+              const digitalAddressData = digitalAddressResponse?.data || digitalAddressResponse;
+              digitalAddress = digitalAddressData?.digitalAddress || "";
+            } catch (digitalError) {
+              // Both failed — leave empty so the user can fill it in manually
+              logger.warn("Failed to get GhanaPost GPS digital address:", digitalError);
+              digitalAddress = "";
+            }
           }
 
           // Extract address fields from reverse geocoding
@@ -925,7 +929,7 @@ const CheckoutPage = () => {
             matchedNeighborhood
               ? matchedNeighborhood.name
               : hadNeighborhoodResults
-                ? (prev.area || "")
+                ? ""
                 : extractedTown;
 
           setNewAddress((prev) => ({
@@ -1314,6 +1318,10 @@ const CheckoutPage = () => {
           }
         } else if (paymentMethod === "credit_balance") {
           // Credit balance payment is handled on the backend
+          // Invalidate wallet balance immediately for UI update
+          queryClient.invalidateQueries({ queryKey: ['wallet', 'balance'] });
+          queryClient.invalidateQueries({ queryKey: ['creditBalance'] });
+          queryClient.refetchQueries({ queryKey: ['wallet', 'balance'] });
           // Navigate to order confirmation page
           const confirmationPath = `/order-confirmation?orderId=${order._id}`;
           navigate(confirmationPath);
@@ -1321,13 +1329,6 @@ const CheckoutPage = () => {
           // For non-Paystack payments (COD, bank transfer), navigate directly with order data
           // Use the same URL structure as Paystack: /order-confirmation?orderId=xxx
           // This ensures consistency between payment methods
-
-          // CRITICAL: Invalidate wallet balance immediately for UI update (if wallet payment)
-          if (paymentMethod === "credit_balance" || paymentMethod === "wallet") {
-            queryClient.invalidateQueries({ queryKey: ['wallet', 'balance'] });
-            queryClient.invalidateQueries({ queryKey: ['creditBalance'] });
-            queryClient.refetchQueries({ queryKey: ['wallet', 'balance'] });
-          }
 
           const confirmationPath = `/order-confirmation?orderId=${order._id}`;
 
@@ -1384,33 +1385,64 @@ const CheckoutPage = () => {
 
   return (
     <CheckoutContainer>
+
+      {/* ── Checkout Header with Progress Steps ── */}
+      <CheckoutHeader>
+        <CheckoutTitle>Secure Checkout</CheckoutTitle>
+        <ProgressSteps>
+          <StepItem>
+            <StepBubble $done={!!selectedAddressId} $active>
+              {selectedAddressId ? <FaCheck /> : "1"}
+            </StepBubble>
+            <StepLabel>Address</StepLabel>
+          </StepItem>
+          <StepConnector $done={!!selectedAddressId} />
+          <StepItem>
+            <StepBubble $done={hasChosenDelivery} $active={!!selectedAddressId}>
+              {hasChosenDelivery ? <FaCheck /> : "2"}
+            </StepBubble>
+            <StepLabel>Delivery</StepLabel>
+          </StepItem>
+          <StepConnector $done={hasChosenDelivery} />
+          <StepItem>
+            <StepBubble $active={!!deliveryMethod}>3</StepBubble>
+            <StepLabel>Payment</StepLabel>
+          </StepItem>
+        </ProgressSteps>
+      </CheckoutHeader>
+
       <CheckoutGrid>
-        {/* Shipping Section */}
-        <ShippingSection>
-          <SectionHeader>
-            <SectionTitle>Shipping Information</SectionTitle>
-          </SectionHeader>
+        {/* ── LEFT: Sequential Steps ── */}
+        <CheckoutLeft>
 
-          <TabContainer>
-            <TabButton
-              as={activeTab === "existing" ? PrimaryButton : GhostButton}
-              $size="sm"
-              $active={activeTab === "existing"}
-              onClick={() => setActiveTab("existing")}
-            >
-              Select Address
-            </TabButton>
-            <TabButton
-              as={activeTab === "new" ? PrimaryButton : GhostButton}
-              $size="sm"
-              $active={activeTab === "new"}
-              onClick={() => setActiveTab("new")}
-            >
-              Add New Address
-            </TabButton>
-          </TabContainer>
+          {/* STEP 1: Shipping Address */}
+          <StepCard>
+            <StepCardHeader>
+              <StepBadge $done={!!selectedAddressId}>
+                {selectedAddressId ? <FaCheck /> : "1"}
+              </StepBadge>
+              <StepCardTitle>Shipping Address</StepCardTitle>
+            </StepCardHeader>
 
-          <TabContent>
+            <TabToggleWrap>
+              <TabToggle
+                $active={activeTab === "existing"}
+                onClick={() => setActiveTab("existing")}
+                type="button"
+              >
+                <FaMapMarkerAlt />
+                My Addresses
+              </TabToggle>
+              <TabToggle
+                $active={activeTab === "new"}
+                onClick={() => setActiveTab("new")}
+                type="button"
+              >
+                + New Address
+              </TabToggle>
+            </TabToggleWrap>
+
+            <TabContent>
             {activeTab === "existing" ? (
               <AddressList>
                 {address.map((addr) => (
@@ -1470,23 +1502,40 @@ const CheckoutPage = () => {
                     }
                   />
                 )}
-                <FormRow>
-                  <FormGroup>
-                    <Label>Full Name *</Label>
-                    <Input
-                      type="text"
-                      name="fullName"
-                      value={newAddress.fullName}
-                      onChange={handleAddressChange}
-                      placeholder="Full name"
-                      required
-                    />
-                    {errors.fullName && (
-                      <ErrorText>{errors.fullName}</ErrorText>
-                    )}
-                  </FormGroup>
-                </FormRow>
-                <FormRow>
+
+                <AddressFormSection>
+                  <AddressFormSectionLabel>Contact</AddressFormSectionLabel>
+                  <FormRow>
+                    <FormGroup>
+                      <Label>Full Name *</Label>
+                      <Input
+                        type="text"
+                        name="fullName"
+                        value={newAddress.fullName}
+                        onChange={handleAddressChange}
+                        placeholder="e.g. Kwame Mensah"
+                        required
+                      />
+                      {errors.fullName && <ErrorText>{errors.fullName}</ErrorText>}
+                    </FormGroup>
+                    <FormGroup>
+                      <Label>Contact Number *</Label>
+                      <Input
+                        type="tel"
+                        name="contactPhone"
+                        value={newAddress.contactPhone}
+                        onChange={handleAddressChange}
+                        placeholder="020 123 4567"
+                        required
+                      />
+                      {errors.contactPhone && <ErrorText>{errors.contactPhone}</ErrorText>}
+                      <HintText>MTN / Telecel / AirtelTigo — 10 digits</HintText>
+                    </FormGroup>
+                  </FormRow>
+                </AddressFormSection>
+
+                <AddressFormSection>
+                  <AddressFormSectionLabel>Location</AddressFormSectionLabel>
                   <FormGroup>
                     <Label>Street Address *</Label>
                     <Input
@@ -1494,123 +1543,102 @@ const CheckoutPage = () => {
                       name="streetAddress"
                       value={newAddress.streetAddress}
                       onChange={handleAddressChange}
-                      placeholder="123 Main Street"
+                      placeholder="e.g. 15 Liberation Road"
                       required
                     />
-                    {errors.streetAddress && (
-                      <ErrorText>{errors.streetAddress}</ErrorText>
-                    )}
+                    {errors.streetAddress && <ErrorText>{errors.streetAddress}</ErrorText>}
                   </FormGroup>
-                </FormRow>
-                <FormRow>
-                  <FormGroup>
-                    <Label>Neighborhood/Area *</Label>
-                    {autoNeighborhoodOptions.length > 0 ? (
-                      <>
-                        <Select
-                          name="area"
-                          value={newAddress.area}
-                          onChange={(e) => {
-                            const selectedName = e.target.value;
-                            setNewAddress((prev) => ({
-                              ...prev,
-                              area: selectedName,
-                            }));
-                          }}
-                        >
-                          <option value="">Select neighborhood</option>
-                          {autoNeighborhoodOptions.map((n) => (
-                            <option
-                              key={n._id || n.name}
-                              value={n.name}
-                            >
-                              {n.name}
-                              {n.municipality ? ` (${n.municipality})` : ""}
-                            </option>
-                          ))}
-                        </Select>
-                        <HintText>
-                          We detected multiple neighborhoods for your area. Please choose the correct one.
-                        </HintText>
-                      </>
-                    ) : (
-                      <>
-                        <NeighborhoodAutocomplete
-                          value={newAddress.area}
-                          onChange={handleAddressChange}
-                          city={newAddress.city}
-                          placeholder="Search neighborhood (e.g., Nima, Cantonments, Tema Community 1)"
-                          onSelect={(neighborhood) => {
-                            setNewAddress((prev) => ({
-                              ...prev,
-                              area: neighborhood.name,
-                            }));
-                          }}
-                        />
-                        <HintText>
-                          Start typing to search for your neighborhood
-                        </HintText>
-                      </>
-                    )}
-                    {errors.area && (
-                      <ErrorText>{errors.area}</ErrorText>
-                    )}
-                  </FormGroup>
-                  <FormGroup>
-                    <Label>Landmark</Label>
-                    <Input
-                      type="text"
-                      name="landmark"
-                      value={newAddress.landmark}
-                      onChange={handleAddressChange}
-                      placeholder="Near Osu Castle (optional)"
-                    />
-                  </FormGroup>
-                </FormRow>
-                <FormRow>
-                  <FormGroup>
-                    <Label>City *</Label>
-                    <Select
-                      name="city"
-                      value={newAddress.city}
-                      onChange={handleAddressChange}
-                      required
-                    >
-                      <option value="">Select City</option>
-                      <option value="ACCRA">Accra</option>
-                      <option value="TEMA">Tema</option>
-                    </Select>
-                    {errors.city && <ErrorText>{errors.city}</ErrorText>}
-                    <HintText>
-                      Saiisai currently delivers only in Accra and Tema
-                    </HintText>
-                  </FormGroup>
-                  <FormGroup>
-                    <Label>Region *</Label>
-                    <Input
-                      type="text"
-                      name="region"
-                      value={newAddress.region}
-                      onChange={handleAddressChange}
-                      placeholder="Greater Accra"
-                      required
-                    />
-                    {errors.region && (
-                      <ErrorText>{errors.region}</ErrorText>
-                    )}
-                  </FormGroup>
-                </FormRow>
-                <FormRow>
+
+                  <FormRow>
+                    <FormGroup>
+                      <Label>Neighborhood / Area *</Label>
+                      {autoNeighborhoodOptions.length > 0 ? (
+                        <>
+                          <Select
+                            name="area"
+                            value={newAddress.area}
+                            onChange={(e) => {
+                              const selectedName = e.target.value;
+                              setNewAddress((prev) => ({ ...prev, area: selectedName }));
+                            }}
+                          >
+                            <option value="">Select neighborhood</option>
+                            {autoNeighborhoodOptions.map((n) => (
+                              <option key={n._id || n.name} value={n.name}>
+                                {n.name}{n.municipality ? ` (${n.municipality})` : ""}
+                              </option>
+                            ))}
+                          </Select>
+                          <HintText>Multiple matches found — pick the correct one</HintText>
+                        </>
+                      ) : (
+                        <>
+                          <NeighborhoodAutocomplete
+                            value={newAddress.area}
+                            onChange={handleAddressChange}
+                            city={newAddress.city}
+                            placeholder="e.g. Nima, Cantonments, Tema Comm. 1"
+                            onSelect={(neighborhood) => {
+                              setNewAddress((prev) => ({ ...prev, area: neighborhood.name }));
+                            }}
+                          />
+                          <HintText>Start typing to search your neighborhood</HintText>
+                        </>
+                      )}
+                      {errors.area && <ErrorText>{errors.area}</ErrorText>}
+                    </FormGroup>
+                    <FormGroup>
+                      <Label>Landmark <span style={{ fontWeight: 400, color: "var(--color-grey-400)" }}>(optional)</span></Label>
+                      <Input
+                        type="text"
+                        name="landmark"
+                        value={newAddress.landmark}
+                        onChange={handleAddressChange}
+                        placeholder="e.g. Near Osu Castle"
+                      />
+                    </FormGroup>
+                  </FormRow>
+
+                  <FormRow>
+                    <FormGroup>
+                      <Label>City *</Label>
+                      <Select
+                        name="city"
+                        value={newAddress.city}
+                        onChange={handleAddressChange}
+                        required
+                      >
+                        <option value="">Select City</option>
+                        <option value="ACCRA">Accra</option>
+                        <option value="TEMA">Tema</option>
+                      </Select>
+                      {errors.city && <ErrorText>{errors.city}</ErrorText>}
+                      <HintText>Delivery available in Accra and Tema only</HintText>
+                    </FormGroup>
+                    <FormGroup>
+                      <Label>Region *</Label>
+                      <Input
+                        type="text"
+                        name="region"
+                        value={newAddress.region}
+                        onChange={handleAddressChange}
+                        placeholder="e.g. Greater Accra"
+                        required
+                      />
+                      {errors.region && <ErrorText>{errors.region}</ErrorText>}
+                    </FormGroup>
+                  </FormRow>
+
                   <FormGroup>
                     <Label>
-                      Digital Address
+                      Ghana Post Digital Address
                       <LocationButton
                         type="button"
                         onClick={getCurrentLocation}
                         disabled={isFetchingLocation}
                       >
                         <FaSearchLocation />
-                        {isFetchingLocation ? "Detecting..." : "Auto-detect"}
+                        {isFetchingLocation ? "Detecting…" : "Auto-detect"}
                       </LocationButton>
                     </Label>
                     <Input
@@ -1620,34 +1648,12 @@ const CheckoutPage = () => {
                       onChange={handleAddressChange}
                       placeholder="GA-123-4567"
                     />
-                    {errors.digitalAddress && (
-                      <ErrorText>{errors.digitalAddress}</ErrorText>
-                    )}
+                    {errors.digitalAddress && <ErrorText>{errors.digitalAddress}</ErrorText>}
                     {locationError && <ErrorText>{locationError}</ErrorText>}
-                    <HintText>
-                      Format: AA-123-4567 (e.g., GA-123-4567)
-                    </HintText>
+                    <HintText>Format: AA-123-4567 (e.g., GA-123-4567)</HintText>
                   </FormGroup>
-                </FormRow>
-                <FormRow>
-                  <FormGroup>
-                    <Label>Contact Number *</Label>
-                    <Input
-                      type="tel"
-                      name="contactPhone"
-                      value={newAddress.contactPhone}
-                      onChange={handleAddressChange}
-                      placeholder="020 123 4567"
-                      required
-                    />
-                    {errors.contactPhone && (
-                      <ErrorText>{errors.contactPhone}</ErrorText>
-                    )}
-                    <HintText>
-                      Format: 020, 023, 024, etc. followed by 7 digits
-                    </HintText>
-                  </FormGroup>
-                </FormRow>
+                </AddressFormSection>
+
                 <ButtonGroup>
                   <Button
                     type="button"
@@ -1663,23 +1669,24 @@ const CheckoutPage = () => {
                     size="sm"
                     loading={isAddressCreating}
                   >
-                    Save Shipping Address
+                    Save Address
                   </Button>
                 </ButtonGroup>
               </AddressForm>
             )}
-          </TabContent>
-        </ShippingSection>
+            </TabContent>
+          </StepCard>
 
-        {/* Delivery Method Section - Hide for pre-orders */}
-        {!hasPreorderItem && (
-          <DeliveryMethodSection>
-            <SectionHeader>
-              <SectionTitle>Delivery Method</SectionTitle>
-              <InfoText>
-                Saiisai currently delivers only in Accra and Tema
-              </InfoText>
-            </SectionHeader>
+          {/* STEP 2: Delivery Method - Hide for pre-orders */}
+          {!hasPreorderItem && (
+          <StepCard>
+            <StepCardHeader>
+              <StepBadge $done={hasChosenDelivery}>
+                {hasChosenDelivery ? <FaCheck /> : "2"}
+              </StepBadge>
+              <StepCardTitle>Delivery Method</StepCardTitle>
+              <DeliveryNote>Accra &amp; Tema only</DeliveryNote>
+            </StepCardHeader>
 
             <DeliveryOptions>
               {/* Pickup Center */}
@@ -1687,6 +1694,7 @@ const CheckoutPage = () => {
                 $selected={deliveryMethod === "pickup_center"}
                 onClick={() => {
                   setDeliveryMethod("pickup_center");
+                  setHasChosenDelivery(true);
                   setSelectedPickupCenterId(null);
                 }}
               >
@@ -1722,6 +1730,7 @@ const CheckoutPage = () => {
                   checked={deliveryMethod === "pickup_center"}
                   onChange={() => {
                     setDeliveryMethod("pickup_center");
+                    setHasChosenDelivery(true);
                     setSelectedPickupCenterId(null);
                   }}
                 />
@@ -1832,46 +1841,53 @@ const CheckoutPage = () => {
                 />
               </DeliveryOption>
 
-              {/* Shipping Options - Only show when dispatch is selected */}
+              {/* Shipping speed options — hidden when cart qualifies for platform free shipping */}
               {deliveryMethod === "dispatch" && buyerCity && (
                 <>
-                  {/* Saiisai Dispatch Rider Shipping Options */}
-                  <DispatchShippingSection>
-                    {/* <DispatchShippingTitle>Saiisai Dispatch Rider</DispatchShippingTitle> */}
-                    <ShippingOptions
-                      weight={null} // Will be calculated from items
-                      city={buyerCity}
-                      neighborhoodName={
-                        // Use area field as neighborhood name (preferred), fallback to landmark or streetAddress
-                        activeTab === "existing" && selectedAddress
-                          ? (selectedAddress.area || selectedAddress.landmark || selectedAddress.streetAddress)
-                          : activeTab === "new" && newAddress
-                            ? (newAddress.area || newAddress.landmark || newAddress.streetAddress)
-                            : null
-                      }
-                      fragile={isFragileItem}
-                      items={shippingItems}
-                      selectedShippingType={deliverySpeed || "standard"}
-                      onSelect={handleShippingSelect}
-                    />
-                  </DispatchShippingSection>
+                  {qualifiesForFreeShipping ? (
+                    <DispatchShippingSection>
+                      <FreeShippingCheckoutNote>
+                        Free shipping applies to this order (minimum GH₵
+                        {freeShippingMinGhs != null ? freeShippingMinGhs.toFixed(2) : ""}).
+                      </FreeShippingCheckoutNote>
+                    </DispatchShippingSection>
+                  ) : (
+                    <>
+                      <DispatchShippingSection>
+                        <ShippingOptions
+                          weight={null}
+                          city={buyerCity}
+                          neighborhoodName={
+                            activeTab === "existing" && selectedAddress
+                              ? (selectedAddress.area || selectedAddress.landmark || selectedAddress.streetAddress)
+                              : activeTab === "new" && newAddress
+                                ? (newAddress.area || newAddress.landmark || newAddress.streetAddress)
+                                : null
+                          }
+                          fragile={isFragileItem}
+                          items={shippingItems}
+                          selectedShippingType={deliverySpeed || "standard"}
+                          onSelect={handleShippingSelect}
+                        />
+                      </DispatchShippingSection>
 
-                  {/* Fragile Item Checkbox - Below shipping options */}
-                  <FragileCheckboxContainer>
-                    <FragileCheckboxLabel>
-                      <input
-                        type="checkbox"
-                        checked={isFragileItem}
-                        onChange={(e) => setIsFragileItem(e.target.checked)}
-                      />
-                      <span>Fragile Item (Additional handling required)</span>
-                    </FragileCheckboxLabel>
-                    {isFragileItem && (
-                      <FragileHint>
-                        Fragile items require special handling and may incur additional charges.
-                      </FragileHint>
-                    )}
-                  </FragileCheckboxContainer>
+                      <FragileCheckboxContainer>
+                        <FragileCheckboxLabel>
+                          <input
+                            type="checkbox"
+                            checked={isFragileItem}
+                            onChange={(e) => setIsFragileItem(e.target.checked)}
+                          />
+                          <span>Fragile Item (Additional handling required)</span>
+                        </FragileCheckboxLabel>
+                        {isFragileItem && (
+                          <FragileHint>
+                            Fragile items require special handling and may incur additional charges.
+                          </FragileHint>
+                        )}
+                      </FragileCheckboxContainer>
+                    </>
+                  )}
                 </>
               )}
 
@@ -1880,30 +1896,32 @@ const CheckoutPage = () => {
             {isCalculatingShipping && (
               <LoadingState message="Calculating shipping..." />
             )}
-          </DeliveryMethodSection>
-        )}
+          </StepCard>
+          )}
 
-        {/* Pre-order Info Message */}
-        {hasPreorderItem && (
-          <DeliveryMethodSection>
-            <SectionHeader>
-              <SectionTitle>International Pre-Order</SectionTitle>
+          {/* Pre-order Info Message */}
+          {hasPreorderItem && (
+            <StepCard>
+              <StepCardHeader>
+                <StepBadge>2</StepBadge>
+                <StepCardTitle>International Pre-Order</StepCardTitle>
+              </StepCardHeader>
               <InfoText>
                 This is an international pre-order. Shipping charges include international shipping, customs, and local delivery fees.
               </InfoText>
-            </SectionHeader>
-          </DeliveryMethodSection>
-        )}
+            </StepCard>
+          )}
 
-        {/* Payment Section */}
-        <PaymentSection>
-          <SectionHeader>
-            <SectionTitle>Payment Method</SectionTitle>
-            <SecurityBadge>
-              <ShieldIcon>🔒</ShieldIcon>
-              <span>Secure Payment</span>
-            </SecurityBadge>
-          </SectionHeader>
+          {/* STEP 3: Payment Method */}
+          <StepCard>
+            <StepCardHeader>
+              <StepBadge>3</StepBadge>
+              <StepCardTitle>Payment Method</StepCardTitle>
+              <SecurityBadge>
+                <ShieldIcon>🔒</ShieldIcon>
+                <span>Secure</span>
+              </SecurityBadge>
+            </StepCardHeader>
 
           <PaymentOptions>
             {/* Payment on Delivery */}
@@ -1923,9 +1941,9 @@ const CheckoutPage = () => {
                     Pay with cash when your order arrives or pay with mobile
                     money.
                     <br />
-                    <strong style={{ color: 'var(--color-primary-600)', display: 'inline-block', marginTop: '4px' }}>
+                    <PaymentNote>
                       * You can easily update your payment method when the rider arrives at your location.
-                    </strong>
+                    </PaymentNote>
                   </PaymentDescription>
                 </PaymentInfo>
                 {paymentMethod === "payment_on_delivery" && (
@@ -1995,25 +2013,25 @@ const CheckoutPage = () => {
                     <PaymentDetails>
                       <BankDetails>
                         <BankInfo>
-                          <strong>Bank Name:</strong> CBG Bank
+                          <strong>Bank Name:</strong> {CHECKOUT_BANK_TRANSFER.bankName}
                         </BankInfo>
                         <BankInfo>
-                          <strong>Branch:</strong> Nima Branch
+                          <strong>Branch:</strong> {CHECKOUT_BANK_TRANSFER.branch}
                         </BankInfo>
                         <BankInfo>
-                          <strong>Account Name:</strong> EasyworldPc
+                          <strong>Account Name:</strong> {CHECKOUT_BANK_TRANSFER.accountName}
                         </BankInfo>
                         <BankInfo>
-                          <strong>Account Number:</strong> 2297931640001
+                          <strong>Account Number:</strong> {CHECKOUT_BANK_TRANSFER.accountNumber}
                         </BankInfo>
                         <BankInfo>
-                          <strong>Reference:</strong> Your Order Number
+                          <strong>Reference:</strong> {CHECKOUT_BANK_TRANSFER.reference}
                         </BankInfo>
                       </BankDetails>
-                      <p style={{ marginTop: "10px", fontSize: "0.9rem" }}>
+                      <BankNote>
                         Please use the reference number when making your
                         payment
-                      </p>
+                      </BankNote>
                     </PaymentDetails>
                   )}
                 </PaymentInfo>
@@ -2084,377 +2102,862 @@ const CheckoutPage = () => {
               />
             </PaymentOption>
           </PaymentOptions>
-        </PaymentSection>
+          </StepCard>
 
-        {/* Order Summary */}
-        <OrderSummary>
-          <SectionTitle>Order Summary</SectionTitle>
+        </CheckoutLeft>
 
-          {/* Coupon */}
-          <CouponForm>
-            <CouponInput
-              type="text"
-              placeholder="Enter coupon code"
-              value={couponCode}
-              onChange={(e) => {
-                // SECURITY: Sanitize coupon code input
-                const sanitized = sanitizeCouponCode(e.target.value);
-                setCouponCode(sanitized);
-              }}
-              disabled={isApplyingCoupon || discount > 0}
-            />
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleApplyCoupon}
-              loading={isApplyingCoupon}
-              disabled={discount > 0}
-            >
-              Apply
-            </Button>
-            {couponMessage && (
-              <CouponMessage success={discount > 0}>
-                {couponMessage}
-              </CouponMessage>
+        {/* ── RIGHT: Sticky Order Summary ── */}
+        <CheckoutRight>
+          <SummaryCard>
+            <SummaryHeader>
+              <h3>Order Summary</h3>
+              <span>{rawItems.length} item{rawItems.length !== 1 ? "s" : ""}</span>
+            </SummaryHeader>
+
+            {/* Cart Item Thumbnails */}
+            <CartItemsList>
+              {products.map((item, idx) => (
+                <CartItemRow key={idx}>
+                  <CartItemImgWrap>
+                    {item.product?.imageCover ? (
+                      <CartItemImg
+                        src={item.product.imageCover}
+                        alt={item.product?.name || "Product"}
+                        onError={(e) => { e.currentTarget.style.display = "none"; }}
+                      />
+                    ) : (
+                      <CartItemImgPlaceholder />
+                    )}
+                    <CartItemQtyBadge>{item.quantity}</CartItemQtyBadge>
+                  </CartItemImgWrap>
+                  <CartItemInfo>
+                    <CartItemName>{item.product?.name || "Product"}</CartItemName>
+                    {item.sku && <CartItemVariant>{item.sku}</CartItemVariant>}
+                  </CartItemInfo>
+                  <CartItemPrice>
+                    GH₵{(() => {
+                      const variantPrice = item.sku
+                        ? item.product?.variants?.find(
+                            (v) => v.sku && v.sku.toUpperCase() === item.sku.toUpperCase()
+                          )?.price
+                        : null;
+                      const unitPrice = variantPrice ?? item.product?.defaultPrice ?? item.product?.price ?? 0;
+                      return (unitPrice * item.quantity).toFixed(2);
+                    })()}
+                  </CartItemPrice>
+                </CartItemRow>
+              ))}
+            </CartItemsList>
+
+            <SummaryDivider />
+
+            {/* Coupon */}
+            <CouponSection>
+              <CouponForm>
+                <CouponInput
+                  type="text"
+                  placeholder="Promo / coupon code"
+                  value={couponCode}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/<[^>]*>/g, "").substring(0, 50);
+                    setCouponCode(raw);
+                  }}
+                  disabled={isApplyingCoupon || discount > 0}
+                />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleApplyCoupon}
+                  loading={isApplyingCoupon}
+                  disabled={discount > 0}
+                >
+                  Apply
+                </Button>
+              </CouponForm>
+              {couponMessage && (
+                <CouponMessage $success={discount > 0}>{couponMessage}</CouponMessage>
+              )}
+              {couponError && (
+                <ErrorState message={couponError?.message || "Failed to apply coupon"} />
+              )}
+            </CouponSection>
+
+            <SummaryDivider />
+
+            {/* Totals */}
+            <SummaryRow>
+              <span>Subtotal</span>
+              <span>GH₵{(backendSubtotal ?? subTotal).toFixed(2)}</span>
+            </SummaryRow>
+
+            {hasPreorderItem && (
+              <SummaryRow>
+                <span>Order type</span>
+                <span>{isInternationalPreorderEnabled ? "International Pre-order" : "Pre-order"}</span>
+              </SummaryRow>
             )}
 
-            {couponError && (
+            {discount > 0 && (
+              <SummaryRow $highlight>
+                <span>Discount</span>
+                <span>- GH₵{(backendDiscount ?? discount).toFixed(2)}</span>
+              </SummaryRow>
+            )}
+
+            {isInternationalPreorderEnabled && supplierCountry && (
+              <SummaryRow>
+                <span>Country of origin</span>
+                <span>{supplierCountry}</span>
+              </SummaryRow>
+            )}
+
+            {isInternationalPreorderEnabled && internationalBreakdown ? (
+              <>
+                <SummaryRow>
+                  <span>Int&apos;l Shipping ({supplierCountry})</span>
+                  <span>GH₵{(internationalBreakdown.shippingCost || 0).toFixed(2)}</span>
+                </SummaryRow>
+                <SummaryRow>
+                  <span>Customs &amp; Taxes</span>
+                  <span>GH₵{(internationalBreakdown.totalCustoms || 0).toFixed(2)}</span>
+                </SummaryRow>
+                <SummaryRow>
+                  <span>Clearing Fee</span>
+                  <span>GH₵{(internationalBreakdown.clearingFee || 0).toFixed(2)}</span>
+                </SummaryRow>
+                <SummaryRowMuted>
+                  <span>Estimated arrival 15–25 days. Customs delays may occur.</span>
+                </SummaryRowMuted>
+              </>
+            ) : (
+              <SummaryRow>
+                <span>Delivery</span>
+                <span>
+                  {isCalculatingShipping ? (
+                    <LoadingSpinner size="sm" />
+                  ) : shippingFee > 0 ? (
+                    `GH₵${shippingFee.toFixed(2)}`
+                  ) : (
+                    "Free"
+                  )}
+                </span>
+              </SummaryRow>
+            )}
+
+            <SummaryTotalRow>
+              <span>Total</span>
+              <TotalAmount>GH₵{total.toFixed(2)}</TotalAmount>
+            </SummaryTotalRow>
+
+            <PlaceOrderBtn
+              onClick={handlePlaceOrder}
+              disabled={isCreatingOrder || hasInsufficientBalance}
+            >
+              {isCreatingOrder ? (
+                <LoadingSpinner size="sm" />
+              ) : paymentMethod === "mobile_money" ? (
+                "Place Order & Pay →"
+              ) : paymentMethod === "credit_balance" ? (
+                hasInsufficientBalance ? "Insufficient Balance" : "Place Order & Pay →"
+              ) : (
+                "Place Order →"
+              )}
+            </PlaceOrderBtn>
+
+            {(createOrderError || formError) && (
               <ErrorState
-                message={couponError?.message || "Failed to apply coupon"}
+                message={
+                  createOrderError?.response?.data?.message ||
+                  formError ||
+                  createOrderError?.message ||
+                  "Something went wrong"
+                }
               />
             )}
-          </CouponForm>
 
-          {/* Totals – Jumia-style: single price; no tax line (price includes VAT) */}
-          <SummaryItem>
-            <span>Subtotal:</span>
-            <span>GH₵{(backendSubtotal ?? subTotal).toFixed(2)}</span>
-          </SummaryItem>
+            <TrustRow>
+              <span>🔒 SSL Encrypted</span>
+              <span>💳 📱 🏦</span>
+            </TrustRow>
+          </SummaryCard>
+        </CheckoutRight>
 
-          {hasPreorderItem && (
-            <SummaryItem style={{ fontSize: "0.85rem", color: "#4b5563" }}>
-              <span>Order type:</span>
-              <span>
-                {isInternationalPreorderEnabled
-                  ? "International Pre-order"
-                  : "Pre-order"}
-              </span>
-            </SummaryItem>
-          )}
-          {discount > 0 && (
-            <SummaryItem>
-              <span>Discount:</span>
-              <span>- GH₵{(backendDiscount ?? discount).toFixed(2)}</span>
-            </SummaryItem>
-          )}
-
-          {isInternationalPreorderEnabled && (
-            <SummaryItem style={{ fontSize: "0.85rem", color: "#4b5563" }}>
-              <span>Country of origin:</span>
-              <span>{supplierCountry}</span>
-            </SummaryItem>
-          )}
-
-          {isInternationalPreorderEnabled && internationalBreakdown ? (
-            <>
-              <SummaryItem>
-                <span>International Shipping ({supplierCountry}):</span>
-                <span>GH₵{(internationalBreakdown.shippingCost || 0).toFixed(2)}</span>
-              </SummaryItem>
-              <SummaryItem>
-                <span>Estimated Customs &amp; Taxes:</span>
-                <span>GH₵{(internationalBreakdown.totalCustoms || 0).toFixed(2)}</span>
-              </SummaryItem>
-              <SummaryItem>
-                <span>Clearing Fee:</span>
-                <span>GH₵{(internationalBreakdown.clearingFee || 0).toFixed(2)}</span>
-              </SummaryItem>
-              <SummaryItem style={{ fontSize: "0.8rem", color: "#4b5563" }}>
-                <span>
-                  International pre-order. Estimated arrival 15–25 days. Customs
-                  delays may occur.
-                </span>
-              </SummaryItem>
-            </>
-          ) : (
-            <SummaryItem>
-              <span>Local Delivery (Shipping Charges):</span>
-              <span>
-                {isCalculatingShipping ? (
-                  <LoadingSpinner size="sm" />
-                ) : shippingFee > 0 ? (
-                  `GH₵${shippingFee.toFixed(2)}`
-                ) : (
-                  "Free"
-                )}
-              </span>
-            </SummaryItem>
-          )}
-
-          <SummaryTotal>
-            <span>Total:</span>
-            <span>GH₵{total.toFixed(2)}</span>
-          </SummaryTotal>
-
-          <PrimaryButton
-            $size="lg"
-            onClick={handlePlaceOrder}
-            disabled={isCreatingOrder || hasInsufficientBalance}
-            style={{ width: "100%", marginTop: "20px" }}
-          >
-            {isCreatingOrder ? (
-              <LoadingSpinner size="sm" />
-            ) : paymentMethod === "mobile_money" ? (
-              "Place Order & Pay"
-            ) : paymentMethod === "credit_balance" ? (
-              hasInsufficientBalance ? "Insufficient Balance" : "Place Order & Pay"
-            ) : (
-              "Place Order"
-            )}
-          </PrimaryButton>
-
-          {(createOrderError || formError) && (
-            <ErrorState
-              message={
-                createOrderError?.response?.data?.message ||
-                formError ||
-                createOrderError?.message ||
-                "Something went wrong"
-              }
-            />
-          )}
-
-          <SecurityFooter>
-            <PaymentIcons>
-              <SecurityIcon>🔒</SecurityIcon>
-              <span>Secure Payment</span>
-            </PaymentIcons>
-            <PaymentIcons>
-              <Icon>💳</Icon>
-              <Icon>📱</Icon>
-              <Icon>🏦</Icon>
-            </PaymentIcons>
-          </SecurityFooter>
-        </OrderSummary>
       </CheckoutGrid>
     </CheckoutContainer>
   );
 };
 
 // ────────────────────────────────────────────────
-// Styled Components
+// Styled Components — Modern Redesign
 // ────────────────────────────────────────────────
 
-const FragileCheckboxContainer = styled.div`
-  margin-top: 1rem;
-  padding: 1rem;
-  background: var(--color-grey-50);
-  border-radius: var(--border-radius-sm);
-`;
-
-const FragileCheckboxLabel = styled.label`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  
-  input[type="checkbox"] {
-    width: 1.2rem;
-    height: 1.2rem;
-    cursor: pointer;
-  }
-  
-  span {
-    font-size: 0.95rem;
-    color: var(--color-grey-900);
-    font-weight: 500;
-  }
-`;
-
-const FragileHint = styled.div`
-  margin-top: 0.5rem;
-  padding-left: 1.75rem;
-  font-size: 0.85rem;
-  color: var(--color-grey-600);
-`;
-
-const ErrorText = styled.span`
-  color: var(--color-red-700);
-  font-size: var(--font-size-xs);
-  display: block;
-  margin-top: var(--spacing-xs);
-`;
-
-const LocationButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-left: auto;
-  padding: 0.6rem 1rem;
-  background: var(--color-primary-500);
-  color: var(--color-white-0);
-  border: none;
-  border-radius: 8px;
-  font-size: 1.2rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover:not(:disabled) {
-    background: var(--color-primary-600);
-    transform: translateY(-1px);
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  svg {
-    font-size: 1.2rem;
-  }
-`;
-
-const DispatchShippingSection = styled.div`
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--color-grey-200);
-`;
-
-const DispatchShippingTitle = styled.h3`
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: var(--color-grey-900);
-  margin-bottom: 1rem;
-`;
-
-const HintText = styled.span`
-  color: var(--color-grey-500);
-  font-size: var(--font-size-xs);
-  display: block;
-  margin-top: var(--spacing-xs);
-`;
-
-const SecurityBadge = styled.div`
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  font-size: var(--font-size-sm);
-  color: var(--color-green-700);
-`;
-
-const ShieldIcon = styled.span`
-  font-size: 1.2rem;
-`;
-
-const SecurityFooter = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: var(--spacing-lg);
-  padding-top: var(--spacing-md);
-  border-top: 1px solid var(--color-grey-200);
-`;
-
-const SecurityIcon = styled.span`
-  font-size: 1.5rem;
-  margin-left: auto;
-`;
-
-const PaymentIcons = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.9rem;
-`;
-
-const Icon = styled.span`
-  font-size: 1.5rem;
-`;
+// ── Page layout ──────────────────────────────────
 
 const CheckoutContainer = styled.div`
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 24px 16px 80px;
+  min-height: 100vh;
+  background: #f4f6f8;
+`;
+
+const CheckoutHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e2e8f0;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+`;
+
+const CheckoutTitle = styled.h1`
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--color-grey-900);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const ProgressSteps = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
+const StepItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+`;
+
+const StepBubble = styled.div`
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition: all 0.3s ease;
+  background: ${({ $done, $active }) =>
+    $done
+      ? "var(--color-primary)"
+      : $active
+        ? "var(--color-primary-100)"
+        : "#e2e8f0"};
+  color: ${({ $done, $active }) =>
+    $done ? "white" : $active ? "var(--color-primary-700)" : "#94a3b8"};
+`;
+
+const StepLabel = styled.span`
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--color-grey-500);
+  white-space: nowrap;
+
+  @media (max-width: 480px) {
+    display: none;
+  }
+`;
+
+const StepConnector = styled.div`
+  width: 44px;
+  height: 2px;
+  background: ${({ $done }) => ($done ? "var(--color-primary)" : "#e2e8f0")};
+  margin-bottom: 18px;
+  transition: background 0.3s ease;
+
+  @media (max-width: 480px) {
+    width: 24px;
+  }
 `;
 
 const CheckoutGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr;
-  gap: 30px;
+  gap: 20px;
+  align-items: start;
 
   @media (min-width: 992px) {
-    grid-template-columns: 1fr 1fr;
-    grid-template-areas:
-      "shipping payment"
-      "summary summary";
-
-    .shipping-section {
-      grid-area: shipping;
-    }
-    .payment-section {
-      grid-area: payment;
-    }
-    .order-summary {
-      grid-area: summary;
-    }
+    grid-template-columns: 1.55fr 1fr;
   }
 `;
 
-const Section = styled(Card)`
-  padding: var(--spacing-lg);
+const CheckoutLeft = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 `;
 
-const ShippingSection = styled(Section)``;
-const PaymentSection = styled(Section)``;
-const OrderSummary = styled(Section)``;
-
-const DeliveryMethodSection = styled(Section)`
-  margin-top: 2rem;
+const CheckoutRight = styled.div`
+  @media (min-width: 992px) {
+    position: sticky;
+    top: 80px;
+  }
 `;
+
+// ── Step Cards ────────────────────────────────────
+
+const StepCard = styled.div`
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
+`;
+
+const StepCardHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+`;
+
+const StepBadge = styled.div`
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+  background: ${({ $done }) =>
+    $done ? "var(--color-primary)" : "var(--color-primary-100)"};
+  color: ${({ $done }) =>
+    $done ? "white" : "var(--color-primary-700)"};
+`;
+
+const StepCardTitle = styled.h2`
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-grey-900);
+  margin: 0;
+`;
+
+const DeliveryNote = styled.span`
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--color-primary-700);
+  background: var(--color-primary-50);
+  border: 1px solid var(--color-primary-200);
+  border-radius: 20px;
+  padding: 3px 10px;
+  white-space: nowrap;
+`;
+
+// ── Order Summary sidebar ─────────────────────────
+
+const SummaryCard = styled.div`
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
+`;
+
+const SummaryHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+
+  h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-grey-900);
+    margin: 0;
+  }
+
+  span {
+    font-size: 0.78rem;
+    color: var(--color-grey-500);
+    background: var(--color-grey-100);
+    border-radius: 12px;
+    padding: 2px 8px;
+  }
+`;
+
+const CartItemsList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 240px;
+  overflow-y: auto;
+  margin-bottom: 4px;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--color-grey-300);
+    border-radius: 4px;
+  }
+`;
+
+const CartItemRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`;
+
+const CartItemImgWrap = styled.div`
+  position: relative;
+  flex-shrink: 0;
+`;
+
+const CartItemImg = styled.img`
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--color-grey-100);
+  border: 1px solid var(--color-grey-200);
+  display: block;
+`;
+
+const CartItemImgPlaceholder = styled.div`
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  background: var(--color-grey-100);
+  border: 1px solid var(--color-grey-200);
+`;
+
+const CartItemQtyBadge = styled.span`
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const CartItemInfo = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
+
+const CartItemName = styled.div`
+  font-size: 0.83rem;
+  font-weight: 500;
+  color: var(--color-grey-900);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const CartItemVariant = styled.div`
+  font-size: 0.72rem;
+  color: var(--color-grey-400);
+  margin-top: 2px;
+`;
+
+const CartItemPrice = styled.div`
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-grey-800);
+  white-space: nowrap;
+  flex-shrink: 0;
+`;
+
+const SummaryDivider = styled.hr`
+  border: none;
+  border-top: 1px solid var(--color-grey-100);
+  margin: 14px 0;
+`;
+
+const CouponSection = styled.div`
+  margin-bottom: 4px;
+`;
+
+const SummaryRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.88rem;
+  color: ${({ $highlight }) =>
+    $highlight ? "var(--color-green-700)" : "var(--color-grey-600)"};
+  margin-bottom: 8px;
+`;
+
+const SummaryRowMuted = styled(SummaryRow)`
+  font-size: 0.78rem;
+  color: var(--color-grey-400);
+`;
+
+const SummaryTotalRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-grey-900);
+  margin: 14px 0;
+  padding-top: 12px;
+  border-top: 2px solid var(--color-grey-200);
+`;
+
+const TotalAmount = styled.span`
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--color-primary-700);
+`;
+
+const PlaceOrderBtn = styled.button`
+  width: 100%;
+  padding: 15px;
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(212, 136, 42, 0.4);
+  letter-spacing: 0.01em;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(212, 136, 42, 0.5);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+`;
+
+const TrustRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  font-size: 0.75rem;
+  color: var(--color-grey-400);
+`;
+
+// ── Address ───────────────────────────────────────
+
+/* ── Tab toggle (pill switcher) ── */
+const TabToggleWrap = styled.div`
+  display: flex;
+  gap: 4px;
+  background: var(--color-grey-100);
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 20px;
+`;
+
+const TabToggle = styled.button`
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 9px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: ${({ $active }) => ($active ? "#fff" : "transparent")};
+  color: ${({ $active }) =>
+    $active ? "var(--color-primary-700)" : "var(--color-grey-500)"};
+  box-shadow: ${({ $active }) =>
+    $active ? "0 1px 4px rgba(0,0,0,0.10)" : "none"};
+
+  &:hover {
+    color: ${({ $active }) =>
+      $active ? "var(--color-primary-700)" : "var(--color-grey-700)"};
+    background: ${({ $active }) => ($active ? "#fff" : "var(--color-grey-200)")};
+  }
+`;
+
+const TabContent = styled.div`
+  margin-top: 4px;
+`;
+
+const AddressList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const AddressItem = styled.div`
+  position: relative;
+  padding: 14px 16px;
+  border: 2px solid
+    ${(props) =>
+      props.$selected ? "var(--color-primary-500)" : "var(--color-grey-200)"};
+  border-radius: 12px;
+  background: ${(props) =>
+    props.$selected
+      ? "linear-gradient(135deg, var(--color-primary-50) 0%, #fffbf0 100%)"
+      : "white"};
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: ${(props) =>
+    props.$selected
+      ? "0 2px 10px rgba(212, 136, 42, 0.15)"
+      : "0 1px 3px rgba(0,0,0,0.04)"};
+
+  &:hover {
+    border-color: var(--color-primary-400);
+    box-shadow: 0 4px 14px rgba(212, 136, 42, 0.15);
+  }
+`;
+
+const AddressContent = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+`;
+
+const AddressIcon = styled.div`
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: ${(props) =>
+    props.$selected ? "var(--color-primary-500)" : "var(--color-grey-100)"};
+  color: ${(props) =>
+    props.$selected ? "white" : "var(--color-grey-400)"};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+`;
+
+const AddressInfo = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+`;
+
+const AddressName = styled.div`
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: ${(props) =>
+    props.$selected ? "var(--color-primary-700)" : "var(--color-grey-900)"};
+`;
+
+const AddressText = styled.div`
+  font-size: 0.8rem;
+  color: var(--color-grey-500);
+  line-height: 1.4;
+`;
+
+const AddressLocation = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+`;
+
+const DefaultBadge = styled.span`
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--color-green-100);
+  color: var(--color-green-700);
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin-top: 4px;
+`;
+
+const SelectionCheckmark = styled.span`
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 20px;
+  height: 20px;
+  background: var(--color-primary-500);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  box-shadow: 0 2px 6px rgba(212, 136, 42, 0.4);
+  animation: ${pulse} 0.3s ease-out;
+`;
+
+const AddressForm = styled.form`
+  margin-top: 4px;
+`;
+
+const AddressFormSection = styled.div`
+  padding: 10px 12px;
+  background: var(--color-grey-50);
+  border-radius: 10px;
+  margin-bottom: 8px;
+`;
+
+const AddressFormSectionLabel = styled.div`
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-grey-400);
+  margin-bottom: 8px;
+`;
+
+const FormGroup = styled.div`
+  margin-bottom: 8px;
+`;
+
+const FormRow = styled.div`
+  display: flex;
+  gap: 10px;
+  margin-bottom: 8px;
+
+  @media (max-width: 500px) {
+    flex-direction: column;
+    gap: 0;
+  }
+`;
+
+const Label = styled.label`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 3px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-grey-700);
+`;
+
+const Input = styled.input`
+  width: 100%;
+  padding: 8px 12px;
+  border: 1.5px solid
+    ${(props) =>
+      props.error ? "var(--color-red-500)" : "var(--color-grey-300)"};
+  border-radius: 10px;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: white;
+
+  &:focus {
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 3px rgba(212, 136, 42, 0.1);
+  }
+
+  &::placeholder {
+    color: var(--color-grey-400);
+  }
+`;
+
+const Select = styled.select`
+  width: 100%;
+  padding: 8px 12px;
+  border: 1.5px solid var(--color-grey-300);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  background: white;
+  outline: none;
+  cursor: pointer;
+
+  &:focus {
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 3px rgba(212, 136, 42, 0.1);
+  }
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+`;
+
+const RadioInput = styled.input`
+  display: none;
+`;
+
+// ── Delivery ──────────────────────────────────────
 
 const DeliveryOptions = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  margin-top: 1.5rem;
+  gap: 10px;
 `;
 
 const DeliveryOption = styled.div`
   border: 2px solid
-    ${(props) => (props.$selected ? "var(--color-primary)" : "var(--color-grey-200)")};
-  border-radius: var(--border-radius-md);
-  padding: 1.25rem;
+    ${(props) =>
+      props.$selected ? "var(--color-primary)" : "var(--color-grey-200)"};
+  border-radius: 12px;
+  padding: 14px 16px;
   cursor: pointer;
   transition: all 0.2s ease;
   background: ${(props) =>
     props.$selected ? "var(--color-primary-50)" : "white"};
   position: relative;
+  box-shadow: ${(props) =>
+    props.$selected
+      ? "0 2px 10px rgba(212,136,42,0.12)"
+      : "0 1px 3px rgba(0,0,0,0.04)"};
 
   &:hover {
-    border-color: var(--color-primary);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-color: var(--color-primary-400);
+    box-shadow: 0 4px 14px rgba(212, 136, 42, 0.12);
   }
 `;
 
 const DeliveryContent = styled.div`
   display: flex;
   align-items: flex-start;
-  gap: 1rem;
+  gap: 12px;
 `;
 
 const DeliveryIcon = styled.div`
-  width: 3rem;
-  height: 3rem;
-  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: ${(props) =>
     props.$selected ? "var(--color-primary)" : "var(--color-grey-100)"};
   color: ${(props) =>
-    props.$selected ? "white" : "var(--color-grey-600)"};
-  font-size: 1.25rem;
+    props.$selected ? "white" : "var(--color-grey-400)"};
+  font-size: 1rem;
   flex-shrink: 0;
   transition: all 0.2s ease;
 `;
@@ -2464,66 +2967,80 @@ const DeliveryInfo = styled.div`
 `;
 
 const DeliveryTitle = styled.h4`
-  font-size: 1rem;
-  font-weight: 500;
-  margin-bottom: 0.5rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  margin: 0 0 4px;
   color: ${(props) =>
-    props.$selected ? "var(--color-primary)" : "var(--color-grey-900)"};
-  font-family: var(--font-heading);
+    props.$selected ? "var(--color-primary-700)" : "var(--color-grey-900)"};
 `;
 
 const DeliveryDescription = styled.p`
-  font-size: 0.875rem;
-  color: var(--color-grey-600);
+  font-size: 0.8rem;
+  color: var(--color-grey-500);
   line-height: 1.5;
+  margin: 0;
 `;
 
 const DispatchFeeDisplay = styled.div`
-  margin-top: 0.75rem;
-  padding: 0.75rem;
-  background: ${(props) =>
-    props.$selected ? "rgba(255, 255, 255, 0.5)" : "var(--color-grey-50)"};
-  border-radius: var(--border-radius-sm);
-  font-size: 0.875rem;
+  margin-top: 6px;
+  font-size: 0.8rem;
   color: var(--color-primary-700);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  font-weight: 500;
+`;
 
-  strong {
-    font-weight: 600;
-    color: var(--color-primary);
-  }
+const DispatchShippingSection = styled.div`
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-grey-200);
+`;
+
+const DispatchShippingTitle = styled.h3`
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-grey-900);
+  margin-bottom: 10px;
+`;
+
+const FreeShippingCheckoutNote = styled.p`
+  margin: 0;
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  color: var(--color-green-800);
+  background: var(--color-green-50);
+  border: 1px solid var(--color-green-200);
+  border-radius: 10px;
 `;
 
 const DeliverySpeedOptions = styled.div`
-  margin-top: 1rem;
-  padding: 1rem;
+  margin-top: 10px;
+  padding: 12px;
   background: var(--color-grey-50);
-  border-radius: var(--border-radius-md);
+  border-radius: 10px;
   border: 1px solid var(--color-grey-200);
 `;
 
 const SpeedOptionLabel = styled.div`
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--color-grey-700);
-  margin-bottom: 0.75rem;
+  margin-bottom: 8px;
 `;
 
 const SpeedOptionsContainer = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 8px;
 `;
 
 const SpeedOption = styled.div`
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  border: 2px solid ${(props) => (props.$selected ? "var(--color-primary)" : "var(--color-grey-200)")};
-  border-radius: var(--border-radius-sm);
+  gap: 10px;
+  padding: 10px 12px;
+  border: 2px solid
+    ${(props) =>
+      props.$selected ? "var(--color-primary)" : "var(--color-grey-200)"};
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
   background: ${(props) => (props.$selected ? "var(--color-primary-50)" : "white")};
@@ -2535,8 +3052,8 @@ const SpeedOption = styled.div`
 `;
 
 const SpeedRadio = styled.input`
-  width: 1.2rem;
-  height: 1.2rem;
+  width: 1rem;
+  height: 1rem;
   cursor: pointer;
   accent-color: var(--color-primary);
 `;
@@ -2545,39 +3062,40 @@ const SpeedContent = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 2px;
 `;
 
 const SpeedTitle = styled.div`
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   font-weight: 600;
   color: var(--color-grey-900);
 `;
 
 const SpeedDescription = styled.div`
-  font-size: 0.85rem;
-  color: var(--color-grey-600);
+  font-size: 0.78rem;
+  color: var(--color-grey-500);
 `;
 
 const PickupCenterSelector = styled.div`
-  margin-top: 1.5rem;
-  padding: 1.5rem;
+  margin-top: 10px;
+  padding: 14px;
   background: var(--color-grey-50);
-  border-radius: var(--border-radius-md);
+  border-radius: 10px;
 `;
 
 const PickupCenterList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  margin-top: 1rem;
+  gap: 8px;
+  margin-top: 8px;
 `;
 
 const PickupCenterItem = styled.div`
   border: 2px solid
-    ${(props) => (props.$selected ? "var(--color-primary)" : "var(--color-grey-200)")};
-  border-radius: var(--border-radius-md);
-  padding: 1rem;
+    ${(props) =>
+      props.$selected ? "var(--color-primary)" : "var(--color-grey-200)"};
+  border-radius: 10px;
+  padding: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
   background: ${(props) =>
@@ -2592,514 +3110,325 @@ const PickupCenterItem = styled.div`
 const PickupCenterContent = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 4px;
 `;
 
 const PickupCenterName = styled.h5`
-  font-size: 1rem;
-  font-weight: 500;
+  font-size: 0.88rem;
+  font-weight: 600;
   color: ${(props) =>
     props.$selected ? "var(--color-primary)" : "var(--color-grey-900)"};
-  font-family: var(--font-heading);
+  margin: 0;
 `;
 
 const PickupCenterAddress = styled.p`
-  font-size: 0.875rem;
+  font-size: 0.78rem;
   color: var(--color-grey-600);
+  margin: 0;
 `;
 
 const PickupCenterHours = styled.p`
-  font-size: 0.875rem;
+  font-size: 0.78rem;
   color: var(--color-grey-500);
   font-style: italic;
+  margin: 0;
 `;
 
 const MapLink = styled.a`
   color: var(--color-primary);
-  font-size: 0.875rem;
+  font-size: 0.78rem;
   text-decoration: none;
-  margin-top: 0.25rem;
-  display: inline-block;
 
   &:hover {
     text-decoration: underline;
   }
 `;
 
-const ShippingBreakdown = styled.div`
-  margin-top: 1.5rem;
-  padding: 1rem;
-  background: var(--color-grey-50);
-  border-radius: var(--border-radius-md);
-`;
-
-const BreakdownTitle = styled.h5`
-  font-size: 0.875rem;
-  font-weight: 500;
-  margin-bottom: 0.75rem;
-  color: var(--color-grey-900);
-  font-family: var(--font-heading);
-`;
-
-const BreakdownItem = styled.div`
-  display: flex;
-  justify-content: space-between;
-  padding: 0.5rem 0;
-  font-size: 0.875rem;
-  color: var(--color-grey-700);
-  border-bottom: 1px solid var(--color-grey-200);
-
-  &:last-child {
-    border-bottom: none;
-  }
-`;
-
-const SectionHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-  gap: 15px;
-`;
-
-const SectionTitle = styled.h2`
-  margin: 0;
-  padding: 0;
-  font-size: 1.5rem;
-`;
-
-const RadioInput = styled.input`
-  margin: 0;
-`;
-
-const AddressList = styled.div`
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.2rem;
-  
-  @media (min-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  }
-`;
-
-const AddressItem = styled.div`
-  position: relative;
-  padding: 1.8rem;
-  border: 2.5px solid
-    ${(props) =>
-    props.$selected ? "var(--color-primary-500)" : "var(--color-grey-200)"};
-  border-radius: 1.6rem;
-  background: ${(props) =>
-    props.$selected
-      ? "linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-brand-50) 100%)"
-      : "white"};
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: ${(props) =>
-    props.$selected
-      ? "0 4px 16px rgba(0, 120, 204, 0.2)"
-      : "0 2px 8px rgba(0, 0, 0, 0.06)"};
-
-  &:hover {
-    border-color: ${(props) =>
-    props.$selected
-      ? "var(--color-primary-600)"
-      : "var(--color-primary-500)"};
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: ${(props) =>
-    props.$selected
-      ? "0 6px 24px rgba(0, 120, 204, 0.3)"
-      : "0 6px 20px rgba(0, 0, 0, 0.12)"};
-  }
-
-  &:active {
-    transform: translateY(-1px) scale(0.98);
-  }
-
-  &:focus-visible {
-    outline: 3px solid var(--color-primary-200);
-    outline-offset: 2px;
-  }
-`;
-
-const AddressContent = styled.div`
-  display: flex;
-  align-items: flex-start;
-  gap: 1.2rem;
-  position: relative;
-`;
-
-const AddressIcon = styled.div`
-  width: 4.8rem;
-  height: 4.8rem;
-  border-radius: 1.2rem;
-  background: ${(props) =>
-    props.$selected ? "var(--color-primary-500)" : "var(--color-grey-100)"};
-  color: ${(props) =>
-    props.$selected ? "white" : "var(--color-grey-600)"};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  transition: all 0.3s ease;
-  flex-shrink: 0;
-`;
-
-const AddressInfo = styled.div`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-`;
-
-const AddressName = styled.div`
-  font-weight: ${(props) => (props.$selected ? "600" : "500")};
-  font-size: 1.6rem;
-  color: ${(props) =>
-    props.$selected ? "var(--color-primary-700)" : "var(--color-grey-900)"};
-  margin-bottom: 0.4rem;
-  transition: all 0.2s ease;
-`;
-
-const AddressText = styled.div`
-  font-size: var(--font-size-sm);
-  color: var(--color-grey-600);
-  line-height: 1.5;
-`;
-
-const AddressLocation = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-`;
-
-const DefaultBadge = styled.span`
-  display: inline-block;
-  padding: 0.3rem 0.8rem;
-  background: linear-gradient(
-    135deg,
-    var(--color-green-100) 0%,
-    var(--color-green-700) 100%
-  );
-  color: white;
-  border-radius: 0.8rem;
-  font-size: 1rem;
-  font-weight: 600;
-  margin-top: 0.4rem;
-  width: fit-content;
-`;
-
-const SelectionCheckmark = styled.span`
-  position: absolute;
-  top: 1.2rem;
-  right: 1.2rem;
-  width: 2.4rem;
-  height: 2.4rem;
-  background: var(--color-primary-500);
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  z-index: 10;
-  box-shadow: 0 2px 8px rgba(0, 120, 204, 0.4);
-  animation: ${pulse} 0.3s ease-out;
-`;
-
-const AddressForm = styled.form`
-  margin-top: 15px;
-`;
-
-const FormGroup = styled.div`
-  margin-bottom: 15px;
-`;
-
-const FormRow = styled.div`
-  display: flex;
-  gap: 15px;
-  margin-bottom: 15px;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 10px;
-  }
-`;
-
-const Label = styled.label`
-  display: block;
-  margin-bottom: 5px;
-  font-size: 0.9rem;
-  font-weight: 500;
-`;
-
-const Input = styled.input`
-  width: 100%;
-  padding: var(--spacing-sm);
-  border: 1px solid
-    ${(props) =>
-    props.error ? "var(--color-red-700)" : "var(--color-grey-300)"};
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-md);
-
-  &:focus {
-    border-color: var(--color-primary-500);
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(255, 196, 0, 0.2);
-  }
-`;
-
-const Select = styled.select`
-  width: 100%;
-  padding: var(--spacing-sm);
-  border: 1px solid var(--color-grey-300);
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-md);
-  background: var(--color-white-0);
-
-  &:focus {
-    border-color: var(--color-primary-500);
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(255, 196, 0, 0.2);
-  }
-`;
-
-const ButtonGroup = styled.div`
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-`;
-
-const TabContainer = styled.div`
-  display: flex;
-  gap: 0.5rem;
-  border-bottom: 1px solid var(--color-grey-200);
-  margin-bottom: 0;
-`;
-
-const TabButton = styled.div`
-  border-radius: 0.8rem 0.8rem 0 0;
-  border-bottom: 2px solid
-    ${({ $active }) =>
-    $active ? "var(--color-primary-500)" : "transparent"};
-  
-  ${({ $active }) =>
-    !$active &&
-    css`
-    background: var(--color-grey-100) !important;
-    color: var(--color-grey-700) !important;
-    box-shadow: none !important;
-    
-    &:hover {
-      background: var(--color-grey-200) !important;
-      transform: none !important;
-    }
-  `}
-`;
-
-const TabContent = styled.div`
-  margin-top: 20px;
-`;
-
-const SummaryItem = styled.div`
-  display: flex;
-  justify-content: space-between;
-  margin: 10px 0;
-`;
-
-const SummaryTotal = styled(SummaryItem)`
-  font-weight: bold;
-  font-size: 1.2rem;
-  margin-top: 20px;
-  padding-top: 10px;
-  border-top: 1px solid #eee;
-`;
-
-const CouponForm = styled.div`
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-  position: relative;
-`;
-
-const CouponInput = styled.input`
-  flex: 1;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--color-grey-300);
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-md);
-`;
-
-const CouponMessage = styled.div`
-  position: absolute;
-  bottom: -25px;
-  left: 0;
-  font-size: var(--font-size-sm);
-  color: ${(props) =>
-    props.success ? "var(--color-green-700)" : "var(--color-red-700)"};
-`;
+// ── Payment ───────────────────────────────────────
 
 const PaymentOptions = styled.div`
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.2rem;
-  margin-top: 1.5rem;
-  
-  @media (min-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  }
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 `;
 
 const PaymentOption = styled.div`
   position: relative;
-  padding: 1.8rem;
-  border: 2.5px solid
+  padding: 14px 16px;
+  border: 2px solid
     ${(props) =>
-    props.$selected
-      ? "var(--color-primary-500)"
-      : props.$disabled
-        ? "var(--color-grey-300)"
-        : "var(--color-grey-200)"};
-  border-radius: 1.6rem;
+      props.$selected
+        ? "var(--color-primary-500)"
+        : props.$disabled
+          ? "var(--color-grey-300)"
+          : "var(--color-grey-200)"};
+  border-radius: 12px;
   background: ${(props) =>
     props.$selected
-      ? "linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-brand-50) 100%)"
+      ? "linear-gradient(135deg, var(--color-primary-50) 0%, #fffbf0 100%)"
       : props.$disabled
         ? "var(--color-grey-50)"
         : "white"};
   cursor: ${(props) => (props.$disabled ? "not-allowed" : "pointer")};
   opacity: ${(props) => (props.$disabled ? 0.6 : 1)};
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease;
   box-shadow: ${(props) =>
     props.$selected
-      ? "0 4px 16px rgba(0, 120, 204, 0.2)"
-      : "0 2px 8px rgba(0, 0, 0, 0.06)"};
+      ? "0 2px 10px rgba(212, 136, 42, 0.15)"
+      : "0 1px 3px rgba(0,0,0,0.04)"};
 
   &:hover {
     border-color: ${(props) =>
-    props.$selected
-      ? "var(--color-primary-600)"
-      : "var(--color-primary-500)"};
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: ${(props) =>
-    props.$selected
-      ? "0 6px 24px rgba(0, 120, 204, 0.3)"
-      : "0 6px 20px rgba(0, 0, 0, 0.12)"};
-  }
-
-  &:active {
-    transform: translateY(-1px) scale(0.98);
-  }
-
-  &:focus-within {
-    outline: 3px solid var(--color-primary-200);
-    outline-offset: 2px;
+      props.$disabled ? "var(--color-grey-300)" : "var(--color-primary-400)"};
   }
 `;
 
 const PaymentContent = styled.div`
   display: flex;
   align-items: flex-start;
-  gap: 1.2rem;
-  position: relative;
+  gap: 12px;
 `;
 
 const PaymentIcon = styled.div`
-  width: 4.8rem;
-  height: 4.8rem;
-  border-radius: 1.2rem;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   background: ${(props) =>
     props.$selected ? "var(--color-primary-500)" : "var(--color-grey-100)"};
   color: ${(props) =>
-    props.$selected ? "white" : "var(--color-grey-600)"};
+    props.$selected ? "white" : "var(--color-grey-400)"};
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
-  transition: all 0.3s ease;
+  font-size: 1rem;
   flex-shrink: 0;
+  transition: all 0.2s ease;
 `;
 
 const PaymentInfo = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 3px;
 `;
 
 const PaymentTitle = styled.div`
-  font-weight: ${(props) => (props.$selected ? "600" : "500")};
-  font-size: 1.6rem;
+  font-weight: ${(props) => (props.$selected ? "700" : "600")};
+  font-size: 0.92rem;
   color: ${(props) =>
     props.$selected ? "var(--color-primary-700)" : "var(--color-grey-900)"};
-  margin-bottom: 0.4rem;
-  transition: all 0.2s ease;
 `;
 
 const PaymentDescription = styled.div`
-  font-size: var(--font-size-sm);
-  color: var(--color-grey-600);
+  font-size: 0.8rem;
+  color: var(--color-grey-500);
   line-height: 1.5;
+`;
+
+const PaymentNote = styled.strong`
+  color: var(--color-primary-600);
+  display: inline-block;
+  margin-top: 4px;
+`;
+
+const BankNote = styled.p`
+  margin-top: 10px;
+  font-size: 0.9rem;
 `;
 
 const PaymentDetails = styled.div`
   margin-top: 10px;
-  margin-bottom: 10px;
 `;
 
 const BankDetails = styled.div`
-  margin-top: var(--spacing-sm);
-  padding: var(--spacing-sm);
-  background: var(--color-grey-100);
-  border-radius: var(--border-radius-sm);
+  padding: 10px 12px;
+  background: var(--color-grey-50);
+  border-radius: 8px;
   border: 1px solid var(--color-grey-200);
 `;
 
 const BankInfo = styled.div`
-  font-size: var(--font-size-md);
-  margin-bottom: var(--spacing-xs);
-  color: var(--color-grey-800);
+  font-size: 0.82rem;
+  margin-bottom: 4px;
+  color: var(--color-grey-700);
 `;
 
 const BalanceDetails = styled.div`
-  margin-top: var(--spacing-sm);
-  padding: var(--spacing-sm);
-  background: var(--color-grey-100);
-  border-radius: var(--border-radius-sm);
+  padding: 10px 12px;
+  background: var(--color-grey-50);
+  border-radius: 8px;
   border: 1px solid var(--color-grey-200);
 `;
 
 const BalanceInfo = styled.div`
-  font-size: var(--font-size-md);
-  margin-bottom: var(--spacing-xs);
-  color: var(--color-grey-800);
-  
+  font-size: 0.82rem;
+  margin-bottom: 4px;
+  color: var(--color-grey-700);
+
   strong {
     color: var(--color-grey-900);
   }
 `;
 
 const InsufficientBalanceWarning = styled.div`
-  margin-top: var(--spacing-sm);
-  padding: var(--spacing-sm);
+  margin-top: 8px;
+  padding: 8px 10px;
   background: var(--color-red-50);
   border: 1px solid var(--color-red-300);
-  border-radius: var(--border-radius-sm);
+  border-radius: 8px;
   color: var(--color-red-700);
-  font-size: var(--font-size-sm);
+  font-size: 0.8rem;
   font-weight: 500;
 `;
 
+// ── Misc ──────────────────────────────────────────
+
+const SectionHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+`;
+
+const SectionTitle = styled.h2`
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+`;
+
+const SecurityBadge = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.76rem;
+  color: var(--color-green-700);
+  background: var(--color-green-50);
+  border: 1px solid var(--color-green-200);
+  border-radius: 20px;
+  padding: 3px 10px;
+  margin-left: auto;
+`;
+
+const ShieldIcon = styled.span`
+  font-size: 0.85rem;
+`;
+
+const FragileCheckboxContainer = styled.div`
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--color-grey-50);
+  border-radius: 10px;
+  border: 1px solid var(--color-grey-200);
+`;
+
+const FragileCheckboxLabel = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+
+  input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+    cursor: pointer;
+    accent-color: var(--color-primary);
+  }
+
+  span {
+    font-size: 0.85rem;
+    color: var(--color-grey-900);
+    font-weight: 500;
+  }
+`;
+
+const FragileHint = styled.div`
+  margin-top: 6px;
+  padding-left: 1.5rem;
+  font-size: 0.78rem;
+  color: var(--color-grey-500);
+`;
+
+const ErrorText = styled.span`
+  color: var(--color-red-700);
+  font-size: 0.76rem;
+  display: block;
+  margin-top: 4px;
+`;
+
+const LocationButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    background: var(--color-primary-700);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+
+const HintText = styled.span`
+  color: var(--color-grey-500);
+  font-size: 0.76rem;
+  display: block;
+  margin-top: 4px;
+`;
+
 const InfoText = styled.p`
-  margin-top: var(--spacing-md);
-  padding: var(--spacing-sm);
-  background: var(--color-blue-100);
-  border-left: 3px solid var(--color-blue-700);
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-sm);
-  color: var(--color-blue-700);
+  margin: 0;
+  padding: 10px 14px;
+  background: #eff6ff;
+  border-left: 3px solid #60a5fa;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  color: #1d4ed8;
   line-height: 1.5;
+`;
+
+const CouponForm = styled.div`
+  display: flex;
+  gap: 8px;
+  position: relative;
+`;
+
+const CouponInput = styled.input`
+  flex: 1;
+  padding: 10px 14px;
+  border: 1.5px solid var(--color-grey-300);
+  border-radius: 10px;
+  font-size: 0.88rem;
+  outline: none;
+  transition: border-color 0.2s;
+
+  &:focus {
+    border-color: var(--color-primary);
+  }
+
+  &::placeholder {
+    color: var(--color-grey-400);
+  }
+`;
+
+const CouponMessage = styled.div`
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: ${(props) =>
+    props.$success ? "var(--color-green-700)" : "var(--color-red-700)"};
 `;
 
 export default CheckoutPage;

@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useId } from "react";
 import styled from "styled-components";
 import { spin } from "../styles/animations";
 import { FaSearch, FaSpinner } from "react-icons/fa";
@@ -16,11 +16,16 @@ export default function HeaderSearchBar({
   setActiveSuggestion,
   activeSuggestion,
   isSearchProductsLoading,
+  isSearchSuggestionsError,
   navigate,
   handleSuggestionSelect,
   type,
   searchRef,
 }) {
+  const uniqueId = useId();
+  const listboxId = `search-suggestions-${type}-${uniqueId}`;
+  const getOptionId = (index) => `suggestion-${type}-${uniqueId}-${index}`;
+
   return (
     <SearchContainer ref={searchRef} type={type}>
       <SearchBar>
@@ -29,8 +34,12 @@ export default function HeaderSearchBar({
           role="combobox"
           aria-expanded={showSearchSuggestions}
           aria-autocomplete="list"
-          aria-controls="search-suggestions"
-          aria-activedescendant={showSearchSuggestions && activeSuggestion >= 0 ? `suggestion-${activeSuggestion}` : undefined}
+          aria-controls={listboxId}
+          aria-activedescendant={
+            showSearchSuggestions && activeSuggestion >= 0
+              ? getOptionId(activeSuggestion)
+              : undefined
+          }
           placeholder="Search for products..."
           value={searchTerm}
           onChange={(e) => {
@@ -50,6 +59,7 @@ export default function HeaderSearchBar({
               setShowSearchSuggestions(false);
             }
           }}
+          aria-label="Search products"
         >
           {isSearchProductsLoading ? (
             <SpinnerIcon>
@@ -62,12 +72,12 @@ export default function HeaderSearchBar({
       </SearchBar>
 
       {showSearchSuggestions && searchSuggestions.length > 0 && (
-        <SearchSuggestions id="search-suggestions" role="listbox" aria-label="Search suggestions">
+        <SearchSuggestions id={listboxId} role="listbox" aria-label="Search suggestions">
           {searchSuggestions.map((suggestion, index) => {
             return (
               <SuggestionItem
                 key={`${suggestion.type}-${suggestion.text}-${index}`}
-                id={`suggestion-${index}`}
+                id={getOptionId(index)}
                 role="option"
                 aria-selected={index === activeSuggestion}
                 active={index === activeSuggestion}
@@ -106,7 +116,18 @@ export default function HeaderSearchBar({
 
       {showSearchSuggestions &&
         searchTerm &&
+        isSearchSuggestionsError &&
+        !isSearchProductsLoading && (
+          <ErrorSuggestions aria-live="polite" role="status">
+            Search suggestions are temporarily unavailable. Press Enter to
+            search anyway.
+          </ErrorSuggestions>
+        )}
+
+      {showSearchSuggestions &&
+        searchTerm &&
         searchSuggestions.length === 0 &&
+        !isSearchSuggestionsError &&
         !isSearchProductsLoading && (
           <NoSuggestions aria-live="polite" role="status">No products found for "{escapeForDisplay(searchTerm)}"</NoSuggestions>
         )}
@@ -261,6 +282,12 @@ const NoSuggestions = styled.div`
   color: var(--color-grey-400);
   z-index: 1001; /* Higher than header z-index */
   border: 2px solid var(--color-primary-50);
+  border-top: none;
+`;
+
+const ErrorSuggestions = styled(NoSuggestions)`
+  color: var(--color-red-600, #dc2626);
+  border: 2px solid var(--color-red-200, #fecaca);
   border-top: none;
 `;
 

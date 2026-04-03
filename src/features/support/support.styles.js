@@ -91,21 +91,21 @@ export const SidebarNavLink = styled.a`
   font-size: var(--font-size-sm);
   transition: all var(--transition-base);
   cursor: pointer;
-  
+
   &:hover {
-    background: var(--color-grey-50);
-    color: #ffc400;
+    background: #fdf5e4;
+    color: #D4882A;
     transform: translateX(4px);
   }
-  
+
   &.active {
-    background: rgba(255, 196, 0, 0.1);
-    color: #ffc400;
+    background: #fff7ed;
+    color: #B8711F;
     font-weight: var(--font-semibold);
-    border-left: 3px solid #ffc400;
+    border-left: 3px solid #D4882A;
     padding-left: calc(var(--spacing-md) - 3px);
   }
-  
+
   svg {
     font-size: var(--font-size-md);
     flex-shrink: 0;
@@ -120,34 +120,32 @@ export const SupportMainContent = styled.div`
 
 // Hero Section
 export const HeroSection = styled(motion.section)`
-  background: linear-gradient(135deg, 
-    ${props => props.$primaryColor || 'var(--color-primary-500)'} 0%, 
-    ${props => props.$secondaryColor || 'var(--color-primary-600)'} 100%
-  );
-  border-radius: var(--border-radius-xl);
+  background: linear-gradient(135deg, #1a1f2e 0%, #2d3444 50%, #1a2035 100%);
+  border-radius: 16px;
   padding: var(--spacing-3xl) var(--spacing-xl);
   margin-bottom: var(--spacing-2xl);
-  color: var(--color-white-0);
+  color: #ffffff;
   text-align: center;
   position: relative;
   overflow: hidden;
-  
+
   &::before {
     content: '';
     position: absolute;
-    top: -50%;
-    right: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-    animation: pulse 4s ease-in-out infinite;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(212,136,42,0.12) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
   }
-  
-  @keyframes pulse {
-    0%, 100% { opacity: 0.3; }
-    50% { opacity: 0.6; }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 30% 50%, rgba(212,136,42,0.2) 0%, transparent 60%);
+    pointer-events: none;
   }
-  
+
   @media (max-width: 768px) {
     padding: var(--spacing-xl) var(--spacing-lg);
   }
@@ -210,13 +208,13 @@ export const SupportCard = styled(motion.div)`
   background: var(--color-white-0);
   border-radius: var(--border-radius-xl);
   padding: var(--spacing-xl);
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--color-grey-200);
-  transition: all var(--transition-base);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  border: 1px solid #f0e8d8;
+  transition: all 0.25s ease;
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  
+
   &::before {
     content: '';
     position: absolute;
@@ -224,16 +222,16 @@ export const SupportCard = styled(motion.div)`
     left: 0;
     width: 4px;
     height: 100%;
-    background: ${props => props.$accentColor || 'var(--color-primary-500)'};
+    background: #D4882A;
     transform: scaleY(0);
-    transition: transform var(--transition-base);
+    transition: transform 0.25s ease;
   }
-  
+
   &:hover {
     transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
-    border-color: ${props => props.$accentColor || 'var(--color-primary-500)'};
-    
+    box-shadow: 0 8px 28px rgba(212,136,42,0.12);
+    border-color: rgba(212,136,42,0.35);
+
     &::before {
       transform: scaleY(1);
     }
@@ -273,8 +271,8 @@ export const CardDescription = styled.p`
 `;
 
 export const CardButton = styled.button`
-  background: ${props => props.$bgColor || 'var(--color-primary-500)'};
-  color: var(--color-white-0);
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
+  color: #ffffff;
   border: none;
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--border-radius-md);
@@ -283,13 +281,14 @@ export const CardButton = styled.button`
   cursor: pointer;
   transition: all var(--transition-base);
   width: 100%;
-  
+  box-shadow: 0 4px 14px rgba(212,136,42,0.3);
+
   &:hover {
-    background: ${props => props.$hoverColor || 'var(--color-primary-600)'};
+    background: linear-gradient(135deg, #B8711F 0%, #D4882A 100%);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 6px 18px rgba(212,136,42,0.4);
   }
-  
+
   &:active {
     transform: translateY(0);
   }

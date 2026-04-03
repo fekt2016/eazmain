@@ -28,6 +28,7 @@ import { EmptyState } from '../../components/loading';
 import useAds from '../../shared/hooks/useAds';
 import AdBanner from '../home/AdBanner';
 import AdPopup from '../home/AdPopup';
+import SellerAppPromoModal from '../home/SellerAppPromoModal';
 import DealOfTheDaySection from '../home/DealOfTheDaySection';
 import TestimonialsSection from '../home/TestimonialsSection';
 import { useDealOfTheDay } from '../../shared/hooks/useDealOfTheDay';
@@ -147,6 +148,12 @@ const HomePage = () => {
     import.meta.env.DEV
   );
   const { data: followedShopsData } = useGetFollowedSellerByUser();
+  const trackedVariantSeenRef = useRef(new Set());
+  const recordScreenViewMutateRef = useRef(recordScreenView.mutate);
+
+  useEffect(() => {
+    recordScreenViewMutateRef.current = recordScreenView.mutate;
+  }, [recordScreenView.mutate]);
 
   useEffect(() => {
     if (!UX_EXPERIMENTS.allowUrlOverride || typeof window === 'undefined') {
@@ -565,12 +572,18 @@ const HomePage = () => {
         : `home:${eventName}:${homepageVariant}`;
       recordScreenView.mutate({ screen, sessionId });
     },
-    [homepageVariant, recordScreenView]
+    [homepageVariant, recordScreenView.mutate]
   );
 
   useEffect(() => {
-    trackHomepageEvent(HOMEPAGE_TRACK_EVENTS.VARIANT_SEEN);
-  }, [trackHomepageEvent]);
+    const trackedKey = `${HOMEPAGE_TRACK_EVENTS.VARIANT_SEEN}:${homepageVariant}`;
+    if (trackedVariantSeenRef.current.has(trackedKey)) return;
+
+    trackedVariantSeenRef.current.add(trackedKey);
+    const sessionId = getOrCreateSessionId();
+    const screen = `home:${HOMEPAGE_TRACK_EVENTS.VARIANT_SEEN}:${homepageVariant}`;
+    recordScreenViewMutateRef.current({ screen, sessionId });
+  }, [homepageVariant]);
 
   const heroCopy = useMemo(() => {
     return (
@@ -613,25 +626,46 @@ const HomePage = () => {
                 <p>No categories available at the moment.</p>
               </EmptyState>
             ) : (
-              <CategoryGrid>
-                {categories.map((cat) => (
-                  <CategoryCard key={cat.id} $size={cat.size} to={`${PATHS.CATEGORIES}/${cat.id}`}>
-                    <CategoryBg>
-                      <OptimizedImage
-                        src={cat.image}
-                        slot={IMAGE_SLOTS.CATEGORY_HERO}
-                        aspectRatio="16/9"
-                        alt={cat.name}
-                        objectFit="cover"
-                      />
-                    </CategoryBg>
-                    <CategoryContent>
-                      <h3>{cat.name}</h3>
-                      <span>{cat.count}</span>
-                    </CategoryContent>
-                  </CategoryCard>
-                ))}
-              </CategoryGrid>
+              <>
+                {/* Desktop: magazine-style bento grid */}
+                <CategoryGrid>
+                  {categories.map((cat) => (
+                    <CategoryCard key={cat.id} $size={cat.size} to={`${PATHS.CATEGORIES}/${cat.id}`}>
+                      <CategoryBg>
+                        <OptimizedImage
+                          src={cat.image}
+                          slot={IMAGE_SLOTS.CATEGORY_HERO}
+                          aspectRatio="16/9"
+                          alt={cat.name}
+                          objectFit="cover"
+                        />
+                      </CategoryBg>
+                      <CategoryContent>
+                        <h3>{cat.name}</h3>
+                        <span>{cat.count}</span>
+                      </CategoryContent>
+                    </CategoryCard>
+                  ))}
+                </CategoryGrid>
+
+                {/* Mobile: horizontal scrollable circular pills (matches mobile app) */}
+                <CategoryPillRow>
+                  {categories.map((cat) => (
+                    <CategoryPillLink key={cat.id} to={`${PATHS.CATEGORIES}/${cat.id}`}>
+                      <CategoryPillCircle>
+                        <OptimizedImage
+                          src={cat.image}
+                          slot={IMAGE_SLOTS.CATEGORY_ICON}
+                          aspectRatio="1/1"
+                          alt={cat.name}
+                          objectFit="cover"
+                        />
+                      </CategoryPillCircle>
+                      <CategoryPillName>{cat.name}</CategoryPillName>
+                    </CategoryPillLink>
+                  ))}
+                </CategoryPillRow>
+              </>
             )}
           </Container>
         </Section>
@@ -682,11 +716,11 @@ const HomePage = () => {
         <Section key="trending" $bg="#f8f9fa">
           <Container>
             <SectionHeader>
-              <SectionTitle>Trending Now</SectionTitle>
+              <SectionTitle>Featured Sellers</SectionTitle>
               <SectionLink to={PATHS.SELLERS}>View All Sellers <FaArrowRight /></SectionLink>
             </SectionHeader>
             <SectionDescription>
-              Featured shops with strong ratings and active product catalogs.
+              Top-rated shops with verified products and fast fulfillment.
             </SectionDescription>
 
             {isSellersLoading ? (
@@ -698,99 +732,120 @@ const HomePage = () => {
                 <p>No trending sellers available at the moment.</p>
               </EmptyState>
             ) : (
-              <SellerGrid>
-                {sellers.map((seller) => {
-                  const productImages = seller.products
-                    ?.flatMap((product) => product.images || [])
-                    ?.filter((img) => img)
-                    ?.slice(0, 3) || [];
+              <SellerSwiperWrap>
+                <Swiper
+                  modules={[Autoplay, Navigation]}
+                  slidesPerView={1.15}
+                  spaceBetween={16}
+                  grabCursor
+                  loop={sellers.length > 3}
+                  autoplay={{ delay: 4500, disableOnInteraction: false, pauseOnMouseEnter: true }}
+                  navigation={{
+                    nextEl: '.seller-swiper-next',
+                    prevEl: '.seller-swiper-prev',
+                  }}
+                  breakpoints={{
+                    580: { slidesPerView: 1.8, spaceBetween: 16 },
+                    900: { slidesPerView: 2.5, spaceBetween: 16 },
+                    1200: { slidesPerView: 4, spaceBetween: 16 },
+                  }}
+                  className="seller-swiper"
+                >
+                  {sellers.map((seller) => {
+                    const productImages = seller.products
+                      ?.flatMap((product) => product.images || [])
+                      ?.filter((img) => img)
+                      ?.slice(0, 3) || [];
 
-                  return (
-                    <SellerGridItem key={seller.id || seller._id}>
-                      <SellerCard to={`${PATHS.SELLERS}/${seller.id || seller._id}`}>
-                        <SellerCardHeader>
-                          <SellerAvatarContainer>
-                            <OptimizedImage
-                              src={seller.avatar}
-                              slot={IMAGE_SLOTS.AVATAR}
-                              aspectRatio="1/1"
-                              alt={seller.shopName || "Seller"}
-                              onError={(e) => {
-                                e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23ffc400' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='40' font-weight='bold'%3EShop%3C/text%3E%3C/svg%3E";
-                              }}
-                            />
-                            <VerifiedBadge>
-                              <FaShieldAlt />
-                            </VerifiedBadge>
-                          </SellerAvatarContainer>
-                          <SellerHeaderContent>
-                            <SellerName>{seller.shopName || seller.name}</SellerName>
-                            <SellerRating>
-                              <StarRating rating={seller.rating || seller.ratings?.average || 0} size="14px" />
-                              <RatingText>
-                                {(seller.rating || seller.ratings?.average || 0).toFixed(1)}
-                              </RatingText>
-                            </SellerRating>
-                          </SellerHeaderContent>
-                        </SellerCardHeader>
+                    return (
+                      <SwiperSlide key={seller.id || seller._id}>
+                        <SellerCard to={`${PATHS.SELLERS}/${seller.id || seller._id}`}>
+                          <SellerCardHeader>
+                            <SellerAvatarContainer>
+                              <OptimizedImage
+                                src={seller.avatar}
+                                slot={IMAGE_SLOTS.AVATAR}
+                                aspectRatio="1/1"
+                                alt={seller.shopName || "Seller"}
+                                onError={(e) => {
+                                  e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23ffc400' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='40' font-weight='bold'%3EShop%3C/text%3E%3C/svg%3E";
+                                }}
+                              />
+                              <VerifiedBadge>
+                                <FaShieldAlt />
+                              </VerifiedBadge>
+                            </SellerAvatarContainer>
+                            <SellerHeaderContent>
+                              <SellerName>{seller.shopName || seller.name}</SellerName>
+                              <SellerRating>
+                                <StarRating rating={seller.rating || seller.ratings?.average || 0} size="14px" />
+                                <RatingText>
+                                  {(seller.rating || seller.ratings?.average || 0).toFixed(1)}
+                                </RatingText>
+                              </SellerRating>
+                            </SellerHeaderContent>
+                          </SellerCardHeader>
 
-                        <SellerCardBody>
-                          <SellerStats>
-                            <StatItem>
-                              <StatIcon>📦</StatIcon>
-                              <StatContent>
-                                <StatValue>{seller.productCount || seller.products?.length || 0}</StatValue>
-                                <StatLabel>Products</StatLabel>
-                              </StatContent>
-                            </StatItem>
-                            {seller.totalSold && (
+                          <SellerCardBody>
+                            <SellerStats>
                               <StatItem>
-                                <StatIcon>✅</StatIcon>
+                                <StatIcon>📦</StatIcon>
                                 <StatContent>
-                                  <StatValue>{seller.totalSold}</StatValue>
-                                  <StatLabel>Sold</StatLabel>
+                                  <StatValue>{seller.productCount || seller.products?.length || 0}</StatValue>
+                                  <StatLabel>Products</StatLabel>
                                 </StatContent>
                               </StatItem>
+                              {seller.totalSold && (
+                                <StatItem>
+                                  <StatIcon>✅</StatIcon>
+                                  <StatContent>
+                                    <StatValue>{seller.totalSold}</StatValue>
+                                    <StatLabel>Sold</StatLabel>
+                                  </StatContent>
+                                </StatItem>
+                              )}
+                            </SellerStats>
+
+                            {productImages.length > 0 && (
+                              <ProductPreviewSection>
+                                <PreviewLabel>Featured Products</PreviewLabel>
+                                <ProductPreview>
+                                  {productImages.map((image, index) => (
+                                    <PreviewImageWrapper key={index}>
+                                      <OptimizedImage
+                                        src={image}
+                                        slot={IMAGE_SLOTS.TABLE_THUMB}
+                                        aspectRatio="1/1"
+                                        alt={`Product ${index + 1}`}
+                                        onError={(e) => {
+                                          e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect fill='%23e2e8f0' width='80' height='80'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2364748b' font-size='24'%3EP%3C/text%3E%3C/svg%3E";
+                                        }}
+                                      />
+                                    </PreviewImageWrapper>
+                                  ))}
+                                  {productImages.length < 3 && (
+                                    <MoreProductsIndicator>
+                                      +{Math.max(0, (seller.productCount || seller.products?.length || 0) - productImages.length)}
+                                    </MoreProductsIndicator>
+                                  )}
+                                </ProductPreview>
+                              </ProductPreviewSection>
                             )}
-                          </SellerStats>
+                          </SellerCardBody>
 
-                          {productImages.length > 0 && (
-                            <ProductPreviewSection>
-                              <PreviewLabel>Featured Products</PreviewLabel>
-                              <ProductPreview>
-                                {productImages.map((image, index) => (
-                                  <PreviewImageWrapper key={index}>
-                                    <OptimizedImage
-                                      src={image}
-                                      slot={IMAGE_SLOTS.TABLE_THUMB}
-                                      aspectRatio="1/1"
-                                      alt={`Product ${index + 1}`}
-                                      onError={(e) => {
-                                        e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect fill='%23e2e8f0' width='80' height='80'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2364748b' font-size='24'%3EP%3C/text%3E%3C/svg%3E";
-                                      }}
-                                    />
-                                  </PreviewImageWrapper>
-                                ))}
-                                {productImages.length < 3 && (
-                                  <MoreProductsIndicator>
-                                    +{Math.max(0, (seller.productCount || seller.products?.length || 0) - productImages.length)}
-                                  </MoreProductsIndicator>
-                                )}
-                              </ProductPreview>
-                            </ProductPreviewSection>
-                          )}
-                        </SellerCardBody>
-
-                        <SellerCardFooter>
-                          <ViewShopButton>
-                            View Shop <FaArrowRight />
-                          </ViewShopButton>
-                        </SellerCardFooter>
-                      </SellerCard>
-                    </SellerGridItem>
-                  );
-                })}
-              </SellerGrid>
+                          <SellerCardFooter>
+                            <ViewShopButton>
+                              View Shop <FaArrowRight />
+                            </ViewShopButton>
+                          </SellerCardFooter>
+                        </SellerCard>
+                      </SwiperSlide>
+                    );
+                  })}
+                </Swiper>
+                <button className="seller-swiper-prev" aria-label="Previous seller" type="button"><FaArrowLeft /></button>
+                <button className="seller-swiper-next" aria-label="Next seller" type="button"><FaArrowRight /></button>
+              </SellerSwiperWrap>
             )}
           </Container>
         </Section>
@@ -978,6 +1033,7 @@ const HomePage = () => {
             )
           }
         >
+          <MobileActionIcon>🗂️</MobileActionIcon>
           Categories
         </MobileActionLink>
         <MobileActionLink
@@ -989,6 +1045,7 @@ const HomePage = () => {
             )
           }
         >
+          <MobileActionIcon>🛍️</MobileActionIcon>
           Shop
         </MobileActionLink>
         <MobileActionLink
@@ -1000,13 +1057,14 @@ const HomePage = () => {
             )
           }
         >
+          <MobileActionIcon>⭐</MobileActionIcon>
           Sellers
         </MobileActionLink>
       </MobileStickyActions>
 
       {/* SEO: H1 and intro - Ghana e-commerce keywords */}
       <ViewInSection delayMs={60}>
-        <Section>
+        <ValuePropSection>
         <Container>
           <HomepageH1>{heroCopy.title}</HomepageH1>
           <HomepageIntro>{heroCopy.intro}</HomepageIntro>
@@ -1025,7 +1083,8 @@ const HomePage = () => {
                 )
               }
             >
-              <QuickActionTitle>Browse categories</QuickActionTitle>
+              <QuickActionIcon>🗂️</QuickActionIcon>
+              <QuickActionTitle>Browse Categories</QuickActionTitle>
               <QuickActionText>Find products faster with curated departments.</QuickActionText>
             </QuickActionCard>
             <QuickActionCard
@@ -1037,7 +1096,8 @@ const HomePage = () => {
                 )
               }
             >
-              <QuickActionTitle>Shop all products</QuickActionTitle>
+              <QuickActionIcon>🛍️</QuickActionIcon>
+              <QuickActionTitle>Shop All Products</QuickActionTitle>
               <QuickActionText>Compare top offers and get the best value.</QuickActionText>
             </QuickActionCard>
             <QuickActionCard
@@ -1049,12 +1109,13 @@ const HomePage = () => {
                 )
               }
             >
-              <QuickActionTitle>Discover trusted sellers</QuickActionTitle>
+              <QuickActionIcon>⭐</QuickActionIcon>
+              <QuickActionTitle>Trusted Sellers</QuickActionTitle>
               <QuickActionText>Buy confidently from highly rated shops.</QuickActionText>
             </QuickActionCard>
           </QuickActionRow>
         </Container>
-        </Section>
+        </ValuePropSection>
       </ViewInSection>
 
       {/* Featured Promotion Banner */}
@@ -1107,9 +1168,12 @@ const HomePage = () => {
         </TrustSection>
       </ViewInSection>
 
-      {/* Seller Testimonials */}
+      {/* Deal of the Day: placed early for urgency and conversion */}
       <ViewInSection delayMs={130}>
-        <TestimonialsSection />
+        <DealOfTheDaySection
+          dealProduct={dealOfTheDay.dealProduct}
+          endOfDay={dealOfTheDay.endOfDay}
+        />
       </ViewInSection>
 
       {sectionOrder.map((sectionKey, index) => (
@@ -1123,12 +1187,9 @@ const HomePage = () => {
         <EazShopSection />
       </ViewInSection>
 
-      {/* Deal of the Day: data-driven, best discount or promotionKey deal-of-the-day, countdown to midnight */}
+      {/* Seller Testimonials */}
       <ViewInSection delayMs={280}>
-        <DealOfTheDaySection
-          dealProduct={dealOfTheDay.dealProduct}
-          endOfDay={dealOfTheDay.endOfDay}
-        />
+        <TestimonialsSection />
       </ViewInSection>
 
       {/* All Products */}
@@ -1199,6 +1260,7 @@ const HomePage = () => {
         open={Boolean(activePopupAd)}
         onDismiss={handlePopupDismiss}
       />
+      <SellerAppPromoModal />
     </PageWrapper>
   );
 };
@@ -1213,10 +1275,10 @@ const PageWrapper = styled.div`
 const ViewInWrapper = styled.div`
   opacity: ${({ $isVisible }) => ($isVisible ? 1 : 0)};
   transform: ${({ $isVisible }) =>
-    $isVisible ? 'translateY(0)' : 'translateY(24px)'};
+    $isVisible ? 'translateY(0) scale(1)' : 'translateY(28px) scale(0.99)'};
   transition:
-    opacity 0.6s ease,
-    transform 0.6s ease;
+    opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
   transition-delay: ${({ $delayMs }) => `${$delayMs}ms`};
   will-change: opacity, transform;
 `;
@@ -1248,6 +1310,7 @@ const QuickActionRow = styled.div`
 
   @media ${devicesMax.md} {
     grid-template-columns: 1fr;
+    gap: 0.75rem;
   }
 `;
 
@@ -1256,30 +1319,32 @@ const QuickActionCard = styled(Link)`
   text-decoration: none;
   color: inherit;
   border-radius: 14px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid rgba(212, 136, 42, 0.2);
   background: #ffffff;
-  padding: 1.05rem 1.15rem;
+  padding: 1.25rem 1.25rem 1.1rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 2px 8px rgba(212, 136, 42, 0.06);
 
   &:hover {
-    border-color: #d4882a;
-    transform: translateY(-2px);
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.09);
+    border-color: #D4882A;
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px rgba(212, 136, 42, 0.14);
+    color: inherit;
   }
 `;
 
 const QuickActionTitle = styled.h3`
-  margin: 0 0 0.35rem;
-  font-size: 1rem;
+  margin: 0 0 0.3rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: #0f172a;
 `;
 
 const QuickActionText = styled.p`
   margin: 0;
-  font-size: 0.9rem;
-  color: #475569;
-  line-height: 1.4;
+  font-size: 0.85rem;
+  color: #6b7280;
+  line-height: 1.45;
 `;
 
 const ExperimentBadge = styled.span`
@@ -1294,7 +1359,7 @@ const ExperimentBadge = styled.span`
 `;
 
 const HeroSection = styled.div`
-  height: clamp(340px, 55vh, 520px);
+  height: clamp(400px, 62vh, 620px);
   width: 100%;
   position: relative;
   overflow: hidden; /* Ensure content doesn't overflow */
@@ -1590,10 +1655,23 @@ const SlideEndDate = styled.p`
 const Section = styled.section`
   padding: 3.25rem 0;
   background: ${props => props.$bg || 'white'};
-  
+
   @media ${devicesMax.md} {
     padding: 2.25rem 0;
   }
+`;
+
+const ValuePropSection = styled.section`
+  padding: 2.75rem 0;
+  background: linear-gradient(135deg, #fffbf2 0%, #fff9ee 50%, #fdf5e4 100%);
+  border-bottom: 1px solid rgba(212, 136, 42, 0.12);
+`;
+
+const QuickActionIcon = styled.span`
+  font-size: 1.75rem;
+  display: block;
+  margin-bottom: 0.6rem;
+  line-height: 1;
 `;
 
 const SectionHeader = styled.div`
@@ -1614,15 +1692,15 @@ const SectionTitle = styled.h2`
   font-weight: 700;
   color: #1a1a1a;
   position: relative;
-  
+
   &:after {
     content: '';
     position: absolute;
     left: 0;
     bottom: -10px;
-    width: 60px;
-    height: 4px;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    width: 48px;
+    height: 3px;
+    background: linear-gradient(90deg, #D4882A 0%, #f0a845 100%);
     border-radius: 2px;
   }
 
@@ -1632,9 +1710,9 @@ const SectionTitle = styled.h2`
 `;
 
 const SectionDescription = styled.p`
-  margin: -0.75rem 0 1.5rem;
-  color: #475569;
-  font-size: 0.95rem;
+  margin: -0.5rem 0 1.75rem;
+  color: #6b7280;
+  font-size: 0.9rem;
   line-height: 1.5;
 `;
 
@@ -1663,64 +1741,96 @@ const FilterChip = styled.button`
 `;
 
 const SectionLink = styled(Link)`
-  color: #475569;
+  color: #D4882A;
   text-decoration: none;
   font-weight: 600;
+  font-size: 0.9rem;
   display: flex;
   align-items: center;
-  gap: 8px;
-  transition: gap 0.3s;
-  
+  gap: 6px;
+  transition: gap 0.2s ease, color 0.2s ease;
+
   &:hover {
-    gap: 12px;
-    color: #b66f16;
+    gap: 10px;
+    color: #B8711F;
   }
 `;
 
 const TrustSection = styled.div`
-  padding: 2rem 0;
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 1.75rem 0;
+  background: #ffffff;
+  border-top: 1px solid rgba(212, 136, 42, 0.15);
+  border-bottom: 1px solid rgba(212, 136, 42, 0.15);
 `;
 
 const TrustGrid = styled.div`
   display: flex;
   flex-direction: row;
   justify-content: center;
-  align-items: stretch;
-  gap: 2rem;
+  align-items: center;
+  gap: 0;
   flex-wrap: wrap;
-  
+
   @media ${devicesMax.sm} {
-    flex-direction: row;
-    gap: 1rem;
+    gap: 0;
   }
 `;
 
 const TrustItem = styled.div`
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.8rem 1.2rem;
-  text-align: center;
-  min-width: 120px;
+  gap: 0.75rem;
+  padding: 0.85rem 2rem;
+  text-align: left;
+  flex: 1;
+  min-width: 160px;
+  max-width: 280px;
+  border-right: 1px solid #f0e8d8;
+
+  &:last-child {
+    border-right: none;
+  }
+
+  @media ${devicesMax.sm} {
+    border-right: none;
+    border-bottom: 1px solid #f0e8d8;
+    max-width: 100%;
+    width: 100%;
+    padding: 0.75rem 1rem;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
 `;
 
 const TrustIcon = styled.div`
-  font-size: 1.5rem;
-  color: #b66f16;
+  font-size: 1.6rem;
+  color: #D4882A;
+  flex-shrink: 0;
+  width: 2.4rem;
+  height: 2.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(212, 136, 42, 0.08);
+  border-radius: 50%;
+  padding: 0.45rem;
 `;
 
 const TrustInfo = styled.div`
   h3 {
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     font-weight: 700;
-    margin-bottom: 0.2rem;
+    color: #1a1a1a;
+    margin-bottom: 0.1rem;
+    white-space: nowrap;
   }
   p {
-    color: #666;
-    font-size: 0.9rem;
+    color: #6b7280;
+    font-size: 0.8rem;
+    white-space: nowrap;
   }
 `;
 
@@ -1729,14 +1839,75 @@ const CategoryGrid = styled.div`
   grid-template-columns: repeat(4, 1fr);
   grid-template-rows: repeat(2, 250px);
   gap: 1.5rem;
-  
+
   @media ${devicesMax.md} {
     grid-template-columns: repeat(2, 1fr);
     grid-template-rows: repeat(3, 200px);
   }
+
   @media ${devicesMax.sm} {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto;
+    display: none;
+  }
+`;
+
+/* Mobile-only horizontal pill row — matches the React Native home screen style */
+const CategoryPillRow = styled.div`
+  display: none;
+
+  @media ${devicesMax.sm} {
+    display: flex;
+    flex-direction: row;
+    gap: 0;
+    overflow-x: auto;
+    padding: 0.25rem 0 1rem;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+`;
+
+const CategoryPillLink = styled(Link)`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  text-decoration: none;
+  color: inherit;
+  flex-shrink: 0;
+  padding: 0.25rem 0.9rem;
+`;
+
+const CategoryPillCircle = styled.div`
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1.5px solid #f3f4f6;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  ${CategoryPillLink}:hover & {
+    border-color: #D4882A;
+    box-shadow: 0 4px 12px rgba(212, 136, 42, 0.18);
+  }
+`;
+
+const CategoryPillName = styled.span`
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #374151;
+  text-align: center;
+  white-space: nowrap;
+  max-width: 70px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  ${CategoryPillLink}:hover & {
+    color: #D4882A;
   }
 `;
 
@@ -1797,7 +1968,7 @@ const ProductGrid = styled.div`
   gap: 1rem;
   padding: 0;
   margin-bottom: 0.75rem;
-  
+
   @media (min-width: 1600px) {
     grid-template-columns: repeat(5, 1fr);
     gap: 1.5rem;
@@ -1806,17 +1977,14 @@ const ProductGrid = styled.div`
   @media (min-width: 1920px) {
     grid-template-columns: repeat(6, 1fr);
   }
-  
-  @media (max-width: 900px) {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-  }
-  
+
+  /* Tablet: 3 columns (513px – 1229px) */
   @media ${devicesMax.md} {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.85rem;
   }
-  
+
+  /* Mobile: 2 columns (≤ 512px) */
   @media ${devicesMax.xs} {
     grid-template-columns: repeat(2, 1fr);
     gap: 0.5rem;
@@ -1826,9 +1994,15 @@ const ProductGrid = styled.div`
 const LoadingGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
-  
+  gap: 1rem;
+
+  /* Tablet: 3 columns */
   @media ${devicesMax.md} {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* Mobile: 2 columns */
+  @media ${devicesMax.xs} {
     grid-template-columns: repeat(2, 1fr);
   }
 `;
@@ -2094,26 +2268,68 @@ const SellerCardFooter = styled.div`
   background: #fafbfc;
 `;
 
-const SellerGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1rem;
+const SellerSwiperWrap = styled.div`
+  position: relative;
 
-  @media ${devicesMax.lg} {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .seller-swiper {
+    padding-bottom: 0.5rem;
+
+    .swiper-slide {
+      height: auto;
+      display: flex;
+      flex-direction: column;
+    }
   }
 
-  @media ${devicesMax.md} {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .seller-swiper-prev,
+  .seller-swiper-next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
+    transition: all 0.2s ease;
+    font-size: 0;
+
+    svg {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    &:hover {
+      background: #D4882A;
+      color: #ffffff;
+      border-color: #D4882A;
+    }
+
+    &.swiper-button-disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+
+    @media ${devicesMax.md} {
+      display: none;
+    }
   }
 
-  @media ${devicesMax.sm} {
-    grid-template-columns: 1fr;
+  .seller-swiper-prev {
+    left: -18px;
   }
-`;
 
-const SellerGridItem = styled.div`
-  min-width: 0;
+  .seller-swiper-next {
+    right: -18px;
+  }
 `;
 
 const MobileStickyActions = styled.nav`
@@ -2133,21 +2349,31 @@ const MobileStickyActions = styled.nav`
 
 const MobileActionLink = styled(Link)`
   text-decoration: none;
-  color: #334155;
-  font-size: 0.82rem;
+  color: #374151;
+  font-size: 0.72rem;
   font-weight: 700;
   text-align: center;
-  padding: 0.75rem 0.25rem calc(0.75rem + env(safe-area-inset-bottom));
-  border-right: 1px solid #e2e8f0;
+  padding: 0.55rem 0.25rem calc(0.55rem + env(safe-area-inset-bottom));
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  letter-spacing: 0.01em;
 
   &:last-child {
     border-right: none;
   }
 
   &:hover {
-    color: #b66f16;
+    color: #D4882A;
     background: #fff7ed;
   }
+`;
+
+const MobileActionIcon = styled.span`
+  font-size: 1.1rem;
+  line-height: 1;
 `;
 
 export default HomePage;

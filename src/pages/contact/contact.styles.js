@@ -10,7 +10,7 @@ import { devicesMax } from '../../shared/styles/breakpoint';
 // Main Container
 export const ContactContainer = styled.div`
   min-height: 100vh;
-  background: var(--color-white-0);
+  background: #f9f7f4;
   overflow-x: hidden;
 `;
 
@@ -18,26 +18,27 @@ export const ContactContainer = styled.div`
 export const HeroSection = styled(motion.section)`
   position: relative;
   padding: var(--spacing-3xl) var(--spacing-lg);
-  background: linear-gradient(135deg, 
-    var(--color-primary-50) 0%, 
-    var(--color-white-0) 50%,
-    var(--primary-50) 100%
-  );
+  background: linear-gradient(135deg, #1a1f2e 0%, #2d3444 50%, #1a2035 100%);
   text-align: center;
   overflow: hidden;
-  
+
   &::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: radial-gradient(circle at 20% 50%, rgba(255, 196, 0, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 50%, rgba(0, 120, 204, 0.1) 0%, transparent 50%);
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(212,136,42,0.12) 1px, transparent 1px);
+    background-size: 28px 28px;
     pointer-events: none;
   }
-  
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 30% 50%, rgba(212,136,42,0.2) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
   @media ${devicesMax.md} {
     padding: var(--spacing-2xl) var(--spacing-md);
   }
@@ -54,14 +55,17 @@ export const HeroIcon = styled(motion.div)`
   width: 8rem;
   height: 8rem;
   border-radius: 50%;
-  background: var(--color-primary-100);
+  background: rgba(212,136,42,0.2);
+  border: 2px solid rgba(212,136,42,0.4);
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto var(--spacing-lg);
-  color: var(--color-primary-500);
+  color: #D4882A;
   font-size: var(--font-size-3xl);
-  
+  position: relative;
+  z-index: 1;
+
   @media ${devicesMax.md} {
     width: 6rem;
     height: 6rem;
@@ -72,14 +76,16 @@ export const HeroIcon = styled(motion.div)`
 export const HeroTitle = styled(motion.h1)`
   font-size: var(--font-size-4xl);
   font-weight: var(--font-bold);
-  color: var(--color-grey-900);
+  color: #ffffff;
   margin-bottom: var(--spacing-md);
   line-height: 1.2;
-  
+  position: relative;
+  z-index: 1;
+
   @media ${devicesMax.md} {
     font-size: var(--font-size-3xl);
   }
-  
+
   @media ${devicesMax.sm} {
     font-size: var(--font-size-2xl);
   }
@@ -87,15 +93,17 @@ export const HeroTitle = styled(motion.h1)`
 
 export const HeroSubtitle = styled(motion.p)`
   font-size: var(--font-size-xl);
-  color: var(--color-grey-600);
+  color: rgba(255,255,255,0.7);
   max-width: 80rem;
   margin: 0 auto;
   line-height: 1.6;
-  
+  position: relative;
+  z-index: 1;
+
   @media ${devicesMax.md} {
     font-size: var(--font-size-lg);
   }
-  
+
   @media ${devicesMax.sm} {
     font-size: var(--font-size-md);
   }
@@ -128,16 +136,17 @@ export const ContactOptionsGrid = styled.div`
 `;
 
 export const ContactCard = styled(motion.div)`
-  background: var(--color-white-0);
+  background: #ffffff;
   border-radius: var(--border-radius-xl);
   padding: var(--spacing-xl);
   text-align: center;
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--color-grey-200);
-  transition: all var(--transition-base);
-  
+  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  border: 1px solid #f0e8d8;
+  transition: all 0.25s ease;
+
   &:hover {
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 8px 28px rgba(212,136,42,0.12);
+    border-color: rgba(212,136,42,0.35);
     transform: translateY(-4px);
   }
 `;
@@ -171,28 +180,29 @@ export const ContactCardDescription = styled.p`
 
 export const ContactCardInfo = styled.div`
   font-size: var(--font-size-lg);
-  color: var(--color-primary-500);
+  color: #D4882A;
   font-weight: var(--font-semibold);
   margin-bottom: var(--spacing-md);
 `;
 
 export const ContactCardButton = styled(motion.button)`
   padding: var(--spacing-sm) var(--spacing-lg);
-  background: var(--color-primary-500);
-  color: var(--color-white-0);
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
+  color: #ffffff;
   border: none;
   border-radius: var(--border-radius-lg);
   font-size: var(--font-size-md);
   font-weight: var(--font-semibold);
   cursor: pointer;
   transition: all var(--transition-base);
-  
+  box-shadow: 0 4px 14px rgba(212,136,42,0.3);
+
   &:hover {
-    background: var(--color-primary-600);
+    background: linear-gradient(135deg, #B8711F 0%, #D4882A 100%);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 196, 0, 0.3);
+    box-shadow: 0 6px 18px rgba(212,136,42,0.4);
   }
-  
+
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
@@ -327,8 +337,8 @@ export const FileInputLabel = styled.label`
   color: var(--color-grey-700);
   
   &:hover {
-    border-color: var(--color-primary-500);
-    background: var(--color-primary-50);
+    border-color: #D4882A;
+    background: rgba(212,136,42,0.05);
   }
   
   input[type="file"] {
@@ -344,8 +354,8 @@ export const FileInputText = styled.span`
 export const SubmitButton = styled(motion.button)`
   width: 100%;
   padding: var(--spacing-md) var(--spacing-xl);
-  background: var(--color-primary-500);
-  color: var(--color-white-0);
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
+  color: #ffffff;
   border: none;
   border-radius: var(--border-radius-lg);
   font-size: var(--font-size-md);
@@ -356,13 +366,14 @@ export const SubmitButton = styled(motion.button)`
   align-items: center;
   justify-content: center;
   gap: var(--spacing-sm);
-  
+  box-shadow: 0 4px 14px rgba(212,136,42,0.3);
+
   &:hover:not(:disabled) {
-    background: var(--color-primary-600);
+    background: linear-gradient(135deg, #B8711F 0%, #D4882A 100%);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 196, 0, 0.3);
+    box-shadow: 0 6px 18px rgba(212,136,42,0.4);
   }
-  
+
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;

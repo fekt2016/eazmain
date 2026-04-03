@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import styled, { keyframes } from "styled-components";
 import { spin } from "../../shared/styles/animations";
 import { devicesMax } from '../../shared/styles/breakpoint';
-import { FaCopy, FaCheck, FaGift, FaClock, FaShoppingBag, FaTag, FaInfoCircle, FaFire, FaGlobe } from "react-icons/fa";
+import { FaCopy, FaCheck, FaGift, FaClock, FaShoppingBag, FaTag, FaInfoCircle, FaFire, FaGlobe, FaTicketAlt } from "react-icons/fa";
 import { useGetMyCoupons } from "../../shared/hooks/useCoupon";
 import { ErrorState, ShimmerCouponRows, Skeleton } from "../../components/loading";
 import { useNavigate } from "react-router-dom";
@@ -73,44 +73,70 @@ const CouponsPage = () => {
   if (loading) {
     return (
       <PageContainer>
-        <HeaderSection>
-          <HeaderContent>
-            <TitleSection>
-              <Skeleton height="32px" width="200px" style={{ marginBottom: 8 }} />
-              <Skeleton height="18px" width="280px" />
-            </TitleSection>
-          </HeaderContent>
-        </HeaderSection>
-        <ShimmerCouponRows />
+        <CouponBanner>
+          <BannerOverlayEl />
+          <BannerInner>
+            <BannerLeft>
+              <BannerIconEl><FaTicketAlt /></BannerIconEl>
+              <div>
+                <BannerTitleEl>My Coupons</BannerTitleEl>
+                <BannerSubEl>Redeem your rewards and save on every order</BannerSubEl>
+              </div>
+            </BannerLeft>
+          </BannerInner>
+        </CouponBanner>
+        <ContentArea>
+          <ShimmerCouponRows />
+        </ContentArea>
       </PageContainer>
     );
   }
 
   if (error) {
     return (
-      <LoadingContainer>
-        <ErrorState 
-          title="Failed to load coupons"
-          message={error?.response?.data?.message || "We couldn't load your coupons. Please try again."}
-          action={
-            <RetryButton onClick={() => refetch()}>
-              Try Again
-            </RetryButton>
-          }
-        />
-      </LoadingContainer>
+      <PageContainer>
+        <CouponBanner>
+          <BannerOverlayEl />
+          <BannerInner>
+            <BannerLeft>
+              <BannerIconEl><FaTicketAlt /></BannerIconEl>
+              <div>
+                <BannerTitleEl>My Coupons</BannerTitleEl>
+                <BannerSubEl>Redeem your rewards and save on every order</BannerSubEl>
+              </div>
+            </BannerLeft>
+          </BannerInner>
+        </CouponBanner>
+        <ContentArea>
+          <LoadingContainer>
+            <ErrorState
+              title="Failed to load coupons"
+              message={error?.response?.data?.message || "We couldn't load your coupons. Please try again."}
+              action={
+                <RetryButton onClick={() => refetch()}>
+                  Try Again
+                </RetryButton>
+              }
+            />
+          </LoadingContainer>
+        </ContentArea>
+      </PageContainer>
     );
   }
 
   return (
     <PageContainer>
-      <HeaderSection>
-        <HeaderContent>
-          <TitleSection>
-            <Title>My Coupons</Title>
-            <Subtitle>Redeem your rewards and save on your next purchase</Subtitle>
-          </TitleSection>
-          
+      {/* ── Banner ─────────────────────────────────────────── */}
+      <CouponBanner>
+        <BannerOverlayEl />
+        <BannerInner>
+          <BannerLeft>
+            <BannerIconEl><FaTicketAlt /></BannerIconEl>
+            <div>
+              <BannerTitleEl>My Coupons</BannerTitleEl>
+              <BannerSubEl>Redeem your rewards and save on every order</BannerSubEl>
+            </div>
+          </BannerLeft>
           <StatsCard>
             <StatItem>
               <StatNumber>{coupons.filter(c => c.status === 'active').length}</StatNumber>
@@ -119,7 +145,7 @@ const CouponsPage = () => {
             <StatDivider />
             <StatItem>
               <StatNumber>GH₵{totalSavings.toFixed(2)}</StatNumber>
-              <StatLabel>Total Savings</StatLabel>
+              <StatLabel>Savings</StatLabel>
             </StatItem>
             <StatDivider />
             <StatItem>
@@ -127,204 +153,280 @@ const CouponsPage = () => {
               <StatLabel>Redeemed</StatLabel>
             </StatItem>
           </StatsCard>
-        </HeaderContent>
-      </HeaderSection>
+        </BannerInner>
+      </CouponBanner>
 
-      {featuredCoupons.length > 0 && (
-        <FeaturedSection>
-          <SectionTitle>
-            <FaFire style={{ color: "var(--color-orange-500)", marginRight: "8px" }} />
-            Featured Offers
-          </SectionTitle>
-          <FeaturedGrid>
-            {featuredCoupons.map((coupon) => (
-              <FeaturedCard key={coupon.id}>
-                <FeaturedBadge>Hot Deal</FeaturedBadge>
-                <FeaturedContent>
-                  <FeaturedDiscount>{coupon.discount}</FeaturedDiscount>
-                  <FeaturedTitle>{coupon.title}</FeaturedTitle>
-                  <FeaturedCode>{coupon.code}</FeaturedCode>
-                </FeaturedContent>
-              </FeaturedCard>
-            ))}
-          </FeaturedGrid>
-        </FeaturedSection>
-      )}
-
-      <ContentSection>
-        <FilterHeader>
-          <FilterGroup>
-            {[
-              { key: "all", label: "All Coupons" },
-              { key: "active", label: "Available" },
-              { key: "used", label: "Used" },
-              { key: "expired", label: "Expired" }
-            ].map((item) => (
-              <FilterTab
-                key={item.key}
-                active={filter === item.key}
-                onClick={() => setFilter(item.key)}
-              >
-                {item.label}
-              </FilterTab>
-            ))}
-          </FilterGroup>
-          
-          <CouponCount>
-            {filteredCoupons.length} {filter === 'all' ? 'total' : filter} coupon{filteredCoupons.length !== 1 ? 's' : ''}
-          </CouponCount>
-        </FilterHeader>
-
-        {filteredCoupons.length === 0 ? (
-          <EmptyState>
-            <EmptyIcon>
-              <FaGift />
-            </EmptyIcon>
-            <EmptyTitle>No coupons found</EmptyTitle>
-            <EmptyMessage>
-              {filter === "active" 
-                ? "You don't have any available coupons at the moment. Check back later for new offers!"
-                : `You don't have any ${filter} coupons in your collection.`}
-            </EmptyMessage>
-          </EmptyState>
-        ) : (
-          <CouponsGrid>
-            {filteredCoupons.map((coupon) => {
-              const statusConfig = getStatusConfig(coupon.status);
-              const daysUntilExpiry = getDaysUntilExpiry(coupon.expiration);
-              
-              return (
-                <CouponCard key={coupon.id} status={coupon.status}>
-                  <CardHeader>
-                    <DiscountBadge>
-                      <FaTag />
-                      <DiscountValue>{coupon.discount}</DiscountValue>
-                    </DiscountBadge>
-                    <StatusIndicator color={statusConfig.color}>
-                      {statusConfig.text}
-                    </StatusIndicator>
-                  </CardHeader>
-
-                  <CardBody>
-                    <CouponTitle>{coupon.title}</CouponTitle>
-                    <Description>{coupon.description}</Description>
-
-                    <DetailsRow>
-                      <DetailItem>
-                        <FaClock />
-                        <span>Expires {formatDate(coupon.expiration)}</span>
-                        {daysUntilExpiry <= 7 && daysUntilExpiry > 0 && (
-                          <ExpiryWarning>{daysUntilExpiry}d left</ExpiryWarning>
-                        )}
-                      </DetailItem>
-                      {coupon.minPurchase > 0 && (
-                        <DetailItem>
-                          <FaShoppingBag />
-                          <span>Min. order GH₵{coupon.minPurchase}</span>
-                        </DetailItem>
-                      )}
-                      {coupon.global && (
-                        <DetailItem>
-                          <FaGlobe />
-                          <span>Global Coupon</span>
-                        </DetailItem>
-                      )}
-                      {coupon.seller && !coupon.global && (
-                        <DetailItem>
-                          <FaTag />
-                          <span>From {coupon.seller?.shopName || coupon.seller?.name || "Seller"}</span>
-                        </DetailItem>
-                      )}
-                    </DetailsRow>
-
-                    <ActionSection>
-                      <CodeSection>
-                        <CodeLabel>Your code:</CodeLabel>
-                        <CodeDisplay onClick={() => copyToClipboard(coupon.code)}>
-                          <CodeText>{coupon.code}</CodeText>
-                          <CopyButton>
-                            {copiedCode === coupon.code ? <FaCheck /> : <FaCopy />}
-                          </CopyButton>
-                        </CodeDisplay>
-                      </CodeSection>
-                    </ActionSection>
-                  </CardBody>
-                </CouponCard>
-              );
-            })}
-          </CouponsGrid>
+      <ContentArea>
+        {featuredCoupons.length > 0 && (
+          <FeaturedSection>
+            <SectionTitle>
+              <FaFire style={{ color: "#D4882A", marginRight: "8px" }} />
+              Featured Offers
+            </SectionTitle>
+            <FeaturedGrid>
+              {featuredCoupons.map((coupon) => (
+                <FeaturedCard key={coupon.id}>
+                  <FeaturedBadge>Hot Deal</FeaturedBadge>
+                  <FeaturedContent>
+                    <FeaturedDiscount>{coupon.discount}</FeaturedDiscount>
+                    <FeaturedTitle>{coupon.title}</FeaturedTitle>
+                    <FeaturedCode>{coupon.code}</FeaturedCode>
+                  </FeaturedContent>
+                </FeaturedCard>
+              ))}
+            </FeaturedGrid>
+          </FeaturedSection>
         )}
-      </ContentSection>
 
-      <InfoSection>
-        <InfoHeader>
-          <FaInfoCircle />
-          How to use your coupons
-        </InfoHeader>
-        <InfoGrid>
-          <InfoItem>
-            <InfoNumber>1</InfoNumber>
-            <InfoContent>
-              <InfoTitle>Browse Available Coupons</InfoTitle>
-              <InfoText>Check your available coupons and their expiration dates</InfoText>
-            </InfoContent>
-          </InfoItem>
-          <InfoItem>
-            <InfoNumber>2</InfoNumber>
-            <InfoContent>
-              <InfoTitle>Copy the Code</InfoTitle>
-              <InfoText>Click on the coupon code to copy it to your clipboard</InfoText>
-            </InfoContent>
-          </InfoItem>
-          <InfoItem>
-            <InfoNumber>3</InfoNumber>
-            <InfoContent>
-              <InfoTitle>Apply at Checkout</InfoTitle>
-              <InfoText>Paste the code in the coupon field during checkout</InfoText>
-            </InfoContent>
-          </InfoItem>
-          <InfoItem>
-            <InfoNumber>4</InfoNumber>
-            <InfoContent>
-              <InfoTitle>Enjoy Savings</InfoTitle>
-              <InfoText>Your discount will be automatically applied to your order</InfoText>
-            </InfoContent>
-          </InfoItem>
-        </InfoGrid>
-      </InfoSection>
+        <ContentSection>
+          <FilterHeader>
+            <FilterGroup>
+              {[
+                { key: "all", label: "All Coupons" },
+                { key: "active", label: "Available" },
+                { key: "used", label: "Used" },
+                { key: "expired", label: "Expired" }
+              ].map((item) => (
+                <FilterTab
+                  key={item.key}
+                  active={filter === item.key}
+                  onClick={() => setFilter(item.key)}
+                >
+                  {item.label}
+                </FilterTab>
+              ))}
+            </FilterGroup>
+
+            <CouponCount>
+              {filteredCoupons.length} {filter === 'all' ? 'total' : filter} coupon{filteredCoupons.length !== 1 ? 's' : ''}
+            </CouponCount>
+          </FilterHeader>
+
+          {filteredCoupons.length === 0 ? (
+            <EmptyState>
+              <EmptyIcon>
+                <FaGift />
+              </EmptyIcon>
+              <EmptyTitle>No coupons found</EmptyTitle>
+              <EmptyMessage>
+                {filter === "active"
+                  ? "You don't have any available coupons at the moment. Check back later for new offers!"
+                  : `You don't have any ${filter} coupons in your collection.`}
+              </EmptyMessage>
+            </EmptyState>
+          ) : (
+            <CouponsGrid>
+              {filteredCoupons.map((coupon) => {
+                const statusConfig = getStatusConfig(coupon.status);
+                const daysUntilExpiry = getDaysUntilExpiry(coupon.expiration);
+
+                return (
+                  <CouponCard key={coupon.id} status={coupon.status}>
+                    <CardHeader>
+                      <DiscountBadge>
+                        <FaTag />
+                        <DiscountValue>{coupon.discount}</DiscountValue>
+                      </DiscountBadge>
+                      <StatusIndicator color={statusConfig.color}>
+                        {statusConfig.text}
+                      </StatusIndicator>
+                    </CardHeader>
+
+                    <CardBody>
+                      <CouponTitle>{coupon.title}</CouponTitle>
+                      <Description>{coupon.description}</Description>
+
+                      <DetailsRow>
+                        <DetailItem>
+                          <FaClock />
+                          <span>Expires {formatDate(coupon.expiration)}</span>
+                          {daysUntilExpiry <= 7 && daysUntilExpiry > 0 && (
+                            <ExpiryWarning>{daysUntilExpiry}d left</ExpiryWarning>
+                          )}
+                        </DetailItem>
+                        {coupon.minPurchase > 0 && (
+                          <DetailItem>
+                            <FaShoppingBag />
+                            <span>Min. order GH₵{coupon.minPurchase}</span>
+                          </DetailItem>
+                        )}
+                        {coupon.global && (
+                          <DetailItem>
+                            <FaGlobe />
+                            <span>Global Coupon</span>
+                          </DetailItem>
+                        )}
+                        {coupon.seller && !coupon.global && (
+                          <DetailItem>
+                            <FaTag />
+                            <span>From {coupon.seller?.shopName || coupon.seller?.name || "Seller"}</span>
+                          </DetailItem>
+                        )}
+                      </DetailsRow>
+
+                      <ActionSection>
+                        <CodeSection>
+                          <CodeLabel>Your code:</CodeLabel>
+                          <CodeDisplay onClick={() => copyToClipboard(coupon.code)}>
+                            <CodeText>{coupon.code}</CodeText>
+                            <CopyButton>
+                              {copiedCode === coupon.code ? <FaCheck /> : <FaCopy />}
+                            </CopyButton>
+                          </CodeDisplay>
+                        </CodeSection>
+                      </ActionSection>
+                    </CardBody>
+                  </CouponCard>
+                );
+              })}
+            </CouponsGrid>
+          )}
+        </ContentSection>
+
+        <InfoSection>
+          <InfoHeader>
+            <FaInfoCircle />
+            How to use your coupons
+          </InfoHeader>
+          <InfoGrid>
+            <InfoItem>
+              <InfoNumber>1</InfoNumber>
+              <InfoContent>
+                <InfoTitle>Browse Available Coupons</InfoTitle>
+                <InfoText>Check your available coupons and their expiration dates</InfoText>
+              </InfoContent>
+            </InfoItem>
+            <InfoItem>
+              <InfoNumber>2</InfoNumber>
+              <InfoContent>
+                <InfoTitle>Copy the Code</InfoTitle>
+                <InfoText>Click on the coupon code to copy it to your clipboard</InfoText>
+              </InfoContent>
+            </InfoItem>
+            <InfoItem>
+              <InfoNumber>3</InfoNumber>
+              <InfoContent>
+                <InfoTitle>Apply at Checkout</InfoTitle>
+                <InfoText>Paste the code in the coupon field during checkout</InfoText>
+              </InfoContent>
+            </InfoItem>
+            <InfoItem>
+              <InfoNumber>4</InfoNumber>
+              <InfoContent>
+                <InfoTitle>Enjoy Savings</InfoTitle>
+                <InfoText>Your discount will be automatically applied to your order</InfoText>
+              </InfoContent>
+            </InfoItem>
+          </InfoGrid>
+        </InfoSection>
+      </ContentArea>
     </PageContainer>
   );
 };
 
 // Modern Styled Components
 const PageContainer = styled.div`
-  max-width: 120rem;
-  margin: 0 auto;
-  padding: 2.4rem;
+  width: 100%;
+  min-height: 100vh;
+  background: #f9f7f4;
+  font-family: "Inter", sans-serif;
+`;
 
-  @media ${devicesMax.md} {
-    padding: 1.6rem;
+/* ── Banner ────────────────────── */
+const CouponBanner = styled.div`
+  position: relative;
+  background: linear-gradient(135deg, #1a1f2e 0%, #2d3444 50%, #1a2035 100%);
+  overflow: hidden;
+  padding: 2.5rem 2rem;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(212,136,42,0.12) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
   }
 `;
 
+const BannerOverlayEl = styled.div`
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(212,136,42,0.15) 0%, transparent 60%);
+  pointer-events: none;
+`;
+
+const BannerInner = styled.div`
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+`;
+
+const BannerLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+`;
+
+const BannerIconEl = styled.div`
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(212,136,42,0.2);
+  border: 2px solid rgba(212,136,42,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  color: #D4882A;
+  flex-shrink: 0;
+`;
+
+const BannerTitleEl = styled.h1`
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 0.2rem;
+`;
+
+const BannerSubEl = styled.p`
+  font-size: 0.88rem;
+  color: rgba(255,255,255,0.6);
+  margin: 0;
+`;
+
+/* ── Content ───────────────────── */
+const ContentArea = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+`;
+
 const HeaderSection = styled.div`
-  margin-bottom: 3.2rem;
+  margin-bottom: 2rem;
 `;
 
 const HeaderContent = styled.div`
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: flex-start;
-  margin-bottom: 2.4rem;
+  margin-bottom: 2rem;
 
   @media ${devicesMax.lg} {
     flex-direction: column;
-    gap: 2rem;
+    gap: 1.5rem;
   }
 `;
 
 const TitleSection = styled.div`
   flex: 1;
+  display: none; /* title is now in the banner */
 `;
 
 const Title = styled.h1`
@@ -332,10 +434,6 @@ const Title = styled.h1`
   font-weight: 800;
   color: var(--color-grey-900);
   margin-bottom: 0.8rem;
-  background: linear-gradient(135deg, var(--color-grey-900) 0%, var(--color-grey-700) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 
   @media ${devicesMax.md} {
     font-size: 2.8rem;
@@ -350,15 +448,14 @@ const Subtitle = styled.p`
 
 const StatsCard = styled.div`
   display: flex;
-  background: var(--color-white-0);
-  border-radius: 20px;
-  padding: 2rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  border: 1px solid var(--color-grey-100);
-  min-width: 30rem;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid #f0e8d8;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  gap: 0;
 
   @media ${devicesMax.sm} {
-    min-width: auto;
     width: 100%;
   }
 `;
@@ -366,21 +463,23 @@ const StatsCard = styled.div`
 const StatItem = styled.div`
   flex: 1;
   text-align: center;
-  padding: 0 1.2rem;
+  padding: 0 1rem;
 `;
 
 const StatNumber = styled.div`
-  font-size: 2.4rem;
+  font-size: 1.6rem;
   font-weight: 800;
-  color: var(--primary-700);
+  color: #D4882A;
   line-height: 1;
 `;
 
 const StatLabel = styled.div`
-  font-size: 1.2rem;
-  color: var(--color-grey-600);
-  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-top: 0.3rem;
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 `;
 
 const StatDivider = styled.div`
@@ -557,16 +656,17 @@ const FilterTab = styled.button`
   flex: 1;
   padding: 1rem 1.6rem;
   border: none;
-  background: ${props => props.active ? 'var(--color-white-0)' : 'transparent'};
-  color: ${props => props.active ? 'var(--color-primary-600)' : 'var(--color-grey-600)'};
+  background: ${props => props.active ? '#ffffff' : 'transparent'};
+  color: ${props => props.active ? '#D4882A' : 'var(--color-grey-600)'};
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  font-size: 1.3rem;
   box-shadow: ${props => props.active ? '0 2px 8px rgba(0, 0, 0, 0.1)' : 'none'};
 
   &:hover {
-    color: var(--primary-700);
+    color: #D4882A;
   }
 `;
 
@@ -666,13 +766,13 @@ const DiscountBadge = styled.div`
   align-items: center;
   gap: 0.8rem;
   font-size: 1.4rem;
-  color: var(--color-primary-500);
+  color: #D4882A;
 `;
 
 const DiscountValue = styled.div`
   font-size: 2.8rem;
   font-weight: 800;
-  color: var(--primary-700);
+  color: #D4882A;
 `;
 
 const StatusIndicator = styled.div`
@@ -782,15 +882,15 @@ const CodeText = styled.span`
 const CopyButton = styled.button`
   background: none;
   border: none;
-  color: var(--color-primary-500);
+  color: #D4882A;
   cursor: pointer;
   padding: 0.4rem;
   border-radius: 6px;
   transition: all 0.2s;
 
   &:hover {
-    background: var(--color-primary-50);
-    color: var(--primary-700);
+    background: rgba(212,136,42,0.1);
+    color: #B8711F;
   }
 `;
 
@@ -832,8 +932,8 @@ const InfoItem = styled.div`
 const InfoNumber = styled.div`
   width: 3.2rem;
   height: 3.2rem;
-  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
-  color: var(--color-white-0);
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
+  color: #ffffff;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -863,8 +963,8 @@ const InfoText = styled.p`
 const RetryButton = styled.button`
   margin-top: 1rem;
   padding: 0.8rem 1.6rem;
-  background: var(--color-primary-500);
-  color: var(--color-white-0);
+  background: #D4882A;
+  color: #ffffff;
   border: none;
   border-radius: 8px;
   font-weight: 600;
@@ -872,9 +972,9 @@ const RetryButton = styled.button`
   transition: all 0.2s;
 
   &:hover {
-    background: var(--color-primary-600);
+    background: #B8711F;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 4px 12px rgba(212,136,42,0.3);
   }
 `;
 

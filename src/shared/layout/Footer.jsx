@@ -178,13 +178,13 @@ export default function Footer() {
 const FooterContainer = styled.footer`
   background: #1A1F2E;
   color: #ffffff;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 3px solid #D4882A;
   position: relative;
-  padding: 20px 24px 12px;
+  padding: 32px 24px 16px;
   width: 100%;
 
   @media (max-width: 768px) {
-    padding: 20px 24px 12px;
+    padding: 24px 16px 12px;
   }
 `;
 
@@ -197,8 +197,8 @@ const FooterContent = styled.div`
 `;
 
 const FooterTop = styled.div`
-  padding: 0 0 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0 0 20px;
+  border-bottom: 1px solid rgba(212, 136, 42, 0.15);
 `;
 
 const LogoBlock = styled.div`
@@ -236,7 +236,7 @@ const LogoWrapper = styled.div`
 
 const BrandTagline = styled.span`
   font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(212, 136, 42, 0.85);
   font-weight: 500;
   letter-spacing: 0.02em;
   margin-top: 4px;
@@ -335,14 +335,15 @@ const SubscribeButton = styled(PrimaryButton)`
   border-radius: 8px;
   font-weight: 600;
   white-space: nowrap;
-  background: linear-gradient(135deg, #ffc400 0%, #ff9800 100%);
+  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
   border: none;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(255, 196, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(212, 136, 42, 0.35);
 
   &:hover:not(:disabled) {
+    background: linear-gradient(135deg, #B8711F 0%, #D4882A 100%);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255, 196, 0, 0.4);
+    box-shadow: 0 6px 20px rgba(212, 136, 42, 0.45);
   }
 
   &:disabled {
@@ -353,7 +354,7 @@ const SubscribeButton = styled(PrimaryButton)`
 `;
 
 const FooterMiddle = styled.div`
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(212, 136, 42, 0.15);
 `;
 
 const LinkGridFourCol = styled.div`
@@ -397,15 +398,15 @@ const LinkColumn = styled.div`
 
 const ColumnTitle = styled.h3`
   font-size: 14px;
-  font-weight: 600;
-  color: #FFFFFF;
-  margin: 0 0 8px 0;
+  font-weight: 700;
+  color: #D4882A;
+  margin: 0 0 10px 0;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
 
   @media (max-width: 767px) {
     font-size: 13px;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
   }
 `;
 
@@ -416,7 +417,7 @@ const LinkList = styled.div`
 `;
 
 const LinkItem = styled(Link)`
-  color: #9CA3AF;
+  color: rgba(255,255,255,0.6);
   text-decoration: none;
   font-size: 14px;
   font-weight: 400;
@@ -426,7 +427,7 @@ const LinkItem = styled(Link)`
   transition: color 0.2s ease;
 
   &:hover {
-    color: #FFFFFF;
+    color: #D4882A;
   }
 
   @media (max-width: 767px) {
@@ -477,7 +478,7 @@ const SocialLink = styled.a`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #9CA3AF;
+  color: rgba(255,255,255,0.6);
   text-decoration: none;
   font-size: 14px;
   font-weight: 400;
@@ -487,7 +488,7 @@ const SocialLink = styled.a`
   transition: color 0.2s ease, transform 0.25s ease;
 
   &:hover {
-    color: #FFFFFF;
+    color: #D4882A;
     transform: translateX(4px);
   }
 
@@ -542,8 +543,8 @@ const SocialIcon = styled.span`
 `;
 
 const FooterBottom = styled.div`
-  padding: 10px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 12px 0;
+  border-top: 1px solid rgba(212, 136, 42, 0.2);
   position: relative;
 
   @media (max-width: 767px) {
@@ -592,14 +593,14 @@ const LegalLinks = styled.div`
 `;
 
 const LegalLink = styled(Link)`
-  color: #9CA3AF;
+  color: rgba(255,255,255,0.45);
   text-decoration: none;
   font-size: 0.875rem;
   transition: color 0.2s ease;
   font-weight: 400;
 
   &:hover {
-    color: #FFFFFF;
+    color: #D4882A;
   }
 
   @media (max-width: 767px) {
@@ -618,8 +619,8 @@ const scrollRightToLeft = keyframes`
 
 const PaymentMethodsSection = styled.div`
   padding: 16px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid rgba(212, 136, 42, 0.15);
+  background: rgba(212, 136, 42, 0.03);
 
   @media (max-width: 767px) {
     padding: 12px 0;
@@ -628,11 +629,11 @@ const PaymentMethodsSection = styled.div`
 
 const PaymentSectionTitle = styled.h2`
   font-size: 14px;
-  font-weight: 600;
-  color: #FFFFFF;
+  font-weight: 700;
+  color: #D4882A;
   margin: 0 0 8px 0;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-align: center;
 
   @media (max-width: 767px) {
@@ -740,8 +741,8 @@ const PaymentMethodLabel = styled.span`
 
 const SecuritySection = styled.div`
   padding: 16px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid rgba(212, 136, 42, 0.15);
+  background: rgba(212, 136, 42, 0.03);
 
   @media (max-width: 767px) {
     padding: 12px 0;
@@ -750,11 +751,11 @@ const SecuritySection = styled.div`
 
 const SecuritySectionTitle = styled.h4`
   font-size: 14px;
-  font-weight: 600;
-  color: #FFFFFF;
+  font-weight: 700;
+  color: #D4882A;
   margin: 0 0 8px 0;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-align: center;
 
   @media (max-width: 767px) {
