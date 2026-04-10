@@ -4,6 +4,7 @@ import { styled } from "styled-components";
 import Header from "./Header";
 import Footer from "./Footer";
 import CookieConsentBanner from "../components/CookieConsentBanner/CookieConsentBanner";
+import ChatWidget from "../../features/chat/ChatWidget";
 
 
 const Container = styled.div`
@@ -79,6 +80,7 @@ export default function MainLayout() {
       </Main>
       {!isDashboardRoute && <Footer />}
       <CookieConsentBanner />
+      <ChatWidget />
     </Container>
   );
 }

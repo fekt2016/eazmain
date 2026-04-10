@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
 import logger from '../../shared/utils/logger';
-import { FaArrowRight, FaShieldAlt, FaMapMarkerAlt, FaFilter, FaTimes, FaSortAmountDown, FaSearch, FaChevronDown, FaChevronUp } from "react-icons/fa";
+import { FaArrowRight, FaShieldAlt, FaMapMarkerAlt, FaFilter, FaTimes, FaSortAmountDown, FaSearch, FaChevronDown, FaChevronUp, FaStore } from "react-icons/fa";
 import { useGetFeaturedSellers } from '../../shared/hooks/useSeller';
 import Container from '../../shared/components/Container';
 import { devicesMax } from '../../shared/styles/breakpoint';
@@ -10,6 +10,9 @@ import { PATHS } from "../../routes/routePaths";
 import { LoadingState } from '../../components/loading';
 import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 import StarRating from '../../shared/components/StarRating';
+import OptimizedImage from '../../shared/components/OptimizedImage';
+import { IMAGE_SLOTS } from '../../shared/utils/cloudinaryConfig';
+import { hasUsableSellerAvatar, getShopInitials } from '../../shared/utils/sellerCardDisplay';
 
 export default function SellersListPage() {
   useDynamicPageTitle({
@@ -246,27 +249,44 @@ export default function SellersListPage() {
                   ?.flatMap((product) => product.images || [])
                   ?.filter((img) => img)
                   ?.slice(0, 3) || [];
+                const shopLabel = seller.shopName || seller.name || 'Seller';
+                const showAvatarImage = hasUsableSellerAvatar(seller.avatar);
+                const ratingVal = Number(
+                  seller.rating ?? seller.ratings?.average ?? 0
+                );
+                const hasRating = Number.isFinite(ratingVal) && ratingVal > 0.05;
 
                 return (
                   <SellerCard key={seller.id || seller._id} to={`${PATHS.SELLERS}/${seller.id || seller._id}`}>
                     <SellerCardHeader>
                       <SellerAvatarContainer>
-                        <SellerAvatar
-                          src={seller.avatar || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23D4882A' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='40' font-weight='bold'%3EShop%3C/text%3E%3C/svg%3E"}
-                          alt={seller.shopName || seller.name}
-                          onError={(e) => {
-                            e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23D4882A' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='40' font-weight='bold'%3EShop%3C/text%3E%3C/svg%3E";
-                          }}
-                        />
+                        {showAvatarImage ? (
+                          <SellerAvatarFrame>
+                            <OptimizedImage
+                              src={seller.avatar}
+                              slot={IMAGE_SLOTS.AVATAR}
+                              aspectRatio="1/1"
+                              alt=""
+                              style={{ width: '100%', height: '100%' }}
+                              onError={(e) => {
+                                e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23D4882A' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='40' font-weight='bold'%3EShop%3C/text%3E%3C/svg%3E";
+                              }}
+                            />
+                          </SellerAvatarFrame>
+                        ) : (
+                          <SellerAvatarPlaceholder aria-hidden>
+                            {getShopInitials(shopLabel)}
+                          </SellerAvatarPlaceholder>
+                        )}
                         <VerifiedBadge>
                           <FaShieldAlt />
                         </VerifiedBadge>
                       </SellerAvatarContainer>
                       <SellerHeaderContent>
-                        <SellerName>{seller.shopName || seller.name}</SellerName>
+                        <SellerName>{shopLabel}</SellerName>
                         <SellerRating>
-                          <StarRating rating={seller.rating || seller.ratings?.average || 0} size="14px" />
-                          <RatingText>{(seller.rating || seller.ratings?.average || 0).toFixed(1)}</RatingText>
+                          <StarRating rating={hasRating ? ratingVal : 0} size="14px" />
+                          <RatingText>{hasRating ? ratingVal.toFixed(1) : 'New'}</RatingText>
                         </SellerRating>
                         {seller.location && (
                           <SellerLocation>
@@ -297,15 +317,18 @@ export default function SellersListPage() {
                         )}
                       </SellerStats>
 
-                      {productImages.length > 0 && (
+                      {productImages.length > 0 ? (
                         <ProductPreviewSection>
                           <PreviewLabel>Featured Products</PreviewLabel>
                           <ProductPreview>
                             {productImages.map((image, index) => (
                               <PreviewImageWrapper key={index}>
-                                <PreviewImage
+                                <OptimizedImage
                                   src={image}
+                                  slot={IMAGE_SLOTS.TABLE_THUMB}
+                                  aspectRatio="1/1"
                                   alt={`Product ${index + 1}`}
+                                  style={{ width: '100%', height: '100%' }}
                                   onError={(e) => {
                                     e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect fill='%23f0e8d8' width='80' height='80'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23D4882A' font-size='24'%3EP%3C/text%3E%3C/svg%3E";
                                   }}
@@ -319,6 +342,13 @@ export default function SellersListPage() {
                             )}
                           </ProductPreview>
                         </ProductPreviewSection>
+                      ) : (
+                        <SellerPreviewPlaceholder>
+                          <FaStore aria-hidden />
+                          <SellerPreviewPlaceholderText>
+                            No product photos yet — browse the shop for items
+                          </SellerPreviewPlaceholderText>
+                        </SellerPreviewPlaceholder>
                       )}
                     </SellerCardBody>
 
@@ -826,17 +856,6 @@ const ViewShopButton = styled.div`
   }
 `;
 
-const SellerAvatar = styled.img`
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 4px solid #f0e8d8;
-  box-shadow: 0 4px 16px rgba(212,136,42,0.15);
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  background: linear-gradient(135deg, #D4882A 0%, #f0a845 100%);
-`;
-
 const SellerCard = styled(Link)`
   position: relative;
   background: white;
@@ -867,7 +886,8 @@ const SellerCard = styled(Link)`
       }
     }
 
-    ${SellerAvatar} {
+    ${SellerAvatarFrame},
+    ${SellerAvatarPlaceholder} {
       transform: scale(1.05);
     }
   }
@@ -887,6 +907,72 @@ const SellerCardHeader = styled.div`
 const SellerAvatarContainer = styled.div`
   position: relative;
   margin-bottom: 1rem;
+  display: flex;
+  justify-content: center;
+`;
+
+const SellerAvatarFrame = styled.div`
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid #f0e8d8;
+  box-shadow: 0 4px 16px rgba(212, 136, 42, 0.15);
+  flex-shrink: 0;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+  & > div {
+    width: 100%;
+    height: 100%;
+  }
+`;
+
+const SellerAvatarPlaceholder = styled.div`
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #d4882a 0%, #ffc400 55%, #e29800 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  border: 4px solid #f0e8d8;
+  box-shadow: 0 4px 16px rgba(212, 136, 42, 0.25);
+  flex-shrink: 0;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+`;
+
+const SellerPreviewPlaceholder = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-height: 5.5rem;
+  padding: 1rem 1.1rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff7e6 0%, #fef3c7 42%, #f8fafc 100%);
+  border: 1px dashed rgba(212, 136, 42, 0.4);
+  color: #92400e;
+
+  svg {
+    flex-shrink: 0;
+    font-size: 1.5rem;
+    opacity: 0.9;
+  }
+
+  ${SellerCard}:hover & {
+    border-color: rgba(212, 136, 42, 0.55);
+    background: linear-gradient(135deg, #fffbeb 0%, #fef9c3 40%, #f8fafc 100%);
+  }
+`;
+
+const SellerPreviewPlaceholderText = styled.span`
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #78350f;
 `;
 
 const VerifiedBadge = styled.div`
@@ -1039,12 +1125,6 @@ const PreviewImageWrapper = styled.div`
     border-color: rgba(255, 196, 0, 0.4);
     transform: scale(1.05);
   }
-`;
-
-const PreviewImage = styled.img`
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 `;
 
 const MoreProductsIndicator = styled.div`

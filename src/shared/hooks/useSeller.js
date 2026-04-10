@@ -53,12 +53,12 @@ export const useGetSellerById = (sellerId) => {
 };
 // Create a new hook - omit minRating by default so all active/pending sellers can appear (sorted by rating)
 export const useGetFeaturedSellers = (options = {}) => {
-  const { limit = 8, minRating } = options;
+  const { limit = 8, minRating, productsPerSeller } = options;
 
   return useQuery({
-    queryKey: ["featured-sellers", limit, minRating],
+    queryKey: ["featured-sellers", limit, minRating, productsPerSeller],
     queryFn: async () => {
-      const sellers = await sellerApi.getFeaturedSellers(limit, minRating);
+      const sellers = await sellerApi.getFeaturedSellers(limit, minRating, productsPerSeller);
       // Ensure we return an array
       if (Array.isArray(sellers)) {
         return sellers;

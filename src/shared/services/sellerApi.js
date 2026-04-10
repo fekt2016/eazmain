@@ -2,10 +2,13 @@ import api from "./api";
 import logger from "../utils/logger";
 
 const sellerApi = {
-  getFeaturedSellers: async (limit = 8, minRating) => {
+  getFeaturedSellers: async (limit = 8, minRating, productsPerSeller) => {
     try {
       const params = { limit };
       if (minRating != null && Number.isFinite(minRating)) params.minRating = minRating;
+      if (productsPerSeller != null && Number.isFinite(Number(productsPerSeller))) {
+        params.productsPerSeller = Number(productsPerSeller);
+      }
       const response = await api.get("/seller/public/featured", { params });
       const data = response?.data?.data;
       const sellers = data?.sellers ?? data ?? response?.data?.sellers;

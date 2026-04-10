@@ -2,9 +2,7 @@ import axios from "axios";
 import logger from "../utils/logger";
 import { API_BASE_URL } from "../config/appConfig";
 
-// API configuration
-// SECURITY: Use environment variables for API URLs
-// Priority: VITE_API_BASE_URL > VITE_API_URL (backward compat) > production default
+// API configuration — base URL from appConfig (see API_ORIGIN / API_BASE_URL)
 const API_CONFIG = {
   TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT || "60000", 10), // 60 seconds (reduced from 500s for better UX)
 };
@@ -64,36 +62,8 @@ const PUBLIC_GET_ENDPOINTS = [
   /^\/recommendations\/products\/trending/, // Trending products
 ];
 
-// Helper functions
-const PRODUCTION_API_HOST = 'api.saiisai.com';
-// RULE: Never use api.saiisai.com in development. Only in production builds.
-const getBaseURL = () => {
-  const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
-  const isLocalhost =
-    typeof window !== 'undefined' &&
-    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-
-  if (isDevelopment || isLocalhost) {
-    return 'http://localhost:4000/api/v1';
-  }
-
-  const apiBaseUrl = API_BASE_URL;
-  if (apiBaseUrl) {
-    let url = apiBaseUrl.trim().replace(/\/+$/, '');
-    if (url.includes('localhost') || url.includes('127.0.0.1') || url.includes(':4000')) {
-      url = url.replace(/^https:\/\//i, 'http://');
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        url = 'http://' + url.replace(/^\/\//, '');
-      }
-    }
-    if (!url.includes('/api/v1')) {
-      url = `${url}/api/v1`;
-    }
-    return url;
-  }
-
-  return `https://${PRODUCTION_API_HOST}/api/v1`;
-};
+// Single source of truth: appConfig (DEV → localhost:4000, prod build → api.saiisai.com, env overrides)
+const getBaseURL = () => API_BASE_URL;
 
 const getRelativePath = (url) => {
   if (url.startsWith("http")) {
@@ -267,7 +237,10 @@ api.interceptors.request.use(async (config) => {
     if (!config.baseURL.startsWith('http://') && !config.baseURL.startsWith('https://')) {
       config.baseURL = 'http://' + config.baseURL.replace(/^\/\//, '');
     }
-    console.log('[API Request Interceptor] 🔒 Forced HTTP baseURL:', config.baseURL);
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.log('[API Request Interceptor] 🔒 Forced HTTP baseURL:', config.baseURL);
+    }
   }
   
   const relativePath = getRelativePath(config.url);

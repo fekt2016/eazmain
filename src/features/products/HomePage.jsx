@@ -1,13 +1,13 @@
 import { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import styled, { keyframes } from "styled-components";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, generatePath } from "react-router-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, EffectFade, Navigation, Pagination } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/effect-fade";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
-import { FaArrowRight, FaArrowLeft, FaShieldAlt, FaTruck, FaHeadset } from "react-icons/fa";
+import { FaArrowRight, FaArrowLeft, FaShieldAlt, FaTruck, FaHeadset, FaStore } from "react-icons/fa";
 
 import useProduct from '../../shared/hooks/useProduct';
 import useAuth from '../../shared/hooks/useAuth';
@@ -36,8 +36,27 @@ import OptimizedImage from '../../shared/components/OptimizedImage';
 import { IMAGE_SLOTS } from '../../shared/utils/cloudinaryConfig';
 import { FRONTEND_URL } from '../../shared/config/appConfig';
 import { HOMEPAGE_TRACK_EVENTS } from '../../shared/constants/homepageExperimentEvents';
+import { hasUsableSellerAvatar, getShopInitials } from '../../shared/utils/sellerCardDisplay';
 
 const RECENTLY_VIEWED_STORAGE_KEY = 'saiisai-recently-viewed-products';
+
+function getFeaturedSellerProductImage(product) {
+  const imgs = product?.images;
+  if (!Array.isArray(imgs) || imgs.length === 0) return null;
+  const first = imgs[0];
+  if (typeof first === 'string') return first;
+  if (first && typeof first === 'object') {
+    return first.url || first.secure_url || first.thumbnail || first.medium || null;
+  }
+  return null;
+}
+
+function truncateText(str, maxLen) {
+  if (!str || typeof str !== 'string') return '';
+  if (str.length <= maxLen) return str;
+  return `${str.slice(0, maxLen - 1)}…`;
+}
+
 const PRODUCT_FILTERS = [
   { id: 'all', label: 'All' },
   { id: 'inStock', label: 'In Stock' },
@@ -106,6 +125,7 @@ const ViewInSection = ({ children, delayMs = 0, threshold = 0.12 }) => {
 };
 
 const HomePage = () => {
+  const navigate = useNavigate();
   useDynamicPageTitle({
     title: seoConfig.home.title,
     description: seoConfig.home.description,
@@ -128,7 +148,10 @@ const HomePage = () => {
   }, [userData]);
   const showFollowedSection = Boolean(isAuthenticated || user);
   const { products: followedProducts, isLoading: isFollowedProductsLoading, total: followedProductsTotal } = useFollowedSellerProducts(12);
-  const { data: sellersData, isLoading: isSellersLoading } = useGetFeaturedSellers({ limit: 8 });
+  const { data: sellersData, isLoading: isSellersLoading } = useGetFeaturedSellers({
+    limit: 8,
+    productsPerSeller: 2,
+  });
   const {
     bannerAds,
     carouselAds,
@@ -720,7 +743,7 @@ const HomePage = () => {
               <SectionLink to={PATHS.SELLERS}>View All Sellers <FaArrowRight /></SectionLink>
             </SectionHeader>
             <SectionDescription>
-              Top-rated shops with verified products and fast fulfillment.
+              Verified sellers with quality listings and reliable fulfillment.
             </SectionDescription>
 
             {isSellersLoading ? (
@@ -752,35 +775,61 @@ const HomePage = () => {
                   className="seller-swiper"
                 >
                   {sellers.map((seller) => {
-                    const productImages = seller.products
-                      ?.flatMap((product) => product.images || [])
-                      ?.filter((img) => img)
-                      ?.slice(0, 3) || [];
+                    const topProducts = (seller.products || []).slice(0, 2);
+                    const shopLabel = seller.shopName || seller.name || 'Seller';
+                    const showAvatarImage = hasUsableSellerAvatar(seller.avatar);
+                    const ratingVal = Number(
+                      seller.rating ?? seller.ratings?.average ?? 0
+                    );
+                    const hasRating = Number.isFinite(ratingVal) && ratingVal > 0.05;
+                    const sellerUrl = generatePath(PATHS.SELLER_SHOP, {
+                      id: String(seller.id || seller._id),
+                    });
 
                     return (
                       <SwiperSlide key={seller.id || seller._id}>
-                        <SellerCard to={`${PATHS.SELLERS}/${seller.id || seller._id}`}>
+                        <SellerCard
+                          role="link"
+                          tabIndex={0}
+                          aria-label={`View ${shopLabel} shop`}
+                          onClick={() => navigate(sellerUrl)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              navigate(sellerUrl);
+                            }
+                          }}
+                        >
                           <SellerCardHeader>
                             <SellerAvatarContainer>
-                              <OptimizedImage
-                                src={seller.avatar}
-                                slot={IMAGE_SLOTS.AVATAR}
-                                aspectRatio="1/1"
-                                alt={seller.shopName || "Seller"}
-                                onError={(e) => {
-                                  e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23ffc400' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='40' font-weight='bold'%3EShop%3C/text%3E%3C/svg%3E";
-                                }}
-                              />
+                              {showAvatarImage ? (
+                                <SellerAvatarFrame>
+                                  <OptimizedImage
+                                    src={seller.avatar}
+                                    slot={IMAGE_SLOTS.AVATAR}
+                                    aspectRatio="1/1"
+                                    alt=""
+                                    style={{ width: '100%', height: '100%' }}
+                                    onError={(e) => {
+                                      e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23ffc400' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='40' font-weight='bold'%3EShop%3C/text%3E%3C/svg%3E";
+                                    }}
+                                  />
+                                </SellerAvatarFrame>
+                              ) : (
+                                <SellerAvatarPlaceholder aria-hidden>
+                                  {getShopInitials(shopLabel)}
+                                </SellerAvatarPlaceholder>
+                              )}
                               <VerifiedBadge>
                                 <FaShieldAlt />
                               </VerifiedBadge>
                             </SellerAvatarContainer>
                             <SellerHeaderContent>
-                              <SellerName>{seller.shopName || seller.name}</SellerName>
+                              <SellerName>{shopLabel}</SellerName>
                               <SellerRating>
-                                <StarRating rating={seller.rating || seller.ratings?.average || 0} size="14px" />
+                                <StarRating rating={hasRating ? ratingVal : 0} size="14px" />
                                 <RatingText>
-                                  {(seller.rating || seller.ratings?.average || 0).toFixed(1)}
+                                  {hasRating ? ratingVal.toFixed(1) : 'New'}
                                 </RatingText>
                               </SellerRating>
                             </SellerHeaderContent>
@@ -806,30 +855,68 @@ const HomePage = () => {
                               )}
                             </SellerStats>
 
-                            {productImages.length > 0 && (
-                              <ProductPreviewSection>
-                                <PreviewLabel>Featured Products</PreviewLabel>
-                                <ProductPreview>
-                                  {productImages.map((image, index) => (
-                                    <PreviewImageWrapper key={index}>
-                                      <OptimizedImage
-                                        src={image}
-                                        slot={IMAGE_SLOTS.TABLE_THUMB}
-                                        aspectRatio="1/1"
-                                        alt={`Product ${index + 1}`}
-                                        onError={(e) => {
-                                          e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect fill='%23e2e8f0' width='80' height='80'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2364748b' font-size='24'%3EP%3C/text%3E%3C/svg%3E";
-                                        }}
-                                      />
-                                    </PreviewImageWrapper>
-                                  ))}
-                                  {productImages.length < 3 && (
-                                    <MoreProductsIndicator>
-                                      +{Math.max(0, (seller.productCount || seller.products?.length || 0) - productImages.length)}
-                                    </MoreProductsIndicator>
-                                  )}
-                                </ProductPreview>
-                              </ProductPreviewSection>
+                            {topProducts.length > 0 ? (
+                              <MostOrderedSection>
+                                <PreviewLabel>Most ordered</PreviewLabel>
+                                <TopProductsRow>
+                                  {topProducts.map((product) => {
+                                    const pid = product.id || product._id;
+                                    const imgSrc = getFeaturedSellerProductImage(product);
+                                    const productUrl = generatePath(PATHS.PRODUCT_DETAIL, {
+                                      id: String(pid),
+                                    });
+                                    return (
+                                      <TopProductTile key={String(pid)}>
+                                        <TopProductOpenButton
+                                          type="button"
+                                          aria-label={
+                                            product.name
+                                              ? `View ${product.name}`
+                                              : 'View product'
+                                          }
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            navigate(productUrl);
+                                          }}
+                                        >
+                                          {imgSrc ? (
+                                            <TopProductImageWrap>
+                                              <OptimizedImage
+                                                src={imgSrc}
+                                                slot={IMAGE_SLOTS.TABLE_THUMB}
+                                                aspectRatio="1/1"
+                                                alt=""
+                                                style={{ width: '100%', height: '100%' }}
+                                                onError={(e) => {
+                                                  e.target.src =
+                                                    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect fill='%23e2e8f0' width='80' height='80'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2364748b' font-size='24'%3EP%3C/text%3E%3C/svg%3E";
+                                                }}
+                                              />
+                                            </TopProductImageWrap>
+                                          ) : (
+                                            <TopProductImageFallback aria-hidden>
+                                              <FaStore />
+                                            </TopProductImageFallback>
+                                          )}
+                                        </TopProductOpenButton>
+                                        {product.name ? (
+                                          <TopProductName title={product.name}>
+                                            {truncateText(product.name, 40)}
+                                          </TopProductName>
+                                        ) : null}
+                                      </TopProductTile>
+                                    );
+                                  })}
+                                </TopProductsRow>
+                              </MostOrderedSection>
+                            ) : (
+                              <SellerPreviewPlaceholder>
+                                <FaStore aria-hidden />
+                                <SellerPreviewPlaceholderText>
+                                  No product photos yet — browse the shop for items
+                                </SellerPreviewPlaceholderText>
+                              </SellerPreviewPlaceholder>
                             )}
                           </SellerCardBody>
 
@@ -2055,7 +2142,7 @@ const SellerAvatar = styled.img`
   background: linear-gradient(135deg, #ffc400 0%, #ffb300 100%);
 `;
 
-const SellerCard = styled(Link)`
+const SellerCard = styled.div`
   position: relative;
   background: white;
   border-radius: 14px;
@@ -2068,6 +2155,12 @@ const SellerCard = styled(Link)`
   height: 100%;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid #d4882a;
+    outline-offset: 2px;
+  }
 
   &:hover {
     transform: translateY(-4px);
@@ -2102,8 +2195,71 @@ const SellerCardHeader = styled.div`
 const SellerAvatarContainer = styled.div`
   position: relative;
   margin-bottom: 0.65rem;
+  display: flex;
+  justify-content: center;
 `;
 
+const SellerAvatarFrame = styled.div`
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid white;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  flex-shrink: 0;
+
+  & > div {
+    width: 100%;
+    height: 100%;
+  }
+`;
+
+const SellerAvatarPlaceholder = styled.div`
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #d4882a 0%, #ffc400 55%, #e29800 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  border: 4px solid white;
+  box-shadow: 0 8px 24px rgba(212, 136, 42, 0.35);
+  flex-shrink: 0;
+`;
+
+const SellerPreviewPlaceholder = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 4.5rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #fff7e6 0%, #fef3c7 42%, #f1f5f9 100%);
+  border: 1px dashed rgba(212, 136, 42, 0.4);
+  color: #92400e;
+
+  svg {
+    flex-shrink: 0;
+    font-size: 1.25rem;
+    opacity: 0.9;
+  }
+
+  ${SellerCard}:hover & {
+    border-color: rgba(212, 136, 42, 0.55);
+    background: linear-gradient(135deg, #fffbeb 0%, #fef9c3 40%, #f8fafc 100%);
+  }
+`;
+
+const SellerPreviewPlaceholderText = styled.span`
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #78350f;
+`;
 
 const VerifiedBadge = styled.div`
   position: absolute;
@@ -2206,12 +2362,6 @@ const StatLabel = styled.span`
   font-weight: 500;
 `;
 
-const ProductPreviewSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-`;
-
 const PreviewLabel = styled.span`
   font-size: 0.75rem;
   font-weight: 600;
@@ -2220,46 +2370,82 @@ const PreviewLabel = styled.span`
   letter-spacing: 0.5px;
 `;
 
-const ProductPreview = styled.div`
+const MostOrderedSection = styled.div`
   display: flex;
-  gap: 0.5rem;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.45rem;
 `;
 
-const PreviewImageWrapper = styled.div`
-  position: relative;
-  width: 56px;
-  height: 56px;
-  border-radius: 9px;
-  overflow: hidden;
-  border: 2px solid #e2e8f0;
-  transition: all 0.3s ease;
-  flex-shrink: 0;
+const TopProductsRow = styled.div`
+  display: flex;
+  gap: 0.6rem;
+  align-items: stretch;
+`;
 
-  ${SellerCard}:hover & {
-    border-color: rgba(255, 196, 0, 0.4);
+const TopProductTile = styled.div`
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+`;
+
+const TopProductOpenButton = styled.button`
+  appearance: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 10px;
+  display: block;
+  width: 100%;
+  text-align: left;
+
+  &:focus-visible {
+    outline: 2px solid #d4882a;
+    outline-offset: 2px;
   }
 `;
 
-/* PreviewImage styled component is effectively replaced by OptimizedImage */
-const PreviewImage = styled.img`
+const TopProductImageWrap = styled.div`
+  position: relative;
   width: 100%;
-  height: 100%;
+  aspect-ratio: 1 / 1;
+  max-height: 72px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid #e2e8f0;
+  transition: border-color 0.3s ease;
+
+  ${SellerCard}:hover & {
+    border-color: rgba(255, 196, 0, 0.45);
+  }
 `;
 
-const MoreProductsIndicator = styled.div`
-  width: 56px;
-  height: 56px;
-  border-radius: 9px;
-  background: linear-gradient(135deg, #ffc400 0%, #ffb300 100%);
+const TopProductImageFallback = styled.div`
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-height: 72px;
+  border-radius: 10px;
+  border: 2px dashed #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-size: 0.9rem;
-  font-weight: 700;
-  border: 2px solid rgba(255, 196, 0, 0.3);
-  flex-shrink: 0;
+  color: #94a3b8;
+  font-size: 1.35rem;
+  background: #f8fafc;
+`;
+
+const TopProductName = styled.span`
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #475569;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 `;
 
 const SellerCardFooter = styled.div`

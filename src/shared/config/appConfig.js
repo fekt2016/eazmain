@@ -18,17 +18,140 @@ const readEnv = (key, { required = false } = {}) => {
   return value ?? null;
 };
 
-// API base URL (backend)
-// Dev fallback when env not set
-const envApiUrl = readEnv("VITE_API_BASE_URL") || readEnv("VITE_API_URL");
-export const API_BASE_URL =
-  envApiUrl ||
-  (typeof import.meta !== "undefined" && import.meta.env?.DEV
-    ? (() => {
-        devWarnMissing("VITE_API_BASE_URL or VITE_API_URL");
-        return "http://localhost:4000/api/v1";
-      })()
-    : null);
+/** Live API (HTTPS). Used when running a production build (e.g. deployed or `vite preview`). */
+const PRODUCTION_API_ORIGIN = "https://api.saiisai.com";
+
+/**
+ * Local Express + Socket.io in development.
+ * The Vite buyer app runs on http://localhost:5173 — that is only the UI; REST + chat use :4000.
+ */
+const DEVELOPMENT_API_ORIGIN = "http://localhost:4000";
+
+/** Strip /api/v1 and normalize local dev to http (avoids https→localhost mixups). */
+const normalizeEnvToApiOrigin = (raw) => {
+  if (raw == null || raw === "") return null;
+  let url = String(raw).trim().replace(/\/+$/, "");
+  if (!url) return null;
+  url = url.replace(/\/api\/v1\/?$/i, "");
+  const isLocal = /localhost|127\.0\.0\.1|:4000/i.test(url);
+  if (isLocal) {
+    url = url.replace(/^https:\/\//i, "http://");
+    if (!/^https?:\/\//i.test(url)) {
+      url = `http://${url.replace(/^\/\//, "")}`;
+    }
+  }
+  return url;
+};
+
+/** Vite dev servers — never the Socket.io/Express host (polling there returns HTML → parser error). */
+const VITE_UI_PORTS = new Set(["5173", "5174", "5175"]);
+
+const stripViteDevServerPortFromOrigin = (origin) => {
+  if (!origin || typeof origin !== "string") return origin;
+  const trimmed = origin.trim().replace(/\/+$/, "");
+  let u;
+  try {
+    u = new URL(trimmed.includes("://") ? trimmed : `http://${trimmed}`);
+  } catch {
+    return trimmed;
+  }
+  const port = u.port || "";
+  const loopback = u.hostname === "localhost" || u.hostname === "127.0.0.1";
+  if (loopback && VITE_UI_PORTS.has(port)) {
+    if (isDev) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[appConfig] ${trimmed} is a Vite UI port, not the API. Using ${u.protocol}//${u.hostname}:4000 for REST and Socket.io.`
+      );
+    }
+    u.port = "4000";
+    return u.origin;
+  }
+  return trimmed;
+};
+
+const envApiRaw = readEnv("VITE_API_BASE_URL") || readEnv("VITE_API_URL");
+const envApiNormalized = normalizeEnvToApiOrigin(envApiRaw);
+const envApiOrigin = envApiNormalized
+  ? stripViteDevServerPortFromOrigin(envApiNormalized)
+  : null;
+
+/**
+ * API host only (no path). Socket.io lives here; REST is `${API_ORIGIN}/api/v1`.
+ * - No env: DEV → localhost:4000, production build → https://api.saiisai.com
+ * - Override: set VITE_API_BASE_URL or VITE_API_URL (with or without /api/v1)
+ */
+export const API_ORIGIN =
+  envApiOrigin || (isDev ? DEVELOPMENT_API_ORIGIN : PRODUCTION_API_ORIGIN);
+
+const loopbackKey = (hostname) => {
+  if (!hostname) return "";
+  const h = String(hostname).toLowerCase().replace(/^\[|\]$/g, "");
+  if (h === "localhost" || h === "127.0.0.1" || h === "::1") return "__loopback__";
+  return h;
+};
+
+/**
+ * In Vite dev, proxy `/socket.io` and `/api` to the local backend so WebSocket uses the page
+ * origin — CSP connect-src 'self' then allows ws: without listing every host/port.
+ *
+ * When the UI is opened via a LAN URL (e.g. http://192.168.1.5:5173) but the API is still
+ * http://localhost:4000, connecting directly to ws://localhost:4000 is blocked ('self' is the
+ * LAN origin). Using window.location.origin sends ws to the Vite dev server, which proxies.
+ */
+const useViteDevProxyOrigin = (apiOriginStr, pageOriginStr) => {
+  if (!isDev || typeof window === "undefined") return false;
+  try {
+    const api = new URL(apiOriginStr);
+    const page = new URL(pageOriginStr);
+    if (api.protocol !== "http:") return false;
+    const apiPort = api.port || "80";
+    if (apiPort !== "4000") return false;
+    const a = loopbackKey(api.hostname);
+    if (a === "__loopback__") return true;
+    return api.hostname === page.hostname;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Host for Socket.io + `/api/v1/chat/*` fetch.
+ * 1) `VITE_SOCKET_URL` when set (dev: put `http://localhost:4000` in .env so chat matches local API).
+ * 2) Else same-origin Vite proxy when API is `http` + :4000 (CSP / LAN dev).
+ * 3) Else `API_ORIGIN` (production builds → https://api.saiisai.com when env unset).
+ */
+export const getChatSocketOrigin = () => {
+  const resolveExplicit = (raw) => {
+    const base =
+      normalizeEnvToApiOrigin(raw) ||
+      String(raw).trim().replace(/\/+$/, "");
+    return stripViteDevServerPortFromOrigin(base);
+  };
+
+  const explicitSocket = String(readEnv("VITE_SOCKET_URL") || "").trim();
+  if (explicitSocket) {
+    const base = resolveExplicit(explicitSocket);
+    if (
+      typeof window !== "undefined" &&
+      useViteDevProxyOrigin(base, window.location.origin)
+    ) {
+      return window.location.origin;
+    }
+    return base;
+  }
+
+  if (
+    typeof window !== "undefined" &&
+    useViteDevProxyOrigin(API_ORIGIN, window.location.origin)
+  ) {
+    return window.location.origin;
+  }
+
+  return API_ORIGIN;
+};
+
+export const API_BASE_URL = `${String(API_ORIGIN).replace(/\/+$/, "")}/api/v1`;
 
 // Analytics / tracking IDs
 export const GA_MEASUREMENT_ID = readEnv("VITE_GA_MEASUREMENT_ID");
@@ -85,6 +208,8 @@ export const CHECKOUT_BANK_TRANSFER = (() => ({
 export const GOOGLE_MAPS_API_KEY = readEnv("VITE_GOOGLE_MAPS_API_KEY");
 
 const appConfig = {
+  API_ORIGIN,
+  getChatSocketOrigin,
   API_BASE_URL,
   GA_MEASUREMENT_ID,
   FB_PIXEL_ID,
