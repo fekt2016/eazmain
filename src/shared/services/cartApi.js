@@ -68,11 +68,19 @@ const cartApi = {
       
       // Provide user-friendly error messages
       if (error.response?.status === 403) {
-        const errorMessage = error.response?.data?.message || 
-          "You don't have permission to add items to cart. Please ensure you're logged in as a buyer account.";
+        const responseCode = error.response?.data?.code;
+        const isCsrfFailure = responseCode === 'CSRF_TOKEN_MISSING' ||
+          responseCode === 'CSRF_TOKEN_MISMATCH' ||
+          responseCode === 'SESSION_EXPIRED';
+        const errorMessage = error.response?.data?.message || (
+          isCsrfFailure
+            ? 'Security token expired. Please refresh and try again.'
+            : "You don't have permission to add items to cart. Please ensure you're logged in as a buyer account."
+        );
         const enhancedError = new Error(errorMessage);
         enhancedError.status = 403;
-        enhancedError.code = 'FORBIDDEN';
+        enhancedError.code = isCsrfFailure ? responseCode : 'FORBIDDEN';
+        enhancedError.responseData = error.response?.data;
         enhancedError.originalError = error;
         throw enhancedError;
       }

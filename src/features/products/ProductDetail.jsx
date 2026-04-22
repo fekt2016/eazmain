@@ -23,6 +23,7 @@ import {
   FaUndo,
   FaEye,
   FaPen,
+  FaTag,
 } from "react-icons/fa";
 import useProduct from '../../shared/hooks/useProduct.js';
 import { useGetProductReviews } from '../../shared/hooks/useReviews.js';
@@ -67,6 +68,98 @@ import { useVariantSelection } from '../../shared/hooks/products/useVariantSelec
 import ProductImageGallery from './components/ProductImageGallery';
 import ProductVideo from './components/ProductVideo';
 
+const normalizeImageValue = (value) => {
+  if (!value) return null;
+  if (Array.isArray(value)) {
+    const first = value
+      .map((item) => normalizeImageValue(item))
+      .find(Boolean);
+    return first || null;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    if (
+      (trimmed.startsWith('[') && trimmed.endsWith(']')) ||
+      (trimmed.startsWith('{') && trimmed.endsWith('}'))
+    ) {
+      try {
+        return normalizeImageValue(JSON.parse(trimmed));
+      } catch {
+        return trimmed;
+      }
+    }
+    return trimmed;
+  }
+  if (typeof value === 'object') {
+    return (
+      value.url ||
+      value.secure_url ||
+      value.src ||
+      value.imageUrl ||
+      value.image ||
+      value.thumbnail ||
+      value.thumb ||
+      value.medium ||
+      value.path ||
+      value.imagePath ||
+      value.public_id ||
+      value.publicId ||
+      null
+    );
+  }
+  return null;
+};
+
+const extractGalleryImages = (images) => {
+  if (!Array.isArray(images)) return [];
+  return images
+    .map((img) => normalizeImageValue(img))
+    .filter(Boolean);
+};
+
+const normalizeIncomingProduct = (rawProduct) => {
+  if (!rawProduct || typeof rawProduct !== 'object') return rawProduct;
+
+  const nestedProduct =
+    rawProduct.product && typeof rawProduct.product === 'object'
+      ? rawProduct.product
+      : null;
+
+  const product = nestedProduct
+    ? { ...nestedProduct, ...rawProduct }
+    : { ...rawProduct };
+
+  const resolvedCover =
+    normalizeImageValue(product.imageCover) ||
+    normalizeImageValue(product.coverImage) ||
+    normalizeImageValue(product.mainImage) ||
+    normalizeImageValue(product.primaryImage) ||
+    normalizeImageValue(product.image) ||
+    normalizeImageValue(product.images?.[0]) ||
+    null;
+
+  if (resolvedCover) {
+    product.imageCover = resolvedCover;
+  }
+
+  const normalizedGallery = extractGalleryImages(product.images);
+  if (normalizedGallery.length > 0) {
+    product.images = normalizedGallery;
+  }
+
+  return product;
+};
+
+const getVariantPrimaryImage = (variant, fallbackImage) => {
+  const variantImage =
+    normalizeImageValue(variant?.images?.[0]) ||
+    normalizeImageValue(variant?.imageCover) ||
+    normalizeImageValue(variant?.image) ||
+    null;
+  return variantImage || fallbackImage || '';
+};
+
 const ProductDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -83,10 +176,10 @@ const ProductDetailPage = () => {
   const { data: productData, isLoading, error } = useGetProductById(id);
   const product = useMemo(() => {
     if (!productData) return null;
-    if (productData.data?.product) return productData.data.product;
-    if (productData.product) return productData.product;
-    if (productData.data?.data) return productData.data.data;
-    return productData.data || productData;
+    if (productData.data?.product) return normalizeIncomingProduct(productData.data.product);
+    if (productData.product) return normalizeIncomingProduct(productData.product);
+    if (productData.data?.data) return normalizeIncomingProduct(productData.data.data);
+    return normalizeIncomingProduct(productData.data || productData);
   }, [productData]);
   const reviewsProductId = product?._id || id;
   const { data: reviewsData, isLoading: reviewsLoading, error: reviewsError } = useGetProductReviews(reviewsProductId);
@@ -135,7 +228,7 @@ const ProductDetailPage = () => {
         itemId: product._id,
         itemData: {
           name: product.name,
-          image: product.images?.[0] || "",
+          image: product.imageCover || product.images?.[0] || "",
           price: product?.defaultPrice || product?.price || product?.minPrice || 0,
           currency: product.currency || "GHS",
           category: product.parentCategory?.name || "Uncategorized",
@@ -434,6 +527,9 @@ const ProductDetailPage = () => {
 
   // Use utility functions for product calculations (must be before early returns)
   const displayPrice = getProductDisplayPrice(product, selectedVariant);
+  const originalDisplayPrice = getProductOriginalPrice(product, selectedVariant);
+  const isPromoActive = hasProductDiscount(product, selectedVariant);
+  const promoDiscountPercent = getProductDiscountPercentage(product, selectedVariant);
   const displaySku = getProductSku(product, selectedVariant);
 
   // Get stock - use selected variant if available, otherwise calculate from all active variants
@@ -461,7 +557,11 @@ const ProductDetailPage = () => {
   // Product-level images (fallback when variant has no images)
   const productImages = useMemo(() => {
     if (!product) return [];
-    return getProductImages(product);
+    const gallery = extractGalleryImages(product.images);
+    if (gallery.length > 0) return gallery;
+    // For products without gallery images, allow imageCover fallback.
+    const cover = normalizeImageValue(product.imageCover);
+    return cover ? [cover] : getProductImages(product);
   }, [product]);
 
   // Gallery images: prefer selected variant images, fall back to product images
@@ -572,6 +672,19 @@ const ProductDetailPage = () => {
                 {isInStock ? `${variantStock} in stock` : 'Out of stock'}
               </StockBadge>
 
+              {isPromoActive && (
+                <PromoLiveBadge>
+                  <FaTag />
+                  On Promo
+                  {Number(promoDiscountPercent) > 0
+                    ? ` - ${Math.round(promoDiscountPercent)}% off`
+                    : ''}
+                  {Number(originalDisplayPrice) > Number(displayPrice)
+                    ? ` (was GH₵${Number(originalDisplayPrice).toFixed(2)})`
+                    : ''}
+                </PromoLiveBadge>
+              )}
+
               {product.totalSold > 0 && (
                 <SoldCounter>
                   <FaBoxOpen />
@@ -644,9 +757,8 @@ const ProductDetailPage = () => {
                 {/* Variant image grid at top — image with details below */}
                 <VariantImagesGrid>
                   {variants.map((variant) => {
-                    // Use variant image if available, otherwise fallback to product image (matches mobile)
-                    const variantImg = variant.images?.[0] || variant.image;
-                    const image = variantImg || productImages?.[0] || '';
+                    // Use variant image if available, otherwise fallback to product cover/gallery.
+                    const image = getVariantPrimaryImage(variant, product.imageCover || productImages?.[0] || '');
                     const isSelected = selectedVariant?._id === variant._id;
                     const isOutOfStock = variant.status === 'inactive' || (variant.stock || 0) === 0;
 
@@ -1408,6 +1520,24 @@ const StockBadge = styled.div`
   @media (max-width: 640px) {
     padding: 0.6rem 1.2rem;
     font-size: 1.2rem;
+  }
+`;
+
+const PromoLiveBadge = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 2rem;
+  font-size: 1.3rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  color: #92400e;
+  border: 1px solid #f59e0b;
+
+  @media (max-width: 640px) {
+    padding: 0.6rem 1.2rem;
+    font-size: 1.1rem;
   }
 `;
 

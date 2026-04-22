@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import { PATHS } from "./routePaths";
 import PromotionalProductsPage from "../pages/offers/PromotionalProductsPage";
+import PromoDetailPage from "../pages/offers/PromoDetailPage";
 const ContactPage = lazy(() => import("../pages/contact/ContactPage"));
 import { PageSpinner, SpinnerContainer } from "../components/loading";
 // Import OrderConfirmationPage directly (not lazy) to ensure it loads immediately
@@ -73,6 +74,7 @@ const VerifyAccountPage = lazy(() => import("../features/auth/VerifyAccountPage"
 const BestSellersPage = lazy(() => import("../pages/best-sellers/BestSellersPage"));
 const TrendingPage = lazy(() => import("../pages/trending/TrendingPage"));
 const DealsPage = lazy(() => import("../pages/deals/DealsPage"));
+const OffersPromosPage = lazy(() => import("../pages/offers/OffersPromosPage"));
 const NotFoundPage = lazy(() => import("../pages/NotFoundPage"));
 
 const MainRoutes = () => {
@@ -307,6 +309,14 @@ const MainRoutes = () => {
           }
         />
         <Route
+          path={PATHS.OFFERS}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <OffersPromosPage />
+            </Suspense>
+          }
+        />
+        <Route
           path={PATHS.PARTNERS}
           element={
             <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
@@ -359,6 +369,14 @@ const MainRoutes = () => {
           element={
             <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
               <PromotionalProductsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={PATHS.PROMO_DETAIL}
+          element={
+            <Suspense fallback={<SpinnerContainer><PageSpinner /></SpinnerContainer>}>
+              <PromoDetailPage />
             </Suspense>
           }
         />

@@ -104,6 +104,8 @@ export const getOptimizedImageUrl = (src, slot, options = {}) => {
 
 export const VIDEO_SLOTS = {
     PRODUCT_DETAIL: { w: 800, h: 450, c: 'limit', q: 'auto', f: 'auto' }, // 16:9 aspect ratio usually
+    /** Small square previews (home status rings, muted loop) */
+    STATUS_RING: { w: 200, h: 200, c: 'fill', g: 'auto', q: 'auto', f: 'auto' },
 };
 
 /**

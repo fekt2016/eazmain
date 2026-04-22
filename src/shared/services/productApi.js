@@ -20,7 +20,8 @@ export const productService = {
     if (params.limit != null) queryString.set("limit", String(params.limit));
     if (params.page != null) queryString.set("page", String(params.page));
     if (params.sort != null) queryString.set("sort", params.sort);
-     if (params.promotionKey != null) queryString.set("promotionKey", params.promotionKey);
+    if (params.promotionKey != null) queryString.set("promotionKey", params.promotionKey);
+    if (params.hasPromotion != null) queryString.set("hasPromotion", String(params.hasPromotion));
     const url = queryString.toString() ? `/product?${queryString.toString()}` : "/product";
     const response = await api.get(url);
     return response.data;

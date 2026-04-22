@@ -4,6 +4,67 @@
  * Used for: default selection, option derivation, matching, disabling, and image sync.
  */
 
+function normalizeImageValue(value) {
+  if (!value) return [];
+
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => normalizeImageValue(item));
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+
+    // Some payloads store JSON-stringified arrays/objects in image fields.
+    if (
+      (trimmed.startsWith('[') && trimmed.endsWith(']')) ||
+      (trimmed.startsWith('{') && trimmed.endsWith('}'))
+    ) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return normalizeImageValue(parsed);
+      } catch {
+        return [trimmed];
+      }
+    }
+
+    return [trimmed];
+  }
+
+  if (typeof value === 'object') {
+    const candidate =
+      value.url ||
+      value.secure_url ||
+      value.src ||
+      value.imageUrl ||
+      value.image ||
+      value.thumbnail ||
+      value.thumb ||
+      value.medium ||
+      value.path ||
+      value.imagePath ||
+      value.public_id ||
+      value.publicId ||
+      null;
+    return candidate ? [candidate] : [];
+  }
+
+  return [];
+}
+
+function sanitizeImageList(images) {
+  if (!Array.isArray(images)) return [];
+  const result = [];
+  images.forEach((img) => {
+    normalizeImageValue(img).forEach((resolved) => {
+      if (resolved && !result.includes(resolved)) {
+        result.push(resolved);
+      }
+    });
+  });
+  return result;
+}
+
 /**
  * Returns the first in-stock variant, else first active, else first variant.
  * Used as default selection on page load.
@@ -101,16 +162,21 @@ export function isOptionDisabled(variants, attributeKey, value, selectedAttribut
  */
 export function getGalleryImagesForVariant(selectedVariant, productImages) {
   // Extract variant images (prefer images array, fall back to singular image)
-  let vImages = [];
-  if (selectedVariant?.images && Array.isArray(selectedVariant.images)) {
-    vImages = selectedVariant.images.filter(Boolean);
-  } else if (selectedVariant?.image) {
-    vImages = [selectedVariant.image];
-  }
+  const variantImages = sanitizeImageList(selectedVariant?.images || []);
+  const fallbackVariantImage = normalizeImageValue(selectedVariant?.image);
+  const fallbackVariantCover = normalizeImageValue(selectedVariant?.imageCover);
+  const vImages = [
+    ...variantImages,
+    ...fallbackVariantImage,
+    ...fallbackVariantCover,
+  ];
 
   // Merge variant images with product images, ensuring variants are first
   // This allows the gallery to show the variant-specific shots while still showing other product context
-  const merged = [...vImages, ...(Array.isArray(productImages) ? productImages : [])];
+  const merged = [
+    ...vImages,
+    ...sanitizeImageList(Array.isArray(productImages) ? productImages : []),
+  ];
   return Array.from(new Set(merged.filter(Boolean)));
 }
 
@@ -139,7 +205,7 @@ export function getGalleryImagesForSelection(selectedVariant, selectedAttributes
   }
 
   // 3. Fallback to product images
-  return Array.isArray(productImages) ? productImages : [];
+  return sanitizeImageList(Array.isArray(productImages) ? productImages : []);
 }
 
 /**

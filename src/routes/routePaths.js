@@ -25,6 +25,7 @@ export const PATHS = {
   EDITPRODUCT: "/products/:id/edit", // Alias for backward compatibility
   // Promotional landing (used by ads, /offers/:promoId)
   PROMO_PRODUCT: "/offers/:promoId",
+  PROMO_DETAIL: "/promos/:promoId",
   PRODUCTREVIEWS: "/products/:id/reviews", // Plural form
   PRODUCTREVIEWS_SINGULAR: "/product/:id/reviews", // Singular form - matches /product/:id/reviews URLs
   CATEGORIES: "/categories",

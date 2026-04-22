@@ -3,6 +3,128 @@ import { productService } from '../services/productApi';
 import logger from '../utils/logger';
 // import api from "../services/api"';
 
+const normalizeImageValue = (value) => {
+  if (!value) return null;
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const normalized = normalizeImageValue(item);
+      if (normalized) return normalized;
+    }
+    return null;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    if (
+      (trimmed.startsWith('[') && trimmed.endsWith(']')) ||
+      (trimmed.startsWith('{') && trimmed.endsWith('}'))
+    ) {
+      try {
+        return normalizeImageValue(JSON.parse(trimmed));
+      } catch {
+        return trimmed;
+      }
+    }
+
+    return trimmed;
+  }
+
+  if (typeof value === 'object') {
+    return (
+      value.url ||
+      value.secure_url ||
+      value.src ||
+      value.imageUrl ||
+      value.image ||
+      value.thumbnail ||
+      value.thumb ||
+      value.medium ||
+      value.path ||
+      value.imagePath ||
+      value.public_id ||
+      value.publicId ||
+      null
+    );
+  }
+
+  return null;
+};
+
+const normalizeProductEntity = (rawProduct) => {
+  if (!rawProduct || typeof rawProduct !== 'object') return rawProduct;
+
+  const nestedProduct =
+    rawProduct.product && typeof rawProduct.product === 'object'
+      ? rawProduct.product
+      : null;
+
+  const product = nestedProduct
+    ? { ...nestedProduct, ...rawProduct }
+    : { ...rawProduct };
+
+  const resolvedCover =
+    normalizeImageValue(product.imageCover) ||
+    normalizeImageValue(product.imagecover) ||
+    normalizeImageValue(product.coverImage) ||
+    normalizeImageValue(product.mainImage) ||
+    normalizeImageValue(product.primaryImage) ||
+    normalizeImageValue(product.image) ||
+    normalizeImageValue(product.images?.[0]) ||
+    null;
+
+  if (resolvedCover) {
+    product.imageCover = resolvedCover;
+  }
+
+  if (Array.isArray(product.images)) {
+    const normalizedImages = product.images
+      .map((img) => normalizeImageValue(img))
+      .filter(Boolean);
+    if (normalizedImages.length > 0) {
+      product.images = normalizedImages;
+    }
+  }
+
+  return product;
+};
+
+const normalizeProductPayload = (payload) => {
+  if (!payload || typeof payload !== 'object') return payload;
+
+  const normalized = { ...payload };
+
+  const normalizeListAt = (obj, key) => {
+    if (!obj || typeof obj !== 'object') return;
+    if (Array.isArray(obj[key])) {
+      obj[key] = obj[key].map(normalizeProductEntity);
+    }
+  };
+
+  normalizeListAt(normalized, 'products');
+  normalizeListAt(normalized, 'results');
+  normalizeListAt(normalized, 'data');
+
+  if (normalized.data && typeof normalized.data === 'object') {
+    normalized.data = { ...normalized.data };
+    normalizeListAt(normalized.data, 'products');
+    normalizeListAt(normalized.data, 'results');
+    normalizeListAt(normalized.data, 'data');
+
+    if (normalized.data.product) {
+      normalized.data.product = normalizeProductEntity(normalized.data.product);
+    }
+  }
+
+  if (normalized.product) {
+    normalized.product = normalizeProductEntity(normalized.product);
+  }
+
+  return normalized;
+};
+
 const useProduct = () => {
   const queryClient = useQueryClient();
 
@@ -11,7 +133,8 @@ const useProduct = () => {
     queryKey: ["products"],
     queryFn: async () => {
       try {
-        return await productService.getAllProducts({ limit: 100 });
+        const data = await productService.getAllProducts({ limit: 100 });
+        return normalizeProductPayload(data);
       } catch (error) {
         logger.error("Failed to fetch products:", error);
         throw new Error("Failed to load products");
@@ -33,7 +156,8 @@ const useProduct = () => {
             sort: params.sort || '-totalSold,-totalViews',
             ...params
           };
-          return await productService.getAllProducts(queryParams);
+          const data = await productService.getAllProducts(queryParams);
+          return normalizeProductPayload(data);
         } catch (error) {
           logger.error("Failed to fetch trending products:", error);
           throw new Error("Failed to load trending products");
@@ -51,8 +175,7 @@ const useProduct = () => {
         if (!id) return null;
         try {
           const res = await productService.getProductById(id);
-
-          return res.data;
+          return normalizeProductPayload(res.data);
         } catch (error) {
           const status = error?.response?.status;
           const backendMessage =
@@ -90,7 +213,8 @@ const useProduct = () => {
       queryFn: async () => {
         if (!sellerId) return null;
         try {
-          return await productService.getAllProductsBySeller(sellerId);
+          const data = await productService.getAllProductsBySeller(sellerId);
+          return normalizeProductPayload(data);
         } catch (error) {
           throw new Error(`Failed to load seller products: ${error.message}`);
         }
@@ -126,22 +250,22 @@ const useProduct = () => {
           // So we need: response.data.products
           if (response.data?.products && Array.isArray(response.data.products)) {
             console.log("✅ [useGetAllPublicProductBySeller] Found products at response.data.products:", response.data.products.length);
-            return response.data.products;
+            return response.data.products.map(normalizeProductEntity);
           }
           // Fallback: check nested structure (in case Axios wraps it differently)
           if (response.data?.data?.products && Array.isArray(response.data.data.products)) {
             console.log("✅ [useGetAllPublicProductBySeller] Found products at response.data.data.products:", response.data.data.products.length);
-            return response.data.data.products;
+            return response.data.data.products.map(normalizeProductEntity);
           }
           // Direct products property
           if (response.products && Array.isArray(response.products)) {
             console.log("✅ [useGetAllPublicProductBySeller] Found products at response.products:", response.products.length);
-            return response.products;
+            return response.products.map(normalizeProductEntity);
           }
           // If response is already an array
           if (Array.isArray(response)) {
             console.log("✅ [useGetAllPublicProductBySeller] Response is array:", response.length);
-            return response;
+            return response.map(normalizeProductEntity);
           }
           console.warn("⚠️ [useGetAllPublicProductBySeller] Could not extract products array from response");
           console.warn("⚠️ [useGetAllPublicProductBySeller] Response structure:", JSON.stringify(response, null, 2));
@@ -205,7 +329,9 @@ const useProduct = () => {
             categoryId,
             currentProductId
           );
-          return res.data.filter((product) => product.id !== currentProductId);
+          return res.data
+            .map(normalizeProductEntity)
+            .filter((product) => product.id !== currentProductId);
           // return await productService.getSimilarProducts();
         } catch (error) {
           throw new Error(`Failed to load similar products: ${error.message}`);
@@ -231,10 +357,11 @@ const useProduct = () => {
       queryFn: async () => {
         if (!categoryId) return null;
         try {
-          return await productService.getProductsByCategory(
+          const data = await productService.getProductsByCategory(
             categoryId,
             queryParams
           );
+          return normalizeProductPayload(data);
         } catch (error) {
           throw new Error(
             `Failed to load products by category: ${error.message}`

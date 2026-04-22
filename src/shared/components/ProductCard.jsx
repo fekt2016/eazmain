@@ -20,26 +20,57 @@ import { highlightSearchTerm } from '../utils/searchUtils.jsx';
 import logger from '../utils/logger';
 import { toast } from 'react-toastify';
 import OptimizedImage from './OptimizedImage';
-import { getOptimizedImageUrl, IMAGE_SLOTS } from "../utils/cloudinaryConfig";
+import { IMAGE_SLOTS } from "../utils/cloudinaryConfig";
 import { isEazShopProduct } from '../utils/isEazShopProduct';
+import { getProductImages } from '../utils/productHelpers';
 
-// Helper function to get grid image for cards (homepage, grids, carousels)
-// Prefer product.imageCover when available, then fall back to first product.images entry
-const getGridImage = (product) => {
+const normalizeImageValue = (value) => {
+  if (!value) return null;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object') {
+    return (
+      value.url ||
+      value.secure_url ||
+      value.src ||
+      value.imageUrl ||
+      value.image ||
+      value.thumbnail ||
+      value.thumb ||
+      value.medium ||
+      value.path ||
+      value.imagePath ||
+      value.public_id ||
+      value.publicId ||
+      null
+    );
+  }
+  return null;
+};
+
+// Helper: for cards we ALWAYS prefer the top-level imageCover,
+// but keep additional images as runtime fallbacks if cover URL is broken.
+const getGridImageSources = (product) => {
   if (!product) {
-    return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600"%3E%3Crect width="600" height="600" fill="%23f0f0f0"/%3E%3Ctext x="50%25" y="50%25" font-family="Arial" font-size="24" fill="%23999" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E';
+    return [];
   }
 
-  if (product.imageCover) {
-    return product.imageCover;
+  const sources = [];
+
+  const cover = normalizeImageValue(product.imageCover);
+  if (cover) {
+    sources.push(cover);
   }
 
-  if (Array.isArray(product.images) && product.images.length > 0) {
-    return product.images[0];
+  const images = getProductImages(product);
+  if (images && images.length > 0) {
+    images.forEach((img) => {
+      if (img && !sources.includes(img)) {
+        sources.push(img);
+      }
+    });
   }
 
-  // Fallback placeholder
-  return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600"%3E%3Crect width="600" height="600" fill="%23f0f0f0"/%3E%3Ctext x="50%25" y="50%25" font-family="Arial" font-size="24" fill="%23999" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E';
+  return sources;
 };
 
 /**
@@ -67,6 +98,12 @@ const resolveDefaultSku = (product) => {
   }
 
   return null;
+};
+
+const normalizeSku = (sku) => {
+  if (typeof sku !== 'string') return null;
+  const normalized = sku.trim().toUpperCase();
+  return normalized || null;
 };
 
 const ProductCard = memo(({
@@ -142,12 +179,19 @@ const ProductCard = memo(({
       })) || [],
     });
 
+    const normalizedSku = normalizeSku(sku);
+    const resolvedVariant = normalizedSku && Array.isArray(product.variants)
+      ? product.variants.find(
+        (v) => normalizeSku(v?.sku) === normalizedSku
+      )
+      : null;
+
     addToCart(
       {
         product,
         quantity: 1,
-        variantSku: sku, // Pass default SKU - ProductCard auto-selects default variant
-        variantId: product.variants?.find(v => v.sku === sku)?._id || product.variants?.find(v => v.sku === sku)?.id || null, // Pass explicit variantId for backend
+        variantSku: normalizedSku || sku, // Pass default SKU - ProductCard auto-selects default variant
+        variantId: resolvedVariant?._id || resolvedVariant?.id || null, // Pass explicit variantId for backend
       },
       {
         onError: (error) => {
@@ -204,6 +248,9 @@ const ProductCard = memo(({
   const { displayPrice, originalPrice } = getProductPriceForDisplay(product);
   const isTrending = isProductTrending(product);
   const totalStock = getProductTotalStock(product);
+  const imageSources = getGridImageSources(product);
+  const primaryImage = imageSources[0] || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600"%3E%3Crect width="600" height="600" fill="%23f0f0f0"/%3E%3Ctext x="50%25" y="50%25" font-family="Arial" font-size="24" fill="%23999" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E';
+  const fallbackImage = imageSources[1] || '';
 
   // Debug: verify pre-order flag reaches ProductCard
   if (product.isPreOrder) {
@@ -229,7 +276,8 @@ const ProductCard = memo(({
         <ImageContainer $layout={layout}>
           <div data-product-image-wrap>
             <OptimizedImage
-              src={product.imageCover || (product.images && product.images[0])}
+              src={primaryImage}
+              fallback={fallbackImage}
               slot={IMAGE_SLOTS.PRODUCT_CARD}
               aspectRatio="1/1"
               alt={product.name ? `${product.name} – Saiisai Ghana e-commerce` : 'Product – Saiisai Ghana online shopping'}
@@ -421,6 +469,7 @@ const ProductCard = memo(({
             $fullWidth
             onClick={(e) => {
               e.preventDefault();
+              e.stopPropagation();
               handleAddToCart(product);
             }}
             disabled={totalStock === 0 || isAddingToCart}

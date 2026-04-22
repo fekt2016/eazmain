@@ -1,5 +1,10 @@
 import { useMemo } from 'react';
-import { getProductDisplayPrice } from '../utils/productHelpers';
+import {
+  getProductDisplayPrice,
+  getProductDiscountPercentage,
+  hasProductDiscount,
+  getProductImages,
+} from '../utils/productHelpers';
 
 /**
  * Returns end of current day (23:59:59.999) in local time for "deal of the day" countdown.
@@ -39,52 +44,88 @@ export function useDealOfTheDay(products) {
 
   const result = useMemo(() => {
     if (!Array.isArray(products) || products.length === 0) {
-      return { dealProduct: null, endDate: endOfDay };
+      return { dealProduct: null, dealProducts: [], endDate: endOfDay };
     }
 
-    const withPromoKey = products.filter(
-      (p) => p.promotionKey && String(p.promotionKey).trim() !== ''
-    );
-    if (withPromoKey.length === 0) {
-      return { dealProduct: null, endDate: endOfDay };
+    const dealCandidates = products.filter((p) => {
+      const hasPromotionKey =
+        p?.promotionKey && String(p.promotionKey).trim() !== '';
+      const hasDiscount = hasProductDiscount(p);
+      const hasImageCover =
+        typeof p?.imageCover === 'string' && p.imageCover.trim() !== '';
+      const hasAnyImage =
+        hasImageCover || (getProductImages(p) || []).length > 0;
+
+      // Only consider products that (a) are promo/discounted AND (b) have at least one image to show
+      return (hasPromotionKey || hasDiscount) && hasAnyImage;
+    });
+    if (dealCandidates.length === 0) {
+      return { dealProduct: null, dealProducts: [], endDate: endOfDay };
     }
+
+    const uniqueById = [];
+    const seen = new Set();
+    dealCandidates.forEach((product) => {
+      const id = String(product?._id || product?.id || '');
+      if (!id || seen.has(id)) return;
+      seen.add(id);
+      uniqueById.push(product);
+    });
 
     const now = Date.now();
 
-    const withEndDate = withPromoKey
-      .map((p) => {
-        const end = getPromotionEndDate(p);
-        if (!end) return { product: p, endDate: null, hoursToExpiry: null };
-        const hoursToExpiry = (end.getTime() - now) / (1000 * 60 * 60);
-        return { product: p, endDate: end, hoursToExpiry };
-      })
-      .filter((x) => x.endDate != null && x.hoursToExpiry > 0);
-
-    if (withEndDate.length > 0) {
-      const closestTo24h = withEndDate.reduce((best, curr) => {
-        const bestDiff = Math.abs((best.hoursToExpiry ?? 0) - 24);
-        const currDiff = Math.abs((curr.hoursToExpiry ?? 0) - 24);
-        return currDiff < bestDiff ? curr : best;
-      });
+    const withMeta = uniqueById.map((product) => {
+      const endDate = getPromotionEndDate(product);
+      const hoursToExpiry = endDate
+        ? (endDate.getTime() - now) / (1000 * 60 * 60)
+        : null;
+      const discount = getProductDiscountPercentage(product) || 0;
+      const price = getProductDisplayPrice(product) ?? Infinity;
       return {
-        dealProduct: closestTo24h.product,
-        endDate: closestTo24h.endDate,
+        product,
+        endDate,
+        hoursToExpiry,
+        discount,
+        price,
       };
+    });
+
+    const withActiveEndDate = withMeta
+      .filter((item) => item.endDate && (item.hoursToExpiry || 0) > 0)
+      .sort((a, b) => {
+        const diffA = Math.abs((a.hoursToExpiry || 0) - 24);
+        const diffB = Math.abs((b.hoursToExpiry || 0) - 24);
+        if (diffA !== diffB) return diffA - diffB;
+        if (b.discount !== a.discount) return b.discount - a.discount;
+        return a.price - b.price;
+      });
+
+    const withoutActiveEndDate = withMeta
+      .filter((item) => !item.endDate || (item.hoursToExpiry || 0) <= 0)
+      .sort((a, b) => {
+        if (b.discount !== a.discount) return b.discount - a.discount;
+        return a.price - b.price;
+      });
+
+    const mergedDeals = [...withActiveEndDate, ...withoutActiveEndDate]
+      .slice(0, 8)
+      .map((item) => item.product);
+
+    if (mergedDeals.length === 0) {
+      return { dealProduct: null, dealProducts: [], endDate: endOfDay };
     }
 
-    const byLowestPrice = [...withPromoKey].sort((a, b) => {
-      const priceA = getProductDisplayPrice(a) ?? Infinity;
-      const priceB = getProductDisplayPrice(b) ?? Infinity;
-      return priceA - priceB;
-    });
+    const firstExpiring = withActiveEndDate[0];
     return {
-      dealProduct: byLowestPrice[0] || null,
-      endDate: endOfDay,
+      dealProduct: mergedDeals[0] || null,
+      dealProducts: mergedDeals,
+      endDate: firstExpiring?.endDate || endOfDay,
     };
   }, [products, endOfDay]);
 
   return {
     dealProduct: result.dealProduct,
+    dealProducts: result.dealProducts,
     endOfDay: result.endDate,
   };
 }

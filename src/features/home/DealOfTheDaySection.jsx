@@ -1,7 +1,12 @@
 import { Link } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
 import { FaTag } from "react-icons/fa";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Autoplay, Navigation } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/navigation";
 import Container from "../../shared/components/Container";
+import ProductCard from "../../shared/components/ProductCard";
 import { PATHS } from "../../routes/routePaths";
 import DealsCountdown from "../../components/deals/DealsCountdown";
 import { getOptimizedImageUrl, IMAGE_SLOTS } from "../../shared/utils/cloudinaryConfig";
@@ -20,28 +25,18 @@ const float = keyframes`
 `;
 
 const DealBanner = styled.section`
-  position: relative;
-  padding: 4rem 0;
-  min-height: 280px;
-  color: white;
-  text-align: center;
-  overflow: hidden;
-  background-size: cover;
-  background-position: center;
-  background-color: var(--color-grey-800, #1e293b);
+  padding: 3rem 0;
+  background: linear-gradient(135deg, #111827 0%, #1f2937 40%, #111827 100%);
+  color: #f9fafb;
 `;
 
-const DealOverlay = styled.div`
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-`;
-
-const DealContent = styled.div`
-  position: relative;
-  z-index: 2;
-  max-width: 720px;
-  margin: 0 auto;
+const DealHeader = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
 `;
 
 const DealTag = styled.span`
@@ -119,9 +114,32 @@ const CtaButton = styled(Link)`
 `;
 
 const CountdownWrap = styled.div`
-  margin-bottom: 1.5rem;
   display: flex;
-  justify-content: center;
+  align-items: center;
+`;
+
+const DealSwiper = styled(Swiper)`
+  .swiper-button-next,
+  .swiper-button-prev {
+    color: #ffffff;
+    width: 36px;
+    height: 36px;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 50%;
+  }
+
+  .swiper-button-next::after,
+  .swiper-button-prev::after {
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  @media ${devicesMax.sm} {
+    .swiper-button-next,
+    .swiper-button-prev {
+      display: none;
+    }
+  }
 `;
 
 const FallbackBar = styled(Link)`
@@ -140,16 +158,34 @@ const FallbackBar = styled(Link)`
   }
 `;
 
+function getDealEndDate(product, fallbackDate) {
+  return (
+    product?.availability?.endDate ||
+    product?.promotionEndDate ||
+    fallbackDate
+  );
+}
+
 /**
  * Deal of the Day section for the buyer homepage.
- * - Data-driven: shows the single best deal (highest discount or promotionKey 'deal-of-the-day').
- * - Countdown to end of day (midnight) for urgency.
- * - CTA links to the product page or, when no deal, to the deals page.
+ * - Data-driven: shows multiple deal products as product cards in a slider.
+ * - Countdown uses product promo end date, then falls back to end-of-day.
  */
-export default function DealOfTheDaySection({ dealProduct, endOfDay }) {
-  if (!dealProduct) {
+export default function DealOfTheDaySection({
+  dealProduct,
+  dealProducts = [],
+  endOfDay,
+}) {
+  const productsToShow =
+    Array.isArray(dealProducts) && dealProducts.length > 0
+      ? dealProducts
+      : dealProduct
+        ? [dealProduct]
+        : [];
+
+  if (productsToShow.length === 0) {
     return (
-      <DealBanner as="div" style={{ padding: "1.5rem 0", minHeight: "auto" }}>
+      <DealBanner as="div" style={{ padding: "1.5rem 0" }}>
         <Container>
           <FallbackBar to={PATHS.DEALS}>
             <FaTag /> View all deals & discounts
@@ -159,53 +195,62 @@ export default function DealOfTheDaySection({ dealProduct, endOfDay }) {
     );
   }
 
-  const displayPrice = getProductDisplayPrice(dealProduct);
-  const originalPrice = getProductOriginalPrice(dealProduct);
-  const discountPct = getProductDiscountPercentage(dealProduct);
-  const images = getProductImages(dealProduct);
-  const coverImage = images[0] || null;
-  const productUrl = PATHS.PRODUCT.replace(':id', dealProduct._id);
-
   return (
-    <DealBanner
-      style={
-        coverImage
-          ? { backgroundImage: `url(${getOptimizedImageUrl(coverImage, IMAGE_SLOTS.HOME_HERO)})` }
-          : undefined
-      }
-    >
-      <DealOverlay />
+    <DealBanner>
       <Container>
-        <DealContent>
-          <DealTag>
-            <FaTag /> Deal of the Day
-          </DealTag>
-          <DealTitle>{dealProduct.name}</DealTitle>
-          {(dealProduct.shortDescription || dealProduct.description) && (
+        <DealHeader>
+          <div>
+            <DealTag>
+              <FaTag /> Deal of the Day
+            </DealTag>
+            <DealTitle>Today&apos;s best deals</DealTitle>
             <DealDesc>
-              {dealProduct.shortDescription ||
-                (typeof dealProduct.description === "string"
-                  ? dealProduct.description.slice(0, 120) + (dealProduct.description.length > 120 ? "…" : "")
-                  : "")}
+              Handpicked discounts and promo products, updated daily.
             </DealDesc>
-          )}
-          <DealPrice>
-            <DealPriceCurrent>GH₵{Number(displayPrice).toFixed(2)}</DealPriceCurrent>
-            {originalPrice > displayPrice && (
-              <DealPriceOriginal>GH₵{Number(originalPrice).toFixed(2)}</DealPriceOriginal>
-            )}
-            {discountPct > 0 && (
-              <DealDiscountBadge>{discountPct}% off</DealDiscountBadge>
-            )}
-          </DealPrice>
+          </div>
           <CountdownWrap>
             <DealsCountdown
-              endDate={endOfDay}
-              message="Deal ends in:"
+              endDate={getDealEndDate(productsToShow[0], endOfDay)}
+              message="Deals end in:"
             />
           </CountdownWrap>
-          <CtaButton to={productUrl}>Shop this deal</CtaButton>
-        </DealContent>
+        </DealHeader>
+
+        <DealSwiper
+          modules={[Autoplay, Navigation]}
+          slidesPerView={1.15}
+          spaceBetween={16}
+          navigation={productsToShow.length > 1}
+          loop={productsToShow.length > 1}
+          autoplay={
+            productsToShow.length > 1
+              ? { delay: 5200, disableOnInteraction: false }
+              : false
+          }
+          breakpoints={{
+            640: { slidesPerView: 2.1, spaceBetween: 16 },
+            900: { slidesPerView: 3, spaceBetween: 18 },
+            1200: { slidesPerView: 4, spaceBetween: 20 },
+          }}
+        >
+          {productsToShow.map((product) => {
+            const productId = String(product?._id || product?.id || "");
+
+            return (
+              <SwiperSlide key={productId || product.name}>
+                <ProductCard
+                  product={product}
+                  showAddToCart
+                  showWishlistButton
+                />
+              </SwiperSlide>
+            );
+          })}
+        </DealSwiper>
+
+        <div style={{ marginTop: "1.5rem", textAlign: "right" }}>
+          <CtaButton to={PATHS.DEALS}>View all deals</CtaButton>
+        </div>
       </Container>
     </DealBanner>
   );

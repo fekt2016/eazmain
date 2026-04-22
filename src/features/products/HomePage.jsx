@@ -7,7 +7,7 @@ import "swiper/css";
 import "swiper/css/effect-fade";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
-import { FaArrowRight, FaArrowLeft, FaShieldAlt, FaTruck, FaHeadset, FaStore } from "react-icons/fa";
+import { FaArrowRight, FaArrowLeft, FaShieldAlt, FaTruck, FaHeadset, FaStore, FaTimes } from "react-icons/fa";
 
 import useProduct from '../../shared/hooks/useProduct';
 import useAuth from '../../shared/hooks/useAuth';
@@ -22,6 +22,8 @@ import useDynamicPageTitle from '../../shared/hooks/useDynamicPageTitle';
 import seoConfig from '../../shared/config/seoConfig';
 import { PATHS } from "../../routes/routePaths";
 import { useGetFeaturedSellers } from '../../shared/hooks/useSeller';
+import { useBuyerSellerStatuses } from '../../shared/hooks/useBuyerSellerStatuses';
+import { useBuyerStatusFeed } from '../../shared/hooks/useBuyerStatusFeed';
 import StarRating from '../../shared/components/StarRating';
 import EazShopSection from './EazShopSection';
 import { EmptyState } from '../../components/loading';
@@ -31,24 +33,34 @@ import AdPopup from '../home/AdPopup';
 import SellerAppPromoModal from '../home/SellerAppPromoModal';
 import DealOfTheDaySection from '../home/DealOfTheDaySection';
 import TestimonialsSection from '../home/TestimonialsSection';
+import FlashDealsStrip from '../home/FlashDealsStrip';
 import { useDealOfTheDay } from '../../shared/hooks/useDealOfTheDay';
+import { useActivePromoCards, usePromoProducts } from '../../shared/hooks/usePromos';
 import OptimizedImage from '../../shared/components/OptimizedImage';
-import { IMAGE_SLOTS } from '../../shared/utils/cloudinaryConfig';
+import {
+  IMAGE_SLOTS,
+  VIDEO_SLOTS,
+  videoUrl,
+  getOptimizedImageUrl,
+} from '../../shared/utils/cloudinaryConfig';
 import { FRONTEND_URL } from '../../shared/config/appConfig';
 import { HOMEPAGE_TRACK_EVENTS } from '../../shared/constants/homepageExperimentEvents';
 import { hasUsableSellerAvatar, getShopInitials } from '../../shared/utils/sellerCardDisplay';
+import {
+  hasProductDiscount,
+  getProductStock,
+  getProductImages,
+} from '../../shared/utils/productHelpers';
 
 const RECENTLY_VIEWED_STORAGE_KEY = 'saiisai-recently-viewed-products';
 
 function getFeaturedSellerProductImage(product) {
-  const imgs = product?.images;
-  if (!Array.isArray(imgs) || imgs.length === 0) return null;
-  const first = imgs[0];
-  if (typeof first === 'string') return first;
-  if (first && typeof first === 'object') {
-    return first.url || first.secure_url || first.thumbnail || first.medium || null;
+  if (product?.imageCover && typeof product.imageCover === 'string') {
+    return product.imageCover;
   }
-  return null;
+  const imgs = getProductImages(product);
+  if (!imgs || imgs.length === 0) return null;
+  return imgs[0];
 }
 
 function truncateText(str, maxLen) {
@@ -57,11 +69,149 @@ function truncateText(str, maxLen) {
   return `${str.slice(0, maxLen - 1)}…`;
 }
 
+function shuffleList(items = []) {
+  const next = [...items];
+  for (let i = next.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [next[i], next[j]] = [next[j], next[i]];
+  }
+  return next;
+}
+
+function getSellerId(seller) {
+  if (!seller || typeof seller !== 'object') return null;
+  return seller._id || seller.id || seller.sellerId || null;
+}
+
+function resolveProductViews(product) {
+  if (!product || typeof product !== 'object') return 0;
+
+  const rawCount =
+    product.totalViews ??
+    product.viewCount ??
+    product.views ??
+    product.analytics?.views ??
+    product.metrics?.views ??
+    0;
+
+  const parsed = Number(rawCount);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function normalizeImageValue(value) {
+  if (!value) return null;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object') {
+    return (
+      value.url ||
+      value.secure_url ||
+      value.src ||
+      value.imageUrl ||
+      value.image ||
+      value.thumbnail ||
+      value.thumb ||
+      value.medium ||
+      value.path ||
+      value.imagePath ||
+      value.public_id ||
+      value.publicId ||
+      null
+    );
+  }
+  return null;
+}
+
+function resolveTopLevelImageCover(rawProduct) {
+  if (!rawProduct || typeof rawProduct !== 'object') return null;
+  const productNode =
+    rawProduct.product && typeof rawProduct.product === 'object'
+      ? rawProduct.product
+      : null;
+
+  const directCandidates = [
+    rawProduct.imageCover,
+    rawProduct.imagecover,
+    rawProduct.coverImage,
+    rawProduct.mainImage,
+    rawProduct.primaryImage,
+    productNode?.imageCover,
+    productNode?.imagecover,
+    productNode?.coverImage,
+    productNode?.mainImage,
+    productNode?.primaryImage,
+  ];
+
+  for (const candidate of directCandidates) {
+    const normalized = normalizeImageValue(candidate);
+    if (normalized) return normalized;
+  }
+
+  const firstGallery =
+    (Array.isArray(rawProduct.images) && rawProduct.images[0]) ||
+    (Array.isArray(productNode?.images) && productNode.images[0]) ||
+    rawProduct.image ||
+    productNode?.image ||
+    null;
+
+  return normalizeImageValue(firstGallery);
+}
+
+function normalizeIncomingProduct(rawProduct) {
+  if (!rawProduct || typeof rawProduct !== 'object') return rawProduct;
+  const productNode =
+    rawProduct.product && typeof rawProduct.product === 'object'
+      ? rawProduct.product
+      : null;
+
+  const normalized = productNode
+    ? { ...productNode, ...rawProduct }
+    : { ...rawProduct };
+
+  const resolvedCover = resolveTopLevelImageCover(rawProduct);
+  if (resolvedCover) {
+    normalized.imageCover = resolvedCover;
+  }
+
+  return normalized;
+}
+
+function resolveProductRating(product) {
+  if (!product || typeof product !== 'object') return 0;
+  const rawRating =
+    product.ratingsAverage ??
+    product.averageRating ??
+    product.rating ??
+    product.ratings?.average ??
+    product.metrics?.rating ??
+    product.analytics?.rating ??
+    0;
+  const parsed = Number(rawRating);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function getPromoCountdown(endDate, nowMs) {
+  if (!endDate) return null;
+  const target = new Date(endDate).getTime();
+  if (Number.isNaN(target)) return null;
+
+  const diff = target - nowMs;
+  if (diff <= 0) {
+    return { expired: true, days: 0, hours: 0, minutes: 0, seconds: 0 };
+  }
+
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+  const minutes = Math.floor((diff / (1000 * 60)) % 60);
+  const seconds = Math.floor((diff / 1000) % 60);
+  return { expired: false, days, hours, minutes, seconds };
+}
+
 const PRODUCT_FILTERS = [
   { id: 'all', label: 'All' },
   { id: 'inStock', label: 'In Stock' },
   { id: 'deals', label: 'Deals' },
   { id: 'topRated', label: 'Top Rated' },
+  { id: 'mostViewed', label: 'Most Viewed' },
 ];
 const UX_EXPERIMENTS = {
   defaultVariant: 'A',
@@ -124,6 +274,63 @@ const ViewInSection = ({ children, delayMs = 0, threshold = 0.12 }) => {
   );
 };
 
+/**
+ * Muted looping Cloudinary preview inside the status ring; plays only when scrolled into view.
+ */
+function SellerStatusAvatarRing({ videoSrc, posterImage }) {
+  const wrapRef = useRef(null);
+  const videoRef = useRef(null);
+  const [inView, setInView] = useState(false);
+
+  useEffect(() => {
+    const root = wrapRef.current;
+    if (!root) return undefined;
+    const io = new IntersectionObserver(
+      (entries) => {
+        const e = entries[0];
+        setInView(Boolean(e?.isIntersecting));
+      },
+      { root: null, threshold: 0.12, rootMargin: '48px' },
+    );
+    io.observe(root);
+    return () => io.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !videoSrc) return;
+    if (inView) {
+      const p = v.play();
+      if (p && typeof p.catch === 'function') {
+        p.catch(() => {});
+      }
+    } else {
+      v.pause();
+    }
+  }, [inView, videoSrc]);
+
+  const poster =
+    posterImage && typeof posterImage === 'string' && posterImage.trim()
+      ? getOptimizedImageUrl(posterImage.trim(), IMAGE_SLOTS.AVATAR)
+      : undefined;
+
+  return (
+    <AvatarStatusVideoWrap ref={wrapRef}>
+      <AvatarStatusRingVideo
+        ref={videoRef}
+        src={videoSrc}
+        poster={poster}
+        muted
+        playsInline
+        loop
+        preload="metadata"
+        disablePictureInPicture
+        aria-hidden="true"
+      />
+    </AvatarStatusVideoWrap>
+  );
+}
+
 const HomePage = () => {
   const navigate = useNavigate();
   useDynamicPageTitle({
@@ -158,11 +365,19 @@ const HomePage = () => {
     popupAds,
     isLoading: isAdsLoading,
   } = useAds();
+  const {
+    promos: activePromos,
+    isLoading: isActivePromosLoading,
+  } = useActivePromoCards();
 
-  // Status/video system has been removed from web; no status viewer state.
+  const [activeStatusIndex, setActiveStatusIndex] = useState(0);
+  const [statusViewer, setStatusViewer] = useState(null);
+  const [statusClipIndex, setStatusClipIndex] = useState(0);
 
   const [activePopupAd, setActivePopupAd] = useState(null);
   const [activeProductFilter, setActiveProductFilter] = useState('all');
+  const [activePromoKey, setActivePromoKey] = useState('');
+  const [promoNow, setPromoNow] = useState(Date.now());
   const [recentlyViewedIds, setRecentlyViewedIds] = useState([]);
   const [homepageVariant, setHomepageVariant] = useState(
     UX_EXPERIMENTS.defaultVariant
@@ -295,9 +510,11 @@ const HomePage = () => {
       productsList = productsData;
     }
 
+    const normalizedProducts = productsList.map(normalizeIncomingProduct);
+
     // CRITICAL: Filter out deleted products and unapproved products (client-side safety check)
     // Backend should already filter these via buildBuyerSafeQuery, but this ensures no deleted/unapproved products are shown
-    return productsList.filter(product => {
+    return normalizedProducts.filter(product => {
       // Exclude products deleted by admin or seller
       if (product.isDeleted === true ||
         product.isDeletedByAdmin === true ||
@@ -325,7 +542,7 @@ const HomePage = () => {
   }, [productsData]);
   const sellers = useMemo(() => sellersData || [], [sellersData]);
 
-  // Deal of the Day: best discount or promotionKey 'deal-of-the-day', countdown to end of day
+  // Deal of the Day: best discounted/promo products with countdown
   const dealOfTheDay = useDealOfTheDay(products);
 
   const followedSellers = useMemo(() => {
@@ -342,7 +559,144 @@ const HomePage = () => {
 
   const followedSellerCount = followedSellers.length;
 
-  // Status/video system has been removed from web; status groups and viewer handlers removed.
+  const { data: buyerStatusGroups = [] } = useBuyerStatusFeed();
+
+  const sellerStatusFeed = useMemo(() => {
+    const followedById = new Set(
+      followedSellers.map((s) => String(getSellerId(s))).filter(Boolean),
+    );
+    const entries = [];
+    for (const group of buyerStatusGroups || []) {
+      const seller = group?.seller;
+      const sellerId = getSellerId(seller);
+      if (!sellerId) continue;
+      const sid = String(sellerId);
+      const firstVideo = (group.statuses || []).find(
+        (st) => typeof st?.videoUrl === 'string' && st.videoUrl.trim(),
+      );
+      if (!firstVideo) continue;
+      const sellerName = seller.shopName || seller.name || 'Seller';
+      const caption =
+        typeof firstVideo.caption === 'string' && firstVideo.caption.trim()
+          ? firstVideo.caption.trim()
+          : `${sellerName} shared a status update.`;
+      entries.push({
+        sellerId: sid,
+        sellerName,
+        statusText: caption,
+        avatar: seller.avatar || null,
+        videoUrl: firstVideo.videoUrl.trim(),
+        isFollowed: followedById.has(sid),
+        sellerUrl: generatePath(PATHS.SELLER_SHOP, { id: sid }),
+      });
+    }
+    const followed = shuffleList(entries.filter((e) => e.isFollowed));
+    const rest = shuffleList(entries.filter((e) => !e.isFollowed));
+    return [...followed, ...rest];
+  }, [buyerStatusGroups, followedSellers]);
+
+  useEffect(() => {
+    setActiveStatusIndex(0);
+  }, [sellerStatusFeed]);
+
+  useEffect(() => {
+    if (sellerStatusFeed.length <= 1) {
+      return undefined;
+    }
+    const timer = window.setInterval(() => {
+      setActiveStatusIndex((prev) => (prev + 1) % sellerStatusFeed.length);
+    }, 6000);
+    return () => window.clearInterval(timer);
+  }, [sellerStatusFeed]);
+
+  const activeHeroStatus =
+    sellerStatusFeed.length > 0
+      ? sellerStatusFeed[activeStatusIndex % sellerStatusFeed.length]
+      : null;
+
+  const { data: sellerStatusesPayload, isLoading: isSellerStatusesLoading } =
+    useBuyerSellerStatuses(statusViewer?.sellerId, {
+      enabled: Boolean(statusViewer?.sellerId),
+    });
+
+  const statusClips = useMemo(() => {
+    if (!statusViewer) return [];
+    const fromApi = (sellerStatusesPayload?.statuses ?? []).filter(
+      (s) => s && typeof s.videoUrl === 'string' && s.videoUrl.trim(),
+    );
+    if (fromApi.length > 0) {
+      return fromApi.map((s) => ({
+        id: String(s._id || s.videoUrl),
+        videoUrl: s.videoUrl.trim(),
+        caption: typeof s.caption === 'string' ? s.caption : '',
+        product: s.product || null,
+      }));
+    }
+    if (isSellerStatusesLoading) {
+      return [];
+    }
+    if (statusViewer.fallbackVideoUrl) {
+      return [
+        {
+          id: 'fallback-profile',
+          videoUrl: statusViewer.fallbackVideoUrl,
+          caption: statusViewer.fallbackCaption || '',
+          product: null,
+        },
+      ];
+    }
+    return [];
+  }, [statusViewer, sellerStatusesPayload, isSellerStatusesLoading]);
+
+  const statusClipsRef = useRef(statusClips);
+  statusClipsRef.current = statusClips;
+
+  useEffect(() => {
+    setStatusClipIndex(0);
+  }, [statusViewer?.sellerId]);
+
+  const currentStatusClip = statusClips[statusClipIndex] ?? null;
+
+  const statusStoryVideoSrc = useMemo(() => {
+    if (!currentStatusClip?.videoUrl) return '';
+    return videoUrl(currentStatusClip.videoUrl, VIDEO_SLOTS.PRODUCT_DETAIL);
+  }, [currentStatusClip]);
+
+  const closeStatusViewer = useCallback(() => {
+    setStatusViewer(null);
+  }, []);
+
+  const goStatusClipPrev = useCallback(() => {
+    setStatusClipIndex((i) => Math.max(0, i - 1));
+  }, []);
+
+  const goStatusClipNext = useCallback(() => {
+    setStatusClipIndex((i) => {
+      if (statusClips.length <= 0) return 0;
+      return Math.min(statusClips.length - 1, i + 1);
+    });
+  }, [statusClips.length]);
+
+  useEffect(() => {
+    if (!statusViewer) return undefined;
+    const { style } = document.body;
+    const prevOverflow = style.overflow;
+    style.overflow = 'hidden';
+    return () => {
+      style.overflow = prevOverflow;
+    };
+  }, [statusViewer]);
+
+  useEffect(() => {
+    if (!statusViewer) return undefined;
+    const onKey = (event) => {
+      if (event.key === 'Escape') {
+        setStatusViewer(null);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [statusViewer]);
 
   const handleProductClick = useCallback((productId) => {
     const sessionId = getOrCreateSessionId();
@@ -463,10 +817,6 @@ const HomePage = () => {
     return `${cleanFrontendUrl}/${cleanLink}`;
   }, []);
 
-  const isExternalLink = useCallback((link) => {
-    return link && /^https?:\/\//i.test(link);
-  }, []);
-
   const formatPromoEndDate = useCallback((dateStr) => {
     if (!dateStr) return null;
     try {
@@ -498,6 +848,78 @@ const HomePage = () => {
       { id: 3, title: "Elegant Home Decor", subtitle: "Transform your space into a sanctuary of style.", image: "https://images.unsplash.com/photo-1616486338812-3dadae4b4f9d?q=80&w=2070&auto=format&fit=crop", cta: "Discover More", link: PATHS.PRODUCTS, color: "#dee2e6", discountPercent: 0, endDate: null },
     ];
   }, [carouselAds, resolveAdLink]);
+
+  const promoCampaigns = useMemo(() => {
+    if (!Array.isArray(activePromos) || activePromos.length === 0) return [];
+    return activePromos
+      .map((promo, index) => ({
+        id: promo?._id || promo?.id || `promo-${index}`,
+        promotionKey: String(promo?.slug || promo?._id || promo?.id || '').trim(),
+        title: promo?.name || 'Special Offer',
+        subtitle: promo?.description || '',
+        endDate: promo?.endDate || null,
+      }))
+      .filter((campaign) => Boolean(campaign.promotionKey));
+  }, [activePromos]);
+
+  useEffect(() => {
+    if (!promoCampaigns.length) {
+      setActivePromoKey('');
+      return;
+    }
+
+    const hasActive = promoCampaigns.some(
+      (campaign) => campaign.promotionKey === activePromoKey
+    );
+    if (!hasActive) {
+      setActivePromoKey(promoCampaigns[0].promotionKey);
+    }
+  }, [promoCampaigns, activePromoKey]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setPromoNow(Date.now());
+    }, 1000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const activePromoCampaign = useMemo(() => {
+    if (!activePromoKey) return null;
+    return (
+      promoCampaigns.find((campaign) => campaign.promotionKey === activePromoKey) ||
+      null
+    );
+  }, [promoCampaigns, activePromoKey]);
+
+  const promoProductsQuery = usePromoProducts(activePromoKey, { limit: 60 });
+  const promoProducts = useMemo(() => {
+    if (!activePromoKey) return [];
+
+    const payload = promoProductsQuery.data;
+    const fromPromoApi =
+      payload?.products ||
+      payload?.items ||
+      payload?.results ||
+      payload?.data ||
+      [];
+
+    if (Array.isArray(fromPromoApi) && fromPromoApi.length > 0) {
+      return fromPromoApi;
+    }
+
+    // Fallback: still surface discounted products even when promo-products endpoint is empty.
+    return products
+      .filter((product) => hasProductDiscount(product))
+      .sort((a, b) => {
+        const ratingDiff = resolveProductRating(b) - resolveProductRating(a);
+        if (ratingDiff !== 0) return ratingDiff;
+        return resolveProductViews(b) - resolveProductViews(a);
+      });
+  }, [activePromoKey, promoProductsQuery.data, products]);
+
+  const promoCountdown = useMemo(() => {
+    return getPromoCountdown(activePromoCampaign?.endDate, promoNow);
+  }, [activePromoCampaign?.endDate, promoNow]);
 
   const { getCategories } = useCategory();
   const { data: categoriesData, isLoading: isCategoriesLoading, isError: isCategoriesError } = getCategories;
@@ -570,22 +992,45 @@ const HomePage = () => {
 
   const filteredProducts = useMemo(() => {
     if (activeProductFilter === 'inStock') {
-      return products.filter((product) => product.stock > 0);
+      return products.filter((product) => getProductStock(product) > 0);
     }
     if (activeProductFilter === 'deals') {
-      return products.filter(
-        (product) =>
-          (product.discountPercentage || 0) > 0 ||
-          (product.salePrice || 0) > 0
-      );
+      return products.filter((product) => hasProductDiscount(product));
     }
     if (activeProductFilter === 'topRated') {
       return [...products]
-        .filter((product) => (product.averageRating || 0) >= 4)
-        .sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0));
+        .filter((product) => resolveProductRating(product) >= 4)
+        .sort((a, b) => {
+          const ratingDiff = resolveProductRating(b) - resolveProductRating(a);
+          if (ratingDiff !== 0) return ratingDiff;
+          return resolveProductViews(b) - resolveProductViews(a);
+        });
+    }
+    if (activeProductFilter === 'mostViewed') {
+      return [...products]
+        .filter((product) => resolveProductViews(product) > 0)
+        .sort((a, b) => {
+          const viewsDiff = resolveProductViews(b) - resolveProductViews(a);
+          if (viewsDiff !== 0) return viewsDiff;
+          return resolveProductRating(b) - resolveProductRating(a);
+        });
     }
     return products;
   }, [activeProductFilter, products]);
+
+  const displayedProducts = useMemo(() => {
+    if (
+      activeProductFilter === 'mostViewed' &&
+      filteredProducts.length === 0
+    ) {
+      return [...products].sort((a, b) => {
+        const viewsDiff = resolveProductViews(b) - resolveProductViews(a);
+        if (viewsDiff !== 0) return viewsDiff;
+        return resolveProductRating(b) - resolveProductRating(a);
+      });
+    }
+    return filteredProducts;
+  }, [activeProductFilter, filteredProducts, products]);
 
   const trackHomepageEvent = useCallback(
     (eventName, metadata = '') => {
@@ -1110,6 +1555,222 @@ const HomePage = () => {
         </button>
         </HeroSection>
       </ViewInSection>
+      {activeHeroStatus ? (
+        <ViewInSection delayMs={30}>
+          <HeroStatusContainer>
+            <Container>
+              <AvatarStatusRow>
+                {sellerStatusFeed.slice(0, 12).map((statusItem) => {
+                  const feedIndex = sellerStatusFeed.findIndex(
+                    (s) => s.sellerId === statusItem.sellerId,
+                  );
+                  const isActive = statusItem.sellerId === activeHeroStatus.sellerId;
+                  return (
+                    <AvatarStatusItem
+                      key={statusItem.sellerId}
+                      type="button"
+                      $active={isActive}
+                      onClick={() => {
+                        const nextIndex = feedIndex >= 0 ? feedIndex : 0;
+                        setActiveStatusIndex(nextIndex);
+                        setStatusViewer({
+                          sellerId: statusItem.sellerId,
+                          sellerName: statusItem.sellerName,
+                          sellerUrl: statusItem.sellerUrl,
+                          avatar: statusItem.avatar,
+                          fallbackVideoUrl: statusItem.videoUrl || null,
+                          fallbackCaption: statusItem.statusText,
+                        });
+                        setStatusClipIndex(0);
+                      }}
+                      aria-label={`Open ${statusItem.sellerName} status videos`}
+                    >
+                      <AvatarStatusImageWrap $active={isActive}>
+                        {(() => {
+                          const ringSrc =
+                            statusItem.videoUrl &&
+                            typeof statusItem.videoUrl === 'string' &&
+                            statusItem.videoUrl.trim()
+                              ? videoUrl(
+                                  statusItem.videoUrl.trim(),
+                                  VIDEO_SLOTS.STATUS_RING,
+                                )
+                              : '';
+                          if (ringSrc) {
+                            return (
+                              <SellerStatusAvatarRing
+                                videoSrc={ringSrc}
+                                posterImage={statusItem.avatar}
+                              />
+                            );
+                          }
+                          if (statusItem.avatar) {
+                            return (
+                              <OptimizedImage
+                                src={statusItem.avatar}
+                                slot={IMAGE_SLOTS.AVATAR}
+                                aspectRatio="1/1"
+                                alt={statusItem.sellerName}
+                                objectFit="cover"
+                              />
+                            );
+                          }
+                          return (
+                            <AvatarStatusFallback>
+                              {getShopInitials(statusItem.sellerName)}
+                            </AvatarStatusFallback>
+                          );
+                        })()}
+                      </AvatarStatusImageWrap>
+                      <AvatarStatusName>{statusItem.sellerName}</AvatarStatusName>
+                    </AvatarStatusItem>
+                  );
+                })}
+              </AvatarStatusRow>
+            </Container>
+          </HeroStatusContainer>
+        </ViewInSection>
+      ) : null}
+      {statusViewer ? (
+        <StatusViewerOverlay
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${statusViewer.sellerName} status`}
+          onClick={closeStatusViewer}
+        >
+          <StatusStoryShell onClick={(event) => event.stopPropagation()}>
+            {statusClips.length > 1 ? (
+              <StatusStoryProgressRow aria-hidden="true">
+                {statusClips.map((clip, idx) => (
+                  <StatusStoryProgressSeg
+                    key={clip.id}
+                    $seen={idx < statusClipIndex}
+                    $active={idx === statusClipIndex}
+                  />
+                ))}
+              </StatusStoryProgressRow>
+            ) : null}
+            <StatusStoryTopBar>
+              <StatusStorySellerBlock>
+                {statusViewer.avatar ? (
+                  <StatusStoryAvatarWrap>
+                    <OptimizedImage
+                      src={statusViewer.avatar}
+                      slot={IMAGE_SLOTS.AVATAR}
+                      aspectRatio="1/1"
+                      alt=""
+                      objectFit="cover"
+                    />
+                  </StatusStoryAvatarWrap>
+                ) : (
+                  <StatusStoryAvatarFallback>
+                    {getShopInitials(statusViewer.sellerName)}
+                  </StatusStoryAvatarFallback>
+                )}
+                <StatusStorySellerText>
+                  <StatusStorySellerName>{statusViewer.sellerName}</StatusStorySellerName>
+                  {statusClips.length > 1 ? (
+                    <StatusStoryClipMeta>
+                      {statusClipIndex + 1} / {statusClips.length}
+                    </StatusStoryClipMeta>
+                  ) : null}
+                </StatusStorySellerText>
+              </StatusStorySellerBlock>
+              <StatusStoryCloseBtn
+                type="button"
+                onClick={closeStatusViewer}
+                aria-label="Close status"
+              >
+                <FaTimes aria-hidden="true" />
+              </StatusStoryCloseBtn>
+            </StatusStoryTopBar>
+            <StatusStoryMediaArea>
+              {isSellerStatusesLoading && statusClips.length === 0 ? (
+                <StatusStoryLoading>Loading status…</StatusStoryLoading>
+              ) : null}
+              {!isSellerStatusesLoading && statusClips.length === 0 ? (
+                <StatusStoryEmptyWrap>
+                  <StatusStoryEmpty>No videos for this seller yet.</StatusStoryEmpty>
+                  {statusViewer.fallbackCaption ? (
+                    <StatusStoryCaption>{statusViewer.fallbackCaption}</StatusStoryCaption>
+                  ) : null}
+                  <StatusStoryShopLink to={statusViewer.sellerUrl}>
+                    Visit shop
+                  </StatusStoryShopLink>
+                </StatusStoryEmptyWrap>
+              ) : null}
+              {statusStoryVideoSrc ? (
+                <>
+                  <StatusStoryTapPrev
+                    type="button"
+                    aria-label="Previous status"
+                    onClick={goStatusClipPrev}
+                  />
+                  <StatusStoryTapNext
+                    type="button"
+                    aria-label="Next status"
+                    onClick={goStatusClipNext}
+                  />
+                  {statusClips.length > 1 ? (
+                    <>
+                      <StatusStoryArrowButton
+                        type="button"
+                        $side="left"
+                        aria-label="Previous video"
+                        onClick={goStatusClipPrev}
+                        disabled={statusClipIndex <= 0}
+                      >
+                        <FaArrowLeft />
+                      </StatusStoryArrowButton>
+                      <StatusStoryArrowButton
+                        type="button"
+                        $side="right"
+                        aria-label="Next video"
+                        onClick={goStatusClipNext}
+                        disabled={statusClipIndex >= statusClips.length - 1}
+                      >
+                        <FaArrowRight />
+                      </StatusStoryArrowButton>
+                    </>
+                  ) : null}
+                  <StatusStoryVideo
+                    key={currentStatusClip?.id || statusStoryVideoSrc}
+                    src={statusStoryVideoSrc}
+                    autoPlay
+                    controls
+                    playsInline
+                    onEnded={() => {
+                      setStatusClipIndex((i) => {
+                        const last = Math.max(0, statusClipsRef.current.length - 1);
+                        if (i >= last) {
+                          queueMicrotask(() => {
+                            setStatusViewer(null);
+                          });
+                          return i;
+                        }
+                        return i + 1;
+                      });
+                    }}
+                  />
+                </>
+              ) : null}
+            </StatusStoryMediaArea>
+            {currentStatusClip?.caption ? (
+              <StatusStoryCaptionBar>{currentStatusClip.caption}</StatusStoryCaptionBar>
+            ) : null}
+            {currentStatusClip?.product?._id ? (
+              <StatusStoryProductLink
+                to={generatePath(PATHS.PRODUCT, {
+                  id: currentStatusClip.product.slug || currentStatusClip.product._id,
+                })}
+                onClick={closeStatusViewer}
+              >
+                View product
+              </StatusStoryProductLink>
+            ) : null}
+          </StatusStoryShell>
+        </StatusViewerOverlay>
+      ) : null}
       <MobileStickyActions aria-label="Quick shopping actions">
         <MobileActionLink
           to={PATHS.CATEGORIES}
@@ -1225,7 +1886,7 @@ const HomePage = () => {
       ) : null}
 
       {/* Features / Trust Section */}
-      <ViewInSection delayMs={110}>
+      <ViewInSection delayMs={100}>
         <TrustSection>
         <Container>
           <TrustGrid>
@@ -1255,19 +1916,133 @@ const HomePage = () => {
         </TrustSection>
       </ViewInSection>
 
-      {/* Deal of the Day: placed early for urgency and conversion */}
-      <ViewInSection delayMs={130}>
+      {/* Homepage sections: show Categories first */}
+      {sectionOrder.map((sectionKey, index) => {
+        if (sectionKey !== 'categories') return null;
+        return (
+          <ViewInSection key={sectionKey} delayMs={140 + index * 30}>
+            {homepageSections[sectionKey]}
+          </ViewInSection>
+        );
+      })}
+
+      <ViewInSection delayMs={180}>
+        <Container>
+          <FlashDealsStrip />
+        </Container>
+      </ViewInSection>
+
+      {/* Promo Section with promo products + countdown (placed after categories) */}
+      {!isActivePromosLoading && promoCampaigns.length > 0 ? (
+        <ViewInSection delayMs={190}>
+          <Section>
+          <Container>
+            <SectionHeader>
+              <SectionTitle>Promo Products</SectionTitle>
+              <SectionLink
+                to={
+                  activePromoKey
+                    ? PATHS.PROMO_DETAIL.replace(':promoId', activePromoKey)
+                    : PATHS.OFFERS
+                }
+              >
+                View promo page <FaArrowRight />
+              </SectionLink>
+            </SectionHeader>
+            <SectionDescription>
+              Products attached to active promotions.
+            </SectionDescription>
+
+            <FilterChipRow role="tablist" aria-label="Promotion campaigns">
+              {promoCampaigns.map((campaign) => (
+                <FilterChip
+                  key={campaign.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={activePromoKey === campaign.promotionKey}
+                  $active={activePromoKey === campaign.promotionKey}
+                  onClick={() => setActivePromoKey(campaign.promotionKey)}
+                >
+                  {campaign.title}
+                </FilterChip>
+              ))}
+            </FilterChipRow>
+
+            {promoCountdown ? (
+              <PromoCountdownWrap>
+                {promoCountdown.expired ? (
+                  <PromoCountdownLabel>
+                    This promotion has ended.
+                  </PromoCountdownLabel>
+                ) : (
+                  <>
+                    <PromoCountdownLabel>
+                      Promo ends in:
+                    </PromoCountdownLabel>
+                    <PromoCountdownUnits>
+                      <PromoCountdownUnit>
+                        <strong>{String(promoCountdown.days).padStart(2, '0')}</strong>
+                        <span>d</span>
+                      </PromoCountdownUnit>
+                      <PromoCountdownUnit>
+                        <strong>{String(promoCountdown.hours).padStart(2, '0')}</strong>
+                        <span>h</span>
+                      </PromoCountdownUnit>
+                      <PromoCountdownUnit>
+                        <strong>{String(promoCountdown.minutes).padStart(2, '0')}</strong>
+                        <span>m</span>
+                      </PromoCountdownUnit>
+                      <PromoCountdownUnit>
+                        <strong>{String(promoCountdown.seconds).padStart(2, '0')}</strong>
+                        <span>s</span>
+                      </PromoCountdownUnit>
+                    </PromoCountdownUnits>
+                  </>
+                )}
+              </PromoCountdownWrap>
+            ) : null}
+
+            {promoProducts.length > 0 ? (
+              <ProductGrid>
+                {promoProducts.slice(0, 8).map((product) => {
+                 return  <ProductCard
+                    key={product._id}
+                    product={product}
+                    onClick={() => handleProductClick(product._id)}
+                    showAddToCart
+                  />
+})}
+              </ProductGrid>
+            ) : (
+              <EmptyState
+                title="No promo products yet"
+                message="No products are currently attached to this promotion."
+                action={<SectionLink to={PATHS.PRODUCTS}>Browse Products</SectionLink>}
+              />
+            )}
+          </Container>
+          </Section>
+        </ViewInSection>
+      ) : null}
+
+      {/* Deal of the Day: now placed after categories + promo section */}
+      <ViewInSection delayMs={230}>
         <DealOfTheDaySection
           dealProduct={dealOfTheDay.dealProduct}
+          dealProducts={dealOfTheDay.dealProducts}
           endOfDay={dealOfTheDay.endOfDay}
         />
       </ViewInSection>
 
-      {sectionOrder.map((sectionKey, index) => (
-        <ViewInSection key={sectionKey} delayMs={150 + index * 30}>
-          {homepageSections[sectionKey]}
-        </ViewInSection>
-      ))}
+      {/* Remaining homepage sections, excluding categories which we already rendered */}
+      {sectionOrder.map((sectionKey, index) => {
+        if (sectionKey === 'categories') return null;
+        return (
+          <ViewInSection key={sectionKey} delayMs={260 + index * 30}>
+            {homepageSections[sectionKey]}
+          </ViewInSection>
+        );
+      })}
 
       {/* EazShop Official Store Section */}
       <ViewInSection delayMs={260}>
@@ -1318,7 +2093,7 @@ const HomePage = () => {
                 <SkeletonCard key={i} />
               ))}
             </LoadingGrid>
-          ) : filteredProducts.length === 0 ? (
+          ) : displayedProducts.length === 0 ? (
             <EmptyState
               title="No products found"
               message="No products match this filter yet. Try another option."
@@ -1328,7 +2103,7 @@ const HomePage = () => {
             />
           ) : (
             <ProductGrid>
-              {filteredProducts.slice(0, 12).map((product) => (
+              {displayedProducts.slice(0, 12).map((product) => (
                 <ProductCard
                   key={product._id}
                   product={product}
@@ -1739,6 +2514,403 @@ const SlideEndDate = styled.p`
   }
 `;
 
+const HeroStatusContainer = styled.section`
+  background: #f8f9fa;
+  border-bottom: 1px solid #e8ecf1;
+  padding: 0.75rem 0 1rem;
+`;
+
+const AvatarStatusRow = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-top: 0;
+  overflow-x: auto;
+  padding-bottom: 0.2rem;
+  scrollbar-width: thin;
+`;
+
+const AvatarStatusItem = styled.button`
+  border: none;
+  background: transparent;
+  padding: 0;
+  min-width: 74px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  opacity: ${({ $active }) => ($active ? 1 : 0.85)};
+`;
+
+const AvatarStatusImageWrap = styled.div`
+  position: relative;
+  width: 58px;
+  height: 58px;
+  border-radius: 9999px;
+  overflow: hidden;
+  border: 2px solid ${({ $active }) => ($active ? '#ff6b35' : '#e5e7eb')};
+  box-shadow: ${({ $active }) =>
+    $active ? '0 0 0 2px rgba(255, 107, 53, 0.2)' : 'none'};
+`;
+
+const AvatarStatusVideoWrap = styled.div`
+  position: absolute;
+  inset: 0;
+`;
+
+const AvatarStatusRingVideo = styled.video`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+`;
+
+const AvatarStatusFallback = styled.div`
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(145deg, #d4882a 0%, #ffc400 55%, #e29800 100%);
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 700;
+`;
+
+const AvatarStatusName = styled.span`
+  font-size: 0.72rem;
+  color: #1a1a2e;
+  max-width: 74px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+`;
+
+const AvatarVideoBadge = styled.span`
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  background: #ff6b35;
+  color: #ffffff;
+  border-radius: 9999px;
+  border: 2px solid #ffffff;
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.2rem 0.3rem;
+`;
+
+const StatusViewerOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: #000000;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  padding: 0;
+
+  @media (min-width: 768px) {
+    align-items: center;
+    padding: 0.5rem;
+  }
+`;
+
+const StatusStoryShell = styled.div`
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #000000;
+  margin: 0 auto;
+
+  @media (min-width: 768px) {
+    min-height: min(100vh, 900px);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+`;
+
+const StatusStoryProgressRow = styled.div`
+  position: absolute;
+  top: 0.4rem;
+  left: 0.5rem;
+  right: 0.5rem;
+  z-index: 5;
+  display: flex;
+  gap: 0.25rem;
+`;
+
+const StatusStoryProgressSeg = styled.div`
+  flex: 1;
+  height: 3px;
+  border-radius: 9999px;
+  background: ${({ $seen, $active }) => {
+    if ($active) return '#ff6b35';
+    if ($seen) return 'rgba(255, 255, 255, 0.92)';
+    return 'rgba(255, 255, 255, 0.35)';
+  }};
+`;
+
+const StatusStoryTopBar = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  padding: 1.25rem 0.75rem 0.75rem;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.82), transparent);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+`;
+
+const StatusStorySellerBlock = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+`;
+
+const StatusStoryAvatarWrap = styled.div`
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  overflow: hidden;
+  border: 2px solid #ff6b35;
+  flex-shrink: 0;
+`;
+
+const StatusStoryAvatarFallback = styled.div`
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(145deg, #d4882a 0%, #ffc400 55%, #e29800 100%);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+`;
+
+const StatusStorySellerText = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+`;
+
+const StatusStorySellerName = styled.p`
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const StatusStoryClipMeta = styled.span`
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.75);
+`;
+
+const StatusStoryCloseBtn = styled.button`
+  border: none;
+  border-radius: 9999px;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  &:focus-visible {
+    outline: 2px solid #ff6b35;
+    outline-offset: 2px;
+  }
+`;
+
+const StatusStoryMediaArea = styled.div`
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 55vh;
+  padding-top: 3.5rem;
+`;
+
+const StatusStoryTapPrev = styled.button`
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 28%;
+  z-index: 2;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+
+  &:focus-visible {
+    outline: 2px solid #ff6b35;
+    outline-offset: -4px;
+  }
+`;
+
+const StatusStoryTapNext = styled.button`
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 28%;
+  z-index: 2;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+
+  &:focus-visible {
+    outline: 2px solid #ff6b35;
+    outline-offset: -4px;
+  }
+`;
+
+const StatusStoryArrowButton = styled.button`
+  position: absolute;
+  top: 50%;
+  ${({ $side }) => ($side === 'left' ? 'left: 0.75rem;' : 'right: 0.75rem;')}
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  background: rgba(26, 26, 46, 0.72);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: rgba(26, 26, 46, 0.9);
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #ff6b35;
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 767px) {
+    width: 2.75rem;
+    height: 2.75rem;
+    ${({ $side }) => ($side === 'left' ? 'left: 0.5rem;' : 'right: 0.5rem;')}
+  }
+`;
+
+const StatusStoryVideo = styled.video`
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-height: calc(100vh - 11rem);
+  object-fit: contain;
+  background: #000000;
+`;
+
+const StatusStoryLoading = styled.p`
+  margin: 0;
+  padding: 1rem;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.875rem;
+  text-align: center;
+`;
+
+const StatusStoryEmptyWrap = styled.div`
+  padding: 1.5rem 1rem;
+  text-align: center;
+  max-width: 20rem;
+`;
+
+const StatusStoryEmpty = styled.p`
+  margin: 0 0 0.75rem;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.875rem;
+`;
+
+const StatusStoryCaption = styled.p`
+  margin: 0 0 1rem;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+`;
+
+const StatusStoryShopLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  background: #ff6b35;
+  color: #ffffff;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-decoration: none;
+
+  &:hover {
+    background: #e55a2b;
+    color: #ffffff;
+  }
+`;
+
+const StatusStoryCaptionBar = styled.div`
+  padding: 0.5rem 0.75rem 0.25rem;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  text-align: center;
+`;
+
+const StatusStoryProductLink = styled(Link)`
+  display: block;
+  margin: 0 0.75rem 0.75rem;
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+  }
+`;
+
 const Section = styled.section`
   padding: 3.25rem 0;
   background: ${props => props.$bg || 'white'};
@@ -1801,6 +2973,53 @@ const SectionDescription = styled.p`
   color: #6b7280;
   font-size: 0.9rem;
   line-height: 1.5;
+`;
+
+const PromoCountdownWrap = styled.div`
+  margin: 0 0 1.25rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(212, 136, 42, 0.35);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fffaf1 0%, #fff5e7 100%);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.85rem;
+`;
+
+const PromoCountdownLabel = styled.span`
+  font-size: 0.88rem;
+  color: #8a5a18;
+  font-weight: 700;
+`;
+
+const PromoCountdownUnits = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+`;
+
+const PromoCountdownUnit = styled.div`
+  min-width: 50px;
+  padding: 0.3rem 0.45rem;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid rgba(212, 136, 42, 0.28);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.1;
+
+  strong {
+    font-size: 0.95rem;
+    color: #8a4b08;
+  }
+
+  span {
+    font-size: 0.72rem;
+    color: #9ca3af;
+    text-transform: uppercase;
+  }
 `;
 
 const FilterChipRow = styled.div`

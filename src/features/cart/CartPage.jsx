@@ -9,7 +9,6 @@ import {
   useAutoSyncCart,
   getCartStructure,
 } from '../../shared/hooks/useCart';
-import useAds from "../../shared/hooks/useAds";
 import { useTrending } from '../../shared/hooks/useRecommendations';
 import { useNavigate } from "react-router-dom";
 import useAuth from '../../shared/hooks/useAuth';
@@ -22,12 +21,63 @@ import logger from '../../shared/utils/logger';
 import ProductCard from '../../shared/components/ProductCard';
 import shippingApi from '../../shared/services/shippingApi';
 import { FREE_SHIPPING_MIN_FALLBACK_GHS } from '../../shared/config/appConfig';
+import { getOptimizedImageUrl, IMAGE_SLOTS } from '../../shared/utils/cloudinaryConfig';
 import { FaShoppingCart, FaShoppingBag, FaTruck, FaLock, FaTrash } from "react-icons/fa";
 
 const fadeUp = keyframes`
   from { opacity: 0; transform: translateY(18px); }
   to   { opacity: 1; transform: translateY(0); }
 `;
+
+const CART_IMAGE_FALLBACK =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Crect width='100%25' height='100%25' fill='%23f3f4f6'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%239ca3af' font-size='12'%3ENo Image%3C/text%3E%3C/svg%3E";
+
+const normalizeImageSource = (value) => {
+  if (!value) return null;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed || null;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const normalized = normalizeImageSource(item);
+      if (normalized) return normalized;
+    }
+    return null;
+  }
+  if (typeof value === 'object') {
+    return (
+      value.url ||
+      value.secure_url ||
+      value.src ||
+      value.image ||
+      value.imageUrl ||
+      value.path ||
+      value.public_id ||
+      value.publicId ||
+      null
+    );
+  }
+  return null;
+};
+
+const getCartItemImageSource = (item) => {
+  const candidates = [
+    item?.variantImage,
+    item?.variant?.images,
+    item?.variant?.image,
+    item?.product?.images,
+    item?.product?.imageCover,
+    item?.product?.image,
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeImageSource(candidate);
+    if (normalized) return normalized;
+  }
+
+  return CART_IMAGE_FALLBACK;
+};
 
 const CartPage = () => {
   useDynamicPageTitle({
@@ -43,7 +93,6 @@ const CartPage = () => {
   });
   const { data, isLoading: isCartLoading, isError } = useGetCart();
   const { total: subTotal } = useCartTotals();
-  const { promotionDiscountMap } = useAds();
 
   const {
     updateCartItem,
@@ -140,14 +189,15 @@ const CartPage = () => {
     if (item?.unitPrice != null && typeof item.unitPrice === 'number' && item.unitPrice >= 0) {
       return item.unitPrice;
     }
-    const basePrice = item?.product?.defaultPrice || item?.product?.price || 0;
-    if (!basePrice) return 0;
-    const promoKey = item?.product?.promotionKey || "";
-    if (!promoKey) return basePrice;
-    const discountPercent = promotionDiscountMap[promoKey] || 0;
-    if (!discountPercent || discountPercent <= 0) return basePrice;
-    const discounted = basePrice * (1 - discountPercent / 100);
-    return discounted > 0 ? discounted : 0;
+    const promoPrice = Number(item?.product?.promoPrice);
+    if (Number.isFinite(promoPrice) && promoPrice > 0) return promoPrice;
+
+    const fallbackPrice = Number(
+      item?.product?.defaultPrice ?? item?.product?.price ?? 0
+    );
+    return Number.isFinite(fallbackPrice) && fallbackPrice > 0
+      ? fallbackPrice
+      : 0;
   };
 
   const getItemOriginalUnitPrice = (item) => {
@@ -249,18 +299,22 @@ const CartPage = () => {
                   const origPrice = getItemOriginalUnitPrice(item);
                   const lineTotal = unitPrice * item.quantity;
                   const origLineTotal = origPrice ? origPrice * item.quantity : null;
+                  const imageSrc = getOptimizedImageUrl(
+                    getCartItemImageSource(item),
+                    IMAGE_SLOTS.PRODUCT_THUMB,
+                    { fallback: CART_IMAGE_FALLBACK }
+                  );
 
                   return (
                     <CartItem key={item._id}>
                       <ItemImageWrap>
                         <ItemImage
-                          src={
-                            item.variantImage ||
-                            (item.product?.images?.length > 0 ? item.product.images[0] : null) ||
-                            item.product?.imageCover ||
-                            '/placeholder-image.svg'
-                          }
+                          src={imageSrc}
                           alt={item.product?.name || 'Product'}
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = CART_IMAGE_FALLBACK;
+                          }}
                         />
                         {item.product?.isPreOrder && <PreorderBadge>Pre-Order</PreorderBadge>}
                       </ItemImageWrap>

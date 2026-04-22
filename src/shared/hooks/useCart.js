@@ -7,7 +7,6 @@ import cartApi from '../services/cartApi';
 import useAuth from './useAuth';
 import logger from '../utils/logger';
 import { resolveDefaultSku } from '../utils/cartValidation';
-import useAds from "./useAds";
 export const getCartStructure = (cartData) => {
   if (!cartData) return [];
 
@@ -247,7 +246,6 @@ export const useGetCart = () => {
 export const useCartTotals = () => {
   const { data } = useGetCart();
   const products = getCartStructure(data);
-  const { promotionDiscountMap } = useAds();
 
   const getItemUnitPrice = (item) => {
     if (item?.unitPrice != null && typeof item.unitPrice === 'number' && item.unitPrice >= 0) {
@@ -255,14 +253,13 @@ export const useCartTotals = () => {
     }
     const product = item?.product;
     if (!product) return 0;
-    const basePrice = product?.defaultPrice || product?.price || 0;
-    if (!basePrice) return 0;
-    const promoKey = product.promotionKey || "";
-    if (!promoKey) return basePrice;
-    const discountPercent = promotionDiscountMap[promoKey] || 0;
-    if (!discountPercent || discountPercent <= 0) return basePrice;
-    const discounted = basePrice * (1 - discountPercent / 100);
-    return discounted > 0 ? discounted : 0;
+    const promoPrice = Number(product?.promoPrice);
+    if (Number.isFinite(promoPrice) && promoPrice > 0) return promoPrice;
+
+    const fallbackPrice = Number(product?.defaultPrice ?? product?.price ?? 0);
+    return Number.isFinite(fallbackPrice) && fallbackPrice > 0
+      ? fallbackPrice
+      : 0;
   };
 
   return products.reduce(
@@ -424,7 +421,12 @@ export const useCartActions = () => {
         // Use explicitly passed variantId if available, else fallback to extracting from variantSku
         let resolvedVariantId = variantId;
         if (!resolvedVariantId && variantSku && Array.isArray(product?.variants)) {
-          const found = product.variants.find((v) => v.sku && v.sku.toUpperCase() === variantSku);
+          const normalizedTargetSku = String(variantSku).trim().toUpperCase();
+          const found = product.variants.find(
+            (v) =>
+              typeof v?.sku === 'string' &&
+              v.sku.trim().toUpperCase() === normalizedTargetSku
+          );
           if (found?._id) {
             resolvedVariantId = found._id.toString ? found._id.toString() : String(found._id);
           }
@@ -497,7 +499,11 @@ export const useCartActions = () => {
 
         // Look up the selected variant to preserve its image for the cart display
         const selectedVariant = variantSku && product?.variants
-          ? product.variants.find(v => v.sku && v.sku.toUpperCase() === variantSku.toUpperCase())
+          ? product.variants.find(
+            (v) =>
+              typeof v?.sku === 'string' &&
+              v.sku.trim().toUpperCase() === variantSku.trim().toUpperCase()
+          )
           : null;
 
         // Only add SKU if it exists (multi-variant products MUST have SKU)

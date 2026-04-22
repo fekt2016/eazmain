@@ -11,6 +11,7 @@ import {
   FaStore,
   FaTruck,
   FaSearchLocation,
+  FaTimes,
 } from "react-icons/fa";
 import { useGetUserAddress, useCreateAddress } from "../../shared/hooks/useAddress";
 import { useCreateOrder } from "../../shared/hooks/useOrder";
@@ -293,6 +294,7 @@ const CheckoutPage = () => {
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState("");
   const [couponData, setCouponData] = useState(null);
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
 
   // Delivery method states
   const [deliveryMethod, setDeliveryMethod] = useState("dispatch");
@@ -372,6 +374,8 @@ const CheckoutPage = () => {
         product: item.product,
         quantity: item.quantity,
         sku: item.sku || item.variantSku || resolveSkuFromCartItem(item),
+        unitPrice: item.unitPrice,
+        originalUnitPrice: item.originalUnitPrice,
       })),
     [rawItems]
   );
@@ -450,13 +454,7 @@ const CheckoutPage = () => {
   // Selected address
   const selectedAddress = address.find((addr) => addr._id === selectedAddressId);
 
-  // Buyer city: prefer selected address on "existing" tab, else new address on "new" tab
-  const buyerCity =
-    activeTab === "existing" && selectedAddress?.city
-      ? selectedAddress.city.toUpperCase()
-      : activeTab === "new" && newAddress?.city
-        ? newAddress.city.toUpperCase()
-        : selectedAddress?.city?.toUpperCase() || null;
+  const buyerCity = selectedAddress?.city?.toUpperCase() || null;
 
   // Shipping hooks based on buyer city
   const {
@@ -649,12 +647,29 @@ const CheckoutPage = () => {
     }
   }, [isAddressLoading, address, defaultAddress]);
 
-  // If user has no addresses, open "new" tab by default
+  // If user has no addresses, prompt address creation modal by default
   useEffect(() => {
     if (!isAddressLoading && address.length === 0) {
-      setActiveTab("new");
+      setActiveTab("existing");
+      setIsAddressModalOpen(true);
     }
   }, [isAddressLoading, address]);
+
+  useEffect(() => {
+    if (!isAddressModalOpen) return undefined;
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape" && !isAddressCreating) {
+        setIsAddressModalOpen(false);
+        setActiveTab("existing");
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [isAddressModalOpen, isAddressCreating]);
 
   // Ensure dispatch method is used (seller delivery removed)
   // useEffect(() => {
@@ -743,6 +758,23 @@ const CheckoutPage = () => {
     setSelectedAddressId(addressId);
     setActiveTab("existing");
     setFormError("");
+  };
+
+  const openAddressModal = () => {
+    setActiveTab("new");
+    setFormError("");
+    setLocationError("");
+    setIsAddressModalOpen(true);
+  };
+
+  const closeAddressModal = () => {
+    if (isAddressCreating) return;
+    setActiveTab("existing");
+    setFormError("");
+    setErrors({});
+    setLocationError("");
+    setAutoNeighborhoodOptions([]);
+    setIsAddressModalOpen(false);
   };
 
   const handleAddressChange = (e) => {
@@ -1060,6 +1092,9 @@ const CheckoutPage = () => {
         setActiveTab("existing");
         setErrors({});
         setFormError("");
+        setLocationError("");
+        setAutoNeighborhoodOptions([]);
+        setIsAddressModalOpen(false);
       },
       onError: (error) => {
         setFormError(
@@ -1150,14 +1185,6 @@ const CheckoutPage = () => {
 
     if (!selectedAddressId && activeTab === "existing") {
       setFormError("Please select a shipping address");
-      return;
-    }
-
-    if (
-      activeTab === "new" &&
-      (!newAddress.city || !newAddress.streetAddress)
-    ) {
-      setFormError("Please complete the shipping address form");
       return;
     }
 
@@ -1434,8 +1461,8 @@ const CheckoutPage = () => {
                 My Addresses
               </TabToggle>
               <TabToggle
-                $active={activeTab === "new"}
-                onClick={() => setActiveTab("new")}
+                $active={isAddressModalOpen}
+                onClick={openAddressModal}
                 type="button"
               >
                 + New Address
@@ -1443,7 +1470,7 @@ const CheckoutPage = () => {
             </TabToggleWrap>
 
             <TabContent>
-            {activeTab === "existing" ? (
+            {address.length > 0 ? (
               <AddressList>
                 {address.map((addr) => (
                   <AddressItem
@@ -1492,190 +1519,237 @@ const CheckoutPage = () => {
                 ))}
               </AddressList>
             ) : (
-              <AddressForm onSubmit={handleNewAddress}>
-                {(formError || createAddressError) && (
-                  <ErrorState
-                    message={
-                      formError ||
-                      createAddressError?.message ||
-                      "Failed to create address"
-                    }
-                  />
-                )}
-
-                <AddressFormSection>
-                  <AddressFormSectionLabel>Contact</AddressFormSectionLabel>
-                  <FormRow>
-                    <FormGroup>
-                      <Label>Full Name *</Label>
-                      <Input
-                        type="text"
-                        name="fullName"
-                        value={newAddress.fullName}
-                        onChange={handleAddressChange}
-                        placeholder="e.g. Kwame Mensah"
-                        required
-                      />
-                      {errors.fullName && <ErrorText>{errors.fullName}</ErrorText>}
-                    </FormGroup>
-                    <FormGroup>
-                      <Label>Contact Number *</Label>
-                      <Input
-                        type="tel"
-                        name="contactPhone"
-                        value={newAddress.contactPhone}
-                        onChange={handleAddressChange}
-                        placeholder="020 123 4567"
-                        required
-                      />
-                      {errors.contactPhone && <ErrorText>{errors.contactPhone}</ErrorText>}
-                      <HintText>MTN / Telecel / AirtelTigo — 10 digits</HintText>
-                    </FormGroup>
-                  </FormRow>
-                </AddressFormSection>
-
-                <AddressFormSection>
-                  <AddressFormSectionLabel>Location</AddressFormSectionLabel>
-                  <FormGroup>
-                    <Label>Street Address *</Label>
-                    <Input
-                      type="text"
-                      name="streetAddress"
-                      value={newAddress.streetAddress}
-                      onChange={handleAddressChange}
-                      placeholder="e.g. 15 Liberation Road"
-                      required
-                    />
-                    {errors.streetAddress && <ErrorText>{errors.streetAddress}</ErrorText>}
-                  </FormGroup>
-
-                  <FormRow>
-                    <FormGroup>
-                      <Label>Neighborhood / Area *</Label>
-                      {autoNeighborhoodOptions.length > 0 ? (
-                        <>
-                          <Select
-                            name="area"
-                            value={newAddress.area}
-                            onChange={(e) => {
-                              const selectedName = e.target.value;
-                              setNewAddress((prev) => ({ ...prev, area: selectedName }));
-                            }}
-                          >
-                            <option value="">Select neighborhood</option>
-                            {autoNeighborhoodOptions.map((n) => (
-                              <option key={n._id || n.name} value={n.name}>
-                                {n.name}{n.municipality ? ` (${n.municipality})` : ""}
-                              </option>
-                            ))}
-                          </Select>
-                          <HintText>Multiple matches found — pick the correct one</HintText>
-                        </>
-                      ) : (
-                        <>
-                          <NeighborhoodAutocomplete
-                            value={newAddress.area}
-                            onChange={handleAddressChange}
-                            city={newAddress.city}
-                            placeholder="e.g. Nima, Cantonments, Tema Comm. 1"
-                            onSelect={(neighborhood) => {
-                              setNewAddress((prev) => ({ ...prev, area: neighborhood.name }));
-                            }}
-                          />
-                          <HintText>Start typing to search your neighborhood</HintText>
-                        </>
-                      )}
-                      {errors.area && <ErrorText>{errors.area}</ErrorText>}
-                    </FormGroup>
-                    <FormGroup>
-                      <Label>Landmark <span style={{ fontWeight: 400, color: "var(--color-grey-400)" }}>(optional)</span></Label>
-                      <Input
-                        type="text"
-                        name="landmark"
-                        value={newAddress.landmark}
-                        onChange={handleAddressChange}
-                        placeholder="e.g. Near Osu Castle"
-                      />
-                    </FormGroup>
-                  </FormRow>
-
-                  <FormRow>
-                    <FormGroup>
-                      <Label>City *</Label>
-                      <Select
-                        name="city"
-                        value={newAddress.city}
-                        onChange={handleAddressChange}
-                        required
-                      >
-                        <option value="">Select City</option>
-                        <option value="ACCRA">Accra</option>
-                        <option value="TEMA">Tema</option>
-                      </Select>
-                      {errors.city && <ErrorText>{errors.city}</ErrorText>}
-                      <HintText>Delivery available in Accra and Tema only</HintText>
-                    </FormGroup>
-                    <FormGroup>
-                      <Label>Region *</Label>
-                      <Input
-                        type="text"
-                        name="region"
-                        value={newAddress.region}
-                        onChange={handleAddressChange}
-                        placeholder="e.g. Greater Accra"
-                        required
-                      />
-                      {errors.region && <ErrorText>{errors.region}</ErrorText>}
-                    </FormGroup>
-                  </FormRow>
-
-                  <FormGroup>
-                    <Label>
-                      Ghana Post Digital Address
-                      <LocationButton
-                        type="button"
-                        onClick={getCurrentLocation}
-                        disabled={isFetchingLocation}
-                      >
-                        <FaSearchLocation />
-                        {isFetchingLocation ? "Detecting…" : "Auto-detect"}
-                      </LocationButton>
-                    </Label>
-                    <Input
-                      type="text"
-                      name="digitalAddress"
-                      value={newAddress.digitalAddress}
-                      onChange={handleAddressChange}
-                      placeholder="GA-123-4567"
-                    />
-                    {errors.digitalAddress && <ErrorText>{errors.digitalAddress}</ErrorText>}
-                    {locationError && <ErrorText>{locationError}</ErrorText>}
-                    <HintText>Format: AA-123-4567 (e.g., GA-123-4567)</HintText>
-                  </FormGroup>
-                </AddressFormSection>
-
-                <ButtonGroup>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setActiveTab("existing")}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    variant="success"
-                    size="sm"
-                    loading={isAddressCreating}
-                  >
-                    Save Address
-                  </Button>
-                </ButtonGroup>
-              </AddressForm>
+              <EmptyAddressState>
+                <p>No saved address found yet.</p>
+                <Button type="button" variant="primary" size="sm" onClick={openAddressModal}>
+                  Add Your First Address
+                </Button>
+              </EmptyAddressState>
             )}
             </TabContent>
           </StepCard>
+
+          {isAddressModalOpen && (
+            <AddressModalOverlay
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="checkout-new-address-title"
+              onClick={(event) => {
+                if (event.target === event.currentTarget) {
+                  closeAddressModal();
+                }
+              }}
+            >
+              <AddressModalCard>
+                <AddressModalHeader>
+                  <AddressModalTitle id="checkout-new-address-title">
+                    Add New Address
+                  </AddressModalTitle>
+                  <AddressModalClose
+                    type="button"
+                    onClick={closeAddressModal}
+                    aria-label="Close address form"
+                  >
+                    <FaTimes />
+                  </AddressModalClose>
+                </AddressModalHeader>
+                <AddressModalBody>
+                  <AddressForm onSubmit={handleNewAddress}>
+                    {(formError || createAddressError) && (
+                      <ErrorState
+                        message={
+                          formError ||
+                          createAddressError?.message ||
+                          "Failed to create address"
+                        }
+                      />
+                    )}
+
+                    <AddressFormSection>
+                      <AddressFormSectionLabel>Contact</AddressFormSectionLabel>
+                      <FormRow>
+                        <FormGroup>
+                          <Label>Full Name *</Label>
+                          <Input
+                            type="text"
+                            name="fullName"
+                            value={newAddress.fullName}
+                            onChange={handleAddressChange}
+                            placeholder="e.g. Kwame Mensah"
+                            required
+                          />
+                          {errors.fullName && <ErrorText>{errors.fullName}</ErrorText>}
+                        </FormGroup>
+                        <FormGroup>
+                          <Label>Contact Number *</Label>
+                          <Input
+                            type="tel"
+                            name="contactPhone"
+                            value={newAddress.contactPhone}
+                            onChange={handleAddressChange}
+                            placeholder="020 123 4567"
+                            required
+                          />
+                          {errors.contactPhone && <ErrorText>{errors.contactPhone}</ErrorText>}
+                          <HintText>MTN / Telecel / AirtelTigo — 10 digits</HintText>
+                        </FormGroup>
+                      </FormRow>
+                    </AddressFormSection>
+
+                    <AddressFormSection>
+                      <AddressFormSectionLabel>Location</AddressFormSectionLabel>
+                      <FormGroup>
+                        <Label>Street Address *</Label>
+                        <Input
+                          type="text"
+                          name="streetAddress"
+                          value={newAddress.streetAddress}
+                          onChange={handleAddressChange}
+                          placeholder="e.g. 15 Liberation Road"
+                          required
+                        />
+                        {errors.streetAddress && <ErrorText>{errors.streetAddress}</ErrorText>}
+                      </FormGroup>
+
+                      <FormRow>
+                        <FormGroup>
+                          <Label>Neighborhood / Area *</Label>
+                          {autoNeighborhoodOptions.length > 0 ? (
+                            <>
+                              <Select
+                                name="area"
+                                value={newAddress.area}
+                                onChange={(e) => {
+                                  const selectedName = e.target.value;
+                                  setNewAddress((prev) => ({ ...prev, area: selectedName }));
+                                }}
+                              >
+                                <option value="">Select neighborhood</option>
+                                {autoNeighborhoodOptions.map((n) => (
+                                  <option key={n._id || n.name} value={n.name}>
+                                    {n.name}{n.municipality ? ` (${n.municipality})` : ""}
+                                  </option>
+                                ))}
+                              </Select>
+                              <HintText>Multiple matches found — pick the correct one</HintText>
+                            </>
+                          ) : (
+                            <>
+                              <NeighborhoodAutocomplete
+                                value={newAddress.area}
+                                onChange={handleAddressChange}
+                                city={newAddress.city}
+                                placeholder="e.g. Nima, Cantonments, Tema Comm. 1"
+                                onSelect={(neighborhood) => {
+                                  setNewAddress((prev) => ({ ...prev, area: neighborhood.name }));
+                                }}
+                              />
+                              <HintText>Start typing to search your neighborhood</HintText>
+                            </>
+                          )}
+                          {errors.area && <ErrorText>{errors.area}</ErrorText>}
+                        </FormGroup>
+                        <FormGroup>
+                          <Label>
+                            Landmark{" "}
+                            <span
+                              style={{
+                                fontWeight: 400,
+                                color: "var(--color-grey-400)",
+                              }}
+                            >
+                              (optional)
+                            </span>
+                          </Label>
+                          <Input
+                            type="text"
+                            name="landmark"
+                            value={newAddress.landmark}
+                            onChange={handleAddressChange}
+                            placeholder="e.g. Near Osu Castle"
+                          />
+                        </FormGroup>
+                      </FormRow>
+
+                      <FormRow>
+                        <FormGroup>
+                          <Label>City *</Label>
+                          <Select
+                            name="city"
+                            value={newAddress.city}
+                            onChange={handleAddressChange}
+                            required
+                          >
+                            <option value="">Select City</option>
+                            <option value="ACCRA">Accra</option>
+                            <option value="TEMA">Tema</option>
+                          </Select>
+                          {errors.city && <ErrorText>{errors.city}</ErrorText>}
+                          <HintText>Delivery available in Accra and Tema only</HintText>
+                        </FormGroup>
+                        <FormGroup>
+                          <Label>Region *</Label>
+                          <Input
+                            type="text"
+                            name="region"
+                            value={newAddress.region}
+                            onChange={handleAddressChange}
+                            placeholder="e.g. Greater Accra"
+                            required
+                          />
+                          {errors.region && <ErrorText>{errors.region}</ErrorText>}
+                        </FormGroup>
+                      </FormRow>
+
+                      <FormGroup>
+                        <Label>
+                          Ghana Post Digital Address
+                          <LocationButton
+                            type="button"
+                            onClick={getCurrentLocation}
+                            disabled={isFetchingLocation}
+                          >
+                            <FaSearchLocation />
+                            {isFetchingLocation ? "Detecting…" : "Auto-detect"}
+                          </LocationButton>
+                        </Label>
+                        <Input
+                          type="text"
+                          name="digitalAddress"
+                          value={newAddress.digitalAddress}
+                          onChange={handleAddressChange}
+                          placeholder="GA-123-4567"
+                        />
+                        {errors.digitalAddress && <ErrorText>{errors.digitalAddress}</ErrorText>}
+                        {locationError && <ErrorText>{locationError}</ErrorText>}
+                        <HintText>Format: AA-123-4567 (e.g., GA-123-4567)</HintText>
+                      </FormGroup>
+                    </AddressFormSection>
+
+                    <ButtonGroup>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={closeAddressModal}
+                        disabled={isAddressCreating}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        variant="success"
+                        size="sm"
+                        loading={isAddressCreating}
+                      >
+                        Save Address
+                      </Button>
+                    </ButtonGroup>
+                  </AddressForm>
+                </AddressModalBody>
+              </AddressModalCard>
+            </AddressModalOverlay>
+          )}
 
           {/* STEP 2: Delivery Method - Hide for pre-orders */}
           {!hasPreorderItem && (
@@ -1858,11 +1932,13 @@ const CheckoutPage = () => {
                           weight={null}
                           city={buyerCity}
                           neighborhoodName={
-                            activeTab === "existing" && selectedAddress
-                              ? (selectedAddress.area || selectedAddress.landmark || selectedAddress.streetAddress)
-                              : activeTab === "new" && newAddress
-                                ? (newAddress.area || newAddress.landmark || newAddress.streetAddress)
-                                : null
+                            selectedAddress
+                              ? (
+                                selectedAddress.area ||
+                                selectedAddress.landmark ||
+                                selectedAddress.streetAddress
+                              )
+                              : null
                           }
                           fragile={isFragileItem}
                           items={shippingItems}
@@ -2135,14 +2211,45 @@ const CheckoutPage = () => {
                     {item.sku && <CartItemVariant>{item.sku}</CartItemVariant>}
                   </CartItemInfo>
                   <CartItemPrice>
-                    GH₵{(() => {
+                    {(() => {
                       const variantPrice = item.sku
                         ? item.product?.variants?.find(
-                            (v) => v.sku && v.sku.toUpperCase() === item.sku.toUpperCase()
-                          )?.price
+                          (v) =>
+                            v.sku &&
+                            v.sku.toUpperCase() === item.sku.toUpperCase()
+                        )?.price
                         : null;
-                      const unitPrice = variantPrice ?? item.product?.defaultPrice ?? item.product?.price ?? 0;
-                      return (unitPrice * item.quantity).toFixed(2);
+                      const baseUnitPrice =
+                        variantPrice ??
+                        item.product?.defaultPrice ??
+                        item.product?.price ??
+                        0;
+
+                      // Prefer promo-aware backend unit price from cart when available.
+                      const effectiveUnitPrice =
+                        typeof item.unitPrice === "number" &&
+                        item.unitPrice >= 0
+                          ? item.unitPrice
+                          : baseUnitPrice;
+                      const lineTotal = effectiveUnitPrice * item.quantity;
+
+                      if (
+                        typeof item.originalUnitPrice === "number" &&
+                        item.originalUnitPrice > effectiveUnitPrice
+                      ) {
+                        const originalLineTotal =
+                          item.originalUnitPrice * item.quantity;
+                        return (
+                          <>
+                            <CartItemOriginalPrice>
+                              GH₵{originalLineTotal.toFixed(2)}
+                            </CartItemOriginalPrice>
+                            GH₵{lineTotal.toFixed(2)}
+                          </>
+                        );
+                      }
+
+                      return `GH₵${lineTotal.toFixed(2)}`;
                     })()}
                   </CartItemPrice>
                 </CartItemRow>
@@ -2582,6 +2689,13 @@ const CartItemPrice = styled.div`
   flex-shrink: 0;
 `;
 
+const CartItemOriginalPrice = styled.span`
+  color: var(--color-grey-400);
+  text-decoration: line-through;
+  margin-right: 0.35rem;
+  font-weight: 500;
+`;
+
 const SummaryDivider = styled.hr`
   border: none;
   border-top: 1px solid var(--color-grey-100);
@@ -2709,6 +2823,84 @@ const TabToggle = styled.button`
 
 const TabContent = styled.div`
   margin-top: 4px;
+`;
+
+const EmptyAddressState = styled.div`
+  border: 1px dashed var(--color-grey-300);
+  border-radius: 12px;
+  padding: 18px;
+  background: var(--color-grey-50);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+
+  p {
+    margin: 0;
+    color: var(--color-grey-600);
+    font-size: 0.9rem;
+  }
+`;
+
+const AddressModalOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+`;
+
+const AddressModalCard = styled.div`
+  width: min(760px, 100%);
+  max-height: min(90vh, 920px);
+  background: #fff;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 56px rgba(15, 23, 42, 0.28);
+  overflow: hidden;
+`;
+
+const AddressModalHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--color-grey-200);
+`;
+
+const AddressModalTitle = styled.h3`
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-grey-900);
+`;
+
+const AddressModalClose = styled.button`
+  border: none;
+  background: transparent;
+  color: var(--color-grey-500);
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    background: var(--color-grey-100);
+    color: var(--color-grey-800);
+  }
+`;
+
+const AddressModalBody = styled.div`
+  overflow-y: auto;
+  padding: 10px 12px 12px;
 `;
 
 const AddressList = styled.div`

@@ -60,6 +60,8 @@ const PUBLIC_GET_ENDPOINTS = [
   /^\/recommendations\/products\/[a-fA-F\d]{24}\/also-bought/, // Also bought
   /^\/recommendations\/products\/[a-fA-F\d]{24}\/ai-similar/, // AI similar
   /^\/recommendations\/products\/trending/, // Trending products
+  /^\/statuses\/seller\/[a-fA-F\d]{24}$/, // Buyer public seller status videos
+  /^\/statuses$/, // Buyer public status feed (video statuses only)
 ];
 
 // Single source of truth: appConfig (DEV → localhost:4000, prod build → api.saiisai.com, env overrides)
@@ -94,6 +96,9 @@ const normalizePath = (path) => {
 
   return normalized === "" ? "/" : `/${normalized}`.replace("//", "/");
 };
+
+const isLoopbackHost = (host = "") =>
+  host === "localhost" || host === "127.0.0.1" || host === "::1";
 
 const isPublicRoute = (normalizedPath, method) => {
   // Check exact path matches
@@ -157,9 +162,10 @@ const fetchCsrfToken = async () => {
     }
   }
   
-  // Fetch new CSRF token with a short timeout to avoid blocking
-  csrfTokenPromise = axios.get(`${baseURL}/csrf-token`, {
-    withCredentials: true,
+  // Fetch new CSRF token with the same axios instance used by app requests.
+  // This keeps hostname normalization consistent (localhost vs 127.0.0.1),
+  // so the CSRF cookie and subsequent API calls share the same cookie jar.
+  csrfTokenPromise = api.get('/csrf-token', {
     timeout: 3000, // 3 second timeout - short to avoid blocking main request
   }).then((response) => {
     const token = response?.data?.csrfToken || response?.data?.data?.csrfToken;
@@ -230,6 +236,21 @@ api.interceptors.request.use(async (config) => {
   // CRITICAL: Always use fresh baseURL from getBaseURL() to ensure localhost in dev
   const freshBaseURL = getBaseURL();
   config.baseURL = freshBaseURL;
+
+  // DEV auth stability: align localhost/127.0.0.1 hostnames with current page host
+  // to avoid SameSite cookie drops on refresh when app/API use different loopback hosts.
+  if (import.meta.env.DEV && typeof window !== "undefined" && config.baseURL) {
+    try {
+      const parsed = new URL(config.baseURL);
+      const pageHost = window.location.hostname;
+      if (isLoopbackHost(parsed.hostname) && isLoopbackHost(pageHost)) {
+        parsed.hostname = pageHost;
+        config.baseURL = parsed.toString().replace(/\/+$/, "");
+      }
+    } catch {
+      // Ignore malformed baseURL and continue with default behavior
+    }
+  }
   
   // Force HTTP for localhost URLs
   if (config.baseURL && (config.baseURL.includes('localhost') || config.baseURL.includes('127.0.0.1') || config.baseURL.includes(':4000'))) {
@@ -416,6 +437,7 @@ api.interceptors.response.use(
       
       // Check if this is a critical auth endpoint that should trigger logout
       const isCriticalAuthEndpoint = 
+        normalizedUrl.includes('/users/me') ||
         normalizedUrl.includes('/auth/me') ||
         normalizedUrl.includes('/auth/current-user') ||
         normalizedUrl.includes('/auth/refresh');

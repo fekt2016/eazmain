@@ -305,15 +305,12 @@ const NavContainer = styled.nav`
   padding: 0.5rem 1rem 0;
   overflow-y: auto;
 
+  /* Keep scrolling behavior, but avoid showing a second visible scrollbar. */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge legacy */
+
   &::-webkit-scrollbar {
-    width: 3px;
-  }
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: #e5e7eb;
-    border-radius: 2px;
+    display: none; /* Chrome/Safari/Edge */
   }
 `;
 

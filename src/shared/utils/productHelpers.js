@@ -197,17 +197,96 @@ export const getProductPriceForDisplay = (product) => {
  * @returns {Array<string>} - Array of image URLs
  */
 export const getProductImages = (product) => {
-  if (!product) return [];
+  if (!product || typeof product !== 'object') return [];
 
-  if (product.images && Array.isArray(product.images) && product.images.length > 0) {
-    return product.images;
+  const extractImageValues = (value) => {
+    if (!value) return [];
+
+    if (Array.isArray(value)) {
+      return value.flatMap((item) => extractImageValues(item));
+    }
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed) return [];
+
+      // Some payloads store JSON-stringified arrays/objects in image fields.
+      if (
+        (trimmed.startsWith('[') && trimmed.endsWith(']')) ||
+        (trimmed.startsWith('{') && trimmed.endsWith('}'))
+      ) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          return extractImageValues(parsed);
+        } catch {
+          // fall through to treat as plain URL/path string
+        }
+      }
+
+      return [trimmed];
+    }
+
+    if (typeof value === 'object') {
+      const fromKnownKeys =
+        value.url ||
+        value.secure_url ||
+        value.src ||
+        value.imageUrl ||
+        value.image ||
+        value.thumbnail ||
+        value.thumb ||
+        value.medium ||
+        value.path ||
+        value.imagePath ||
+        value.public_id ||
+        value.publicId;
+
+      if (fromKnownKeys) {
+        return [fromKnownKeys];
+      }
+
+      return [];
+    }
+
+    return [];
+  };
+
+  const results = [];
+  const addImages = (value) => {
+    extractImageValues(value).forEach((img) => {
+      if (img && !results.includes(img)) {
+        results.push(img);
+      }
+    });
+  };
+
+  // 1) Common single cover fields (cover should be first for cards)
+  [
+    product.imageCover,
+    product.imagecover,
+    product.coverImage,
+    product.cover,
+    product.mainImage,
+    product.primaryImage,
+    product.image_url,
+  ].forEach(addImages);
+
+  // 2) Primary array field (gallery images)
+  addImages(product.images);
+
+  // 3) Variant images as additional fallback for card contexts
+  if (Array.isArray(product.variants) && product.variants.length > 0) {
+    product.variants.forEach((variant) => {
+      addImages(variant?.imageCover);
+      addImages(variant?.images);
+      addImages(variant?.image);
+    });
   }
 
-  if (product.imageCover) {
-    return [product.imageCover];
-  }
+  // 4) Fallback single image field
+  addImages(product.image);
 
-  return [];
+  return results;
 };
 
 /**

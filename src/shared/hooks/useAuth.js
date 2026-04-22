@@ -4,6 +4,28 @@ import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import logger from '../utils/logger';
 
+const extractUserFromAuthPayload = (payload) => {
+  if (!payload || typeof payload !== 'object') {
+    return null;
+  }
+
+  return (
+    payload?.data?.data?.user ||
+    payload?.data?.user ||
+    payload?.data?.data ||
+    payload?.data ||
+    payload?.user ||
+    payload
+  );
+};
+
+const isValidAuthUser = (user) => {
+  if (!user || typeof user !== 'object' || Array.isArray(user)) {
+    return false;
+  }
+  return Boolean(user.id || user._id);
+};
+
 const useAuth = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -25,19 +47,10 @@ const useAuth = () => {
           hasData: !!response?.data,
           status: response?.data?.status 
         });
-        // getCurrentUser returns axios response: { data: { status: 'success', data: {...user} } }
-        // Extract user from response.data.data (backend structure) or response.data (if already extracted)
         const responseData = response?.data || response;
-        const user = responseData?.data || responseData?.user || responseData;
-        
-        // Validate that we have a real user object (not just an empty object or null)
-        const hasValidUser = user && 
-                            typeof user === 'object' && 
-                            !Array.isArray(user) &&
-                            (user.id || user._id) &&
-                            (user.email || user.name || user.phone); // At least one identifying field
-        
-        if (hasValidUser) {
+        const user = extractUserFromAuthPayload(responseData);
+
+        if (isValidAuthUser(user)) {
           logger.log("[useAuth] getCurrentUser extracted user:", { 
             hasUser: true,
             hasPhoto: !!user?.photo,
@@ -64,8 +77,10 @@ const useAuth = () => {
             }
             // CRITICAL FIX: Return cached user data instead of null
             // This prevents ProtectedRoute from redirecting when notification endpoints fail
-            const cachedUser = queryClient.getQueryData(["auth"]);
-            if (cachedUser) {
+            const cachedUser = extractUserFromAuthPayload(
+              queryClient.getQueryData(["auth"])
+            );
+            if (isValidAuthUser(cachedUser)) {
               if ((typeof __DEV__ !== 'undefined' && __DEV__) || !import.meta.env.PROD) {
                 logger.debug("[useAuth] Returning cached user data despite notification endpoint failure");
               }
@@ -77,7 +92,10 @@ const useAuth = () => {
 
           // Only clear auth for actual auth endpoint failures
           const url = error.config?.url || '';
-          const isAuthEndpoint = url.includes('/auth/me') || url.includes('/auth/current-user');
+          const isAuthEndpoint =
+            url.includes('/users/me') ||
+            url.includes('/auth/me') ||
+            url.includes('/auth/current-user');
           
           if (isAuthEndpoint) {
             // 401 on auth endpoint = user is not authenticated (normal state, not an error)
@@ -94,8 +112,10 @@ const useAuth = () => {
             }
             // CRITICAL FIX: Return cached user data for non-auth endpoint failures
             // This prevents ProtectedRoute from redirecting when other endpoints fail
-            const cachedUser = queryClient.getQueryData(["auth"]);
-            if (cachedUser) {
+            const cachedUser = extractUserFromAuthPayload(
+              queryClient.getQueryData(["auth"])
+            );
+            if (isValidAuthUser(cachedUser)) {
               if ((typeof __DEV__ !== 'undefined' && __DEV__) || !import.meta.env.PROD) {
                 logger.debug("[useAuth] Returning cached user data despite non-auth endpoint failure");
               }
@@ -109,8 +129,10 @@ const useAuth = () => {
           }
           // CRITICAL FIX: Return cached user data on network errors
           // This prevents ProtectedRoute from redirecting during network issues
-          const cachedUser = queryClient.getQueryData(["auth"]);
-          if (cachedUser) {
+          const cachedUser = extractUserFromAuthPayload(
+            queryClient.getQueryData(["auth"])
+          );
+          if (isValidAuthUser(cachedUser)) {
             logger.warn("[useAuth] Returning cached user data during network error");
             return cachedUser;
           }
