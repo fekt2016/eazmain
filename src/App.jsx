@@ -13,7 +13,7 @@ import ErrorBoundary from "./shared/components/ErrorBoundary";
 import useRouteSEO from "./shared/hooks/useRouteSEO";
 import queryClient from "@/api/queryClient";
 
-// ReactQueryDevtools only in development
+
 const ReactQueryDevtools = import.meta.env.DEV
   ? lazy(() => import("@tanstack/react-query-devtools").then((mod) => ({ default: mod.ReactQueryDevtools })))
   : () => null;
